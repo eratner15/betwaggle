@@ -932,6 +932,30 @@
     }
 
   </style>
+
+  <!-- Google Ads gtag.js (replace AW-PLACEHOLDER with your Google Ads ID) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-PLACEHOLDER"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-PLACEHOLDER');
+  </script>
+
+  <!-- Meta Pixel (replace PIXEL_PLACEHOLDER with your Meta Pixel ID) -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', 'PIXEL_PLACEHOLDER');
+  fbq('track', 'PageView');
+  </script>
+
 </head>
 <body>
 

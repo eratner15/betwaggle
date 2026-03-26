@@ -151,6 +151,36 @@ export default {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
+    // ===== MY EVENTS (Commissioner Dashboard) =====
+    // GET /api/my-events?email={email} — list commissioner's events
+    if (url.pathname === '/api/my-events' && request.method === 'GET') {
+      const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+      const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+      if (!email) return new Response(JSON.stringify({ events: [] }), { headers });
+      const slugsRaw = await env.MG_BOOK.get(`commissioner:${email}`, 'json');
+      const slugs = slugsRaw || [];
+      const events = [];
+      for (const slug of slugs) {
+        const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+        if (!configRaw) continue;
+        try {
+          const config = JSON.parse(configRaw);
+          events.push({
+            slug,
+            name: config.event?.name || slug,
+            date: config.event?.dates?.day1 || '',
+            playerCount: (config.players || config.roster || []).length,
+            status: config.event?.status || 'active',
+            eventType: config.event?.eventType || '',
+          });
+        } catch {}
+      }
+      return new Response(JSON.stringify({ events }), { headers });
+    }
+    if (url.pathname === '/api/my-events' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
     // ===== UNSUBSCRIBE =====
     if (url.pathname === '/api/unsubscribe' && request.method === 'GET') {
       return handleUnsubscribe(url, env);
@@ -159,7 +189,7 @@ export default {
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -174,7 +204,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -316,6 +346,23 @@ export default {
     if (url.pathname === '/api/affiliates/mark-paid' && request.method === 'POST') {
       return handleAffiliateMarkPaid(request, env);
     }
+
+    // POST /api/referral-credit — credit a commissioner for a referral
+    if (url.pathname === '/api/referral-credit' && request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const { referrerEmail, referredSlug } = body;
+      if (!referrerEmail) return new Response(JSON.stringify({ error: 'referrerEmail required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const key = `referral-credits:${referrerEmail.trim().toLowerCase()}`;
+      const existing = (await env.MG_BOOK.get(key, 'json')) || { credits: 0, referrals: [] };
+      existing.credits += 800; // $8.00 in cents
+      existing.referrals.push({ slug: referredSlug, ts: Date.now() });
+      await env.MG_BOOK.put(key, JSON.stringify(existing));
+      return new Response(JSON.stringify({ ok: true, totalCredits: existing.credits, referralCount: existing.referrals.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/api/referral-credit' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
     if (url.pathname === '/affiliate/' || url.pathname === '/affiliate') {
       return handleAffiliatePage(url, env);
     }
@@ -468,6 +515,16 @@ export default {
       if (resp) return resp;
     }
 
+    // ===== SEED DEMO EVENT (dev/admin) =====
+    if (url.pathname === '/api/seed-demo' && request.method === 'GET') {
+      try {
+        const result = await seedDemoEvent(env);
+        return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
     // Serve static assets
     const assetResp = await env.ASSETS.fetch(request);
     const hdrs = new Headers(assetResp.headers);
@@ -486,12 +543,162 @@ export default {
     return new Response(assetResp.body, { status: assetResp.status, headers: hdrs });
   },
 
-  // Cron handler: weekly digest + drip emails
+  // Cron handler: weekly digest + drip emails + demo seed
   async scheduled(event, env, ctx) {
+    ctx.waitUntil(seedDemoEvent(env));
     ctx.waitUntil(sendWeeklyMarketingDigest(env));
     ctx.waitUntil(processDripEmails(env));
   },
 };
+
+
+// ─── Demo Event Seeder ──────────────────────────────────────────────────────
+
+async function seedDemoEvent(env) {
+  const KEY = 'config:cabot-citrus-invitational';
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false, reason: 'already exists' };
+
+  // Event config
+  const config = {
+    event: {
+      name: 'Cabot Citrus Invitational 2026',
+      shortName: 'Cabot Citrus',
+      venue: 'Cabot Citrus Farms',
+      url: 'https://betwaggle.com/cabot-citrus-invitational/',
+      dates: { day1: '2026-04-15' },
+      format: 'skins',
+      adminPin: '1234',
+      adminContact: '',
+      eventType: 'buddies_trip',
+      status: 'active',
+    },
+    scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
+    structure: { nassauBet: 20, skinsBet: 10, autoPress: { enabled: true, threshold: 2 } },
+    features: { betting: true },
+    games: { skins: true, nassau: true, wolf: true },
+    holesPerRound: 18,
+    players: [
+      { name: 'Tiger Woods', handicapIndex: 0.6, venmo: '@tigerwoods' },
+      { name: 'Rory McIlroy', handicapIndex: -1.2, venmo: '@rorymci' },
+      { name: 'Phil Mickelson', handicapIndex: 2.1, venmo: '@philmickelson' },
+      { name: 'Dustin Johnson', handicapIndex: 0.4, venmo: '@djohnson' },
+      { name: 'Jon Rahm', handicapIndex: -0.8, venmo: '@jonrahm' },
+      { name: 'Justin Thomas', handicapIndex: 0.2, venmo: '@justinthomas' },
+      { name: 'Scottie Scheffler', handicapIndex: -0.5, venmo: '@scheffler' },
+      { name: 'Brooks Koepka', handicapIndex: 1.0, venmo: '@bkoepka' },
+    ],
+    roster: [
+      { name: 'Tiger Woods', handicapIndex: 0.6 },
+      { name: 'Rory McIlroy', handicapIndex: -1.2 },
+      { name: 'Phil Mickelson', handicapIndex: 2.1 },
+      { name: 'Dustin Johnson', handicapIndex: 0.4 },
+      { name: 'Jon Rahm', handicapIndex: -0.8 },
+      { name: 'Justin Thomas', handicapIndex: 0.2 },
+      { name: 'Scottie Scheffler', handicapIndex: -0.5 },
+      { name: 'Brooks Koepka', handicapIndex: 1.0 },
+    ],
+    wolfOrder: ['Tiger Woods', 'Rory McIlroy', 'Phil Mickelson', 'Dustin Johnson', 'Jon Rahm', 'Justin Thomas', 'Scottie Scheffler', 'Brooks Koepka'],
+    teams: {},
+    flights: {},
+    flightOrder: [],
+    pairings: {},
+    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+  };
+
+  // Hole scores (holes 1-14)
+  const now = Date.now();
+  const holeScores = {
+    1: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 3, 'Phil Mickelson': 5, 'Dustin Johnson': 4, 'Jon Rahm': 4, 'Justin Thomas': 3, 'Scottie Scheffler': 4, 'Brooks Koepka': 5 }, timestamp: now - 180000 },
+    2: { scores: { 'Tiger Woods': 3, 'Rory McIlroy': 4, 'Phil Mickelson': 4, 'Dustin Johnson': 3, 'Jon Rahm': 3, 'Justin Thomas': 4, 'Scottie Scheffler': 3, 'Brooks Koepka': 4 }, timestamp: now - 170000 },
+    3: { scores: { 'Tiger Woods': 5, 'Rory McIlroy': 4, 'Phil Mickelson': 5, 'Dustin Johnson': 5, 'Jon Rahm': 4, 'Justin Thomas': 5, 'Scottie Scheffler': 4, 'Brooks Koepka': 6 }, timestamp: now - 160000 },
+    4: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 4, 'Phil Mickelson': 4, 'Dustin Johnson': 3, 'Jon Rahm': 5, 'Justin Thomas': 4, 'Scottie Scheffler': 4, 'Brooks Koepka': 4 }, timestamp: now - 150000 },
+    5: { scores: { 'Tiger Woods': 3, 'Rory McIlroy': 3, 'Phil Mickelson': 4, 'Dustin Johnson': 4, 'Jon Rahm': 3, 'Justin Thomas': 3, 'Scottie Scheffler': 3, 'Brooks Koepka': 4 }, timestamp: now - 140000 },
+    6: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 5, 'Phil Mickelson': 4, 'Dustin Johnson': 4, 'Jon Rahm': 4, 'Justin Thomas': 4, 'Scottie Scheffler': 5, 'Brooks Koepka': 5 }, timestamp: now - 130000 },
+    7: { scores: { 'Tiger Woods': 2, 'Rory McIlroy': 3, 'Phil Mickelson': 3, 'Dustin Johnson': 3, 'Jon Rahm': 3, 'Justin Thomas': 4, 'Scottie Scheffler': 3, 'Brooks Koepka': 3 }, timestamp: now - 120000 },
+    8: { scores: { 'Tiger Woods': 5, 'Rory McIlroy': 4, 'Phil Mickelson': 6, 'Dustin Johnson': 5, 'Jon Rahm': 4, 'Justin Thomas': 5, 'Scottie Scheffler': 4, 'Brooks Koepka': 5 }, timestamp: now - 110000 },
+    9: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 3, 'Phil Mickelson': 4, 'Dustin Johnson': 4, 'Jon Rahm': 4, 'Justin Thomas': 4, 'Scottie Scheffler': 3, 'Brooks Koepka': 5 }, timestamp: now - 100000 },
+    10: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 4, 'Phil Mickelson': 5, 'Dustin Johnson': 4, 'Jon Rahm': 3, 'Justin Thomas': 4, 'Scottie Scheffler': 4, 'Brooks Koepka': 4 }, timestamp: now - 90000 },
+    11: { scores: { 'Tiger Woods': 3, 'Rory McIlroy': 3, 'Phil Mickelson': 3, 'Dustin Johnson': 4, 'Jon Rahm': 3, 'Justin Thomas': 3, 'Scottie Scheffler': 3, 'Brooks Koepka': 4 }, timestamp: now - 80000 },
+    12: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 5, 'Phil Mickelson': 4, 'Dustin Johnson': 4, 'Jon Rahm': 4, 'Justin Thomas': 4, 'Scottie Scheffler': 5, 'Brooks Koepka': 4 }, timestamp: now - 70000 },
+    13: { scores: { 'Tiger Woods': 3, 'Rory McIlroy': 2, 'Phil Mickelson': 3, 'Dustin Johnson': 3, 'Jon Rahm': 3, 'Justin Thomas': 3, 'Scottie Scheffler': 3, 'Brooks Koepka': 3 }, timestamp: now - 60000 },
+    14: { scores: { 'Tiger Woods': 4, 'Rory McIlroy': 4, 'Phil Mickelson': 5, 'Dustin Johnson': 4, 'Jon Rahm': 4, 'Justin Thomas': 4, 'Scottie Scheffler': 4, 'Brooks Koepka': 5 }, timestamp: now - 50000 },
+  };
+
+  // Game state
+  const gameState = {
+    skins: {
+      pot: 1,
+      holes: {
+        1: { winner: 'Rory McIlroy', potWon: 1 },
+        2: { carried: true },
+        3: { carried: true },
+        4: { winner: 'Dustin Johnson', potWon: 3 },
+        5: { carried: true },
+        6: { carried: true },
+        7: { winner: 'Tiger Woods', potWon: 3 },
+        8: { carried: true },
+        9: { winner: 'Rory McIlroy', potWon: 2 },
+        10: { winner: 'Jon Rahm', potWon: 1 },
+        11: { carried: true },
+        12: { carried: true },
+        13: { winner: 'Rory McIlroy', potWon: 3 },
+        14: { carried: true },
+      },
+    },
+    nassau: {
+      running: {
+        'Tiger Woods': { front: 34, back: 18, total: 52 },
+        'Rory McIlroy': { front: 33, back: 18, total: 51 },
+        'Scottie Scheffler': { front: 33, back: 19, total: 52 },
+        'Jon Rahm': { front: 34, back: 17, total: 51 },
+        'Justin Thomas': { front: 34, back: 18, total: 52 },
+        'Dustin Johnson': { front: 35, back: 19, total: 54 },
+        'Phil Mickelson': { front: 38, back: 20, total: 58 },
+        'Brooks Koepka': { front: 41, back: 21, total: 62 },
+      },
+      frontWinner: 'Rory McIlroy',
+      presses: [],
+    },
+  };
+
+  // Bets
+  const bets = [
+    { id: 'bet-demo-1', bettor: 'Gallery Fan', type: 'match_winner', selection: 'Tiger Woods', matchId: 'nassau', description: 'Tiger to win Nassau overall', stake: 50, odds: 2.1, americanOdds: '+110', status: 'active', createdAt: new Date().toISOString() },
+    { id: 'bet-demo-2', bettor: 'The Degenerate', type: 'match_winner', selection: 'Rory McIlroy', matchId: 'skins', description: 'Rory to lead skins', stake: 30, odds: 1.8, americanOdds: '-125', status: 'active', createdAt: new Date().toISOString() },
+    { id: 'bet-demo-3', bettor: 'Club Pro', type: 'game_winner', selection: 'Jon Rahm', matchId: 'nassau', description: 'Rahm to win Nassau back 9', stake: 25, odds: 3.0, americanOdds: '+200', status: 'active', createdAt: new Date().toISOString() },
+  ];
+
+  // Feed
+  const feed = [
+    { id: 'feed-1', type: 'score', player: 'Tiger Woods', text: 'Tiger Woods made a deuce on Hole 7!', emoji: '', ts: now - 120000 },
+    { id: 'feed-2', type: 'score', player: 'Rory McIlroy', text: 'Rory McIlroy eagled Hole 13!', emoji: '', ts: now - 60000 },
+    { id: 'feed-3', type: 'chirp', player: 'The Degenerate', text: 'Tiger is dialed in today', emoji: '', ts: now - 90000 },
+    { id: 'feed-4', type: 'score', player: 'Nassau', text: 'Rory is 1 UP thru 14 in the Nassau', emoji: '', ts: now - 40000 },
+    { id: 'feed-5', type: 'press', player: 'Brooks Koepka', text: 'Auto-press! Brooks is 3-down on the front', emoji: '', ts: now - 100000, auto: true },
+  ];
+
+  // Settings
+  const settings = {
+    announcements: ['Welcome to the Cabot Citrus Invitational! Nassau $20, Skins $10, Wolf active. Good luck.'],
+    lockedMatches: [],
+    oddsOverrides: {},
+  };
+
+  // Write all keys to KV
+  const slug = 'cabot-citrus-invitational';
+  await Promise.all([
+    env.MG_BOOK.put(KEY, JSON.stringify(config)),
+    env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holeScores)),
+    env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState)),
+    env.MG_BOOK.put(`${slug}:bets`, JSON.stringify(bets)),
+    env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed)),
+    env.MG_BOOK.put(`${slug}:settings`, JSON.stringify(settings)),
+  ]);
+
+  console.log('Demo event seeded: cabot-citrus-invitational');
+  return { seeded: true, slug, keys: [KEY, `${slug}:holes`, `${slug}:game-state`, `${slug}:bets`, `${slug}:feed`, `${slug}:settings`] };
+}
 
 
 // ─── Shared helpers ────────────────────────────────────────────────────────
@@ -1120,6 +1327,20 @@ async function handleCreateCheckout(request, env) {
   const originalAmount = WAGGLE_PRICES[eventType] ?? 3200;
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
 
+  // Check referral credits — if commissioner has enough, create free event
+  const adminEmail = (config.event?.adminContact || '').trim().toLowerCase();
+  if (adminEmail && env.MG_BOOK) {
+    const credKey = `referral-credits:${adminEmail}`;
+    const credits = await env.MG_BOOK.get(credKey, 'json');
+    if (credits && credits.credits >= originalAmount) {
+      credits.credits -= originalAmount;
+      await env.MG_BOOK.put(credKey, JSON.stringify(credits));
+      config.meta = config.meta || {};
+      config.meta.paidVia = 'referral_credits';
+      return handleCreateEventFromConfig(config, env);
+    }
+  }
+
   // If 100% discount, create event for free (skip Stripe)
   if (discount === 100) {
     // Increment promo usage
@@ -1234,6 +1455,21 @@ async function handleCheckoutSuccess(url, env) {
     } catch (err) { console.error('WAGGLE_REFERRAL_ERROR', { error: String(err) }); }
   }
 
+  // Credit referring commissioner via KV referral credits
+  if (refCode && env.MG_BOOK) {
+    try {
+      const refConfig = await env.MG_BOOK.get(`config:${refCode}`, 'json');
+      if (refConfig?.event?.adminContact) {
+        const referrerEmail = refConfig.event.adminContact.trim().toLowerCase();
+        const credKey = `referral-credits:${referrerEmail}`;
+        const existing = (await env.MG_BOOK.get(credKey, 'json')) || { credits: 0, referrals: [] };
+        existing.credits += 800;
+        existing.referrals.push({ slug: result.slug, ts: Date.now() });
+        await env.MG_BOOK.put(credKey, JSON.stringify(existing));
+      }
+    } catch {}
+  }
+
   if (env.RESEND_API_KEY) {
     const eventName = config.event?.name || 'Your Event';
     const eventUrl = result.url;
@@ -1345,6 +1581,11 @@ async function handleWaggleSuccess(url, env) {
       transaction_id: '${slug}'
     });
   </script>` : ''}
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','PIXEL_PLACEHOLDER');
+    fbq('track','PageView');
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root { --forest: #0D2818; --green: #1B4332; --green-mid: #2D6A4F; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
@@ -1441,6 +1682,11 @@ async function handleWaggleSuccess(url, env) {
       }).catch(function() {
         prompt('Copy this link:', link);
       });
+    }
+  </script>
+  <script>
+    if (typeof fbq === 'function') {
+      fbq('track', 'Purchase', { value: ${value}, currency: 'USD' });
     }
   </script>
 </body>
@@ -1649,6 +1895,16 @@ async function activateEvent(config, env) {
   if (!config.structure.roundTimes) config.structure.roundTimes = {};
 
   await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+
+  // Index event by commissioner email for /my-events/ dashboard
+  const adminContact = (config.event?.adminContact || '').trim().toLowerCase();
+  if (adminContact && adminContact.includes('@')) {
+    const existingSlugs = (await env.MG_BOOK.get(`commissioner:${adminContact}`, 'json')) || [];
+    if (!existingSlugs.includes(slug)) {
+      existingSlugs.push(slug);
+      await env.MG_BOOK.put(`commissioner:${adminContact}`, JSON.stringify(existingSlugs));
+    }
+  }
 
   if (env.WAGGLE_DB) {
     const id = `evt_${Date.now()}_${slug}`;

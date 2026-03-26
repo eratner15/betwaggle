@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Events — Waggle</title>
+  <meta name="description" content="Find and manage your Waggle golf outings. Enter your email to see all events you've created as commissioner.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="My Events — Waggle">
+  <meta property="og:description" content="Find and manage your Waggle golf outings.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/my-events/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Waggle">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="My Events — Waggle">
+  <meta name="twitter:description" content="Find and manage your Waggle golf outings.">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.jpg">
+
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#0D2818">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Waggle">
+  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="canonical" href="https://betwaggle.com/my-events/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #0D2818;
+      --green:    #1B4332;
+      --green-mid:#2D6A4F;
+      --sage:     #52B788;
+      --ivory:    #F5F0E8;
+      --ivory-dk: #EDE8DF;
+      --gold:     #C9A84C;
+      --gold-dk:  #9A7A2E;
+      --text:     #1A1A1A;
+      --text-2:   #3D3D3D;
+      --muted:    #7A7A7A;
+      --rule:     #D4CFC7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      background: var(--forest);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+
+    .nav-logo span {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,.7);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color .2s;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    .nav-links .btn-nav {
+      background: var(--gold);
+      color: var(--forest);
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .nav-links .btn-nav:hover {
+      background: #D4B65E;
+    }
+
+    /* MAIN */
+    main {
+      flex: 1;
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    /* SEARCH */
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 1.5px solid var(--rule);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--gold);
+    }
+
+    .search-box input::placeholder {
+      color: #B0ACA4;
+    }
+
+    .search-box button {
+      padding: 14px 24px;
+      background: var(--forest);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .search-box button:hover {
+      background: var(--green);
+    }
+
+    .search-box button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    /* EVENTS */
+    .event-card {
+      background: #fff;
+      border: 1.5px solid var(--rule);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: box-shadow .2s;
+    }
+
+    .event-card:hover {
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .event-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--forest);
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+    }
+
+    .badge-active {
+      background: rgba(201,168,76,.15);
+      color: var(--gold-dk);
+    }
+
+    .badge-complete {
+      background: #DCFCE7;
+      color: #16A34A;
+    }
+
+    .event-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .event-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .event-actions a {
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+
+    .event-actions a:hover {
+      opacity: .85;
+    }
+
+    .btn-open {
+      background: var(--forest);
+      color: #fff;
+    }
+
+    .btn-admin {
+      background: var(--gold);
+      color: var(--forest);
+    }
+
+    .btn-settle {
+      background: #fff;
+      color: var(--forest);
+      border: 1.5px solid var(--rule);
+    }
+
+    /* EMPTY / LOADING */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .empty-state a {
+      color: var(--gold-dk);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .empty-state a:hover {
+      text-decoration: underline;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 16px;
+      color: #DC2626;
+      font-size: 14px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--forest);
+      padding: 48px 20px 32px;
+      text-align: center;
+    }
+
+    footer .f-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    footer .f-tagline {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      margin-bottom: 24px;
+    }
+
+    footer .f-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    footer .f-links a {
+      color: rgba(255,255,255,.7);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    footer .f-links a:hover {
+      color: #fff;
+    }
+
+    footer .f-rule {
+      width: 48px;
+      height: 2px;
+      background: var(--gold);
+      opacity: .3;
+      margin: 0 auto 20px;
+    }
+
+    footer .f-copy {
+      font-size: 11px;
+      color: rgba(255,255,255,.3);
+    }
+
+    @media (max-width: 500px) {
+      main { padding: 32px 16px 48px; }
+      h1 { font-size: 26px; }
+      .search-box { flex-direction: column; }
+      .search-box button { width: 100%; }
+      .nav-links .hide-mobile { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo">
+      <img src="/logo.png" alt="Waggle">
+      <span>Waggle</span>
+    </a>
+    <div class="nav-links">
+      <a href="/courses/" class="hide-mobile">Find a Course</a>
+      <a href="/create/" class="btn-nav">Get Started</a>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Your Outings</h1>
+    <p class="subtitle">Enter the email you used when creating your event.</p>
+
+    <div class="search-box">
+      <input type="email" id="email-input" placeholder="commissioner@example.com" autocomplete="email" autocapitalize="none">
+      <button id="find-btn" onclick="findEvents()">Find My Events</button>
+    </div>
+
+    <div id="events-container"></div>
+  </main>
+
+  <footer>
+    <div style="max-width:640px;margin:0 auto">
+      <div class="f-logo">Waggle</div>
+      <div class="f-tagline">The sportsbook for your golf trip.</div>
+      <div class="f-links">
+        <a href="/create/">Create Your Outing</a>
+        <a href="/courses/">Find a Course</a>
+        <a href="/overview/">Setup Guide</a>
+      </div>
+      <div class="f-rule"></div>
+      <p class="f-copy">betwaggle.com</p>
+    </div>
+  </footer>
+
+  <script>
+    const emailInput = document.getElementById('email-input');
+    const findBtn = document.getElementById('find-btn');
+    const container = document.getElementById('events-container');
+
+    emailInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') findEvents();
+    });
+
+    async function findEvents() {
+      const email = emailInput.value.trim();
+      if (!email) {
+        emailInput.focus();
+        return;
+      }
+
+      findBtn.disabled = true;
+      findBtn.textContent = 'Searching...';
+      container.innerHTML = '<div class="loading">Looking up your events...</div>';
+
+      try {
+        const res = await fetch('/api/my-events?email=' + encodeURIComponent(email));
+        if (!res.ok) throw new Error('Request failed');
+        const data = await res.json();
+        renderEvents(data.events || []);
+      } catch (err) {
+        container.innerHTML = '<div class="error-msg">Something went wrong. Please try again.</div>';
+      } finally {
+        findBtn.disabled = false;
+        findBtn.textContent = 'Find My Events';
+      }
+    }
+
+    function renderEvents(events) {
+      if (events.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size:36px;margin-bottom:12px;opacity:.4">&#9971;</div>
+            <div style="margin-bottom:8px">No outings found for this email.</div>
+            <div>Ready to create one? <a href="/create/">Set up your first outing</a></div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = events.map(function(e) {
+        var isComplete = e.status === 'complete';
+        var badgeClass = isComplete ? 'badge badge-complete' : 'badge badge-active';
+        var badgeText = isComplete ? 'Complete' : 'Active';
+        var datePart = e.date ? e.date : '';
+        var playerPart = (e.playerCount || 0) + ' players';
+        var meta = [datePart, playerPart].filter(Boolean).join(' &middot; ');
+
+        return '<div class="event-card">' +
+          '<div class="event-header">' +
+            '<div class="event-name">' + escapeHtml(e.name) + '</div>' +
+            '<span class="' + badgeClass + '">' + badgeText + '</span>' +
+          '</div>' +
+          '<div class="event-meta">' + meta + '</div>' +
+          '<div class="event-actions">' +
+            '<a href="/' + e.slug + '/#dashboard" class="btn-open">Open</a>' +
+            '<a href="/' + e.slug + '/#admin" class="btn-admin">Admin</a>' +
+            '<a href="/' + e.slug + '/#settle" class="btn-settle">Settlement</a>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+
+</body>
+</html>

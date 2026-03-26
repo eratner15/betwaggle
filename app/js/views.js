@@ -3412,6 +3412,33 @@ export function renderSettlement(state) {
 
   html += `<div style="text-align:center;padding:16px 0;font-size:11px;color:var(--mg-text-muted)">Powered by Waggle · betwaggle.com</div>`;
 
+  // Auto-present share modal when round is complete
+  const holesPerRound = config?.holesPerRound || 18;
+  if (holesPlayed >= holesPerRound && settleHasPnL) {
+    const shownKey = `waggle_share_shown_${state._slug}`;
+    if (!sessionStorage.getItem(shownKey)) {
+      sessionStorage.setItem(shownKey, '1');
+      const eventUrl = location.href.replace(/#.*$/, '');
+      const referralUrl = 'https://betwaggle.com/create/?ref=' + encodeURIComponent(state._slug);
+      html += `<div id="settle-share-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease">
+        <div style="background:#FAF8F5;border-radius:16px;max-width:380px;width:100%;padding:28px 24px;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:4px">Round Complete</div>
+          <div style="font-size:14px;color:#7A7A7A;margin-bottom:20px">${escHtml(eventName)}</div>
+          <div style="font-size:13px;color:#3D3D3D;margin-bottom:20px;line-height:1.6">Drop the settlement card in the group chat. Everyone sees who owes what — with Venmo links.</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button onclick="window.MG.exportSettlementCard()" style="width:100%;padding:16px;background:#C9A84C;color:#0D2818;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Export Settlement Card</button>
+            <button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:#0D2818;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Share Results</button>
+          </div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #D4CFC7">
+            <div style="font-size:12px;color:#7A7A7A;margin-bottom:8px">Want to run your own?</div>
+            <a href="${referralUrl}" style="display:block;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;color:#9A7A2E;font-size:14px;font-weight:700;text-decoration:none">Create Your Outing</a>
+          </div>
+          <button onclick="document.getElementById('settle-share-modal').remove()" style="margin-top:12px;background:none;border:none;color:#7A7A7A;font-size:13px;cursor:pointer;padding:8px">Dismiss</button>
+        </div>
+      </div>`;
+    }
+  }
+
   return html;
 }
 
