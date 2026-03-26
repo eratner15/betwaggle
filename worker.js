@@ -10,8 +10,11 @@ export default {
       return Response.redirect(`https://betwaggle.com${url.pathname}${url.search}`, 301);
     }
 
-    // Health check
+    // Health check — also auto-seeds events on first hit
     if (url.pathname === '/health') {
+      // Fire-and-forget seed — idempotent, skips if already exists
+      ctx.waitUntil(seedDemoEvent(env));
+      ctx.waitUntil(seedFriscoV2(env));
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -797,6 +800,7 @@ export default {
   // Cron handler: weekly digest + drip emails + demo seed + expiration cleanup
   async scheduled(event, env, ctx) {
     ctx.waitUntil(seedDemoEvent(env));
+    ctx.waitUntil(seedFriscoV2(env));
     ctx.waitUntil(sendWeeklyMarketingDigest(env));
     ctx.waitUntil(processDripEmails(env));
     ctx.waitUntil(cleanupExpiredEvents(env));
@@ -4501,6 +4505,47 @@ async function handleGhinSearch(q, env) {
   } catch { return new Response(JSON.stringify([]), { headers: h }); }
 }
 
+
+// ─── Seed: PGA Frisco 2026 (Joe's trip) ──────────────────────────────────
+async function seedFriscoV2(env) {
+  const slug = 'pga-frisco-2026';
+  const existing = await env.MG_BOOK.get(`config:${slug}`);
+  if (existing) return { seeded: false, reason: 'already exists' };
+  const config = {
+    event: { name: 'PGA Frisco 2026', shortName: 'PGA Frisco', venue: 'Fields Ranch at PGA Frisco', url: `https://betwaggle.com/${slug}/`, dates: { day1: '2026-03-28', day2: '2026-03-29' }, format: 'nassau', adminPin: '1234', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
+    scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
+    structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
+    features: { betting: true },
+    games: { nassau: true, skins: true, wolf: true, vegas: false, stableford: false, match_play: false, stroke_play: false, banker: false, bloodsome: false, bingo: false, nines: false, scramble: false },
+    holesPerRound: 18,
+    players: [
+      { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
+      { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
+      { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
+      { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+    ],
+    roster: [
+      { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
+      { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
+      { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
+      { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+    ],
+    wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+    teams: {}, flights: {}, flightOrder: [], pairings: {},
+    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+    course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
+    coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
+    courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
+    rounds: { 1: { course: 'Fields Ranch East', courseId: 'pga-frisco-east', tees: 'Three Tees (~6,500)', par: 72 }, 2: { course: 'Fields Ranch East', courseId: 'pga-frisco-east', tees: 'Three Tees (~6,500)', par: 72 }, 3: { course: 'Fields Ranch West', courseId: 'pga-frisco-west', tees: 'Combo Tees (~6,400)', par: 72 } },
+  };
+  await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+  await env.MG_BOOK.put(`${slug}:settings`, JSON.stringify({ announcements: ['Welcome to PGA Frisco 2026! Nassau $10, Skins $5, Wolf. Auto-press at 2-down.'], lockedMatches: [], oddsOverrides: {} }));
+  for (const email of ['joe@joeweill.com', 'evan.ratner@gmail.com']) {
+    const slugs = (await env.MG_BOOK.get(`commissioner:${email}`, 'json')) || [];
+    if (!slugs.includes(slug)) { slugs.push(slug); await env.MG_BOOK.put(`commissioner:${email}`, JSON.stringify(slugs)); }
+  }
+  return { seeded: true, slug, url: `https://betwaggle.com/${slug}/` };
+}
 
 // ─── Email Capture & Drip Pipeline ─────────────────────────────────────────
 
