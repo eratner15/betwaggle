@@ -571,14 +571,47 @@ export default {
     return new Response(assetResp.body, { status: assetResp.status, headers: hdrs });
   },
 
-  // Cron handler: weekly digest + drip emails + demo seed
+  // Cron handler: weekly digest + drip emails + demo seed + expiration cleanup
   async scheduled(event, env, ctx) {
     ctx.waitUntil(seedDemoEvent(env));
     ctx.waitUntil(sendWeeklyMarketingDigest(env));
     ctx.waitUntil(processDripEmails(env));
+    ctx.waitUntil(cleanupExpiredEvents(env));
   },
 };
 
+
+// ─── Expired Event Cleanup ────────────────────────────────────────────────
+
+async function cleanupExpiredEvents(env) {
+  if (!env.WAGGLE_DB) return;
+  try {
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const result = await env.WAGGLE_DB.prepare(
+      'SELECT slug FROM events WHERE created_at < ? AND status != ?'
+    ).bind(cutoff, 'archived').all();
+
+    for (const row of (result.results || [])) {
+      const slug = row.slug;
+      const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (configRaw) {
+        const config = JSON.parse(configRaw);
+        // Don't expire completed/trophy events — those are permanent
+        if (config.event?.status === 'complete') continue;
+        // Don't re-expire already expired or refunded events
+        if (config.event?.status === 'expired' || config.event?.status === 'refunded') continue;
+        // Mark as expired
+        config.event.status = 'expired';
+        config.event.expiredAt = new Date().toISOString();
+        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+        // Update D1
+        await env.WAGGLE_DB.prepare('UPDATE events SET status = ? WHERE slug = ?').bind('expired', slug).run();
+      }
+    }
+  } catch (e) {
+    console.error('cleanup-expired-events', e.message);
+  }
+}
 
 // ─── Demo Event Seeder ──────────────────────────────────────────────────────
 
@@ -2666,6 +2699,30 @@ async function serveEventHtml(slug, request, env) {
   let config;
   try { config = JSON.parse(configRaw); } catch {
     return new Response('Invalid event config', { status: 500 });
+  }
+
+  // Expired event page
+  if (config.event?.status === 'expired') {
+    return new Response(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Expired</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
+  <div><h1 style="font-family:'Playfair Display',serif;font-size:28px;color:#0D2818">This event has ended</h1>
+  <p style="color:#6B7280;margin:12px 0 24px">The sportsbook for this outing has been archived.</p>
+  <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+</body></html>`, { headers: { 'Content-Type': 'text/html' } });
+  }
+
+  // Refunded event page
+  if (config.event?.status === 'refunded') {
+    return new Response(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Cancelled</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
+  <div><h1 style="font-family:'Playfair Display',serif;font-size:28px;color:#0D2818">This event has been cancelled</h1>
+  <p style="color:#6B7280;margin:12px 0 24px">The organizer cancelled this event and a refund was issued.</p>
+  <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+</body></html>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
   const reqUrl = new URL(request.url);
