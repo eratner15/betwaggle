@@ -3760,6 +3760,13 @@ async function getGhinAuth(env) {
 async function handleGhinSearch(q, env) {
   const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
   try {
+    // Check cache first (24h TTL)
+    const cacheKey = `ghin:cache:${q.toLowerCase().replace(/\s+/g, '_')}`;
+    if (env.MG_BOOK) {
+      const cached = await env.MG_BOOK.get(cacheKey, 'json');
+      if (cached) return new Response(JSON.stringify(cached), { headers: h });
+    }
+
     const auth = await getGhinAuth(env);
     if (!auth) return new Response(JSON.stringify([]), { headers: h });
     const { token, assocId } = auth;
@@ -3781,6 +3788,12 @@ async function handleGhinSearch(q, env) {
       club: g.club_name || '',
       state: g.state || '',
     }));
+
+    // Cache results for 24h
+    if (env.MG_BOOK && golfers.length > 0) {
+      await env.MG_BOOK.put(cacheKey, JSON.stringify(golfers), { expirationTtl: 86400 }).catch(() => {});
+    }
+
     return new Response(JSON.stringify(golfers), { headers: h });
   } catch { return new Response(JSON.stringify([]), { headers: h }); }
 }

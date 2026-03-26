@@ -432,8 +432,17 @@ function route() {
     html += renderScoreEntryOverlay(state);
   }
 
+  // Preserve scroll position across re-renders
+  const scrollY = window.scrollY;
+  const activeEl = document.activeElement?.id || null;
+
   app.innerHTML = `<div class="mg-content">${html}</div>`;
   updateNav(view);
+
+  // Restore scroll position (prevents jump-to-top on 30s sync)
+  if (scrollY > 0) window.scrollTo(0, scrollY);
+  // Restore focus if an input was active
+  if (activeEl) { const el = document.getElementById(activeEl); if (el) el.focus(); }
 
   // Demo exit button
   if (state._slug === 'cabot-citrus-invitational' || state._slug === 'demo') {
@@ -812,6 +821,7 @@ window.MG = {
   async resolveDispute(disputeId, resolution) {
     const result = await Sync.resolveDispute(disputeId, resolution);
     if (result?.ok) {
+      if (navigator.vibrate) navigator.vibrate(30);
       toast(resolution === 'accept' ? 'Score corrected' : 'Dispute rejected — keeping original score');
       // Re-sync to get updated state
       syncFromServer();
@@ -831,7 +841,7 @@ window.MG = {
   },
 
   // ─── Settlement Card ───
-  shareSettlement() {
+  async shareSettlement() {
     const eventName = state._config?.event?.name || 'Golf Event';
     const url = location.href.replace(/#.*$/, '');
     const config = state._config || {};
@@ -1002,6 +1012,21 @@ window.MG = {
       });
       lines.push('');
     }
+
+    // Try to fetch AI recap snippet for the share text
+    try {
+      const recapRes = await fetch(`/api/recap?slug=${encodeURIComponent(state._slug)}`);
+      const recapData = await recapRes.json();
+      if (recapData.ok && recapData.recap) {
+        // Take first 1-2 sentences as a snippet
+        const snippet = recapData.recap.split('.').slice(0, 2).join('.').trim();
+        if (snippet.length > 20) {
+          lines.push('\u{1F4DD} RECAP');
+          lines.push(`"${snippet}."`);
+          lines.push('');
+        }
+      }
+    } catch {} // Non-blocking — share works without recap
 
     // Footer
     lines.push('\u2500'.repeat(24));
