@@ -3479,7 +3479,19 @@ export function renderCasualScorecard(state) {
     html += `</div>`;
   }
 
-  // Build two 9-hole tables (front / back) for mobile readability
+  // Split players into groups of 4 for readability (8 players = 2 groups)
+  const groupSize = 4;
+  const playerGroups = [];
+  for (let i = 0; i < players.length; i += groupSize) {
+    playerGroups.push(players.slice(i, i + groupSize));
+  }
+
+  // Build tables: for each player group, show front 9 + back 9
+  playerGroups.forEach((groupPlayers, gi) => {
+    if (playerGroups.length > 1) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--mg-gold-dim);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;padding-left:4px">Group ${gi + 1}</div>`;
+    }
+
   [0, 1].forEach(half => {
     const startHole = half * 9 + 1;
     const endHole = Math.min(startHole + 8, holesPerRound);
@@ -3508,10 +3520,12 @@ export function renderCasualScorecard(state) {
         </thead>
         <tbody>`;
 
-    players.forEach((player, pi) => {
+    groupPlayers.forEach((player, pi) => {
       let playerTotal = 0;
       const playerScores = holeNums.map(h => {
-        const holeScores = holes[h] || {};
+        const holeData = holes[h] || {};
+        // Handle both formats: { scores: { name: score } } and { name: score }
+        const holeScores = holeData.scores || holeData;
         const gross = holeScores[player.name] !== undefined ? holeScores[player.name] : null;
         if (gross !== null) playerTotal += gross;
         return gross;
@@ -3542,7 +3556,9 @@ export function renderCasualScorecard(state) {
     });
 
     html += `</tbody></table></div>`;
-  });
+  }); // end half loop
+
+  }); // end playerGroups loop
 
   // Legend
   html += `<div style="display:flex;gap:12px;padding:8px 0;font-size:11px;color:var(--mg-text-muted);justify-content:center">
