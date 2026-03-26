@@ -558,9 +558,21 @@ export default {
       try {
         const slug = 'frisco-ranch-buddies';
         const existing = await env.MG_BOOK.get(`config:${slug}`, 'text');
-        if (existing) return new Response(JSON.stringify({ ok: true, slug, status: 'already_exists', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
+        if (existing) {
+          // Patch commissioner to Joe Weill on existing event
+          const cfg = JSON.parse(existing);
+          if (cfg.event.adminContact !== 'joe@joeweill.com') {
+            cfg.event.adminContact = 'joe@joeweill.com';
+            await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
+            // Index for Joe's dashboard
+            const joeSlugs = (await env.MG_BOOK.get('commissioner:joe@joeweill.com', 'json')) || [];
+            if (!joeSlugs.includes(slug)) { joeSlugs.push(slug); await env.MG_BOOK.put('commissioner:joe@joeweill.com', JSON.stringify(joeSlugs)); }
+            return new Response(JSON.stringify({ ok: true, slug, status: 'patched_commissioner', commissioner: 'joe@joeweill.com', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
+          }
+          return new Response(JSON.stringify({ ok: true, slug, status: 'already_exists', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
+        }
         const config = {
-          event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: '2026', adminContact: 'evan.ratner@gmail.com', eventType: 'buddies_trip', slug },
+          event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: '2026', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
           scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
           structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
           features: { betting: true },
