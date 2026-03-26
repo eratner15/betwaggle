@@ -69,6 +69,10 @@ async function bootstrap() {
   state = await init(matches, slug);
   state._config = config;
 
+  // Detect spectator mode from URL params or hash
+  const urlParams = new URLSearchParams(location.search);
+  const isSpectator = urlParams.get('spectator') === 'true' || location.hash.includes('spectator');
+
   // Transient UI state (not persisted)
   state._adminFlight = state._adminFlight || config.flightOrder[0];
   state._adminRound = state._adminRound || 1;
@@ -100,6 +104,7 @@ async function bootstrap() {
   state._cashBetModal = null; // cash bet entry modal {desc, amount} or null
   state._scoreModal = null;  // player score entry modal {hole, scores} or null
   state._feed = [];           // activity feed items from server
+  state._spectatorMode = isSpectator;  // spectator mode (view-only)
   state._disputes = [];       // open/resolved score disputes
   // Scenario / What-If state (transient)
   state._scenario = {
@@ -367,6 +372,14 @@ function route() {
   const hash = location.hash.slice(1) || "dashboard";
   const [view, param] = hash.split("/");
 
+  // Spectator mode: redirect restricted views to dashboard
+  if (state._spectatorMode) {
+    if (view === 'admin' || view === 'bet' || view === 'mybets') {
+      location.hash = '#dashboard';
+      return;
+    }
+  }
+
   let html = "";
   switch (view) {
     case "dashboard":
@@ -410,12 +423,12 @@ function route() {
       html = renderDashboard(state);
   }
 
-  // Overlay name picker for round mode until player identifies themselves
-  if (isRoundMode && !state.bettorName) {
+  // Overlay name picker for round mode until player identifies themselves (skip for spectators)
+  if (isRoundMode && !state.bettorName && !state._spectatorMode) {
     html += renderNamePickerModal(state);
   }
-  // Overlay score entry modal if open (persists across tab switches)
-  if (isRoundMode && state._scoreModal) {
+  // Overlay score entry modal if open (persists across tab switches, skip for spectators)
+  if (isRoundMode && state._scoreModal && !state._spectatorMode) {
     html += renderScoreEntryOverlay(state);
   }
 
@@ -455,6 +468,13 @@ function updateNav(view) {
     const tab = a.dataset.tab;
     const label = a.querySelector('.nav-label');
 
+    // Spectator mode: hide betting and admin tabs
+    if (state._spectatorMode) {
+      if (tab === 'bet' || tab === 'mybets' || tab === 'admin') {
+        a.style.display = 'none';
+      }
+    }
+
     // Active state
     a.classList.toggle("active",
       tab === view ||
@@ -472,8 +492,8 @@ function updateNav(view) {
       }
       // Relabel for round context
       if (label) {
-        if (tab === "dashboard") label.textContent = "Feed";
-        if (tab === "admin") label.textContent = "Score";
+        if (tab === "dashboard") label.textContent = "The Board";
+        if (tab === "admin") label.textContent = "Scorecard";
       }
     } else {
       // MG tournament mode: original tab set
@@ -488,8 +508,8 @@ function updateNav(view) {
       }
       // Restore original MG labels
       if (label) {
-        if (tab === "dashboard") label.textContent = "Home";
-        if (tab === "admin") label.textContent = "Admin";
+        if (tab === "dashboard") label.textContent = "The Board";
+        if (tab === "admin") label.textContent = "Scorecard";
       }
     }
   });
@@ -703,6 +723,7 @@ window.MG = {
     try {
       const result = await Sync.submitHoleScores(holeNum, scores);
       if (result && result.ok) {
+        if (navigator.vibrate) navigator.vibrate(30);
         toast(`Hole ${holeNum} scores saved!`);
         await syncFromServer();
         // Advance to next hole
@@ -1944,6 +1965,7 @@ window.MG = {
     try {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
+        if (navigator.vibrate) navigator.vibrate(30);
         toast(`Hole ${hole} saved!`);
         state._scoreModal = null;
         await syncFromServer();
@@ -2153,7 +2175,7 @@ window.MG = {
     refresh();
 
     // #11: Haptic feedback
-    if (placed > 0 && navigator.vibrate) navigator.vibrate(50);
+    if (placed > 0 && navigator.vibrate) navigator.vibrate(30);
 
     if (placed > 0 && queued === 0) toast(`${placed} bet${placed > 1 ? "s" : ""} placed!`);
     else if (queued > 0 && placed === 0) toast(`${queued} bet${queued > 1 ? "s" : ""} saved — will submit when online`);
@@ -2221,6 +2243,7 @@ window.MG = {
 
     const result = await Sync.submitBet(betData);
     if (result) {
+      if (navigator.vibrate) navigator.vibrate(30);
       // Also store locally for immediate display
       state.bets.push(result);
       persist();

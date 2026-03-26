@@ -76,6 +76,14 @@ export function renderDashboard(state) {
 
   let html = "";
 
+  // Spectator mode banner
+  if (state._spectatorMode) {
+    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
+      <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
+    </div>`;
+  }
+
   // Announcements
   if (state.announcements && state.announcements.length > 0) {
     const latest = state.announcements[state.announcements.length - 1];
@@ -83,7 +91,7 @@ export function renderDashboard(state) {
   }
 
   // Player welcome / register card
-  if (!state.bettorName) {
+  if (!state.bettorName && !state._spectatorMode) {
     html += `<div class="mg-card" style="text-align:center;padding:20px">
       <div style="font-size:32px;margin-bottom:8px">&#9971;</div>
       <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
@@ -494,6 +502,14 @@ export function renderRoundFeed(state) {
   const currentHoleScored = !!holes[holeNum];
 
   let html = '';
+
+  // Spectator mode banner
+  if (state._spectatorMode) {
+    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
+      <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
+    </div>`;
+  }
 
   // ── 0. Stakes context strip ──
   const skinsBetAmt = parseInt(config?.structure?.skinsBet) || 0;

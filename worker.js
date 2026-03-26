@@ -1531,6 +1531,9 @@ async function handleWaggleSuccess(url, env) {
   let promoDiscount = 0;
   let originalAmountCents = 0;
   let actualAmountCents = 0;
+  let eventGames = {};
+  let eventStructure = {};
+  let eventDate = '';
 
   if (slug && env.MG_BOOK) {
     try {
@@ -1543,6 +1546,10 @@ async function handleWaggleSuccess(url, env) {
         promoDiscount = cfg.meta?.promoDiscount || 0;
         originalAmountCents = cfg.meta?.originalAmountCents || 0;
         actualAmountCents = cfg.meta?.actualAmountCents || 0;
+        // Extract games/stakes/date for invitation text
+        eventGames = cfg.games || {};
+        eventStructure = cfg.structure || {};
+        eventDate = cfg.event?.dates?.day1 || cfg.event?.date || '';
       }
     } catch (_) {}
   }
@@ -1556,6 +1563,23 @@ async function handleWaggleSuccess(url, env) {
   const actualPrice = (actualAmountCents !== undefined && promoDiscount > 0) ? (actualAmountCents / 100).toFixed(0) : '';
   const escEventName = esc(eventName);
   const escEventUrl = esc(eventUrl);
+
+  // Build stakes line for invitation
+  const stakeParts = [];
+  const nassauBet = parseInt(eventStructure?.nassauBet) || 0;
+  const skinsBet = parseInt(eventStructure?.skinsBet) || 0;
+  if (eventGames.nassau && nassauBet > 0) stakeParts.push(`Nassau $${nassauBet}`);
+  if (eventGames.skins && skinsBet > 0) stakeParts.push(`Skins $${skinsBet}`);
+  if (eventGames.wolf) stakeParts.push('Wolf');
+  if (eventGames.vegas) stakeParts.push('Vegas');
+  if (eventGames.bestBall) stakeParts.push('Best Ball');
+  const stakesLine = stakeParts.length > 0 ? stakeParts.join(' \\u00b7 ') : '';
+  const dateStr = eventDate || '';
+  // Escape for JS string embedding
+  const jsEventName = eventName.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+  const jsStakesLine = stakesLine;
+  const jsDateStr = dateStr.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const jsEventUrl = eventUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -1638,6 +1662,32 @@ async function handleWaggleSuccess(url, env) {
       <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${escEventName}',url:'${escEventUrl}'}).catch(function(){});}else{navigator.clipboard.writeText('${escEventUrl}');}">Share with Group</button>
       <button class="copy-link-btn" onclick="navigator.clipboard.writeText('${escEventUrl}').then(function(){this.textContent='Copied!';}.bind(this))">Copy Link</button>
     </div>
+
+    <button onclick="copyInvitation(this)" style="width:100%;padding:14px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#0D2818;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:.02em">
+      Copy Formal Invitation
+    </button>
+    <button onclick="navigator.clipboard.writeText('${escEventUrl}?spectator=true').then(function(){this.textContent='Copied!';}.bind(this))" style="width:100%;padding:12px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#7A7A7A;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px">
+      Share Spectator Link
+    </button>
+    <div style="font-size:11px;color:#7A7A7A;margin-top:4px;text-align:center">For friends watching from home -- view-only, no betting access</div>
+    <script>
+    function copyInvitation(btn) {
+      var parts = [];
+      parts.push('You have been invited to ${jsEventName}.');
+      parts.push('');
+      parts.push('The book is open. Establish your lines and secure your tee time.');
+      parts.push('');
+      ${jsStakesLine ? `parts.push('${jsStakesLine}');` : ''}
+      ${jsDateStr ? `parts.push('${jsDateStr}');` : ''}
+      ${jsStakesLine || jsDateStr ? `parts.push('');` : ''}
+      parts.push('Open the sportsbook: ${jsEventUrl}');
+      var text = parts.join('\\n');
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = 'Copied to clipboard';
+        setTimeout(function() { btn.textContent = 'Copy Formal Invitation'; }, 2000);
+      });
+    }
+    </script>
 
     <p class="share-label" style="margin-top:24px">Event link</p>
     <div class="link-row">

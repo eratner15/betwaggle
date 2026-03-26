@@ -41,6 +41,9 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  /* Subtle paper grain texture */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
 }
 
 #app {
@@ -108,7 +111,7 @@ body {
   font-size: 10px;
   font-weight: 500;
   gap: 3px;
-  transition: color 0.2s;
+  transition: color .12s;
   -webkit-tap-highlight-color: transparent;
 }
 .mg-nav a.active { color: var(--mg-gold); font-weight: 700; }
@@ -148,7 +151,7 @@ body {
   padding: 14px;
   border: 1px solid var(--mg-border);
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow .12s ease;
   text-decoration: none;
   color: inherit;
   display: block;
@@ -331,7 +334,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: all .1s;
   padding: 4px 2px;
   -webkit-tap-highlight-color: transparent;
 }
@@ -399,7 +402,7 @@ body {
   cursor: pointer;
   border: none;
   background: transparent;
-  transition: all 0.2s;
+  transition: all .12s;
   -webkit-tap-highlight-color: transparent;
 }
 .mg-tab.active {
@@ -408,30 +411,31 @@ body {
 }
 
 .mg-odds-btn {
-  min-width: 0;
-  min-height: 48px;
-  background: var(--mg-odds-bg);
-  border: 2px solid transparent;
-  border-radius: 8px;
+  background: transparent;
+  border: 1.5px solid var(--mg-border);
+  border-radius: 6px;
   cursor: pointer;
   text-align: center;
-  padding: 6px 8px;
-  transition: all 0.15s;
+  padding: 8px 10px;
+  min-height: 48px;
+  transition: all .1s;
   -webkit-tap-highlight-color: transparent;
 }
-.mg-odds-btn:active { transform: scale(0.95); }
+.mg-odds-btn:active { transform: scale(0.97); }
 .mg-odds-btn.selected {
   border-color: var(--mg-gold);
   background: rgba(212,175,55,0.06);
 }
 .mg-odds-btn .odds-line {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--mg-text);
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: 0.5px;
 }
 .mg-odds-btn .odds-label {
-  font-size: 9px;
-  color: var(--mg-text-secondary);
+  font-size: 10px;
+  color: var(--mg-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -440,6 +444,15 @@ body {
   font-size: 8px;
   color: var(--mg-text-muted);
 }
+
+/* Kill casino pill backgrounds on fav/dog indicators */
+.odds-fav, .odds-dog {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+.odds-fav { color: var(--mg-text); font-weight: 700; }
+.odds-dog { color: var(--mg-text-muted); font-weight: 600; }
 
 /* Bet slip */
 .mg-betslip {
@@ -456,7 +469,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transition: transform .15s ease;
 }
 .mg-betslip.open { transform: translateY(0); }
 .mg-betslip-header {
@@ -528,10 +541,10 @@ body {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .1s;
   -webkit-tap-highlight-color: transparent;
 }
-.mg-btn:active { transform: scale(0.98); }
+.mg-btn:active { transform: scale(0.98); transition: transform .08s; }
 .mg-btn-primary {
   background: var(--mg-green);
   color: #fff;
@@ -676,7 +689,7 @@ body {
   font-weight: 700;
   z-index: 200;
   opacity: 0;
-  transition: all 0.3s;
+  transition: all .15s;
   box-shadow: 0 4px 16px rgba(212,175,55,0.3);
   max-width: 90%;
   text-align: center;
@@ -848,7 +861,7 @@ input[type="number"] {
   color: var(--mg-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: all .12s;
   -webkit-tap-highlight-color: transparent;
 }
 .mg-scenario-flight-btn.active {
@@ -1145,33 +1158,24 @@ body[data-outdoor="true"] .outdoor-toggle {
 }
 .feed-item {
   display: flex;
-  gap: 10px;
-  padding: 8px 0;
+  gap: 12px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--mg-border);
-  align-items: flex-start;
+  align-items: baseline;
 }
 .feed-item:last-child { border-bottom: none; }
 .feed-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--mg-green);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  flex-shrink: 0;
+  display: none;  /* Hide circle avatars — ticker style */
 }
 .feed-item.auto .feed-avatar {
-  background: var(--mg-gold);
+  display: none;
 }
 .feed-item.auto {
-  background: #FFFDF5;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin: 0 -10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--mg-gold);
+  background: none;
+  border-radius: 0;
+  margin: 0;
 }
 .feed-body {
   flex: 1;
@@ -1179,17 +1183,20 @@ body[data-outdoor="true"] .outdoor-toggle {
 }
 .feed-text {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--mg-text);
-  line-height: 1.45;
+  line-height: 1.5;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 .feed-text strong {
-  font-weight: 700;
+  font-weight: 600;
 }
 .feed-time {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--mg-text-muted);
-  margin-top: 2px;
+  font-family: 'SF Mono', monospace;
+  white-space: nowrap;
+  min-width: 52px;
 }
 .feed-emoji {
   font-size: 20px;
