@@ -3795,6 +3795,18 @@ async function handleEventApi(slug, path, request, env, ctx) {
           gameState.vegas = result;
           allEvents.push(...(result.events || []));
         }
+        if (games.nines) {
+          const prev = gameState.nines || { running: {}, holes: {} };
+          const result = wggRunNines(holeNum, scores, prev, players);
+          gameState.nines = result;
+          allEvents.push(...(result.events || []));
+        }
+        if (games.scramble) {
+          const prev = gameState.scramble || { running: {}, holes: {}, leaderboard: [] };
+          const result = wggRunScramble(holeNum, scores, prev, Object.keys(scores));
+          gameState.scramble = result;
+          allEvents.push(...(result.events || []));
+        }
         if (games.stroke_play) {
           if (!gameState.stroke) gameState.stroke = { running: {} };
           const netScores2 = wggNetScores(scores, players, holeNum, strokeIndex);
