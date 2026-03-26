@@ -190,6 +190,11 @@
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
       games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, nines:false, scramble:false },
       scrambleTeams: [],
+      scrambleFormat: 'best_ball',
+      scrambleSideGames: { closestToPin: [], longestDrive: [] },
+      scrambleEntryFee: 0,
+      scrambleTeamNameFormat: 'captain', // 'captain' or 'numbered'
+      scrambleNumTeams: 20,
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
       course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
@@ -208,11 +213,16 @@
 
     function isQuick() { return W.type === 'quick'; }
     function isBuddiesTrip() { return W.type === 'trip'; }
-    function isFastFlow() { return isQuick() || isBuddiesTrip(); }
+    function isScramble() { return W.type === 'scramble'; }
+    function isFastFlow() { return isQuick() || isBuddiesTrip() || isScramble(); }
 
     function render() {
       // Progress bar
-      if (isFastFlow()) {
+      if (isScramble()) {
+        const SCRAMBLE_STEPS = ['Type','Details','Teams','Scoring','Launch'];
+        document.getElementById('progress').innerHTML = SCRAMBLE_STEPS.map((_,i) =>
+          `<div class="prog-step ${i<W.step?'done':''} ${i===W.step?'active':''}"></div>`).join('');
+      } else if (isFastFlow()) {
         const qi = QUICK_STEPS.indexOf(W.step);
         const labels = isBuddiesTrip() ? ['Type','Setup','Launch'] : ['Type','Setup','Launch'];
         document.getElementById('progress').innerHTML = labels.map((_,i) =>
@@ -225,7 +235,17 @@
       const fns = [renderType, renderDetails, renderRoster, renderFlights, renderScoring, renderTheme, renderLaunch];
       // Fast-flow step 1: quick or buddies trip setup
       if (isFastFlow() && W.step === 1) {
-        document.getElementById('wizard').innerHTML = `<div class="step active">${isBuddiesTrip() ? renderBuddiesTripSetup() : renderQuickSetup()}</div>`;
+        if (isScramble()) {
+          document.getElementById('wizard').innerHTML = `<div class="step active">${renderScrambleDetails()}</div>`;
+        } else {
+          document.getElementById('wizard').innerHTML = `<div class="step active">${isBuddiesTrip() ? renderBuddiesTripSetup() : renderQuickSetup()}</div>`;
+        }
+      } else if (isScramble() && W.step === 2) {
+        document.getElementById('wizard').innerHTML = `<div class="step active">${renderScrambleTeams()}</div>`;
+      } else if (isScramble() && W.step === 3) {
+        document.getElementById('wizard').innerHTML = `<div class="step active">${renderScrambleScoring()}</div>`;
+      } else if (isScramble() && W.step === 4) {
+        document.getElementById('wizard').innerHTML = `<div class="step active">${renderScrambleReview()}</div>`;
       } else {
         document.getElementById('wizard').innerHTML = `<div class="step active">${fns[W.step]()}</div>`;
       }
@@ -233,9 +253,9 @@
       const nav = document.getElementById('nav-bar');
       if (W.step === 6 && W.slug) { nav.innerHTML = ''; return; }
       const back = W.step > 0 ? `<button class="btn btn-back" onclick="prev()">Back</button>` : '<div></div>';
-      const isLaunch = W.step === 6;
-      const cls = isLaunch ? 'btn btn-launch' : 'btn btn-next';
-      const label = isLaunch ? 'Launch Your Sportsbook' : 'Continue';
+      const isLaunchStep = isScramble() ? W.step === 4 : W.step === 6;
+      const cls = isLaunchStep ? 'btn btn-launch' : 'btn btn-next';
+      const label = isLaunchStep ? 'Launch Your Sportsbook' : 'Continue';
       nav.innerHTML = `${back}<button class="${cls}" onclick="next()" ${canGo()?'':'disabled'}>${label}</button>`;
     }
 
@@ -248,6 +268,14 @@
       if (isBuddiesTrip()) {
         if (W.step === 0) return !!W.type;
         if (W.step === 1) return W.roster.length >= 2 && W.adminPin.length >= 4 && Object.values(W.games).some(Boolean);
+        return true;
+      }
+      if (isScramble()) {
+        if (W.step === 0) return !!W.type;
+        if (W.step === 1) return W.name.trim() && W.date1 && W.adminPin.length >= 4;
+        if (W.step === 2) return W.scrambleTeams.length >= 2;
+        if (W.step === 3) return true;
+        if (W.step === 4) return true;
         return true;
       }
       return [
@@ -293,6 +321,25 @@
         if (W.step === 6) { launch(); return; }
         return;
       }
+      if (isScramble()) {
+        if (W.step === 0) { W.step = 1; render(); scrollTo(0,0); return; }
+        if (W.step === 1) { W.step = 2; render(); scrollTo(0,0); return; }
+        if (W.step === 2) { W.step = 3; render(); scrollTo(0,0); return; }
+        if (W.step === 3) { W.step = 4; render(); scrollTo(0,0); return; }
+        if (W.step === 4) {
+          // Prepare config and launch
+          if (!W.venue) W.venue = W._courseQuery || 'On the course';
+          W.games.scramble = true;
+          W.format = 'scramble';
+          W.features.betting = true; W.theme = 'club';
+          // Build roster from scramble teams
+          W.roster = W.scrambleTeams.map(t => ({ name: t.name, handicap: 0 }));
+          autoFlights(); autoPairings();
+          launch();
+          return;
+        }
+        return;
+      }
       if (W.step === 2) autoFlights();
       if (W.step === 3) autoPairings();
       if (W.step === 6) { launch(); return; }
@@ -300,6 +347,10 @@
     }
 
     function prev() {
+      if (isScramble()) {
+        if (W.step > 0) { W.step--; render(); scrollTo(0,0); }
+        return;
+      }
       if (isFastFlow()) {
         if (W.step === 1) { W.step = 0; render(); scrollTo(0,0); return; }
         if (W.step === 6) { W.step = 1; render(); scrollTo(0,0); return; }
@@ -316,6 +367,7 @@
         {id:'quick',       icon:'⚡', name:'Weekend Warrior', desc:'Track any match, free. Skins, Nassau, Wolf, Match Play — pick your game and go.', badge:'FREE'},
         {id:'trip',        icon:'🏌️', name:'Buddies Trip',    desc:'Casual group. Nassau, skins, wolf, Vegas + more. 1-4 rounds.'},
         {id:'member_guest',icon:'🏆', name:'Member-Guest',   desc:'Flighted round robin. Multi-day. Flights, standings, futures.'},
+        {id:'scramble',    icon:'🏟️', name:'Scramble / Outing',desc:'Team event. Shotgun start. Live leaderboard, closest-to-pin, and side action. Perfect for charity and corporate outings.', badge:'$149'},
         {id:'outing',      icon:'⛳', name:'Outing / Charity',desc:'Shotgun start. Custom format and scoring.'},
       ];
       return `

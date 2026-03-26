@@ -2316,6 +2316,56 @@ function renderAdminSettings(state) {
     </div>` : ''}
   </div>`;
 
+  // Game Selection — commissioner can toggle games on/off between rounds
+  const games = state._config?.games || {};
+  const allGameOptions = [
+    { id: 'nassau', name: 'Nassau', desc: 'Front 9, Back 9, Overall' },
+    { id: 'skins', name: 'Skins', desc: 'Per-hole winner takes pot' },
+    { id: 'wolf', name: 'Wolf', desc: 'Pick your partner each hole' },
+    { id: 'vegas', name: 'Vegas', desc: 'Team 2-digit scores' },
+    { id: 'stableford', name: 'Stableford', desc: 'Points for performance' },
+    { id: 'match_play', name: 'Match Play', desc: 'Hole-by-hole head-to-head' },
+    { id: 'stroke_play', name: 'Stroke Play', desc: 'Net total score' },
+    { id: 'nines', name: '3-Player 9s', desc: '9 points split per hole' },
+    { id: 'scramble', name: 'Scramble', desc: 'Team best-ball' },
+  ];
+  html += `<div class="mg-card" style="padding:16px;margin-top:12px">
+    <div class="mg-card-header" style="margin-bottom:4px">Active Games</div>
+    <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:12px">Toggle games on or off. Changes apply immediately.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+  allGameOptions.forEach(g => {
+    const active = !!games[g.id];
+    html += `<button onclick="window.MG.toggleGame('${g.id}')" style="padding:12px;border-radius:8px;border:2px solid ${active ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${active ? 'rgba(212,175,55,.08)' : 'var(--mg-surface)'};cursor:pointer;text-align:left">
+      <div style="font-size:13px;font-weight:700;color:${active ? 'var(--mg-gold-dim)' : 'var(--mg-text)'}">${g.name}</div>
+      <div style="font-size:11px;color:var(--mg-text-muted);margin-top:2px">${g.desc}</div>
+    </button>`;
+  });
+  html += `</div></div>`;
+
+  // Stakes
+  const structure = state._config?.structure || {};
+  html += `<div class="mg-card" style="padding:16px;margin-top:12px">
+    <div class="mg-card-header" style="margin-bottom:8px">Stakes</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:.5px">Nassau</label>
+        <input type="number" id="stakes-nassau" value="${structure.nassauBet || 10}" style="width:100%;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:.5px">Skins</label>
+        <input type="number" id="stakes-skins" value="${structure.skinsBet || 5}" style="width:100%;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
+      </div>
+    </div>
+  </div>`;
+
+  // AI Game Advisor
+  html += `<div class="mg-card" style="padding:16px;margin-top:12px">
+    <div class="mg-card-header" style="margin-bottom:4px">AI Game Advisor</div>
+    <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:12px">Let AI recommend the best format based on your group size and handicaps.</div>
+    <button class="mg-btn mg-btn-gold" onclick="window.MG.getAIGameAdvice()">Get Recommendation</button>
+    <div id="ai-game-advice" style="margin-top:12px"></div>
+  </div>`;
+
   // Export / Reset
   html += `<div class="mt-4" style="display:flex;gap:8px">
     <button class="mg-btn mg-btn-outline" style="flex:1" onclick="window.MG.exportData()">Export JSON</button>

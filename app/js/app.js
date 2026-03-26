@@ -2692,6 +2692,58 @@ window.MG = {
     }
   },
 
+  async toggleGame(gameId) {
+    const games = { ...(state._config?.games || {}) };
+    games[gameId] = !games[gameId];
+    const result = await Sync.apiFetch('event/update-games', 'POST', { games });
+    if (result?.ok) {
+      state._config.games = games;
+      if (navigator.vibrate) navigator.vibrate(30);
+      toast(games[gameId] ? gameId + ' enabled' : gameId + ' disabled');
+      route();
+    } else {
+      toast('Failed to update games');
+    }
+  },
+
+  async updateStakes() {
+    const nassau = parseInt(document.getElementById('stakes-nassau')?.value) || 10;
+    const skins = parseInt(document.getElementById('stakes-skins')?.value) || 5;
+    const result = await Sync.apiFetch('event/update-games', 'POST', {
+      structure: { nassauBet: nassau, skinsBet: skins }
+    });
+    if (result?.ok) {
+      if (state._config?.structure) {
+        state._config.structure.nassauBet = nassau;
+        state._config.structure.skinsBet = skins;
+      }
+      toast('Stakes updated');
+    }
+  },
+
+  async getAIGameAdvice() {
+    const container = document.getElementById('ai-game-advice');
+    if (!container) return;
+    container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">Thinking...</div>';
+    try {
+      const result = await Sync.apiFetch('../api/advisor', 'POST', {
+        slug: state._slug,
+        players: (state._config?.players || []).map(p => ({ name: p.name, hi: p.handicapIndex })),
+        type: state._config?.event?.eventType || 'trip',
+      });
+      if (result?.recommendation) {
+        container.innerHTML = `<div style="padding:12px;background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);border-radius:8px">
+          <div style="font-size:14px;font-weight:600;color:var(--mg-text);line-height:1.5">${result.recommendation}</div>
+          ${result.suggestedGames ? `<div style="margin-top:8px;font-size:12px;color:var(--mg-text-muted)">Suggested: ${result.suggestedGames.join(', ')}</div>` : ''}
+        </div>`;
+      } else {
+        container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">Could not get recommendation. Try selecting games manually.</div>';
+      }
+    } catch {
+      container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">AI advisor unavailable.</div>';
+    }
+  },
+
   async sendEmoji(emoji) {
     const player = state.bettorName || 'Anonymous';
     const result = await Sync.postChirp(player, '', emoji);
