@@ -1619,6 +1619,26 @@ hr.mg-divider {
   transform: scale(0.95);
 }
 
+/* Board card open state — subtle gold accent */
+.board-card.open {
+  border-color: var(--mg-gold);
+  border-width: 1.5px;
+}
+
+/* Board card title when open — gold instead of muted */
+.board-card.open .board-card-title {
+  color: var(--mg-gold-dim);
+}
+
+/* Action bar responsive */
+@media (max-width: 375px) {
+  .score-fab {
+    right: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
 /* Leader highlight in standings */
 .board-standings-leader {
   border-left: 3px solid var(--mg-gold);
