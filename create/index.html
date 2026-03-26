@@ -188,7 +188,7 @@
       structure: { nassauBet: 10, skinsBet: 5 }, // per-game stakes
       autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
-      games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, nines:false, scramble:false },
+      games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, banker:false, bloodsome:false, bingo:false, nines:false, scramble:false },
       scrambleTeams: [],
       scrambleFormat: 'best_ball',
       scrambleSideGames: { closestToPin: [], longestDrive: [] },
@@ -657,15 +657,18 @@
     function renderScoring() {
       if (W.type==='trip' || W.type==='outing') {
         const allGames = [
-          {id:'nassau',  name:'Nassau',     emoji:'🏌️', desc:'Front 9, back 9, overall — 3 bets per match'},
-          {id:'skins',   name:'Skins',      emoji:'💰', desc:'Per-hole winner takes pot. Ties carry over.'},
-          {id:'wolf',    name:'Wolf',       emoji:'🐺', desc:'Rotating picker chooses partner each hole'},
-          {id:'vegas',   name:'Vegas',      emoji:'🎰', desc:'Team scores combine into a 2-digit number'},
-          {id:'stableford',  name:'Stableford',  emoji:'⭐', desc:'Points for birdies, eagles, bogeys — net score'},
-          {id:'match_play',  name:'Match Play',   emoji:'⚔️', desc:'Hole-by-hole head-to-head with handicap strokes'},
-          {id:'stroke_play', name:'Stroke Play',  emoji:'📊', desc:'Lowest net total score wins the round'},
-          {id:'nines', name:'3-Player 9s', emoji:'9️⃣', desc:'9 points per hole split among 3 players. Ties split.'},
-          {id:'scramble', name:'Team Scramble', emoji:'🤝', desc:'Team best-ball. One score per team per hole. Full leaderboard.'},
+          {id:'nassau',      name:'Nassau',        desc:'Front 9, back 9, overall — 3 bets per match'},
+          {id:'skins',       name:'Skins',         desc:'Per-hole winner takes pot. Ties carry over.'},
+          {id:'wolf',        name:'Wolf',          desc:'Rotating picker chooses partner each hole'},
+          {id:'vegas',       name:'Vegas',         desc:'Team scores combine into a 2-digit number'},
+          {id:'stableford',  name:'Stableford',    desc:'Points for birdies, eagles, bogeys — net score'},
+          {id:'match_play',  name:'Match Play',    desc:'Hole-by-hole head-to-head with handicap strokes'},
+          {id:'stroke_play', name:'Stroke Play',   desc:'Lowest net total score wins the round'},
+          {id:'banker',      name:'Banker',        desc:'Rotating banker plays against the field each hole'},
+          {id:'bloodsome',   name:'Bloodsome',     desc:'Best drive, opponents pick your ball. Alternate shot.'},
+          {id:'bingo',       name:'Bingo Bango Bongo', desc:'3 points per hole — first on, closest, first in'},
+          {id:'nines',       name:'3-Player 9s',   desc:'9 points per hole split among 3 players'},
+          {id:'scramble',    name:'Team Scramble',  desc:'Team best-ball. One score per team per hole.'},
         ];
         const anyGame = Object.values(W.games).some(Boolean);
         const hasRoster = W.roster.length >= 2;

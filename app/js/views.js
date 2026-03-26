@@ -458,6 +458,112 @@ export function renderNamePickerModal(state) {
 }
 
 /**
+ * Scramble Leaderboard — the home screen for scramble/outing events ($149 tier).
+ * Shows event header, live team leaderboard with to-par scoring, and side game results.
+ */
+export function renderScrambleLeaderboard(state) {
+  const config = state._config;
+  const gameState = state._gameState;
+  const scramble = gameState?.scramble;
+  const holes = state._holes || {};
+  const holesPerRound = config?.holesPerRound || 18;
+  const pars = getCoursePars(config);
+  const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
+  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const holesPlayed = scoredHoles.length;
+
+  let html = '';
+
+  // Event header
+  html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:20px;text-align:center;border:none">
+    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700">${escHtml(config?.event?.name || 'Scramble')}</div>
+    <div style="font-size:12px;opacity:.7;margin-top:4px">${escHtml(config?.event?.venue || '')} &middot; ${holesPlayed} of ${holesPerRound} holes</div>
+    ${config?.scrambleFormat ? `<div style="font-size:11px;opacity:.5;margin-top:2px;text-transform:capitalize">${config.scrambleFormat.replace(/_/g,' ')}</div>` : ''}
+  </div>`;
+
+  // Live leaderboard
+  if (scramble?.leaderboard?.length > 0) {
+    html += `<div class="mg-card" style="padding:0;overflow:hidden">
+      <div style="background:var(--mg-green);color:#fff;padding:12px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between">
+        <span>Team</span>
+        <div style="display:flex;gap:20px">
+          <span style="min-width:40px;text-align:right">Thru</span>
+          <span style="min-width:50px;text-align:right">Score</span>
+          <span style="min-width:50px;text-align:right">To Par</span>
+        </div>
+      </div>`;
+
+    scramble.leaderboard.forEach((entry, i) => {
+      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s,p)=>s+p, 0) : 0;
+      const toPar = entry.total - parForPlayed;
+      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
+      const toParColor = toPar < 0 ? 'var(--mg-win)' : toPar > 0 ? 'var(--mg-loss)' : 'var(--mg-text-muted)';
+      const isLeader = i === 0;
+
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--mg-border);${isLeader ? 'background:rgba(212,175,55,.06)' : ''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:'SF Mono',monospace;font-size:14px;font-weight:700;color:${isLeader ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-width:20px">${entry.position}</span>
+          <span style="font-size:14px;font-weight:${isLeader ? '700' : '500'}">${escHtml(entry.team)}</span>
+        </div>
+        <div style="display:flex;gap:20px;align-items:center">
+          <span style="font-size:12px;color:var(--mg-text-muted);min-width:40px;text-align:right">${holesPlayed}</span>
+          <span style="font-family:'SF Mono',monospace;font-size:16px;font-weight:700;min-width:50px;text-align:right">${entry.total}</span>
+          <span style="font-family:'SF Mono',monospace;font-size:14px;font-weight:700;color:${toParColor};min-width:50px;text-align:right">${toParStr}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="mg-card" style="text-align:center;padding:40px">
+      <div style="font-size:14px;color:var(--mg-text-muted)">Waiting for scores...</div>
+      <div style="font-size:12px;color:var(--mg-text-muted);margin-top:4px">Commissioner: enter scores in the "Enter" tab</div>
+    </div>`;
+  }
+
+  // Side games results (closest to pin, longest drive)
+  const sideGames = config?.scrambleSideGames;
+  if (sideGames) {
+    if (sideGames.closestToPin?.length > 0) {
+      html += `<div class="mg-card" style="padding:16px">
+        <div class="mg-card-header" style="margin-bottom:10px">CLOSEST TO PIN</div>`;
+      sideGames.closestToPin.forEach(hole => {
+        const winner = gameState?.sideGames?.ctp?.[hole];
+        html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mg-border)">
+          <span style="font-size:13px;font-weight:600">Hole ${hole}</span>
+          <span style="font-size:13px;font-weight:600;color:${winner ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if (sideGames.longestDrive?.length > 0) {
+      html += `<div class="mg-card" style="padding:16px">
+        <div class="mg-card-header" style="margin-bottom:10px">LONGEST DRIVE</div>`;
+      sideGames.longestDrive.forEach(hole => {
+        const winner = gameState?.sideGames?.ld?.[hole];
+        html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mg-border)">
+          <span style="font-size:13px;font-weight:600">Hole ${hole}</span>
+          <span style="font-size:13px;font-weight:600;color:${winner ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // Entry fee / prize pool info
+  if (config?.scrambleEntryFee) {
+    const teams = config?.scrambleTeams || [];
+    const totalPool = config.scrambleEntryFee * teams.length;
+    html += `<div class="mg-card" style="padding:16px;text-align:center">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:4px">Prize Pool</div>
+      <div style="font-size:24px;font-weight:800;color:var(--mg-gold)">$${totalPool.toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">${teams.length} teams &times; $${config.scrambleEntryFee}/team</div>
+    </div>`;
+  }
+
+  return html;
+}
+
+/**
  * Live round feed — the home screen for casual (quick / buddies_trip) events.
  * Replaces the empty tournament dashboard for 2–8 player buddy rounds.
  *

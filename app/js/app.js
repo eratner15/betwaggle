@@ -3,7 +3,7 @@ import { generateMatches, loadConfig } from './data.js';
 import { init, save, load, reset, queueMutation, getPendingMutations, clearMutation } from './storage.js';
 import { placeBet, settleBets, setOddsOverrides, setLockedMatches, getMatchMoneyline, setConfig as setBettingConfig } from './betting.js';
 import {
-  renderDashboard, renderRoundFeed, renderFlightsList, renderFlight, renderTeam,
+  renderDashboard, renderRoundFeed, renderScrambleLeaderboard, renderFlightsList, renderFlight, renderTeam,
   renderAdmin, renderBetting, renderMyBets, renderCalcutta,
   renderShootout, renderScorecard, renderCasualScorecard, renderNamePickerModal,
   renderScoreEntryOverlay, renderSettlement, renderScenarios, calcStandings, initViews
@@ -37,6 +37,7 @@ let serverBets = [];  // Bets from ALL devices (fetched from server)
 let syncTimer = null;
 // Round mode — true for quick/buddies_trip events (2–8 players, no flights/matches)
 let isRoundMode = false;
+let isScrambleMode = false;
 const app = document.getElementById("app");
 
 // Initialize — async to load config first
@@ -63,7 +64,8 @@ async function bootstrap() {
   // Determine product mode — eventType can be at config.eventType OR config.event.eventType
   const _et = config.event?.eventType || config.eventType || '';
   isRoundMode = ['quick', 'buddies_trip'].includes(_et);
-  console.info('[waggle] slug=%s eventType=%s roundMode=%s', slug, _et, isRoundMode);
+  isScrambleMode = _et === 'scramble';
+  console.info('[waggle] slug=%s eventType=%s roundMode=%s scrambleMode=%s', slug, _et, isRoundMode, isScrambleMode);
 
   const matches = generateMatches(config);
   state = await init(matches, slug);
@@ -79,7 +81,7 @@ async function bootstrap() {
   state._betTab = "matches";
   // #4: Restore bet slip from sessionStorage
   state._betSlip = JSON.parse(sessionStorage.getItem('mg_betslip') || '[]');
-  state._adminTab = isRoundMode ? "scorecard" : "takebet"; // round mode defaults to score entry
+  state._adminTab = (isRoundMode || isScrambleMode) ? "scorecard" : "takebet"; // round/scramble mode defaults to score entry
   state._takeBet = {};
   state._allPlayers = [];
   state._adminBookFlight = "";
@@ -393,8 +395,8 @@ function route() {
   let html = "";
   switch (view) {
     case "dashboard":
-      // Round mode (quick / buddies_trip) gets the live feed; MG gets tournament dashboard
-      html = isRoundMode ? renderRoundFeed(state) : renderDashboard(state);
+      // Scramble mode gets dedicated leaderboard; Round mode gets live feed; MG gets tournament dashboard
+      html = isScrambleMode ? renderScrambleLeaderboard(state) : isRoundMode ? renderRoundFeed(state) : renderDashboard(state);
       break;
     case "flights":
       html = renderFlightsList(state);
@@ -515,7 +517,20 @@ function updateNav(view) {
       (tab === "scenarios" && view === "scenarios")
     );
 
-    if (isRoundMode) {
+    if (isScrambleMode) {
+      // Scramble mode: Leaderboard · Scorecard · What-If · Enter  (hide flights, bet, mybets, settle)
+      if (tab === 'flights' || tab === 'bet' || tab === 'mybets' || tab === 'settle') {
+        a.style.display = 'none';
+      } else {
+        a.style.display = '';
+      }
+      if (label) {
+        if (tab === 'dashboard') label.textContent = 'Leaderboard';
+        if (tab === 'scorecard') label.textContent = 'Scores';
+        if (tab === 'admin') label.textContent = 'Enter';
+        if (tab === 'scenarios') label.textContent = 'What-If';
+      }
+    } else if (isRoundMode) {
       // Round mode: Feed · Scorecard · Bet · My Bets · Score  (Flights + Settle hidden)
       if (tab === "flights" || tab === "settle") {
         a.style.display = 'none';

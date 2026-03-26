@@ -1399,8 +1399,8 @@ document.getElementById('inp-email').addEventListener('keydown', e => { if (e.ke
 
 // ─── Stripe Payment Gate ───────────────────────────────────────────────
 
-const WAGGLE_PRICES = { member_guest: 14900, trip: 3200, outing: 3200 };
-const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
+const WAGGLE_PRICES = { member_guest: 14900, scramble: 14900, trip: 3200, outing: 3200 };
+const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149)', scramble: 'Waggle Scramble / Outing ($149)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
 
 // Built-in promo codes — can move to KV later
 const PROMO_CODES = {
@@ -1458,7 +1458,7 @@ async function handleCreateCheckout(request, env) {
     }
   }
 
-  const eventType = config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
+  const eventType = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
   const originalAmount = WAGGLE_PRICES[eventType] ?? 3200;
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
 
@@ -1562,7 +1562,7 @@ async function handleResumeCheckout(url, env) {
   if (!env.STRIPE_SECRET_KEY) return Response.redirect('https://betwaggle.com/create/', 302);
 
   const config = JSON.parse(configRaw);
-  const eventType = config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
+  const eventType = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
   const amount = config.meta?.actualAmountCents || (WAGGLE_PRICES[eventType] ?? 3200);
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
   const discountedLabel = config.meta?.promoDiscount ? `${label} (${config.meta.promoDiscount}% off — ${config.meta.promoLabel})` : label;
@@ -1640,7 +1640,7 @@ async function handleCheckoutSuccess(url, env) {
   const refCode = config.meta?.source?.ref || config.meta?.ref_code || '';
   if (refCode && env.WAGGLE_DB) {
     try {
-      const eventType2 = config.event?.format === 'round_robin_match_play' ? 'member_guest' : 'trip';
+      const eventType2 = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : 'trip';
       const purchaseAmountCents = WAGGLE_PRICES[eventType2] ?? 3200;
       const commissionCents = 2000;
       await env.WAGGLE_DB.prepare(
