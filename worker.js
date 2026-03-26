@@ -33,12 +33,24 @@ export default {
           return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
         const gcData = await gcRes.json();
-        const courses = (gcData.courses || []).slice(0, 20).map(c => ({
-          id: c.id,
-          club_name: c.club_name,
-          course_name: c.course_name,
-          location: [c.city, c.state_name].filter(Boolean).join(', '),
-        }));
+        const courses = (gcData.courses || []).slice(0, 20).map(c => {
+          const loc = c.location || {};
+          const city = loc.city || c.city || '';
+          const state = loc.state || c.state_name || '';
+          // Extract tee summaries from search results
+          const tees = c.tees || {};
+          const maleTees = Array.isArray(tees.male) ? tees.male : (Array.isArray(tees) ? tees : []);
+          const slope = maleTees[0]?.course_slope || '';
+          const rating = maleTees[0]?.course_rating || '';
+          return {
+            id: c.id,
+            club_name: c.club_name,
+            course_name: c.course_name,
+            city, state,
+            location: [city, state].filter(Boolean).join(', '),
+            slope, rating,
+          };
+        });
         return new Response(JSON.stringify(courses), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
@@ -79,7 +91,44 @@ export default {
         });
         if (!gcRes.ok) return new Response(JSON.stringify(null), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         const gcData = await gcRes.json();
-        return new Response(JSON.stringify(gcData), {
+        const raw = gcData.course || gcData;
+        // Normalize tee structure: { male: [...], female: [...] } → flat array with gender tag
+        const allTees = [];
+        const rawTees = raw.tees || {};
+        for (const [gender, teeList] of Object.entries(rawTees)) {
+          if (!Array.isArray(teeList)) continue;
+          for (const t of teeList) {
+            const holes = (t.holes || []).map((h, i) => ({
+              hole: h.hole_number || (i + 1),
+              par: h.par,
+              handicap: h.handicap || h.handicap_index || h.stroke_index,
+              yardage: h.yardage || h.yards,
+            }));
+            allTees.push({
+              name: t.tee_name || t.name || 'Unknown',
+              gender,
+              slope: t.course_slope || null,
+              rating: t.course_rating || null,
+              par: t.par_total || holes.reduce((s, h) => s + (h.par || 0), 0),
+              yardage: t.total_yardage || holes.reduce((s, h) => s + (h.yardage || 0), 0),
+              holes,
+            });
+          }
+        }
+        const loc = raw.location || {};
+        const normalized = {
+          id: raw.id,
+          club_name: raw.club_name,
+          course_name: raw.course_name,
+          city: loc.city || '',
+          state: loc.state || '',
+          address: loc.address || '',
+          tees: allTees,
+          // Convenience: default male tee pars and stroke index for the create wizard
+          pars: allTees.find(t => t.gender === 'male')?.holes.map(h => h.par) || [],
+          strokeIndex: allTees.find(t => t.gender === 'male')?.holes.map(h => h.handicap) || [],
+        };
+        return new Response(JSON.stringify(normalized), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' }
         });
       } catch {
