@@ -1179,7 +1179,7 @@ async function handleCheckoutSuccess(url, env) {
     <p style="margin:0;font-size:15px;color:#111827"><strong>PIN:</strong> ${adminPin}</p>
   </div>
   <p style="color:#6B7280;font-size:14px;margin:0 0 4px">Need the full GM guide? <a href="https://betwaggle.com/overview/" style="color:#2D6A4F">betwaggle.com/overview/</a></p>
-  <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0">Waggle by BetWaggle</p>
+  <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0">Waggle by Waggle</p>
 </div>`,
       }));
     }
@@ -1423,7 +1423,7 @@ async function handleCourseDetailPage(courseId, env) {
     ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : `<p style="color:#7A7A7A;font-size:13px">Par ${refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0)} \u00b7 ${validTees.length} tee${validTees.length !== 1 ? 's' : ''} available</p>`}
   </div>
   <footer style="text-align:center;padding:48px 20px 32px;color:#7A7A7A;font-size:13px">
-    <p>Waggle by <a href="https://betwaggle.com/" style="color:#2D6A4F;font-weight:600">BetWaggle</a> \u00b7 <a href="/courses/" style="color:#2D6A4F;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2D6A4F;font-weight:600">Create Event</a></p>
+    <p>Waggle by <a href="https://betwaggle.com/" style="color:#2D6A4F;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#2D6A4F;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2D6A4F;font-weight:600">Create Event</a></p>
   </footer>
 </body></html>`;
 
