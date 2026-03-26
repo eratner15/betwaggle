@@ -781,7 +781,323 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // CARD 1: COURSE + SETUP
+  // CARD 1: STANDINGS (most important — what everyone wants first)
+  // ============================================================
+  {
+    let standingsSummary = 'No scores yet';
+    if (scoredHoles.length > 0 && standingsData.length > 0) {
+      const leader = standingsData[0];
+      if (hasPnL) {
+        const moneyStr = leader.money > 0 ? '+$' + leader.money : leader.money < 0 ? '-$' + Math.abs(leader.money) : 'E';
+        standingsSummary = `${escHtml(leader.name)} leads ${moneyStr} \u00b7 Thru ${scoredHoles.length}`;
+      } else {
+        const toParStr = leader.toPar === null ? '' : leader.toPar === 0 ? 'E' : leader.toPar > 0 ? '+' + leader.toPar : String(leader.toPar);
+        standingsSummary = `${escHtml(leader.name)} leads ${toParStr} \u00b7 Thru ${scoredHoles.length}`;
+      }
+    } else if (players.length > 0) {
+      standingsSummary = `${players.length} players \u00b7 Not started`;
+    }
+
+    html += `<div class="board-card open" id="board-card-standings">
+      <button class="board-card-header" onclick="document.getElementById('board-card-standings').classList.toggle('open')">
+        <div class="board-card-title">Standings</div>
+        <div class="board-card-summary" style="${scoredHoles.length > 0 ? 'color:var(--mg-gold-dim)' : ''}">${standingsSummary}</div>
+        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="board-card-body">`;
+
+    if (scoredHoles.length > 0 && standingsData.length > 0) {
+      // Column headers
+      html += `<div style="display:flex;align-items:center;padding:6px 0 6px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--mg-text-muted);border-bottom:1px solid var(--mg-border)">
+        <span style="width:20px"></span>
+        <span style="flex:1">Player</span>
+        <span style="min-width:36px;text-align:right;font-family:'SF Mono',monospace">Gross</span>
+        <span style="min-width:40px;text-align:right;font-family:'SF Mono',monospace">+/-</span>
+        ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">F</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">B</span>` : ''}
+        ${games.skins ? `<span style="min-width:28px;text-align:center">SK</span>` : ''}
+        ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',monospace">P&L</span>` : ''}
+      </div>`;
+
+      standingsData.forEach((p, i) => {
+        const isLeader = i === 0;
+        const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+        const toParColor = p.toPar === null ? 'var(--mg-text-muted)' : p.toPar < 0 ? '#22c55e' : p.toPar > 0 ? '#ef4444' : 'var(--mg-text-muted)';
+        const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
+        const moneyColor = p.money > 0 ? '#22c55e' : p.money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
+        const nassauFStr = p.nassauFront === null ? '--' : p.nassauFront === 0 ? 'E' : p.nassauFront > 0 ? '+' + p.nassauFront : String(p.nassauFront);
+        const nassauBStr = p.nassauBack === null ? '--' : p.nassauBack === 0 ? 'E' : p.nassauBack > 0 ? '+' + p.nassauBack : String(p.nassauBack);
+        const leaderClass = isLeader ? 'board-standings-leader' : '';
+
+        html += `<div class="${leaderClass}" style="display:flex;align-items:center;padding:10px 0 10px;border-bottom:1px solid var(--mg-border);${isLeader ? 'padding-left:0' : ''}">
+          <span style="width:20px;font-size:12px;font-weight:700;color:${isLeader ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};flex-shrink:0;font-family:'SF Mono',monospace">${i + 1}</span>
+          <span style="flex:1;min-width:0">
+            <span style="font-size:14px;font-weight:${isLeader ? '700' : '500'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
+            <span style="font-size:10px;color:var(--mg-text-muted)">Thru ${p.thru}${p.hi ? ' \u00b7 HI ' + p.hi : ''}</span>
+          </span>
+          <span style="min-width:36px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:14px;font-weight:600">${p.gross !== null ? p.gross : '--'}</span>
+          <span style="min-width:40px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:13px;font-weight:600;color:${toParColor}">${toParStr}</span>
+          ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauFStr}</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauBStr}</span>` : ''}
+          ${games.skins ? `<span style="min-width:28px;text-align:center;font-family:'SF Mono',monospace;font-size:12px;font-weight:600;color:${p.skins > 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${p.skins}</span>` : ''}
+          ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:15px;font-weight:800;color:${moneyColor}">${moneyStr}</span>` : ''}
+        </div>`;
+      });
+    } else {
+      // No scores yet — show player roster
+      players.forEach((p, i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${i < players.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+          <span style="font-size:14px;font-weight:500">${escHtml(p.name)}</span>
+          <span style="font-size:12px;color:var(--mg-text-muted);font-family:'SF Mono',monospace">HI ${p.handicapIndex}</span>
+        </div>`;
+      });
+      html += `<div style="text-align:center;padding:10px 0 0;font-size:13px;color:var(--mg-text-muted)">${state.adminAuthed ? 'Tap the score button to enter hole 1' : 'Waiting for round to start...'}</div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  // ============================================================
+  // CARD 2: ACTIVE GAMES (open by default)
+  // ============================================================
+  if (activeGamesList.length > 0) {
+    const gamesPills = activeGamesList.map(g => {
+      let detail = '';
+      if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
+      if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
+      return `<span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:rgba(212,175,55,0.15);color:var(--mg-gold-dim);padding:3px 8px;border-radius:4px;border:1px solid rgba(212,175,55,0.25)">${escHtml(g)}${detail}</span>`;
+    }).join(' ');
+
+    html += `<div class="board-card open" id="board-card-games">
+      <button class="board-card-header" onclick="document.getElementById('board-card-games').classList.toggle('open')">
+        <div class="board-card-title">Games</div>
+        <div class="board-card-summary">${gamesPills}</div>
+        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="board-card-body">`;
+
+    // AI advisor — prominent at top when no scores entered and admin
+    if (state.adminAuthed && scoredHoles.length === 0) {
+      html += `<div style="padding:12px;background:rgba(212,175,55,.04);border:1.5px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;color:var(--mg-gold-dim);margin-bottom:6px">Let AI pick your games</div>
+        <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Based on your group's handicaps and player count, AI will recommend the best format.</div>
+        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Recommend Games for This Group</button>
+        <div id="ai-game-advice" style="margin-top:8px"></div>
+      </div>`;
+    }
+
+    // Nassau detail
+    if (games.nassau) {
+      const nassauL = gameState?.nassau || {};
+      let frontStatus = 'Not started';
+      let backStatus = 'Not started';
+      let overallStatus = '';
+      if (scoredHoles.length > 0 && scoredHoles.length <= 9) {
+        const frontLeader = [...standingsData].filter(p => p.nassauFront !== null && p.nassauFront !== undefined).sort((a, b) => (a.nassauFront ?? 0) - (b.nassauFront ?? 0))[0];
+        frontStatus = frontLeader ? `${escHtml(frontLeader.name)} leads` : 'In play';
+      }
+      if (nassauL.frontWinner) frontStatus = `${escHtml(nassauL.frontWinner)} wins`;
+      else if (scoredHoles.length >= 9) frontStatus = 'Tied';
+      if (scoredHoles.length > 9) {
+        const backLeader = [...standingsData].filter(p => p.nassauBack !== null && p.nassauBack !== undefined).sort((a, b) => (a.nassauBack ?? 0) - (b.nassauBack ?? 0))[0];
+        backStatus = backLeader ? `${escHtml(backLeader.name)} leads` : 'In play';
+      }
+      if (nassauL.backWinner) backStatus = `${escHtml(nassauL.backWinner)} wins`;
+      if (nassauL.totalWinner) overallStatus = `${escHtml(nassauL.totalWinner)} wins overall`;
+
+      html += `<div style="padding:10px 0;${games.skins || games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Nassau${nassauBetAmt ? ' \u00b7 $' + nassauBetAmt : ''}</div>
+        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Front:</span> ${frontStatus}</div>
+        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Back:</span> ${backStatus}</div>
+        ${overallStatus ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold);margin-top:2px">${overallStatus}</div>` : ''}
+      </div>`;
+    }
+
+    // Skins detail
+    if (games.skins) {
+      const totalSkinsWon = Object.values(skinsCount).reduce((s, v) => s + v, 0);
+      const carries = Object.values(skinsHolesAll).filter(h => h.carried).length;
+      const topSkinPlayer = Object.entries(skinsCount).sort((a, b) => b[1] - a[1])[0];
+
+      html += `<div style="padding:10px 0;${games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Skins${skinsBetAmt ? ' \u00b7 $' + skinsBetAmt : ''}</div>
+        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Won:</span> ${totalSkinsWon} <span style="color:var(--mg-text-muted);margin-left:6px">Carried:</span> ${carries}</div>
+        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Pot:</span> <span style="font-weight:700;color:var(--mg-gold)">${skinsPot}x</span></div>
+        ${topSkinPlayer && topSkinPlayer[1] > 0 ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold)">${escHtml(topSkinPlayer[0])}: ${topSkinPlayer[1]} skin${topSkinPlayer[1] !== 1 ? 's' : ''}</div>` : ''}
+      </div>`;
+    }
+
+    // Wolf detail
+    if (games.wolf) {
+      const wolfPicks2 = gameState?.wolf?.picks || {};
+      const wolfResults = gameState?.wolf?.results || {};
+      const wolfHolesPlayed = Object.keys(wolfResults).length;
+      let wolfStatusText = '';
+      if (!currentHoleScored && expectedWolf && scoredHoles.length < holesPerRound) {
+        wolfStatusText = `${escHtml(expectedWolf)} picking Hole ${holeNum}`;
+        if (wolfPick) {
+          wolfStatusText = wolfPick.partner ? `${escHtml(expectedWolf)} + ${escHtml(wolfPick.partner)}` : `${escHtml(expectedWolf)} going lone wolf`;
+        }
+      } else {
+        wolfStatusText = `${wolfHolesPlayed} hole${wolfHolesPlayed !== 1 ? 's' : ''} played`;
+      }
+
+      html += `<div style="padding:10px 0;${games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+        <div style="font-size:11px;font-weight:700;color:#9B6DFF;margin-bottom:6px">Wolf</div>
+        <div style="font-size:12px;line-height:1.4">${wolfStatusText}</div>
+        ${wolfOrder.length > 0 ? `<div style="font-size:10px;color:var(--mg-text-muted);margin-top:4px">Rotation: ${wolfOrder.map(n => escHtml(n.split(' ')[0])).join(' \u2192 ')}</div>` : ''}
+      </div>`;
+    }
+
+    // Vegas detail
+    if (games.vegas) {
+      html += `<div style="padding:10px 0">
+        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Vegas</div>
+        <div style="font-size:12px;color:var(--mg-text-muted)">In play</div>
+      </div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  // ============================================================
+  // CARD 3: SCORECARD (premium country-club styling)
+  // ============================================================
+  if (players.length > 0) {
+    // Compute summary: front/back/total for the viewer (or first player)
+    const viewerName = state.bettorName || (players[0] ? players[0].name : '');
+    let frontTotal = 0, frontPar = 0, backTotal = 0, backPar = 0, frontScored = false, backScored = false;
+    for (let h = 1; h <= 9; h++) {
+      const sc = holes[h]?.scores?.[viewerName];
+      if (sc !== undefined && sc !== null) { frontTotal += sc; frontPar += (pars[h - 1] || 4); frontScored = true; }
+    }
+    for (let h = 10; h <= 18; h++) {
+      const sc = holes[h]?.scores?.[viewerName];
+      if (sc !== undefined && sc !== null) { backTotal += sc; backPar += (pars[h - 1] || 4); backScored = true; }
+    }
+    const frontDiff = frontTotal - frontPar;
+    const backDiff = backTotal - backPar;
+    const totalScore = (frontScored ? frontTotal : 0) + (backScored ? backTotal : 0);
+    const totalDiff = (frontScored ? frontDiff : 0) + (backScored ? backDiff : 0);
+    const fmtDiff = d => d === 0 ? 'E' : d > 0 ? '+' + d : String(d);
+    const frontStr = frontScored ? `${frontTotal} (${fmtDiff(frontDiff)})` : '\u2014';
+    const backStr = backScored ? `${backTotal} (${fmtDiff(backDiff)})` : '\u2014';
+    const totalStr = (frontScored || backScored) ? `${totalScore} (${fmtDiff(totalDiff)})` : '\u2014';
+    const scorecardSummary = `Front: ${frontStr} \u00b7 Back: ${backStr} \u00b7 Total: ${totalStr}`;
+
+    // Find leader total for gold highlight
+    let leaderTotal = null;
+    if (scoredHoles.length > 0 && standingsData.length > 0) {
+      leaderTotal = standingsData[0].name;
+    }
+
+    html += `<div class="board-card" id="board-card-scorecard">
+      <button class="board-card-header" onclick="document.getElementById('board-card-scorecard').classList.toggle('open')">
+        <div class="board-card-title">Scores</div>
+        <div class="board-card-summary">${scorecardSummary}</div>
+        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="board-card-body">`;
+
+    // Inline scorecard — groups of 4 players, front 9 + back 9
+    const groupSize = 4;
+    const playerGroups = [];
+    for (let i = 0; i < players.length; i += groupSize) {
+      playerGroups.push(players.slice(i, i + groupSize));
+    }
+
+    playerGroups.forEach((groupPlayers, gi) => {
+      if (playerGroups.length > 1) {
+        html += `<div style="font-size:11px;font-weight:700;color:var(--mg-gold-dim);text-transform:uppercase;letter-spacing:1px;margin:${gi > 0 ? '12px' : '0'} 0 4px">Group ${gi + 1}</div>`;
+      }
+
+      [0, 1].forEach(half => {
+        const startHole = half * 9 + 1;
+        const endHole = Math.min(startHole + 8, holesPerRound);
+        const holeNums = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
+        const halfPar = holeNums.reduce((s, h) => s + (pars[h - 1] || 4), 0);
+        const halfLabel = half === 0 ? 'Out' : 'In';
+
+        html += `<div style="overflow-x:auto;margin-bottom:10px">
+          <table style="width:100%;border-collapse:collapse;font-family:'SF Mono',SFMono-Regular,monospace;min-width:${holeNums.length * 34 + 100}px;border-top:2px solid var(--mg-gold)">
+            <thead>
+              <tr style="color:var(--mg-text-muted);font-size:10px">
+                <th style="text-align:left;padding:5px 6px;font-weight:700;min-width:72px">Hole</th>
+                ${holeNums.map(h => `<th style="text-align:center;padding:5px 2px;min-width:28px">${h}</th>`).join('')}
+                <th style="text-align:center;padding:5px 6px;min-width:34px;color:var(--mg-gold);font-weight:700;border-left:1px solid var(--mg-border)">${halfLabel}</th>
+              </tr>
+              <tr style="background:rgba(212,175,55,0.04)">
+                <td style="padding:5px 6px;font-weight:700;font-size:11px;color:var(--mg-gold)">Par</td>
+                ${holeNums.map(h => `<td style="text-align:center;padding:5px 2px;font-weight:600;font-size:12px">${pars[h-1] || 4}</td>`).join('')}
+                <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:12px;border-left:1px solid var(--mg-border)">${halfPar}</td>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        groupPlayers.forEach((player, pi) => {
+          let playerTotal = 0;
+          let playerScoredAll = true;
+          const playerScores = holeNums.map(h => {
+            const holeData = holes[h] || {};
+            const holeScores = holeData.scores || holeData;
+            const gross = holeScores[player.name] !== undefined ? holeScores[player.name] : null;
+            if (gross !== null) playerTotal += gross; else playerScoredAll = false;
+            return gross;
+          });
+
+          const isLeaderRow = player.name === leaderTotal;
+          const rowBg = pi % 2 === 1 ? 'background:rgba(0,0,0,0.025);' : '';
+
+          html += `<tr style="${rowBg}">
+            <td style="padding:5px 6px;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px">${escHtml(player.name.split(' ')[0])}</td>`;
+
+          playerScores.forEach((gross, idx) => {
+            const h = holeNums[idx];
+            const par = pars[h - 1] || 4;
+            let display = gross !== null ? gross : '\u00b7';
+            let spanStyle = 'font-size:13px;font-family:\'SF Mono\',SFMono-Regular,monospace;';
+            if (gross !== null) {
+              const diff = gross - par;
+              if (diff <= -2) {
+                // Eagle: gold circle with double border
+                spanStyle += 'background:var(--mg-gold);color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--mg-gold);';
+              } else if (diff === -1) {
+                // Birdie: solid gold circle
+                spanStyle += 'background:var(--mg-gold);color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;';
+              } else if (diff === 1) {
+                // Bogey: thin border square
+                spanStyle += 'border:2px solid var(--mg-text-muted);border-radius:3px;width:26px;height:26px;line-height:22px;display:inline-block;text-align:center;';
+              } else if (diff >= 2) {
+                // Double+: filled red square
+                spanStyle += 'background:var(--mg-loss,#ef4444);color:#fff;border-radius:3px;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;';
+              }
+              // Par: no decoration (default)
+            }
+            html += `<td style="text-align:center;padding:3px 1px;vertical-align:middle"><span style="${spanStyle}">${display}</span></td>`;
+          });
+
+          const totalStyle = isLeaderRow
+            ? 'text-align:center;padding:5px 6px;font-weight:700;font-size:16px;color:var(--mg-gold);border-left:1px solid var(--mg-border)'
+            : 'text-align:center;padding:5px 6px;font-weight:700;font-size:16px;border-left:1px solid var(--mg-border)';
+          html += `<td style="${totalStyle}">${playerScoredAll ? playerTotal : '\u2014'}</td>`;
+          html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+      });
+    });
+
+    // Legend — updated to match new premium styling
+    html += `<div style="display:flex;gap:14px;padding:8px 0 0;font-size:11px;color:var(--mg-text-muted);justify-content:center;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-gold);border-radius:50%"></span>Birdie</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-gold);border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--mg-gold)"></span>Eagle</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;border:2px solid var(--mg-text-muted);border-radius:3px"></span>Bogey</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-loss,#ef4444);border-radius:3px"></span>Double+</span>
+    </div>`;
+
+    html += `</div></div>`;
+  }
+
+  // ============================================================
+  // CARD 4: COURSE (reference info, collapsed by default)
   // ============================================================
   {
     const courseNameC1 = config?.event?.course || config?.event?.venue || config?.course?.name || '';
@@ -903,297 +1219,7 @@ export function renderRoundFeed(state) {
       });
       html += `</div>`;
     }
-    // AI recommendation button
-    if (state.adminAuthed && scoredHoles.length === 0) {
-      html += `<div style="margin-top:10px">
-        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:600;color:var(--mg-gold-dim);cursor:pointer">AI: Recommend games for this group</button>
-        <div id="ai-game-advice" style="margin-top:8px"></div>
-      </div>`;
-    }
     html += `</div>`;
-
-    html += `</div></div>`;
-  }
-
-  // ============================================================
-  // CARD 2: STANDINGS
-  // ============================================================
-  {
-    let standingsSummary = 'No scores yet';
-    if (scoredHoles.length > 0 && standingsData.length > 0) {
-      const leader = standingsData[0];
-      if (hasPnL) {
-        const moneyStr = leader.money > 0 ? '+$' + leader.money : leader.money < 0 ? '-$' + Math.abs(leader.money) : 'E';
-        standingsSummary = `${escHtml(leader.name)} leads ${moneyStr} \u00b7 Thru ${scoredHoles.length}`;
-      } else {
-        const toParStr = leader.toPar === null ? '' : leader.toPar === 0 ? 'E' : leader.toPar > 0 ? '+' + leader.toPar : String(leader.toPar);
-        standingsSummary = `${escHtml(leader.name)} leads ${toParStr} \u00b7 Thru ${scoredHoles.length}`;
-      }
-    } else if (players.length > 0) {
-      standingsSummary = `${players.length} players \u00b7 Not started`;
-    }
-
-    html += `<div class="board-card open" id="board-card-standings">
-      <button class="board-card-header" onclick="document.getElementById('board-card-standings').classList.toggle('open')">
-        <div class="board-card-title">Standings</div>
-        <div class="board-card-summary" style="${scoredHoles.length > 0 ? 'color:var(--mg-gold-dim)' : ''}">${standingsSummary}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    if (scoredHoles.length > 0 && standingsData.length > 0) {
-      // Column headers
-      html += `<div style="display:flex;align-items:center;padding:6px 0 6px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--mg-text-muted);border-bottom:1px solid var(--mg-border)">
-        <span style="width:20px"></span>
-        <span style="flex:1">Player</span>
-        <span style="min-width:36px;text-align:right;font-family:'SF Mono',monospace">Gross</span>
-        <span style="min-width:40px;text-align:right;font-family:'SF Mono',monospace">+/-</span>
-        ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">F</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">B</span>` : ''}
-        ${games.skins ? `<span style="min-width:28px;text-align:center">SK</span>` : ''}
-        ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',monospace">P&L</span>` : ''}
-      </div>`;
-
-      standingsData.forEach((p, i) => {
-        const isLeader = i === 0;
-        const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
-        const toParColor = p.toPar === null ? 'var(--mg-text-muted)' : p.toPar < 0 ? '#22c55e' : p.toPar > 0 ? '#ef4444' : 'var(--mg-text-muted)';
-        const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
-        const moneyColor = p.money > 0 ? '#22c55e' : p.money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
-        const nassauFStr = p.nassauFront === null ? '--' : p.nassauFront === 0 ? 'E' : p.nassauFront > 0 ? '+' + p.nassauFront : String(p.nassauFront);
-        const nassauBStr = p.nassauBack === null ? '--' : p.nassauBack === 0 ? 'E' : p.nassauBack > 0 ? '+' + p.nassauBack : String(p.nassauBack);
-        const leaderClass = isLeader ? 'board-standings-leader' : '';
-
-        html += `<div class="${leaderClass}" style="display:flex;align-items:center;padding:10px 0 10px;border-bottom:1px solid var(--mg-border);${isLeader ? 'padding-left:0' : ''}">
-          <span style="width:20px;font-size:12px;font-weight:700;color:${isLeader ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};flex-shrink:0;font-family:'SF Mono',monospace">${i + 1}</span>
-          <span style="flex:1;min-width:0">
-            <span style="font-size:14px;font-weight:${isLeader ? '700' : '500'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
-            <span style="font-size:10px;color:var(--mg-text-muted)">Thru ${p.thru}${p.hi ? ' \u00b7 HI ' + p.hi : ''}</span>
-          </span>
-          <span style="min-width:36px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:14px;font-weight:600">${p.gross !== null ? p.gross : '--'}</span>
-          <span style="min-width:40px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:13px;font-weight:600;color:${toParColor}">${toParStr}</span>
-          ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauFStr}</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauBStr}</span>` : ''}
-          ${games.skins ? `<span style="min-width:28px;text-align:center;font-family:'SF Mono',monospace;font-size:12px;font-weight:600;color:${p.skins > 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${p.skins}</span>` : ''}
-          ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:15px;font-weight:800;color:${moneyColor}">${moneyStr}</span>` : ''}
-        </div>`;
-      });
-    } else {
-      // No scores yet — show player roster
-      players.forEach((p, i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${i < players.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-          <span style="font-size:14px;font-weight:500">${escHtml(p.name)}</span>
-          <span style="font-size:12px;color:var(--mg-text-muted);font-family:'SF Mono',monospace">HI ${p.handicapIndex}</span>
-        </div>`;
-      });
-      html += `<div style="text-align:center;padding:10px 0 0;font-size:13px;color:var(--mg-text-muted)">${state.adminAuthed ? 'Tap the score button to enter hole 1' : 'Waiting for round to start...'}</div>`;
-    }
-
-    html += `</div></div>`;
-  }
-
-  // ============================================================
-  // CARD 3: ACTIVE GAMES
-  // ============================================================
-  if (activeGamesList.length > 0) {
-    const gamesPills = activeGamesList.map(g => {
-      let detail = '';
-      if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
-      if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
-      return `<span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:rgba(212,175,55,0.15);color:var(--mg-gold-dim);padding:3px 8px;border-radius:4px;border:1px solid rgba(212,175,55,0.25)">${escHtml(g)}${detail}</span>`;
-    }).join(' ');
-
-    html += `<div class="board-card" id="board-card-games">
-      <button class="board-card-header" onclick="document.getElementById('board-card-games').classList.toggle('open')">
-        <div class="board-card-title">Games</div>
-        <div class="board-card-summary">${gamesPills}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    // Nassau detail
-    if (games.nassau) {
-      const nassauL = gameState?.nassau || {};
-      let frontStatus = 'Not started';
-      let backStatus = 'Not started';
-      let overallStatus = '';
-      if (scoredHoles.length > 0 && scoredHoles.length <= 9) {
-        const frontLeader = [...standingsData].filter(p => p.nassauFront !== null && p.nassauFront !== undefined).sort((a, b) => (a.nassauFront ?? 0) - (b.nassauFront ?? 0))[0];
-        frontStatus = frontLeader ? `${escHtml(frontLeader.name)} leads` : 'In play';
-      }
-      if (nassauL.frontWinner) frontStatus = `${escHtml(nassauL.frontWinner)} wins`;
-      else if (scoredHoles.length >= 9) frontStatus = 'Tied';
-      if (scoredHoles.length > 9) {
-        const backLeader = [...standingsData].filter(p => p.nassauBack !== null && p.nassauBack !== undefined).sort((a, b) => (a.nassauBack ?? 0) - (b.nassauBack ?? 0))[0];
-        backStatus = backLeader ? `${escHtml(backLeader.name)} leads` : 'In play';
-      }
-      if (nassauL.backWinner) backStatus = `${escHtml(nassauL.backWinner)} wins`;
-      if (nassauL.totalWinner) overallStatus = `${escHtml(nassauL.totalWinner)} wins overall`;
-
-      html += `<div style="padding:10px 0;${games.skins || games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Nassau${nassauBetAmt ? ' \u00b7 $' + nassauBetAmt : ''}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Front:</span> ${frontStatus}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Back:</span> ${backStatus}</div>
-        ${overallStatus ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold);margin-top:2px">${overallStatus}</div>` : ''}
-      </div>`;
-    }
-
-    // Skins detail
-    if (games.skins) {
-      const totalSkinsWon = Object.values(skinsCount).reduce((s, v) => s + v, 0);
-      const carries = Object.values(skinsHolesAll).filter(h => h.carried).length;
-      const topSkinPlayer = Object.entries(skinsCount).sort((a, b) => b[1] - a[1])[0];
-
-      html += `<div style="padding:10px 0;${games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Skins${skinsBetAmt ? ' \u00b7 $' + skinsBetAmt : ''}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Won:</span> ${totalSkinsWon} <span style="color:var(--mg-text-muted);margin-left:6px">Carried:</span> ${carries}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Pot:</span> <span style="font-weight:700;color:var(--mg-gold)">${skinsPot}x</span></div>
-        ${topSkinPlayer && topSkinPlayer[1] > 0 ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold)">${escHtml(topSkinPlayer[0])}: ${topSkinPlayer[1]} skin${topSkinPlayer[1] !== 1 ? 's' : ''}</div>` : ''}
-      </div>`;
-    }
-
-    // Wolf detail
-    if (games.wolf) {
-      const wolfPicks2 = gameState?.wolf?.picks || {};
-      const wolfResults = gameState?.wolf?.results || {};
-      const wolfHolesPlayed = Object.keys(wolfResults).length;
-      let wolfStatusText = '';
-      if (!currentHoleScored && expectedWolf && scoredHoles.length < holesPerRound) {
-        wolfStatusText = `${escHtml(expectedWolf)} picking Hole ${holeNum}`;
-        if (wolfPick) {
-          wolfStatusText = wolfPick.partner ? `${escHtml(expectedWolf)} + ${escHtml(wolfPick.partner)}` : `${escHtml(expectedWolf)} going lone wolf`;
-        }
-      } else {
-        wolfStatusText = `${wolfHolesPlayed} hole${wolfHolesPlayed !== 1 ? 's' : ''} played`;
-      }
-
-      html += `<div style="padding:10px 0;${games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:#9B6DFF;margin-bottom:6px">Wolf</div>
-        <div style="font-size:12px;line-height:1.4">${wolfStatusText}</div>
-        ${wolfOrder.length > 0 ? `<div style="font-size:10px;color:var(--mg-text-muted);margin-top:4px">Rotation: ${wolfOrder.map(n => escHtml(n.split(' ')[0])).join(' \u2192 ')}</div>` : ''}
-      </div>`;
-    }
-
-    // Vegas detail
-    if (games.vegas) {
-      html += `<div style="padding:10px 0">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Vegas</div>
-        <div style="font-size:12px;color:var(--mg-text-muted)">In play</div>
-      </div>`;
-    }
-
-    html += `</div></div>`;
-  }
-
-  // ============================================================
-  // CARD 4: SCORECARD (inline)
-  // ============================================================
-  if (players.length > 0) {
-    // Compute summary: front/back/total for the viewer (or first player)
-    const viewerName = state.bettorName || (players[0] ? players[0].name : '');
-    let frontTotal = 0, frontPar = 0, backTotal = 0, backPar = 0, frontScored = false, backScored = false;
-    for (let h = 1; h <= 9; h++) {
-      const sc = holes[h]?.scores?.[viewerName];
-      if (sc !== undefined && sc !== null) { frontTotal += sc; frontPar += (pars[h - 1] || 4); frontScored = true; }
-    }
-    for (let h = 10; h <= 18; h++) {
-      const sc = holes[h]?.scores?.[viewerName];
-      if (sc !== undefined && sc !== null) { backTotal += sc; backPar += (pars[h - 1] || 4); backScored = true; }
-    }
-    const frontDiff = frontTotal - frontPar;
-    const backDiff = backTotal - backPar;
-    const totalScore = (frontScored ? frontTotal : 0) + (backScored ? backTotal : 0);
-    const totalDiff = (frontScored ? frontDiff : 0) + (backScored ? backDiff : 0);
-    const fmtDiff = d => d === 0 ? 'E' : d > 0 ? '+' + d : String(d);
-    const frontStr = frontScored ? `${frontTotal} (${fmtDiff(frontDiff)})` : '\u2014';
-    const backStr = backScored ? `${backTotal} (${fmtDiff(backDiff)})` : '\u2014';
-    const totalStr = (frontScored || backScored) ? `${totalScore} (${fmtDiff(totalDiff)})` : '\u2014';
-    const scorecardSummary = `Front: ${frontStr} \u00b7 Back: ${backStr} \u00b7 Total: ${totalStr}`;
-
-    html += `<div class="board-card" id="board-card-scorecard">
-      <button class="board-card-header" onclick="document.getElementById('board-card-scorecard').classList.toggle('open')">
-        <div class="board-card-title">Scores</div>
-        <div class="board-card-summary">${scorecardSummary}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    // Inline scorecard — groups of 4 players, front 9 + back 9
-    const groupSize = 4;
-    const playerGroups = [];
-    for (let i = 0; i < players.length; i += groupSize) {
-      playerGroups.push(players.slice(i, i + groupSize));
-    }
-
-    playerGroups.forEach((groupPlayers, gi) => {
-      if (playerGroups.length > 1) {
-        html += `<div style="font-size:11px;font-weight:700;color:var(--mg-gold-dim);text-transform:uppercase;letter-spacing:1px;margin:${gi > 0 ? '12px' : '0'} 0 4px">Group ${gi + 1}</div>`;
-      }
-
-      [0, 1].forEach(half => {
-        const startHole = half * 9 + 1;
-        const endHole = Math.min(startHole + 8, holesPerRound);
-        const holeNums = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
-        const halfPar = holeNums.reduce((s, h) => s + (pars[h - 1] || 4), 0);
-
-        html += `<div style="overflow-x:auto;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${half === 0 ? 'Front Nine' : 'Back Nine'}</div>
-          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:${holeNums.length * 32 + 80}px">
-            <thead>
-              <tr style="color:var(--mg-text-muted);font-size:11px">
-                <th style="text-align:left;padding:3px 6px;font-weight:600;min-width:72px">Player</th>
-                ${holeNums.map(h => `<th style="text-align:center;padding:3px 4px;width:28px">${h}</th>`).join('')}
-                <th style="text-align:center;padding:3px 6px;min-width:32px;color:var(--mg-text)">Out</th>
-              </tr>
-              <tr style="background:rgba(0,0,0,0.03)">
-                <td style="padding:3px 6px;font-weight:700;font-size:11px;color:var(--mg-text-muted)">Par</td>
-                ${holeNums.map(h => `<td style="text-align:center;padding:3px 4px;font-weight:600">${pars[h-1] || 4}</td>`).join('')}
-                <td style="text-align:center;padding:3px 6px;font-weight:700">${halfPar}</td>
-              </tr>
-            </thead>
-            <tbody>`;
-
-        groupPlayers.forEach((player, pi) => {
-          let playerTotal = 0;
-          const playerScores = holeNums.map(h => {
-            const holeData = holes[h] || {};
-            const holeScores = holeData.scores || holeData;
-            const gross = holeScores[player.name] !== undefined ? holeScores[player.name] : null;
-            if (gross !== null) playerTotal += gross;
-            return gross;
-          });
-
-          html += `<tr style="${pi % 2 === 1 ? 'background:rgba(0,0,0,0.03)' : ''}">
-            <td style="padding:4px 6px;font-weight:600;font-size:13px">${escHtml(player.name.split(' ')[0])}</td>`;
-
-          playerScores.forEach((gross, idx) => {
-            const h = holeNums[idx];
-            const par = pars[h - 1] || 4;
-            let cellStyle = 'text-align:center;padding:4px 2px;font-size:13px;';
-            let display = gross !== null ? gross : '\u00b7';
-            if (gross !== null) {
-              const diff = gross - par;
-              if (diff <= -2) cellStyle += 'background:#1d4ed8;color:#fff;border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;';
-              else if (diff === -1) cellStyle += 'background:var(--mg-green);color:#fff;border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;';
-              else if (diff === 1) cellStyle += 'border:2px solid #e74c3c;border-radius:2px;';
-              else if (diff >= 2) cellStyle += 'border:2px solid #e74c3c;border-radius:50%;';
-            }
-            html += `<td style="text-align:center;padding:2px"><span style="${cellStyle}">${display}</span></td>`;
-          });
-
-          const allScored = playerScores.every(s => s !== null);
-          html += `<td style="text-align:center;padding:4px 6px;font-weight:700;font-size:13px">${allScored ? playerTotal : '\u2014'}</td>`;
-          html += `</tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-      });
-    });
-
-    // Legend
-    html += `<div style="display:flex;gap:12px;padding:8px 0 0;font-size:11px;color:var(--mg-text-muted);justify-content:center">
-      <span><span style="display:inline-block;width:14px;height:14px;background:var(--mg-green);border-radius:50%;vertical-align:middle;margin-right:3px"></span>Birdie</span>
-      <span><span style="display:inline-block;width:14px;height:14px;background:#1d4ed8;border-radius:50%;vertical-align:middle;margin-right:3px"></span>Eagle</span>
-      <span><span style="display:inline-block;width:14px;height:14px;border:2px solid #e74c3c;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Bogey+</span>
-    </div>`;
 
     html += `</div></div>`;
   }

@@ -2766,11 +2766,11 @@ window.MG = {
     if (!container) return;
     container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">Thinking...</div>';
     try {
-      const result = await Sync.apiFetch('../api/advisor', 'POST', {
+      const result = await fetch('/api/advisor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         slug: state._slug,
         players: (state._config?.players || []).map(p => ({ name: p.name, hi: p.handicapIndex })),
         type: state._config?.event?.eventType || 'trip',
-      });
+      })}).then(r => r.json());
       if (result?.recommendation) {
         container.innerHTML = `<div style="padding:12px;background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);border-radius:8px">
           <div style="font-size:14px;font-weight:600;color:var(--mg-text);line-height:1.5">${result.recommendation}</div>
