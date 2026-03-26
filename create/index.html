@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Event — Waggle</title>
+  <meta name="theme-color" content="#0D2818">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:#1A472A; --green-light:#2D6A3E; --gold:#D4AF37; --gold-dim:#B8962E;
+      --ivory:#F5F0E8; --white:#FAFAF7; --dark:#0D2818; --text:#1a1a1a;
+      --muted:#6B7280; --border:#E5E1D8; --win:#16A34A; --lose:#DC2626;
+      --shadow-sm:0 1px 3px rgba(26,71,42,0.06); --shadow-md:0 4px 12px rgba(26,71,42,0.08);
+      --shadow-glow:0 0 24px rgba(212,175,55,0.2);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--dark);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+    /* ── Top bar ── */
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--dark);border-bottom:1px solid rgba(255,255,255,0.08)}
+    .topbar a{color:var(--gold);text-decoration:none;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px}
+    .topbar .title{color:#fff;font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+
+    /* ── Progress ── */
+    .progress{display:flex;align-items:center;gap:0;padding:0 20px;background:var(--dark);padding-bottom:20px}
+    .prog-step{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background 0.4s}
+    .prog-step.done{background:var(--gold)}
+    .prog-step.active{background:var(--green-light)}
+    .prog-step+.prog-step{margin-left:4px}
+
+    /* ── Content area ── */
+    .content{background:var(--ivory);border-radius:20px 20px 0 0;min-height:calc(100vh - 120px);padding:32px 20px 120px}
+    .step{display:none;max-width:560px;margin:0 auto}
+    .step.active{display:block;animation:fadeIn 0.3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    .step-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    .step h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--dark);margin-bottom:8px;line-height:1.2}
+    .step .desc{color:var(--muted);font-size:14px;margin-bottom:28px;line-height:1.6}
+
+    /* ── Form elements ── */
+    label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;margin-top:20px;letter-spacing:0.3px}
+    label:first-of-type{margin-top:0}
+    input,select,textarea{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--white);color:var(--text);transition:border 0.2s,box-shadow 0.2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
+    input::placeholder,textarea::placeholder{color:#aaa}
+    textarea{min-height:160px;font-family:'SF Mono','Menlo',monospace;font-size:13px;line-height:1.6;resize:vertical}
+    .hint{font-size:12px;color:var(--muted);margin-top:4px}
+
+    /* ── Type cards ── */
+    .type-grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .type-card{border:2px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:border 0.2s,background 0.2s,box-shadow 0.2s;display:flex;align-items:center;gap:16px;background:var(--white)}
+    .type-card:hover{border-color:var(--green);box-shadow:var(--shadow-sm)}
+    .type-card.selected{border-color:var(--green);background:#f0f7f2;box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
+    .type-icon{width:48px;height:48px;background:var(--dark);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .type-card h3{font-size:16px;font-weight:700;margin-bottom:2px}
+    .type-card p{font-size:13px;color:var(--muted);line-height:1.4}
+
+    /* ── Roster ── */
+    .roster-preview{margin-top:16px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .roster-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04)}
+    .roster-row:last-child{border-bottom:none}
+    .roster-row:nth-child(odd){background:rgba(26,71,42,0.02)}
+    .roster-row .num{color:var(--muted);font-size:11px;width:24px;flex-shrink:0}
+    .roster-row .name{font-weight:600;flex:1}
+    .roster-row .hcp{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
+    .roster-count{font-size:13px;color:var(--green);font-weight:700;margin-top:12px;display:flex;align-items:center;gap:6px}
+    .roster-count::before{content:'✓';color:var(--win);font-weight:700}
+    .error{color:var(--lose);font-size:13px;margin-top:8px;padding:8px 12px;background:#fef2f2;border-radius:8px}
+
+    /* ── Flights ── */
+    .flight-box{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+    .flight-box h4{font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px}
+    .flight-box h4 .tees{font-size:10px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+    .flight-team{font-size:13px;padding:5px 0;display:flex;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.03)}
+    .flight-team:last-child{border-bottom:none}
+    .flight-team .combined{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
+
+    /* ── Scoring ── */
+    .format-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .format-card{border:2px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;text-align:center;background:var(--white);transition:border 0.2s}
+    .format-card:hover{border-color:var(--green)}
+    .format-card.selected{border-color:var(--green);background:#f0f7f2}
+    .format-card h4{font-size:14px;font-weight:700;margin-bottom:2px}
+    .format-card p{font-size:11px;color:var(--muted)}
+
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+    .toggle-row:last-child{border-bottom:none}
+    .toggle-label{font-size:14px;font-weight:500}
+    .toggle-desc{font-size:12px;color:var(--muted)}
+    .toggle{width:44px;height:26px;background:#d1d5db;border-radius:13px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+    .toggle.on{background:var(--green)}
+    .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+    .toggle.on::after{transform:translateX(18px)}
+
+    /* ── Theme ── */
+    .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .theme-swatch{border:2px solid var(--border);border-radius:12px;padding:16px 12px;cursor:pointer;text-align:center;background:var(--white);transition:border 0.2s,box-shadow 0.2s}
+    .theme-swatch:hover{border-color:var(--green)}
+    .theme-swatch.selected{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
+    .theme-bar{height:6px;border-radius:3px;margin-bottom:10px}
+    .theme-swatch p{font-size:12px;font-weight:600}
+
+    /* ── Review ── */
+    .review-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+    .review-card h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--dark);margin-bottom:4px}
+    .review-card .venue{font-size:14px;color:var(--muted)}
+    .review-card .date{font-size:13px;color:var(--muted);margin-top:4px}
+    .review-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+    .review-tag{font-size:12px;padding:4px 10px;border-radius:6px;background:var(--ivory);color:var(--text);font-weight:500}
+    .review-theme{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--muted)}
+    .review-theme .dot{width:12px;height:12px;border-radius:4px}
+
+    /* ── Launch success ── */
+    .launch-success{text-align:center;padding:20px 0}
+    .launch-check{width:64px;height:64px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+    @keyframes scaleIn{from{transform:scale(0)}to{transform:scale(1)}}
+    .launch-check svg{width:32px;height:32px;color:#fff}
+    .launch-success h2{font-family:'Playfair Display',serif;font-size:24px;color:var(--dark);margin-bottom:8px}
+    .launch-success .sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+    .launch-url{background:var(--dark);border-radius:12px;padding:20px;margin:0 auto;max-width:400px}
+    .launch-url a{color:var(--gold);font-size:15px;font-weight:700;text-decoration:none;word-break:break-all}
+    .launch-url .copy-hint{font-size:11px;color:rgba(255,255,255,0.5);margin-top:8px}
+    .launch-actions{display:flex;gap:10px;margin-top:20px;justify-content:center;flex-wrap:wrap}
+    .launch-btn{padding:14px 24px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:transform 0.15s}
+    .launch-btn:hover{transform:translateY(-1px)}
+    .launch-btn.primary{background:var(--gold);color:var(--dark)}
+    .launch-btn.secondary{background:var(--white);color:var(--green);border:1.5px solid var(--border)}
+    .qr-hero{margin:20px auto;padding:24px;background:var(--white);border-radius:16px;border:2px solid var(--border);text-align:center;max-width:280px}
+    .qr-hero img{border-radius:10px}
+    .qr-hero .qr-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:12px}
+    .qr-hero .qr-hint{font-size:13px;color:var(--muted);margin-top:4px}
+    .admin-card{margin-top:20px;padding:16px 20px;background:var(--dark);border-radius:12px;color:#fff;text-align:left}
+    .admin-card .pin-value{font-family:'SF Mono','Menlo',monospace;font-size:28px;font-weight:700;letter-spacing:4px;color:var(--gold);margin:4px 0 8px}
+    .admin-card .pin-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
+    .admin-card .pin-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.5}
+
+    /* ── Bottom nav ── */
+    .nav-bar{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:12px;z-index:10;max-width:560px;margin:0 auto}
+    @media(min-width:561px){.nav-bar{left:50%;transform:translateX(-50%);border-radius:12px 12px 0 0;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}}
+    .btn{padding:16px 24px;border-radius:10px;font-size:15px;font-weight:700;border:none;cursor:pointer;flex:1;transition:transform 0.15s,opacity 0.15s}
+    .btn-back{background:transparent;color:var(--muted);font-weight:600}
+    .btn-next{background:var(--green);color:#fff}
+    .btn-next:hover{background:var(--green-light)}
+    .btn-next:disabled{opacity:0.3;cursor:not-allowed}
+    .btn-launch{background:var(--gold);color:var(--dark);font-size:16px;box-shadow:var(--shadow-glow)}
+    .btn-launch:hover{transform:translateY(-1px)}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></a>
+    <img src="/logo.png" alt="Waggle" style="height:30px;filter:brightness(10)">
+    <span class="title">Create Event</span>
+  </div>
+  <div class="progress" id="progress"></div>
+  <div class="content">
+    <div id="wizard"></div>
+  </div>
+  <div class="nav-bar" id="nav-bar"></div>
+
+  <script>
+    const W = {
+      step: 0, type: '', name: '', venue: '', date1: '', date2: '', format: '',
+      roster: [], teamsPerFlight: 6, flights: [], pairings: {},
+      dayRounds: {}, // { 'YYYY-MM-DD': [{time:'9:00 AM'}], ... } — keyed by actual date
+      scoring: { totalPointsPerMatch:10, capMax:7, capMin:3, holesPerMatch:9, handicapAllowance:0.85 },
+      structure: { nassauBet: 10, skinsBet: 5 }, // per-game stakes
+      autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
+      features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
+      games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false },
+      theme: 'club', adminPin: '', adminContact: '', slug: '', _rosterRaw: '', _rosterError: '', _launchError: '',
+      course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
+      _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
+    };
+
+    const STEPS = ['Event Type','Details','Roster','Flights','Scoring','Theme','Launch'];
+    const THEMES = {
+      club:    { primary:'#1A472A', accent:'#D4AF37', bg:'#F5F0E8', label:'Country Club' },
+      modern:  { primary:'#111827', accent:'#10B981', bg:'#F9FAFB', label:'Modern Dark' },
+      coastal: { primary:'#1E3A5F', accent:'#F59E0B', bg:'#F0F4F8', label:'Coastal' },
+    };
+
+    // Quick Round: type(0) → quick-setup(1) → launch(6)
+    // Buddies Trip: type(0) → buddies-setup(1) → launch(6)  [same structure, different renderer]
+    const QUICK_STEPS = [0, 1, 6];
+
+    function isQuick() { return W.type === 'quick'; }
+    function isBuddiesTrip() { return W.type === 'trip'; }
+    function isFastFlow() { return isQuick() || isBuddiesTrip(); }
+
+    function render() {
+      // Progress bar
+      if (isFastFlow()) {
+        const qi = QUICK_STEPS.indexOf(W.step);
+        const labels = isBuddiesTrip() ? ['Type','Setup','Launch'] : ['Type','Setup','Launch'];
+        document.getElementById('progress').innerHTML = labels.map((_,i) =>
+          `<div class="prog-step ${i<qi?'done':''} ${i===qi?'active':''}"></div>`).join('');
+      } else {
+        document.getElementById('progress').innerHTML = STEPS.map((_,i) =>
+          `<div class="prog-step ${i<W.step?'done':''} ${i===W.step?'active':''}"></div>`).join('');
+      }
+
+      const fns = [renderType, renderDetails, renderRoster, renderFlights, renderScoring, renderTheme, renderLaunch];
+      // Fast-flow step 1: quick or buddies trip setup
+      if (isFastFlow() && W.step === 1) {
+        document.getElementById('wizard').innerHTML = `<div class="step active">${isBuddiesTrip() ? renderBuddiesTripSetup() : renderQuickSetup()}</div>`;
+      } else {
+        document.getElementById('wizard').innerHTML = `<div class="step active">${fns[W.step]()}</div>`;
+      }
+
+      const nav = document.getElementById('nav-bar');
+      if (W.step === 6 && W.slug) { nav.innerHTML = ''; return; }
+      const back = W.step > 0 ? `<button class="btn btn-back" onclick="prev()">Back</button>` : '<div></div>';
+      const isLaunch = W.step === 6;
+      const cls = isLaunch ? 'btn btn-launch' : 'btn btn-next';
+      const label = isLaunch ? 'Launch Your Sportsbook' : 'Continue';
+      nav.innerHTML = `${back}<button class="${cls}" onclick="next()" ${canGo()?'':'disabled'}>${label}</button>`;
+    }
+
+    function canGo() {
+      if (isQuick()) {
+        if (W.step === 0) return !!W.type;
+        if (W.step === 1) return W.roster.length >= 2 && W.adminPin.length >= 4 && Object.values(W.games).some(Boolean);
+        return true;
+      }
+      if (isBuddiesTrip()) {
+        if (W.step === 0) return !!W.type;
+        if (W.step === 1) return W.roster.length >= 2 && W.adminPin.length >= 4 && Object.values(W.games).some(Boolean);
+        return true;
+      }
+      return [
+        ()=>!!W.type,
+        ()=>W.name.trim()&&W.venue.trim()&&W.date1&&W.adminPin.length>=4,
+        ()=>W.roster.length>=4,
+        ()=>W.flights.length>0,
+        ()=>true,
+        ()=>true,
+        ()=>true,
+      ][W.step]();
+    }
+
+    function next() {
+      if (!canGo()) return;
+      if (isQuick()) {
+        if (W.step === 0) { W.step = 1; render(); scrollTo(0,0); return; }
+        if (W.step === 1) {
+          if (!W.name || W.name === 'Weekend Warrior') W.name = 'Weekend Warrior · ' + fmtDate(W.date1);
+          if (!W.venue) W.venue = 'On the course';
+          if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+          const firstGame = ['skins','nassau','wolf','vegas','match_play','stroke_play'].find(g => W.games[g]) || 'skins';
+          W.format = firstGame;
+          W.features.betting = true; W.theme = 'club';
+          autoFlights(); autoPairings();
+          W.step = 6; render(); scrollTo(0,0); return;
+        }
+        if (W.step === 6) { launch(); return; }
+        return;
+      }
+      if (isBuddiesTrip()) {
+        if (W.step === 0) { W.step = 1; render(); scrollTo(0,0); return; }
+        if (W.step === 1) {
+          if (!W.name) W.name = 'Buddies Trip · ' + fmtDate(W.date1);
+          if (!W.venue) W.venue = W._courseQuery || 'On the course';
+          if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+          const firstGame = ['nassau','skins','wolf','vegas','match_play','stroke_play'].find(g => W.games[g]) || 'nassau';
+          W.format = firstGame;
+          W.features.betting = true; W.theme = 'club';
+          autoFlights(); autoPairings();
+          W.step = 6; render(); scrollTo(0,0); return;
+        }
+        if (W.step === 6) { launch(); return; }
+        return;
+      }
+      if (W.step === 2) autoFlights();
+      if (W.step === 3) autoPairings();
+      if (W.step === 6) { launch(); return; }
+      W.step++; render(); scrollTo(0,0);
+    }
+
+    function prev() {
+      if (isFastFlow()) {
+        if (W.step === 1) { W.step = 0; render(); scrollTo(0,0); return; }
+        if (W.step === 6) { W.step = 1; render(); scrollTo(0,0); return; }
+        return;
+      }
+      if (W.step > 0) { W.step--; render(); scrollTo(0,0); }
+    }
+
+    function upNav() { const b=document.querySelector('.btn-next,.btn-launch'); if(b)b.disabled=!canGo(); }
+
+    // ── Renderers ──
+    function renderType() {
+      const types = [
+        {id:'quick',       icon:'⚡', name:'Weekend Warrior', desc:'Track any match, free. Skins, Nassau, Wolf, Match Play — pick your game and go.', badge:'FREE'},
+        {id:'trip',        icon:'🏌️', name:'Buddies Trip',    desc:'Casual group. Nassau, skins, wolf, Vegas + more. 1-4 rounds.'},
+        {id:'member_guest',icon:'🏆', name:'Member-Guest',   desc:'Flighted round robin. Multi-day. Flights, standings, futures.'},
+        {id:'outing',      icon:'⛳', name:'Outing / Charity',desc:'Shotgun start. Custom format and scoring.'},
+      ];
+      return `
+        <div class="step-label">Step 1 of 7</div>
+        <h2>What are you running?</h2>
+        <p class="desc">This determines the default format and scoring. You can customize everything later.</p>
+        <div class="type-grid">${types.map(t=>`
+          <div class="type-card ${W.type===t.id?'selected':''}" onclick="W.type='${t.id}';next()">
+            <div class="type-icon">${t.icon}</div>
+            <div style="flex:1"><h3>${t.name}${t.badge?` <span style="font-size:10px;font-weight:700;background:var(--gold);color:var(--dark);padding:2px 7px;border-radius:10px;vertical-align:middle;letter-spacing:0.5px">${t.badge}</span>`:''}</h3><p>${t.desc}</p></div>
+          </div>`).join('')}
+        </div>`;
+    }
+
+    // Returns array of YYYY-MM-DD strings for every calendar day start→end inclusive
+    function getEventDays() {
+      if (!W.date1) return [];
+      const start = new Date(W.date1 + 'T12:00:00');
+      const end   = W.date2 ? new Date(W.date2 + 'T12:00:00') : start;
+      if (end < start) return [W.date1];
+      const days = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        days.push(d.toISOString().slice(0, 10));
+      }
+      return days.slice(0, 7); // cap at 7 days
+    }
+
+    function renderDetails() {
+      const days = getEventDays();
+
+      // Sync dayRounds: add new days with empty array, remove days no longer in range
+      const active = new Set(days);
+      Object.keys(W.dayRounds).forEach(d => { if (!active.has(d)) delete W.dayRounds[d]; });
+      days.forEach((d, i) => {
+        if (!W.dayRounds[d]) W.dayRounds[d] = [{ time: i === 0 ? '9:00 AM' : '8:30 AM' }];
+      });
+
+      const totalRounds = Object.values(W.dayRounds).reduce((s, arr) => s + arr.length, 0);
+      const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+      const dayCards = days.map((dateStr, i) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const label = `Day ${i+1} · ${dow[d.getDay()]} ${fmtDate(dateStr)}`;
+        const rounds = W.dayRounds[dateStr] || [];
+        // running round number across all days
+        let roundNum = 0;
+        for (let j = 0; j < i; j++) roundNum += (W.dayRounds[days[j]] || []).length;
+
+        const timeRows = rounds.map((r, ri) => `
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <span style="font-size:12px;color:var(--muted);min-width:60px;font-weight:600">Round ${roundNum + ri + 1}</span>
+            <input type="text" value="${r.time}" placeholder="9:00 AM"
+              style="flex:1;padding:10px 12px;font-size:16px;border:1.5px solid var(--border);border-radius:8px;background:var(--white)"
+              oninput="setRoundTime('${dateStr}',${ri},this.value)">
+            <button onclick="removeRound('${dateStr}',${ri})"
+              style="padding:8px 12px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+          </div>`).join('');
+
+        return `
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:14px;font-weight:700;color:var(--dark)">${label}</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                ${rounds.length === 0
+                  ? `<span style="font-size:12px;color:var(--muted)">Rest day</span>`
+                  : `<span style="font-size:12px;color:var(--green);font-weight:600">${rounds.length} round${rounds.length > 1 ? 's' : ''}</span>`}
+                ${rounds.length < 2
+                  ? `<button onclick="addRound('${dateStr}')" style="padding:6px 14px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">+ Round</button>`
+                  : ''}
+              </div>
+            </div>
+            ${timeRows}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="step-label">Step 2 of 7</div>
+        <h2>Event details</h2>
+        <p class="desc">This shows in the header when players open the link.</p>
+        <label>Event Name</label>
+        <input type="text" value="${esc(W.name)}" placeholder="e.g. Cabot Citrus Invitational 2026" oninput="W.name=this.value;upNav()">
+        <label>Venue</label>
+        <input type="text" value="${esc(W.venue)}" placeholder="e.g. Cabot Citrus Farms, Nova Scotia" oninput="W.venue=this.value;upNav()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px">
+          <div>
+            <label style="margin-top:0">Start Date</label>
+            <input type="date" value="${W.date1}" oninput="W.date1=this.value;W.dayRounds={};upNav();render()">
+          </div>
+          <div>
+            <label style="margin-top:0">End Date <span style="font-weight:400;color:var(--muted);font-size:11px">(single-day if same)</span></label>
+            <input type="date" value="${W.date2}" ${W.date1 ? `min="${W.date1}"` : ''} oninput="W.date2=this.value;W.dayRounds={};render()">
+          </div>
+        </div>
+        ${days.length > 1 ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;margin-bottom:4px">${days.length}-day event · ${days.length} days auto-detected from date range</div>` : ''}
+        <label>Admin PIN</label>
+        <input type="text" inputmode="numeric" maxlength="8" value="${W.adminPin}" placeholder="4+ digits" oninput="W.adminPin=this.value;upNav()">
+        <div class="hint">Only share this with people who enter scores and manage bets.</div>
+        <label>Commissioner Phone or Email</label>
+        <input type="text" value="${esc(W.adminContact)}" placeholder="(555) 123-4567 or you@email.com" oninput="W.adminContact=this.value">
+        <div class="hint">Used for magic link login — no PIN needed on game day.</div>
+        ${days.length > 0 ? `
+        <label style="margin-top:24px">Round Schedule</label>
+        <div class="hint" style="margin-bottom:10px">Add up to 2 rounds per day. Leave a day empty for rest days.</div>
+        ${dayCards}
+        ${totalRounds > 0 ? `<div style="font-size:13px;color:var(--green);font-weight:700;margin-top:4px">Total: ${totalRounds} round${totalRounds > 1 ? 's' : ''}</div>` : ''}` : ''}`;
+    }
+
+    function addRound(dateStr) {
+      if (!W.dayRounds[dateStr]) W.dayRounds[dateStr] = [];
+      if (W.dayRounds[dateStr].length >= 2) return;
+      const defaults = ['9:00 AM', '1:00 PM'];
+      W.dayRounds[dateStr].push({ time: defaults[W.dayRounds[dateStr].length] || '9:00 AM' });
+      render();
+    }
+
+    function removeRound(dateStr, ri) {
+      if (!W.dayRounds[dateStr]) return;
+      W.dayRounds[dateStr].splice(ri, 1);
+      render();
+    }
+
+    function setRoundTime(dateStr, ri, val) {
+      if (W.dayRounds[dateStr]?.[ri]) W.dayRounds[dateStr][ri].time = val;
+    }
+
+    function renderRoster() {
+      const isTeam = W.type==='member_guest';
+      const tab = W._rosterTab || 'paste';
+      const ph = isTeam
+        ? 'Tiger Woods, Rory McIlroy, 2.2, -0.7\nPhil Mickelson, Jon Rahm, 7.3, 1.4\nDustin Johnson, Justin Thomas, 4.1, 3.8'
+        : 'Tiger Woods, 2.2\nRory McIlroy, -0.7\nDustin Johnson, 3.1\nJon Rahm, 1.4';
+      const tabBtn = (id,label) => `<button onclick="W._rosterTab='${id}';render()" style="flex:1;padding:10px;border:none;border-bottom:2px solid ${tab===id?'var(--green)':'transparent'};background:transparent;font-size:13px;font-weight:${tab===id?700:500};color:${tab===id?'var(--green)':'var(--muted)'};cursor:pointer">${label}</button>`;
+
+      const ghinPanel = `
+        <div style="padding:16px">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter a GHIN number and last name — we'll look up the player's handicap index automatically.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <input type="text" id="ghin-input" inputmode="numeric" placeholder="GHIN # (e.g. 1234567)" style="padding:10px 12px;font-size:14px" onkeydown="if(event.key==='Enter')lookupGhin()">
+            <input type="text" id="ghin-last" placeholder="Last name" style="padding:10px 12px;font-size:14px" onkeydown="if(event.key==='Enter')lookupGhin()">
+          </div>
+          <button onclick="lookupGhin()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Look Up Handicap</button>
+          <div id="ghin-result" style="margin-top:10px;font-size:13px"></div>
+          <div id="ghin-manual" style="display:none;margin-top:10px">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enter handicap index manually:</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <input type="text" id="ghin-name-manual" placeholder="Full name" style="padding:10px 12px;font-size:14px">
+              <input type="number" id="ghin-hi-manual" placeholder="HI (e.g. 5.2)" step="0.1" style="padding:10px 12px;font-size:14px">
+            </div>
+            <button onclick="addManualGhin()" style="margin-top:8px;width:100%;padding:10px;background:var(--dark);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Add to Roster</button>
+          </div>
+        </div>`;
+
+      const csvHelp = isTeam
+        ? `Export your GHIN club roster, then paste it here.<br>Expected columns: <code>Last Name, First Name, GHIN #, Handicap Index</code><br>For member-guest: paste member rows, then pair them in the text.`
+        : `Export your GHIN club roster and paste here.<br>Expected: <code>Last Name, First Name, GHIN #, Handicap Index</code>`;
+      const csvPh = isTeam
+        ? 'Smith,John,1234567,5.2\nJones,Mike,2345678,8.1\n(paste GHIN export or comma/tab separated)'
+        : 'Smith,John,1234567,5.2\nJones,Mike,2345678,8.1';
+
+      const csvPanel = `
+        <div style="padding:16px">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:4px">${csvHelp}</p>
+          <div style="margin:10px 0;padding:10px 12px;background:var(--ivory);border-radius:8px;font-size:12px;color:var(--muted)">
+            <strong>Get your GHIN roster:</strong> ghin.com → your club → Members → Export Roster (CSV)
+          </div>
+          <textarea id="csv-input" placeholder="${csvPh}" style="min-height:140px;font-family:'SF Mono',monospace;font-size:12px;line-height:1.5" oninput="parseCsvRoster(this.value)"></textarea>
+          <div id="csv-result" style="margin-top:8px;font-size:13px"></div>
+        </div>`;
+
+      const pastePanel = `
+        <div style="padding:16px">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px">${isTeam?'Member, Guest, Member HI, Guest HI — one team per line':'Name, Handicap — one player per line'}. Tab or comma separated.</p>
+          <textarea id="ri" placeholder="${ph}" oninput="parseRosterLive(this.value)" style="min-height:160px;font-size:16px">${W._rosterRaw||''}</textarea>
+          <div id="roster-inline-preview" style="margin-top:8px"></div>
+        </div>`;
+
+      return `
+        <div class="step-label">Step 3 of 7</div>
+        <h2>Build your roster</h2>
+        <p class="desc">Add players by GHIN lookup, paste a GHIN CSV export, or type manually.</p>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">
+          <div style="display:flex;border-bottom:1px solid var(--border)">
+            ${tabBtn('ghin','🏌 GHIN Lookup')}
+            ${tabBtn('csv','📋 CSV Import')}
+            ${tabBtn('paste','✏️ Manual')}
+          </div>
+          ${tab==='ghin'?ghinPanel:tab==='csv'?csvPanel:pastePanel}
+        </div>
+        <div id="roster-preview-area">${rosterPreviewHtml()}</div>`;
+    }
+
+    function rosterPreviewHtml() {
+      const isTeam = W.type==='member_guest';
+      let html = '';
+      if (W.roster.length > 0) {
+        html += `<div class="roster-count">${W.roster.length} ${isTeam?'teams':'players'} ready</div>
+          <div class="roster-preview">${W.roster.map((r,i)=>isTeam
+            ?`<div class="roster-row"><span class="num">${i+1}</span><span class="name">${esc(r.member)} / ${esc(r.guest)}</span><span class="hcp">${r.combined}</span></div>`
+            :`<div class="roster-row"><span class="num">${i+1}</span><span class="name">${esc(r.name)}</span><span class="hcp">${r.handicap}</span></div>`
+          ).join('')}</div>`;
+      }
+      if (W._rosterError) html += `<div class="error">${W._rosterError}</div>`;
+      return html;
+    }
+
+    // Live parse — does NOT call render() so textarea keeps focus
+    function parseRosterLive(raw) {
+      W._rosterRaw = raw;
+      W._rosterError = '';
+      _parseRosterData(raw);
+      // Update only the inline preview inside the paste panel
+      const inline = document.getElementById('roster-inline-preview');
+      if (inline) inline.innerHTML = rosterPreviewHtml();
+      // Update the outer preview area too (if it exists and paste panel is active)
+      const outer = document.getElementById('roster-preview-area');
+      if (outer) outer.innerHTML = rosterPreviewHtml();
+      upNav();
+    }
+
+    function renderFlights() {
+      if (W.type!=='member_guest') {
+        return `<div class="step-label">Step 4 of 7</div>
+          <h2>Groups</h2>
+          <p class="desc">Everyone plays together — no flights for a ${W.type==='trip'?'buddies trip':'this format'}.</p>
+          <div style="padding:20px;background:var(--white);border-radius:10px;border:1px solid var(--border);text-align:center">
+            <div style="font-size:32px;margin-bottom:8px">🏌️</div>
+            <div style="font-weight:700;color:var(--green)">${W.roster.length} players, one group</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">Pairings set per round</div>
+          </div>`;
+      }
+      return `<div class="step-label">Step 4 of 7</div>
+        <h2>Flights</h2>
+        <p class="desc">Auto-sorted by combined handicap into ${W.flights.length} flights of ${W.teamsPerFlight}.</p>
+        <label>Teams per flight</label>
+        <select onchange="W.teamsPerFlight=parseInt(this.value);autoFlights();render()">
+          ${[4,5,6,7,8].map(n=>`<option value="${n}" ${W.teamsPerFlight===n?'selected':''}>${n}</option>`).join('')}
+        </select>
+        <div style="margin-top:16px">${W.flights.map(f=>`
+          <div class="flight-box">
+            <h4>${f.name} <span class="tees">${f.tees} tees</span></h4>
+            ${f.teamIds.map(tid=>{const t=W.roster[tid-1];return t?`<div class="flight-team"><span>${t.member} / ${t.guest}</span><span class="combined">${t.combined}</span></div>`:''}).join('')}
+          </div>`).join('')}
+        </div>`;
+    }
+
+    async function getAdvisorPick() {
+      if (W.roster.length < 2) return;
+      const btn = document.getElementById('advisor-btn');
+      const result = document.getElementById('advisor-result');
+      if (!btn || !result) return;
+      btn.disabled = true;
+      btn.textContent = 'Thinking...';
+      result.innerHTML = '';
+      try {
+        const players = W.roster.map(r => ({ name: r.name, handicapIndex: r.handicap }));
+        const res = await fetch('/api/advisor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ players })
+        });
+        const data = await res.json();
+        if (data.ok && data.advice) {
+          const a = data.advice;
+          // Auto-check the recommended format
+          if (a.recommended_format) {
+            const fmt = a.recommended_format.toLowerCase();
+            const fmtMap = { nassau: 'nassau', skins: 'skins', wolf: 'wolf', vegas: 'vegas', stableford: 'stableford', 'match play': 'match_play', 'stroke play': 'stroke_play' };
+            const key = Object.entries(fmtMap).find(([k]) => fmt.includes(k))?.[1];
+            if (key && W.games.hasOwnProperty(key)) { W.games[key] = true; }
+          }
+          result.innerHTML = `<div style="background:var(--dark);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(212,175,55,0.7);margin-bottom:8px">AI RECOMMENDS</div>
+            <div style="font-size:18px;font-weight:700;color:var(--gold);margin-bottom:4px">${a.recommended_format || ''}${a.stakes ? ` &middot; $${a.stakes} stakes` : ''}</div>
+            ${a.handicap_advice ? `<div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:6px;line-height:1.5">${a.handicap_advice}</div>` : ''}
+            ${a.fun_tip ? `<div style="font-size:12px;color:rgba(212,175,55,0.6);margin-top:8px;line-height:1.5;font-style:italic">${a.fun_tip}</div>` : ''}
+          </div>`;
+        } else {
+          result.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Could not get recommendation — pick manually below.</div>`;
+        }
+      } catch {
+        result.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Network error — pick manually below.</div>`;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Re-run Advisor';
+    }
+
+    function renderScoring() {
+      if (W.type==='trip' || W.type==='outing') {
+        const allGames = [
+          {id:'nassau',  name:'Nassau',     emoji:'🏌️', desc:'Front 9, back 9, overall — 3 bets per match'},
+          {id:'skins',   name:'Skins',      emoji:'💰', desc:'Per-hole winner takes pot. Ties carry over.'},
+          {id:'wolf',    name:'Wolf',       emoji:'🐺', desc:'Rotating picker chooses partner each hole'},
+          {id:'vegas',   name:'Vegas',      emoji:'🎰', desc:'Team scores combine into a 2-digit number'},
+          {id:'stableford',  name:'Stableford',  emoji:'⭐', desc:'Points for birdies, eagles, bogeys — net score'},
+          {id:'match_play',  name:'Match Play',   emoji:'⚔️', desc:'Hole-by-hole head-to-head with handicap strokes'},
+          {id:'stroke_play', name:'Stroke Play',  emoji:'📊', desc:'Lowest net total score wins the round'},
+        ];
+        const anyGame = Object.values(W.games).some(Boolean);
+        const hasRoster = W.roster.length >= 2;
+        return `<div class="step-label">Step 5 of 7</div>
+          <h2>Games & Format</h2>
+          <p class="desc">Pick the games your group wants to play. Mix and match — all run simultaneously.</p>
+          ${hasRoster ? `<div id="advisor-result"></div>
+          <button id="advisor-btn" onclick="getAdvisorPick()" style="width:100%;padding:12px 16px;background:var(--dark);color:var(--gold);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px;letter-spacing:0.3px">Ask AI: Best Format for This Group</button>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">
+            ${allGames.map(g => `
+            <div onclick="if(W.games.hasOwnProperty('${g.id}'))W.games.${g.id}=!W.games.${g.id};else W.games['${g.id}']=true;render()"
+              style="border:2px solid ${W.games[g.id]?'var(--green)':'var(--border)'};border-radius:12px;padding:14px;cursor:pointer;background:${W.games[g.id]?'#f0f7f2':'var(--white)'};position:relative">
+              ${W.games[g.id]?`<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">✓</div>`:''}
+              <div style="font-size:22px;margin-bottom:6px">${g.emoji}</div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:3px">${g.name}</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.4">${g.desc}</div>
+            </div>`).join('')}
+          </div>
+          ${!anyGame ? `<div style="padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e;margin-bottom:16px">Select at least one game — or continue with sportsbook betting only.</div>` : ''}
+
+          ${W.games.nassau ? `
+          <div style="margin-top:16px;margin-bottom:16px;padding:16px;background:var(--white);border:1.5px solid ${W.autoPress.enabled?'var(--green)':'var(--border)'};border-radius:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${W.autoPress.enabled?'12px':'0'}">
+              <div>
+                <div style="font-size:14px;font-weight:700">Auto-Press</div>
+                <div style="font-size:12px;color:var(--muted)">Automatically press when a player falls behind</div>
+              </div>
+              <div class="toggle ${W.autoPress.enabled?'on':''}" onclick="W.autoPress.enabled=!W.autoPress.enabled;render()"></div>
+            </div>
+            ${W.autoPress.enabled ? `
+            <div style="display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">Press when</span>
+              <div style="display:flex;gap:6px">
+                ${[1,2,3].map(n => `
+                <button onclick="W.autoPress.threshold=${n};render()"
+                  style="width:44px;height:44px;border-radius:10px;border:2px solid ${W.autoPress.threshold===n?'var(--green)':'var(--border)'};background:${W.autoPress.threshold===n?'var(--green)':'var(--white)'};color:${W.autoPress.threshold===n?'#fff':'var(--text)'};font-size:16px;font-weight:800;cursor:pointer">${n}</button>`).join('')}
+              </div>
+              <span style="font-size:13px;font-weight:600">down</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px">When a player is ${W.autoPress.threshold}-down in Nassau, the app auto-presses without anyone touching their phone.</div>
+            ` : ''}
+          </div>
+          ` : ''}
+
+          ${W.games.nassau ? `
+          <label>Nassau Stakes</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            ${[5,10,20,50].map(n => `
+            <button onclick="W.structure.nassauBet=${n};render()"
+              style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.nassauBet===n?'var(--green)':'var(--border)'};background:${W.structure.nassauBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.nassauBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Per player, per press. Front + Back + Overall = 3× this amount.</div>
+          ` : ''}
+
+          ${W.games.skins ? `
+          <label>Skins Stakes</label>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            ${[2,5,10,25].map(n => `
+            <button onclick="W.structure.skinsBet=${n};render()"
+              style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.skinsBet===n?'var(--green)':'var(--border)'};background:${W.structure.skinsBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.skinsBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+          </div>
+          ` : ''}
+
+          <label>Holes per round</label>
+          <select onchange="W.scoring.holesPerMatch=parseInt(this.value)">
+            <option value="9" ${W.scoring.holesPerMatch===9?'selected':''}>9 holes</option>
+            <option value="18" ${W.scoring.holesPerMatch===18?'selected':''}>18 holes</option>
+          </select>
+          <label style="margin-top:24px">Course <span style="font-weight:400;color:var(--muted)">(optional — for proper handicap allocation)</span></label>
+          ${W.course ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:2px solid var(--green);border-radius:10px;background:#f0f7f2">
+            <div>
+              <div style="font-size:14px;font-weight:600">${W.course.name}</div>
+              <div style="font-size:12px;color:var(--muted)">${W.course.city}, ${W.course.state} &middot; Slope ${W.course.slope} / Rating ${W.course.rating}</div>
+            </div>
+            <button onclick="W.course=null;W._courseQuery='';W._courseResults=[];render()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:4px">✕</button>
+          </div>` : `<div style="position:relative">
+            <input type="text" placeholder="Search by course name or city..." value="${W._courseQuery}"
+              oninput="W._courseQuery=this.value;searchCourses(this.value)"
+              style="padding-right:40px">
+            ${W._courseSearching ? `<div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>` : ''}
+            ${W._courseResults.length > 0 ? `<div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:0 0 10px 10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              ${W._courseResults.map(c => `<div onclick="W.course=${JSON.stringify(c)};W._courseResults=[];W._courseQuery='';render()"
+                style="padding:10px 14px;cursor:pointer;border-top:1px solid var(--border);font-size:14px" onmouseenter="this.style.background='#f5f5f5'" onmouseleave="this.style.background=''">
+                <strong>${c.name}</strong><span style="color:var(--muted);font-size:12px;margin-left:8px">${c.city}, ${c.state} · Slope ${c.slope}</span>
+              </div>`).join('')}
+            </div>` : ''}
+          </div>`}
+          <div style="margin-top:24px">
+            <div class="toggle-row">
+              <div><div class="toggle-label">Sportsbook</div><div class="toggle-desc">Let players bet on matches with live odds</div></div>
+              <div class="toggle ${W.features.betting?'on':''}" onclick="W.features.betting=!W.features.betting;render()"></div>
+            </div>
+          </div>`;
+      }
+      return `<div class="step-label">Step 5 of 7</div>
+        <h2>Scoring</h2>
+        <p class="desc">Standard member-guest round robin. Adjust if your event uses different rules.</p>
+        <label>Points per match</label>
+        <input type="number" value="${W.scoring.totalPointsPerMatch}" oninput="W.scoring.totalPointsPerMatch=parseInt(this.value)||10">
+        <label>Max points (cap)</label>
+        <input type="number" value="${W.scoring.capMax}" oninput="W.scoring.capMax=parseInt(this.value)||7">
+        <label>Min points (cap)</label>
+        <input type="number" value="${W.scoring.capMin}" oninput="W.scoring.capMin=parseInt(this.value)||3">
+        <label>Holes per match</label>
+        <select onchange="W.scoring.holesPerMatch=parseInt(this.value)">
+          <option value="9" ${W.scoring.holesPerMatch===9?'selected':''}>9 holes</option>
+          <option value="18" ${W.scoring.holesPerMatch===18?'selected':''}>18 holes</option>
+        </select>
+        <div style="margin-top:24px">
+          <div class="toggle-row"><div><div class="toggle-label">Sportsbook</div><div class="toggle-desc">Match odds, futures, props</div></div><div class="toggle ${W.features.betting?'on':''}" onclick="W.features.betting=!W.features.betting;render()"></div></div>
+          <div class="toggle-row"><div><div class="toggle-label">Calcutta Auction</div><div class="toggle-desc">Live team auction before play</div></div><div class="toggle ${W.features.calcutta?'on':''}" onclick="W.features.calcutta=!W.features.calcutta;render()"></div></div>
+          <div class="toggle-row"><div><div class="toggle-label">Shootout</div><div class="toggle-desc">Flight winners + wild card playoff</div></div><div class="toggle ${W.features.shootout?'on':''}" onclick="W.features.shootout=!W.features.shootout;render()"></div></div>
+        </div>`;
+    }
+
+    function renderTheme() {
+      return `<div class="step-label">Step 6 of 7</div>
+        <h2>Theme</h2>
+        <p class="desc">Set the look. Country Club is the default — it works.</p>
+        <div class="theme-grid">${Object.entries(THEMES).map(([id,t])=>`
+          <div class="theme-swatch ${W.theme===id?'selected':''}" onclick="W.theme='${id}';next()">
+            <div class="theme-bar" style="background:linear-gradient(90deg,${t.primary},${t.accent})"></div>
+            <p>${t.label}</p>
+          </div>`).join('')}
+        </div>`;
+    }
+
+    function renderLaunch() {
+      if (W.slug) {
+        const url = `https://betwaggle.com/${W.slug}/`;
+        const joinUrl = `https://betwaggle.com/join/${W.slug}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}&bgcolor=FAFAF7&color=0D2818`;
+        return `<div class="launch-success">
+          <div class="launch-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h2>Your sportsbook is live</h2>
+          <p class="sub">Hold this up to your group — everyone scans to join.</p>
+
+          <div class="qr-hero">
+            <img src="${qrUrl}" width="240" height="240" alt="QR code for ${W.slug}">
+            <div class="qr-label">Scan to open</div>
+            <div class="qr-hint">${url.replace('https://','')}</div>
+          </div>
+
+          <div class="launch-actions">
+            <button class="launch-btn primary" onclick="shareUrl('${url}')">Share with Group</button>
+            <button class="launch-btn secondary" onclick="copyUrl('${url}')">Copy Link</button>
+          </div>
+
+          <div class="admin-card">
+            <div class="pin-label">Your Admin PIN</div>
+            <div class="pin-value">${W.adminPin}</div>
+            <div class="pin-note">Use this in the Admin tab to enter scores, settle bets, and manage the event. Don't share it with players.</div>
+            ${W.adminContact ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1)">
+              <div class="pin-label">Magic Link</div>
+              <div style="color:var(--gold);font-size:14px;margin-top:4px">${esc(W.adminContact)}</div>
+              <div class="pin-note">On game day, tap "Send Magic Link" in Admin — no PIN needed.</div>
+            </div>` : ''}
+          </div>
+
+          <div style="margin-top:16px;text-align:center">
+            <a href="${url}" style="color:var(--green);font-weight:700;font-size:14px;text-decoration:none">Open your sportsbook &rarr;</a>
+          </div>
+        </div>`;
+      }
+      const theme = THEMES[W.theme];
+      const n = W.roster.length;
+      const isTeam = W.type==='member_guest';
+      const fmt = W.type==='member_guest'?'Round Robin Match Play':(W.format||'TBD');
+      const flightLabel = W.flights.length===0?'No flights':W.flights.length===1?'1 flight':W.flights.length+' flights';
+      const isWarrior = W.type === 'quick';
+      const price = isTeam ? 149 : 29;
+      const priceLine = isTeam ? 'Member-Guest' : (W.type==='trip'?'Buddies Trip':isWarrior?'Weekend Warrior':'Event');
+      return `<div class="step-label">Step 7 of 7</div>
+        <h2>Review & launch</h2>
+        <p class="desc">Everything look right? You'll be taken to checkout to complete payment.</p>
+        <div class="review-card">
+          <h3>${esc(W.name)}</h3>
+          <div class="venue">${esc(W.venue)}</div>
+          <div class="date">${fmtDate(W.date1)}${W.date2?' – '+fmtDate(W.date3||W.date2):''}</div>
+          <div class="review-meta">
+            <span class="review-tag">${n} ${isTeam?'teams':'players'}</span>
+            <span class="review-tag">${flightLabel}</span>
+            <span class="review-tag">${fmt}</span>
+            <span class="review-tag">${W.scoring.holesPerMatch} holes</span>
+          </div>
+          <div class="review-theme">
+            <span class="dot" style="background:${theme.primary}"></span>
+            <span class="dot" style="background:${theme.accent}"></span>
+            ${theme.label}
+          </div>
+        </div>
+        <div style="background:var(--dark);border-radius:12px;padding:20px 24px;margin:16px 0;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:4px">${priceLine}</div>
+            ${isWarrior
+              ? `<div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--gold);line-height:1">Free <span style="font-size:14px;font-weight:400;color:rgba(255,255,255,0.5)">beta</span></div>`
+              : `<div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:#fff;line-height:1">$${price} <span style="font-size:14px;font-weight:400;color:rgba(255,255,255,0.5)">one-time</span></div>`}
+          </div>
+          <div style="text-align:right;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6">${isWarrior?'Track any match<br>free during beta':'Unlimited players<br>& bets included'}</div>
+        </div>
+        ${W._launchError?`<div class="error">${W._launchError}</div>`:''}`;
+    }
+
+    // ── Roster parsing ──
+    // Shared parse logic — updates W.roster and W._rosterError, does NOT touch DOM
+    function _parseRosterData(raw) {
+      const lines = raw.trim().split('\n').filter(l => l.trim());
+      if (!lines.length) { W.roster = []; return; }
+      const isTeam = W.type === 'member_guest';
+      const parsed = [];
+      for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split(/[,\t]+/).map(s => s.trim()).filter(Boolean);
+        if (isTeam) {
+          if (parts.length < 4) { W._rosterError = `Line ${i+1}: Need "Member, Guest, MemberHI, GuestHI"`; W.roster = parsed; return; }
+          const mhi = parseFloat(parts[2]), ghi = parseFloat(parts[3]);
+          if (isNaN(mhi) || isNaN(ghi)) { W._rosterError = `Line ${i+1}: Handicaps must be numbers`; W.roster = parsed; return; }
+          parsed.push({ member: parts[0], guest: parts[1], memberHI: mhi, guestHI: ghi, combined: +(mhi+ghi).toFixed(1) });
+        } else {
+          if (parts.length < 2) { W._rosterError = `Line ${i+1}: Need "Name, Handicap"`; W.roster = parsed; return; }
+          const hi = parseFloat(parts[parts.length-1]);
+          const name = parts.slice(0,-1).join(' ');
+          if (isNaN(hi)) { W._rosterError = `Line ${i+1}: Last value must be a number`; W.roster = parsed; return; }
+          parsed.push({ name, handicap: hi });
+        }
+      }
+      W.roster = parsed;
+    }
+
+    // Called by non-textarea paths (GHIN add, CSV) — full re-render is fine
+    function parseRoster(raw) {
+      W._rosterRaw = raw; W._rosterError = '';
+      _parseRosterData(raw);
+      render();
+    }
+
+    // ── Auto-flight / pairings ──
+    function autoFlights() {
+      if(W.type!=='member_guest'||!W.roster.length){W.flights=[{id:'all',name:'All Players',tees:'',teamIds:W.roster.map((_,i)=>i+1)}];return;}
+      const sorted=W.roster.map((t,i)=>({...t,idx:i+1})).sort((a,b)=>a.combined-b.combined);
+      const per=W.teamsPerFlight;
+      const names=['Woods','Palmer','Nicklaus','Hogan','Boros','Trevino','Sarazen','Player','Nelson','Snead','Watson','Couples'];
+      W.flights=[];
+      for(let i=0;i<sorted.length;i+=per){
+        const fi=W.flights.length;
+        W.flights.push({id:names[fi]?.toLowerCase()||`f${fi+1}`,name:(names[fi]||`Flight ${fi+1}`)+' Flight',tees:fi<Math.ceil(sorted.length/per/2)?'Blue':'White',teamIds:sorted.slice(i,i+per).map(t=>t.idx)});
+      }
+    }
+
+    function autoPairings() {
+      W.pairings={};
+      W.flights.forEach(f=>{
+        const n=f.teamIds.length;if(n<2)return;
+        W.pairings[f.id]={};
+        const ids=[...f.teamIds];
+        const rounds=n%2===0?n-1:n;
+        const eff=n%2===0?ids:[...ids,null];
+        const half=eff.length/2;
+        for(let r=1;r<=rounds;r++){
+          const pairs=[];
+          for(let i=0;i<half;i++){const a=eff[i],b=eff[eff.length-1-i];if(a!==null&&b!==null)pairs.push([a,b]);}
+          W.pairings[f.id][r]=pairs;
+          const last=eff.pop();eff.splice(1,0,last);
+        }
+      });
+    }
+
+    // ── Round schedule helpers ──
+    function buildRoundDays() {
+      const result = {};
+      const dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      let r = 1;
+      getEventDays().forEach(dateStr => {
+        (W.dayRounds[dateStr] || []).forEach(() => {
+          const d = new Date(dateStr + 'T12:00:00');
+          result[r] = dow[d.getDay()];
+          r++;
+        });
+      });
+      return result;
+    }
+    function buildRoundTimes() {
+      const result = {};
+      let r = 1;
+      getEventDays().forEach(dateStr => {
+        (W.dayRounds[dateStr] || []).forEach(round => {
+          result[r] = round.time;
+          r++;
+        });
+      });
+      return result;
+    }
+    function totalDayRounds() {
+      return Object.values(W.dayRounds).reduce((s, arr) => s + arr.length, 0);
+    }
+
+    // ── Launch ──
+    async function launch() {
+      W._launchError='';
+      const btn=document.querySelector('.btn-launch');if(btn){btn.disabled=true;btn.textContent='Processing...';}
+      const theme=THEMES[W.theme],isTeam=W.type==='member_guest';
+      const format=isTeam?'round_robin_match_play':(W.format||'skins');
+      const teams={};
+      W.roster.forEach((r,i)=>{const id=i+1;
+        teams[id]=isTeam?{id,member:r.member,guest:r.guest,memberHI:r.memberHI,guestHI:r.guestHI,combined:r.combined,flight:''}
+          :{id,member:r.name,guest:'',memberHI:r.handicap,guestHI:0,combined:r.handicap,flight:''};
+      });
+      const flights={},flightOrder=[];
+      W.flights.forEach(f=>{flightOrder.push(f.id);flights[f.id]={id:f.id,name:f.name,tees:f.tees,teamIds:f.teamIds};f.teamIds.forEach(tid=>{if(teams[tid])teams[tid].flight=f.id;});});
+      const maxT=Math.max(...W.flights.map(f=>f.teamIds.length));
+      // Read UTM/ref attribution from sessionStorage (set by landing page)
+      let metaSource = {};
+      try {
+        const raw = sessionStorage.getItem('waggle_source');
+        if (raw) metaSource = JSON.parse(raw);
+      } catch(e) {}
+      // Also check current URL params as fallback
+      const curParams = new URLSearchParams(window.location.search);
+      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(function(k) {
+        if (curParams.get(k) && !metaSource[k]) metaSource[k] = curParams.get(k);
+      });
+
+      const dRounds = totalDayRounds();
+      const roundsTotal = isTeam ? (dRounds || (maxT%2===0?maxT-1:maxT)) : (dRounds || 1);
+      const config={
+        event:{name:W.name.trim(),shortName:W.name.trim().slice(0,20),venue:W.venue.trim(),url:'',dates:{day1:W.date1,...(W.date2?{day2:W.date2}:{})},format,adminPin:W.adminPin,adminContact:W.adminContact.trim(),eventType:W.type},
+        scoring:W.scoring,
+        structure:{
+          teamsPerFlight:W.teamsPerFlight,roundsTotal,pairingsPerRound:Math.floor(maxT/2),
+          roundDays:buildRoundDays(),roundTimes:buildRoundTimes(),
+          nassauBet: isBuddiesTrip() ? (W.structure?.nassauBet || 10) : undefined,
+          skinsBet: isBuddiesTrip() ? (W.structure?.skinsBet || 5) : undefined,
+          autoPress: W.autoPress.enabled ? { enabled: true, threshold: W.autoPress.threshold } : undefined,
+        },
+        flightOrder,flights,teams,pairings:W.pairings,
+        theme:{primary:theme.primary,accent:theme.accent,bg:theme.bg,headerFont:'Playfair Display',bodyFont:'Inter'},
+        features:W.features,
+        games:W.games,
+        holesPerRound: W.holesPerRound || 18,
+        wolfOrder: W.roster.map(r => r.name || r.member).filter(Boolean),
+        players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0 })).filter(p => p.name),
+        roster: W.roster.map(r => isTeam
+          ? [{ name: r.member, handicapIndex: r.memberHI ?? 0 }, r.guest && r.guest !== r.member ? { name: r.guest, handicapIndex: r.guestHI ?? 0 } : null]
+          : [{ name: r.name, handicapIndex: r.handicap ?? 0 }]
+        ).flat().filter(Boolean),
+        ...(W.course ? { course: { id: W.course.id, name: W.course.club_name } } : {}),
+        ...(W._coursePars?.length === 18 ? { coursePars: W._coursePars } : {}),
+        ...(W._courseHcpIndex?.length === 18 ? { courseHcpIndex: W._courseHcpIndex } : {}),
+        meta:{source:metaSource},
+      };
+      try {
+        const res=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+        const data=await res.json();
+        if(!res.ok){W._launchError=data.error||'Failed';if(btn){btn.disabled=false;btn.textContent='Launch Your Sportsbook';}render();return;}
+        // If Stripe key not set (dev mode), we get {ok,slug} directly
+        if(data.slug){W.slug=data.slug;render();return;}
+        // Stripe checkout — redirect to payment page
+        if(data.checkoutUrl){window.location.href=data.checkoutUrl;return;}
+        W._launchError='Unexpected response — try again';if(btn){btn.disabled=false;btn.textContent='Launch Your Sportsbook';}render();
+      } catch(e){W._launchError='Network error — try again';if(btn){btn.disabled=false;btn.textContent='Launch Your Sportsbook';}render();}
+    }
+
+    // ── Helpers ──
+    function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+    // ── Course Search ──
+    let _courseSearchTimer = null;
+    async function searchCourses(q) {
+      clearTimeout(_courseSearchTimer);
+      if (!q || q.trim().length < 2) { W._courseResults = []; render(); return; }
+      _courseSearchTimer = setTimeout(async () => {
+        W._courseSearching = true; render();
+        try {
+          const res = await fetch('/api/courses/search?q=' + encodeURIComponent(q.trim()));
+          const data = await res.json();
+          W._courseResults = Array.isArray(data) ? data : [];
+        } catch { W._courseResults = []; }
+        W._courseSearching = false; render();
+      }, 300);
+    }
+
+    // ── GHIN Lookup ──
+    async function lookupGhin() {
+      const input = document.getElementById('ghin-input');
+      const lastEl = document.getElementById('ghin-last');
+      const result = document.getElementById('ghin-result');
+      const manualEl = document.getElementById('ghin-manual');
+      if (!input || !input.value.trim()) return;
+      const ghinNum = input.value.trim();
+      const lastName = lastEl ? lastEl.value.trim() : '';
+      result.innerHTML = '<span style="color:var(--muted)">Looking up GHIN #' + ghinNum + '...</span>';
+      if (manualEl) manualEl.style.display = 'none';
+      try {
+        let qs = '/api/ghin-lookup?ghin=' + encodeURIComponent(ghinNum);
+        if (lastName) qs += '&last_name=' + encodeURIComponent(lastName);
+        const res = await fetch(qs);
+        const data = await res.json();
+        if (data.manualLookup) {
+          // Guide user to ghin.com then enter manually
+          result.innerHTML = '<div style="padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:13px">' +
+            '<strong>Auto-lookup unavailable.</strong> <a href="' + data.lookupUrl + '" target="_blank" style="color:var(--green);font-weight:700">Open ghin.com</a>, find GHIN #' + esc(ghinNum) + ', then enter the name and HI below.</div>';
+          if (manualEl) {
+            manualEl.style.display = 'block';
+            const nameEl = document.getElementById('ghin-name-manual');
+            if (nameEl && lastName) nameEl.value = lastName;
+          }
+          return;
+        }
+        if (data.error) {
+          result.innerHTML = '<div style="padding:8px 12px;background:#fef2f2;border-radius:8px;color:var(--lose);font-size:13px">' + esc(data.error) + '</div>';
+          return;
+        }
+        const name = data.name || 'Unknown';
+        const hi = data.handicapIndex ?? 0;
+        const club = data.club ? ' · ' + esc(data.club) : '';
+        result.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0f7f2;border-radius:8px">' +
+          '<span style="color:var(--win);font-size:16px">✓</span>' +
+          '<div style="flex:1"><div style="font-weight:700;font-size:14px">' + esc(name) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">HI: ' + hi + club + '</div></div>' +
+          '<button onclick="addGhinPlayer(\'' + esc(name).replace(/'/g,"\\'") + '\',' + hi + ')" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>' +
+          '</div>';
+      } catch(e) {
+        result.innerHTML = '<span style="color:var(--muted);font-size:13px">Lookup failed — check your connection or enter manually.</span>';
+      }
+    }
+
+    function addManualGhin() {
+      const nameEl = document.getElementById('ghin-name-manual');
+      const hiEl = document.getElementById('ghin-hi-manual');
+      if (!nameEl || !hiEl) return;
+      const name = nameEl.value.trim();
+      const hi = parseFloat(hiEl.value);
+      if (!name || isNaN(hi)) return;
+      addGhinPlayer(name, hi);
+      nameEl.value = ''; hiEl.value = '';
+      const manualEl = document.getElementById('ghin-manual');
+      if (manualEl) manualEl.style.display = 'none';
+    }
+
+    function addGhinPlayer(name, hi) {
+      const isTeam = W.type === 'member_guest';
+      if (isTeam) {
+        const line = name + ', [pair name], ' + hi + ', 0';
+        W._rosterRaw = (W._rosterRaw ? W._rosterRaw + '\n' : '') + line;
+        W._rosterTab = 'paste';
+      } else {
+        W.roster.push({ name, handicap: hi });
+        W._rosterRaw = (W._rosterRaw ? W._rosterRaw + '\n' : '') + name + ', ' + hi;
+      }
+      const ghinInput = document.getElementById('ghin-input');
+      const ghinLast = document.getElementById('ghin-last');
+      if (ghinInput) ghinInput.value = '';
+      if (ghinLast) ghinLast.value = '';
+      const result = document.getElementById('ghin-result');
+      if (result) result.innerHTML = '<span style="color:var(--win);font-size:13px">✓ ' + esc(name) + ' added' + (isTeam ? ' — finish the team in Manual tab' : '') + '</span>';
+      if (!isTeam) render();
+      else { setTimeout(() => render(), 800); }
+    }
+
+    // ── CSV Roster Import ──
+    function parseCsvRoster(raw) {
+      const isTeam = W.type === 'member_guest';
+      const resultEl = document.getElementById('csv-result');
+      if (!raw.trim()) { if (resultEl) resultEl.innerHTML = ''; return; }
+
+      const lines = raw.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      // Skip header row if first cell is non-numeric text like "Last Name" or "Name"
+      const dataLines = lines[0] && /^[a-zA-Z\s"]+$/.test(lines[0].split(/[,\t]/)[0]) ? lines.slice(1) : lines;
+
+      const players = [];
+      const errors = [];
+      for (let i = 0; i < dataLines.length; i++) {
+        const cols = dataLines[i].split(/[,\t]+/).map(c => c.trim().replace(/^"|"$/g, ''));
+        // Try to detect columns: Last, First, GHIN#, Club, State, HI  OR  Last, First, GHIN#, HI
+        let firstName = '', lastName = '', hi = NaN;
+        if (cols.length >= 4) {
+          // Assume: [0]=LastName [1]=FirstName [2]=GHIN# [3]=HI or Club [4]=State [5]=HI
+          lastName = cols[0]; firstName = cols[1];
+          // Try col[3] first (GHIN export has: Last, First, GHIN#, HI)
+          hi = parseFloat(cols[3]);
+          // If col[3] is not a number (it's club name), try col[5]
+          if (isNaN(hi) && cols.length >= 6) hi = parseFloat(cols[5]);
+          if (isNaN(hi) && cols.length >= 5) hi = parseFloat(cols[4]);
+        } else if (cols.length === 3) {
+          // Last, First, HI
+          lastName = cols[0]; firstName = cols[1]; hi = parseFloat(cols[2]);
+        } else if (cols.length === 2) {
+          // Name, HI
+          firstName = cols[0]; hi = parseFloat(cols[1]);
+        }
+        const name = (firstName && lastName) ? firstName + ' ' + lastName : firstName || lastName;
+        if (!name || isNaN(hi)) { errors.push(`Row ${i+1}: could not parse`); continue; }
+        players.push({ name, handicap: hi });
+      }
+
+      if (players.length === 0) {
+        if (resultEl) resultEl.innerHTML = '<div class="error">' + (errors[0] || 'No players found') + '</div>';
+        return;
+      }
+
+      // For non-team events: add directly to roster
+      if (!isTeam) {
+        players.forEach(p => {
+          if (!W.roster.find(r => r.name === p.name)) W.roster.push(p);
+        });
+        const newRaw = players.map(p => p.name + ', ' + p.handicap).join('\n');
+        W._rosterRaw = (W._rosterRaw ? W._rosterRaw + '\n' : '') + newRaw;
+        if (resultEl) resultEl.innerHTML = '<div style="color:var(--win);font-weight:700;font-size:13px">✓ ' + players.length + ' players imported</div>';
+        render();
+      } else {
+        // For teams: paste into the manual tab as player list — GM will pair them
+        const pasteLines = players.map(p => p.name + ', [pair], ' + p.handicap + ', 0');
+        W._rosterRaw = (W._rosterRaw ? W._rosterRaw + '\n' : '') + pasteLines.join('\n');
+        W._rosterTab = 'paste';
+        if (resultEl) resultEl.innerHTML = '<div style="color:var(--win);font-weight:700;font-size:13px">✓ ' + players.length + ' players imported — go to Manual tab to pair teams</div>';
+        setTimeout(() => render(), 600);
+      }
+    }
+    // ── Quick Round helpers ──
+    function quickPlayerListHtml() {
+      if (!W.roster.length) return `<div style="font-size:13px;color:var(--muted);padding:6px 0">Add 2+ players to continue</div>`;
+      return W.roster.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <span style="flex:1;font-size:14px;font-weight:600">${esc(r.name)}</span>
+          ${r.ghinVerified
+            ? `<span style="font-size:11px;font-weight:700;color:#1a6b38;background:#e8f5ed;border:1px solid #b7dfc6;border-radius:4px;padding:2px 7px">GHIN ${r.hi_display}</span>`
+            : `<span style="font-size:12px;color:var(--muted);font-family:'SF Mono',monospace">HCP ${r.handicap}</span>`}
+          <button onclick="removeQuickPlayer(${i})" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0 4px">×</button>
+        </div>`).join('');
+    }
+
+    function addQuickPlayer() {
+      const nameEl = document.getElementById('qp-name');
+      const hcpEl  = document.getElementById('qp-hcp');
+      if (!nameEl) return;
+      const name = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      const hi = parseFloat(hcpEl ? hcpEl.value : '0');
+      const player = { name, handicap: isNaN(hi) ? 0 : hi, handicapIndex: isNaN(hi) ? 0 : hi };
+      if (W._pendingGhin?.ghin) {
+        player.ghin = W._pendingGhin.ghin;
+        player.hi_display = W._pendingGhin.hi_display;
+        player.club = W._pendingGhin.club;
+        player.ghinVerified = true;
+        W._pendingGhin = null;
+      }
+      W.roster.push(player);
+      nameEl.value = '';
+      if (hcpEl) hcpEl.value = '';
+      W._ghinResults = [];
+      const dd = document.getElementById('ghin-dropdown'); if (dd) dd.style.display = 'none';
+      nameEl.focus();
+      const list = document.getElementById('qp-list');
+      if (list) list.innerHTML = quickPlayerListHtml();
+      upNav();
+    }
+
+    function removeQuickPlayer(i) {
+      W.roster.splice(i, 1);
+      const list = document.getElementById('qp-list');
+      if (list) list.innerHTML = quickPlayerListHtml();
+      upNav();
+    }
+
+    function renderQuickSetup() {
+      // Auto-fill defaults for zero-friction setup
+      if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+      if (!W.adminPin) W.adminPin = String(1000 + Math.floor(Math.random() * 9000));
+      if (!W.name) W.name = 'Weekend Warrior';
+      // Default games: skins + nassau (most common casual bets)
+      if (!W._quickDefaultsSet) {
+        W.games.skins = true;
+        W.games.nassau = true;
+        W._quickDefaultsSet = true;
+      }
+
+      const games = [
+        {id:'skins',      name:'Skins',      desc:'Per-hole pot'},
+        {id:'nassau',     name:'Nassau',     desc:'Front / back / total'},
+        {id:'wolf',       name:'Wolf',       desc:'Rotating partner pick'},
+        {id:'vegas',      name:'Vegas',      desc:'Team number game'},
+        {id:'match_play', name:'Match Play', desc:'H2H each hole'},
+        {id:'stroke_play',name:'Stroke Play',desc:'Net total strokes'},
+      ];
+      const anyGame = games.some(g => W.games[g.id]);
+      const activeGames = games.filter(g => W.games[g.id]).map(g => g.name).join(', ');
+
+      return `
+        <h2 style="font-size:22px;margin-bottom:4px">Who's playing?</h2>
+        <p class="desc" style="margin-bottom:16px">Add your group. Enter each player's name and handicap.</p>
+
+        <div style="margin-bottom:8px">
+          <input type="text" id="qp-name" placeholder="Player name"
+            style="width:100%;padding:14px;font-size:16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;box-sizing:border-box"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('qp-hcp').focus();}">
+        </div>
+        <input type="number" id="qp-hcp" placeholder="Handicap index (e.g. 12.4)" step="0.1"
+          style="width:100%;padding:14px;font-size:16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);margin-bottom:8px"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickPlayer();}">
+        <button onclick="addQuickPlayer()"
+          style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px">Add Player</button>
+        <div id="qp-list">${quickPlayerListHtml()}</div>
+
+        <div style="margin-top:20px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:700;color:var(--forest)">Games</span>
+            <span style="font-size:12px;color:var(--muted)">${activeGames || 'none selected'}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${games.map(g=>`
+            <button onclick="W.games.${g.id}=!W.games.${g.id};upNav();render()"
+              style="padding:8px 14px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid ${W.games[g.id]?'var(--green)':'var(--border)'};background:${W.games[g.id]?'var(--green)':'var(--white)'};color:${W.games[g.id]?'#fff':'var(--text-2)'};transition:all 0.15s;font-family:inherit">${g.name}</button>`).join('')}
+          </div>
+          ${!anyGame?`<div style="margin-top:8px;font-size:12px;color:#92400e">Pick at least one</div>`:''}
+        </div>
+
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:13px">Round name</label>
+            <input type="text" value="${esc(W.name)}" placeholder="Weekend Warrior"
+              oninput="W.name=this.value" style="font-size:15px">
+          </div>
+          <div>
+            <label style="font-size:13px">Admin PIN</label>
+            <input type="text" inputmode="numeric" maxlength="8" value="${W.adminPin}"
+              oninput="W.adminPin=this.value;upNav()" style="font-size:15px">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:4px">Share the PIN with whoever enters scores on the course.</div>
+        <label style="font-size:13px;margin-top:12px">Commissioner Phone or Email <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+        <input type="text" value="${esc(W.adminContact)}" placeholder="(555) 123-4567 or you@email.com"
+          oninput="W.adminContact=this.value" style="font-size:15px">
+        <div class="hint" style="margin-top:4px">For magic link login — skip the PIN on game day.</div>`;
+    }
+
+    // ── Buddies Trip setup (3-step fast flow) ──
+    function renderBuddiesTripSetup() {
+      if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+      const games = [
+        {id:'nassau',  name:'Nassau',  emoji:'🏌️', desc:'Front/Back/Total'},
+        {id:'skins',   name:'Skins',   emoji:'💰', desc:'Per-hole pot'},
+        {id:'wolf',    name:'Wolf',    emoji:'🐺', desc:'Rotating picker'},
+        {id:'vegas',   name:'Vegas',   emoji:'🎰', desc:'Team number game'},
+        {id:'stroke_play',name:'Stroke Play',emoji:'📊', desc:'Net leaderboard'},
+        {id:'match_play', name:'Match Play', emoji:'⚔️', desc:'H2H, hole by hole'},
+      ];
+      const anyGame = games.some(g => W.games[g.id]);
+      const nassauOn = W.games.nassau;
+      const skinsOn = W.games.skins;
+
+      // Compute cost display: $29 / num players
+      const numPlayers = W.roster.length || 4;
+      const perPerson = Math.round(2900 / Math.max(numPlayers, 1)) / 100;
+
+      return `
+        <div class="step-label">Buddies Trip · Step 2 of 3</div>
+        <h2>Set up your trip</h2>
+        <p class="desc">Add players, pick games, set stakes. $${perPerson.toFixed(2)}/person — less than a glizzy at the turn.</p>
+
+        <label>Players <span style="font-weight:400;color:var(--muted);font-size:11px">${W.roster.length >= 2 ? W.roster.length+' added' : W.roster.length === 1 ? '1 added — need 1 more' : 'need 2+'}</span></label>
+        <div style="position:relative;margin-bottom:8px">
+          <div style="display:flex;gap:8px">
+            <input type="text" id="qp-name" placeholder="Search by name (GHIN) or type manually"
+              style="flex:2;padding:13px 14px;font-size:16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit"
+              oninput="searchGhin(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();var h=document.getElementById('qp-hcp');if(h&&!h.value){h.focus();}else{addQuickPlayer();}}">
+            <input type="number" id="qp-hcp" placeholder="HCP" step="0.1"
+              style="width:72px;padding:13px 10px;font-size:16px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);text-align:center"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickPlayer();}">
+            <button onclick="addQuickPlayer()"
+              style="padding:13px 18px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+          </div>
+          <div id="ghin-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:10px;margin-top:4px;overflow:hidden;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,0.1)"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;margin-top:-4px">Type a name to search GHIN nationwide &mdash; handicap fills in automatically</div>
+        <div id="qp-list">${quickPlayerListHtml()}</div>
+
+        ${W.roster.length >= 2 ? `<div style="margin-top:20px">
+          <div id="advisor-result"></div>
+          <button id="advisor-btn" onclick="getAdvisorPick()" style="width:100%;padding:12px 16px;background:var(--dark);color:var(--gold);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;letter-spacing:0.3px">✨ Ask AI: Best Format for This Group</button>
+        </div>` : ''}
+        <label style="margin-top:8px">Games <span style="font-weight:400;color:var(--muted);font-size:11px">pick any, mix &amp; match</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+          ${games.map(g=>`
+          <div onclick="W.games.${g.id}=!W.games.${g.id};upNav();render()"
+            style="border:2px solid ${W.games[g.id]?'var(--green)':'var(--border)'};border-radius:12px;padding:14px;cursor:pointer;background:${W.games[g.id]?'#f0f7f2':'var(--white)'};text-align:center;position:relative">
+            ${W.games[g.id]?`<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">✓</div>`:''}
+            <div style="font-size:24px;margin-bottom:4px">${g.emoji}</div>
+            <div style="font-size:14px;font-weight:700">${g.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${g.desc}</div>
+          </div>`).join('')}
+        </div>
+        ${!anyGame?`<div style="padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;margin-top:4px">Pick at least one game to continue</div>`:''}
+
+        ${nassauOn || skinsOn ? `
+        <div style="margin-top:20px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Stakes per game</div>
+          ${nassauOn ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Nassau</div><div style="font-size:11px;color:var(--muted)">Per leg (front / back / total)</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.nassauBet||10}"
+                oninput="W.structure.nassauBet=parseInt(this.value)||10"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${skinsOn ? `<div style="display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:14px;font-weight:600">Skins</div><div style="font-size:11px;color:var(--muted)">Per skin (carries over on ties)</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.skinsBet||5}"
+                oninput="W.structure.skinsBet=parseInt(this.value)||5"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+        </div>` : ''}
+
+        <label style="margin-top:20px">Course <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+        <div style="position:relative">
+          <input type="text" id="bt-course" placeholder="Start typing course name..." value="${esc(W._courseQuery||'')}"
+            oninput="W._courseQuery=this.value;searchCourses(this.value)"
+            style="width:100%;padding:13px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit">
+          ${W._courseSearching ? `<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>` : ''}
+        </div>
+        ${W._courseResults.length > 0 ? `
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px">
+          ${W._courseResults.map(c => `
+          <button onclick="selectCourse(${JSON.stringify(c).replace(/"/g,'&quot;')})"
+            style="display:block;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit">
+            <div style="font-size:14px;font-weight:600">${esc(c.club_name)}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(c.course_name||'')} ${c.location?'· '+esc(c.location):''}</div>
+          </button>`).join('')}
+        </div>` : ''}
+        ${W.course ? `<div style="margin-top:6px;font-size:12px;color:var(--green);font-weight:600">✓ ${esc(W.course.club_name)} selected</div>` : ''}
+
+        <label style="margin-top:20px">Trip name <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+        <input type="text" value="${W.name && !W.name.startsWith('Buddies Trip') ? esc(W.name) : ''}" placeholder="Buddies Trip ${fmtDate(W.date1)||''}"
+          oninput="W.name=this.value" style="font-size:16px">
+
+        <label>Date</label>
+        <input type="date" value="${W.date1}" oninput="W.date1=this.value;render()" style="font-size:16px">
+
+        <label>Admin PIN</label>
+        <input type="text" inputmode="numeric" maxlength="8" value="${W.adminPin}" placeholder="4+ digits"
+          oninput="W.adminPin=this.value;upNav()" style="font-size:16px">
+        <div class="hint">Share this PIN with yourself — use it on the course to enter scores.</div>
+        <label>Commissioner Phone or Email <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+        <input type="text" value="${esc(W.adminContact)}" placeholder="(555) 123-4567 or you@email.com"
+          oninput="W.adminContact=this.value" style="font-size:16px">
+        <div class="hint">For magic link login — skip the PIN on game day.</div>
+
+        <div style="margin-top:20px;padding:12px 14px;background:#f0f7f2;border:1px solid rgba(26,71,42,0.15);border-radius:10px;font-size:13px;color:var(--dark)">
+          <strong>$29 total</strong> — shared across your group.
+          ${W.roster.length >= 2 ? `<strong>${(29/W.roster.length).toFixed(2)}/person</strong> for ${W.roster.length} players.` : ''}
+          Share one link with everyone. Live odds, live scores, automatic settlement.
+        </div>`;
+    }
+
+    // ── Course search (GolfCourseAPI) ──
+    let _courseDebounce = null;
+    function searchCourses(q) {
+      clearTimeout(_courseDebounce);
+      if (!q || q.length < 3) { W._courseResults = []; W._courseSearching = false; render(); return; }
+      W._courseSearching = true; render();
+      _courseDebounce = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/courses/search?q=${encodeURIComponent(q)}`);
+          W._courseResults = res.ok ? await res.json() : [];
+        } catch { W._courseResults = []; }
+        W._courseSearching = false; render();
+      }, 400);
+    }
+    function selectCourse(c) {
+      W.course = c;
+      W._courseQuery = c.club_name + (c.course_name ? ' — ' + c.course_name : '');
+      W._courseResults = [];
+      // Update the venue field with the course name
+      W.venue = W._courseQuery;
+      render();
+      // Load full scorecard data in the background to get pars
+      fetch(`/api/courses/${c.id}`).then(r => r.json()).then(data => {
+        if (data?.tees?.length > 0) {
+          // Try to get men's white/blue tee pars
+          const tee = data.tees.find(t => /white|blue|regular/i.test(t.tee_name)) || data.tees[0];
+          if (tee?.holes?.length >= 18) {
+            W._coursePars = tee.holes.slice(0,18).map(h => h.par || 4);
+            W._courseHcpIndex = tee.holes.slice(0,18).map(h => h.handicap || null);
+          }
+        }
+      }).catch(() => {});
+    }
+
+    // ── GHIN player search ──
+    let _ghinDebounce = null;
+    function searchGhin(q) {
+      clearTimeout(_ghinDebounce);
+      W._ghinResults = [];
+      if (!q || q.trim().length < 2) { W._ghinSearching = false; renderGhinDropdown(); return; }
+      W._ghinSearching = true; renderGhinDropdown();
+      _ghinDebounce = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/ghin/search?q=${encodeURIComponent(q.trim())}`);
+          W._ghinResults = res.ok ? await res.json() : [];
+        } catch { W._ghinResults = []; }
+        W._ghinSearching = false; renderGhinDropdown();
+      }, 400);
+    }
+    function renderGhinDropdown() {
+      const dd = document.getElementById('ghin-dropdown');
+      if (!dd) return;
+      if (W._ghinSearching) { dd.innerHTML = `<div style="padding:10px 14px;font-size:13px;color:var(--muted)">Searching GHIN...</div>`; dd.style.display='block'; return; }
+      if (!W._ghinResults.length) { dd.style.display='none'; dd.innerHTML=''; return; }
+      dd.style.display = 'block';
+      dd.innerHTML = W._ghinResults.map((g,i) => `
+        <button onclick="selectGhinPlayer(${i})" style="display:block;width:100%;padding:10px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit;transition:background .15s" onmouseenter="this.style.background='#f8f8f5'" onmouseleave="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:14px;font-weight:600">${esc(g.name)}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--green)">HI ${g.hi_display}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(g.club)}${g.state ? ' · '+esc(g.state) : ''}</div>
+        </button>`).join('');
+    }
+    function selectGhinPlayer(idx) {
+      const g = W._ghinResults[idx]; if (!g) return;
+      const nameEl = document.getElementById('qp-name');
+      const hcpEl  = document.getElementById('qp-hcp');
+      if (nameEl) nameEl.value = g.name;
+      if (hcpEl)  hcpEl.value  = g.handicapIndex != null ? g.handicapIndex : '';
+      W._ghinResults = []; W._pendingGhin = { ghin: g.ghin, hi_display: g.hi_display, club: g.club };
+      const dd = document.getElementById('ghin-dropdown'); if (dd) dd.style.display = 'none';
+      nameEl && nameEl.focus();
+    }
+
+    function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;}
+    function copyUrl(u){navigator.clipboard.writeText(u).then(()=>alert('Link copied!')).catch(()=>{});}
+    function shareUrl(u){if(navigator.share)navigator.share({title:W.name,text:`Check out ${W.name} on Waggle!`,url:u}).catch(()=>{});else copyUrl(u);}
+
+    // Pre-load course from ?course=ID (set by "Play This Tee" on course detail pages)
+    (function preloadCourseFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const courseId = params.get('course');
+      if (!courseId) return;
+      fetch(`/api/courses/${courseId}`)
+        .then(r => r.json())
+        .then(data => {
+          const raw = data?.course || data;
+          if (!raw || !raw.id) return;
+          // Build course object matching the search result shape
+          const loc = raw.location || {};
+          const c = {
+            id: raw.id,
+            club_name: raw.club_name || raw.name || 'Course',
+            course_name: raw.course_name || '',
+            location: `${loc.city || ''}, ${loc.state || ''}`.replace(/^,\s*|,\s*$/g, ''),
+          };
+          // Pick men's white/blue/middle tee for pars
+          const allTees = [...(raw.tees?.male || []), ...(raw.tees?.female || [])];
+          const tee = allTees.find(t => /white|blue|regular|middle/i.test(t.tee_name)) || allTees[0];
+          W.course = c;
+          W._courseQuery = c.club_name + (c.course_name ? ' — ' + c.course_name : '');
+          W.venue = W._courseQuery;
+          if (tee?.holes?.length >= 9) {
+            W._coursePars = tee.holes.slice(0, 18).map(h => h.par || 4);
+            W._courseHcpIndex = tee.holes.slice(0, 18).map(h => h.handicap || null);
+          }
+          // Skip to event type if not already selected
+          if (!W.type) W.type = 'trip';
+          W.step = 1;
+          render();
+        })
+        .catch(() => {});
+    })();
+
+    render();
+  </script>
+</body>
+</html>

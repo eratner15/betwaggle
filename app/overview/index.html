@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GM Operations Manual — Turnberry Isle Member-Guest 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F0E8;
+  --surface: #FFFFFF;
+  --green: #1A472A;
+  --green-light: #2D6A3E;
+  --gold: #D4AF37;
+  --gold-dim: #B8962E;
+  --text: #1B2A4A;
+  --text-sec: #64748B;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  --red: #EF4444;
+  --win: #22C55E;
+  --radius: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.gm-header {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+  color: #fff;
+  padding: 32px 24px 24px;
+  text-align: center;
+}
+.gm-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.gm-header .subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.gm-header .date {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 8px;
+}
+
+/* Layout */
+.gm-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+}
+
+/* TOC */
+.gm-toc {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 20px 0;
+  border: 1px solid var(--border);
+}
+.gm-toc h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+.gm-toc ol {
+  padding-left: 20px;
+}
+.gm-toc li {
+  margin: 6px 0;
+}
+.gm-toc a {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.gm-toc a:hover { color: var(--green); }
+
+/* Section */
+.gm-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+}
+.gm-section h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: var(--green);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--gold);
+}
+.gm-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green);
+  margin: 16px 0 8px;
+}
+.gm-section p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+.gm-section ul, .gm-section ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.gm-section li {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+/* Callout boxes */
+.gm-tip, .gm-warn, .gm-critical {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.gm-tip {
+  background: #F0FDF4;
+  border-left: 4px solid var(--win);
+}
+.gm-warn {
+  background: #FFFBEB;
+  border-left: 4px solid var(--gold);
+}
+.gm-critical {
+  background: #FEF2F2;
+  border-left: 4px solid var(--red);
+}
+.gm-tip strong, .gm-warn strong, .gm-critical strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Code / steps */
+.gm-steps {
+  counter-reset: step;
+  list-style: none;
+  padding-left: 0;
+}
+.gm-steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 36px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+.gm-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  background: var(--green);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+kbd {
+  background: #F1F5F9;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: 'SF Mono', monospace;
+}
+
+/* Table */
+.gm-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.gm-table th {
+  background: var(--green);
+  color: #fff;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+.gm-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.gm-table tr:nth-child(even) td {
+  background: #F8FAFC;
+}
+
+/* Back link */
+.gm-back {
+  display: inline-block;
+  margin: 20px 0;
+  color: var(--green);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.gm-back:hover { text-decoration: underline; }
+
+/* Print */
+@media print {
+  body { background: #fff; }
+  .gm-header { break-after: avoid; }
+  .gm-section { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .gm-back { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="gm-header">
+  <h1>GM Operations Manual</h1>
+  <div class="subtitle">Turnberry Isle Member-Guest 2026</div>
+  <div class="date">March 20-21 | Updated March 19, 2026</div>
+</div>
+
+<div class="gm-container">
+
+<a href="/app/" class="gm-back">&larr; Back to App</a>
+
+<nav class="gm-toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="#taking-bets">Taking Bets</a></li>
+    <li><a href="#entering-scores">Entering Scores</a></li>
+    <li><a href="#managing-book">Managing the Book</a></li>
+    <li><a href="#line-management">Line Management</a></li>
+    <li><a href="#player-management">Player Management</a></li>
+    <li><a href="#settlement">Settlement</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#end-of-tournament">End of Tournament</a></li>
+    <li><a href="#rules">Rules of the Book</a></li>
+  </ol>
+</nav>
+
+<!-- 1. Quick Start -->
+<section class="gm-section" id="quickstart">
+  <h2>1. Quick Start</h2>
+  <h3>Accessing Admin</h3>
+  <ol class="gm-steps">
+    <li>Open <strong>betwaggle.com/app/</strong> on your phone or iPad.</li>
+    <li>Tap the <strong>Admin</strong> tab (shield icon) in the bottom nav.</li>
+    <li>Enter the admin PIN and tap <kbd>Enter</kbd>.</li>
+    <li>You'll see the admin dashboard with tabs: <strong>Take Bet</strong>, <strong>Scores</strong>, <strong>Book</strong>, <strong>Lines</strong>, <strong>Players</strong>.</li>
+  </ol>
+
+  <h3>Admin Tabs Overview</h3>
+  <table class="gm-table">
+    <tr><th>Tab</th><th>What It Does</th></tr>
+    <tr><td><strong>Take Bet</strong></td><td>Place bets for walk-up bettors. Name &rarr; Match &rarr; Stake &rarr; Confirm.</td></tr>
+    <tr><td><strong>Scores</strong></td><td>Enter match results. One-tap scoring grid by flight/round.</td></tr>
+    <tr><td><strong>Book</strong></td><td>View all active/settled bets, exposure, and P&amp;L.</td></tr>
+    <tr><td><strong>Lines</strong></td><td>Move odds up/down, lock matches from betting.</td></tr>
+    <tr><td><strong>Players</strong></td><td>Register players, add credits, view balances.</td></tr>
+  </table>
+
+  <div class="gm-tip">
+    <strong>Tip: Bookmark it.</strong>
+    Add the app to your home screen (Share &rarr; Add to Home Screen) for full-screen mode and faster access between rounds.
+  </div>
+</section>
+
+<!-- 2. Taking Bets -->
+<section class="gm-section" id="taking-bets">
+  <h2>2. Taking Bets</h2>
+  <h3>The Take Bet Flow</h3>
+  <ol class="gm-steps">
+    <li><strong>Select the bettor</strong> &mdash; type or pick from the player dropdown. Their credit balance shows automatically.</li>
+    <li><strong>Pick the match</strong> &mdash; tap the team they want to back. Current odds display next to each team.</li>
+    <li><strong>Set the stake</strong> &mdash; use preset buttons ($10, $25, $50) or type a custom amount. Max single bet: <strong>$100</strong>.</li>
+    <li><strong>Confirm</strong> &mdash; review the bet slip (team, odds, stake, to-win) and tap <strong>Place Bet</strong>.</li>
+  </ol>
+
+  <h3>Walk-Up Bets</h3>
+  <p>When someone walks up to place a bet:</p>
+  <ul>
+    <li>If they're not registered, go to <strong>Players</strong> tab first and create them with starting credits.</li>
+    <li>Come back to <strong>Take Bet</strong>, select their name, and proceed.</li>
+    <li>Credits are deducted automatically on placement and refunded on void.</li>
+  </ul>
+
+  <h3>Preset Stakes</h3>
+  <p>The $10 / $25 / $50 buttons are designed for speed. For amounts above $50, type it in. The system enforces a $100 max per single bet.</p>
+
+  <div class="gm-warn">
+    <strong>Credit Check:</strong>
+    The server validates credits before accepting any bet. If a player tries to bet more than their balance, the bet is rejected with a clear error message. No manual checking needed.
+  </div>
+</section>
+
+<!-- 3. Entering Scores -->
+<section class="gm-section" id="entering-scores">
+  <h2>3. Entering Scores</h2>
+  <h3>Dense Round View</h3>
+  <ol class="gm-steps">
+    <li>Go to <strong>Scores</strong> tab.</li>
+    <li>Select the <strong>flight</strong> and <strong>round</strong> from the dropdowns at top.</li>
+    <li>Each match shows a scoring grid &mdash; tap the final score (e.g., 7-3, 6-4, 5-5, 4-6, 3-7).</li>
+    <li>The match immediately finalizes and bets auto-settle.</li>
+  </ol>
+
+  <h3>One-Tap Scoring</h3>
+  <p>Each match shows 5 possible outcomes. Tap once to set. Tap the same score again to <strong>revert</strong> (unfinalizes the match).</p>
+
+  <h3>Settle Round Button</h3>
+  <p>After entering scores for all matches in a round, tap <strong>Settle Round</strong> to finalize them all at once. This triggers server-side settlement for all bet types.</p>
+
+  <div class="gm-critical">
+    <strong>Reverting a Settled Match:</strong>
+    If you tap a finalized score to revert it and that match has settled bets, you'll get a confirmation dialog. Reverting unsettles those bets. An announcement is logged automatically for the paper trail.
+  </div>
+</section>
+
+<!-- 4. Managing the Book -->
+<section class="gm-section" id="managing-book">
+  <h2>4. Managing the Book</h2>
+  <h3>The Book Tab</h3>
+  <p>The Book tab shows your real-time position:</p>
+  <table class="gm-table">
+    <tr><th>Metric</th><th>What It Means</th></tr>
+    <tr><td><strong>Total Wagered</strong></td><td>Sum of all stakes placed (active + settled).</td></tr>
+    <tr><td><strong>Active Wagered</strong></td><td>Stakes on unsettled bets &mdash; money still at risk.</td></tr>
+    <tr><td><strong>Exposure</strong></td><td>Max possible payout on active bets minus stakes. This is what you could lose.</td></tr>
+    <tr><td><strong>Settled P&amp;L</strong></td><td>House profit/loss on completed bets. Positive = house is winning.</td></tr>
+  </table>
+
+  <h3>Reading the Danger Board</h3>
+  <p>Watch for these warning signs:</p>
+  <ul>
+    <li><strong>Exposure &gt; $300 on one match:</strong> Consider moving the line or locking the match.</li>
+    <li><strong>One bettor has 5+ active bets:</strong> They may be chasing &mdash; monitor.</li>
+    <li><strong>All money on one side:</strong> You're fully exposed &mdash; move the line to attract the other side.</li>
+  </ul>
+
+  <h3>Voiding a Bet</h3>
+  <p>In the Book tab, find the bet and tap <strong>Void</strong>. This:</p>
+  <ul>
+    <li>Cancels the bet immediately.</li>
+    <li>Refunds the bettor's credits automatically.</li>
+    <li>Records the void with a timestamp.</li>
+  </ul>
+
+  <div class="gm-tip">
+    <strong>When to Void:</strong>
+    Void if a bet was placed in error, on the wrong match, or if both parties agree to cancel. Don't void just because the bettor is losing.
+  </div>
+</section>
+
+<!-- 5. Line Management -->
+<section class="gm-section" id="line-management">
+  <h2>5. Line Management</h2>
+  <h3>Why Move Lines?</h3>
+  <p>Lines (odds) should move when:</p>
+  <ul>
+    <li>All the money is on one side &mdash; move to attract action on the other side.</li>
+    <li>You learn new information (player injury, warmup performance).</li>
+    <li>Exposure on one match is getting too high.</li>
+  </ul>
+
+  <h3>How to Move Lines</h3>
+  <ol class="gm-steps">
+    <li>Go to <strong>Lines</strong> tab.</li>
+    <li>Find the match. Current odds show for both sides.</li>
+    <li>Tap <strong>+25</strong> or <strong>-25</strong> next to either team to shift odds in 25-point increments.</li>
+    <li>Both sides move inversely &mdash; making one team a bigger favorite makes the other a bigger underdog.</li>
+    <li>Tap <strong>Reset</strong> to return to the algorithm's original line.</li>
+  </ol>
+
+  <h3>What the Percentages Mean</h3>
+  <table class="gm-table">
+    <tr><th>Odds</th><th>Implied Win %</th><th>Meaning</th></tr>
+    <tr><td>-200</td><td>~67%</td><td>Strong favorite. Bet $200 to win $100.</td></tr>
+    <tr><td>-135</td><td>~57%</td><td>Moderate favorite (typical with vig).</td></tr>
+    <tr><td>EVEN</td><td>50%</td><td>Coin flip.</td></tr>
+    <tr><td>+120</td><td>~45%</td><td>Moderate underdog (typical with vig).</td></tr>
+    <tr><td>+200</td><td>~33%</td><td>Clear underdog. Bet $100 to win $200.</td></tr>
+  </table>
+
+  <h3>Locking a Match</h3>
+  <p>Tap the <strong>Lock</strong> button to freeze betting on a match. Use this when:</p>
+  <ul>
+    <li>A match is about to start and you want to cut off betting.</li>
+    <li>Exposure is maxed and you don't want more action.</li>
+    <li>Something seems off (possible sharp action).</li>
+  </ul>
+
+  <div class="gm-warn">
+    <strong>The Vig:</strong>
+    A 10% house margin (5% juice per side) is built into all odds automatically. A true 60/40 match shows as roughly -135/+120 instead of -150/+150. This is your edge — it's how the book stays profitable over time.
+  </div>
+</section>
+
+<!-- 6. Player Management -->
+<section class="gm-section" id="player-management">
+  <h2>6. Player Management</h2>
+  <h3>Registering Players</h3>
+  <ol class="gm-steps">
+    <li>Go to <strong>Players</strong> tab.</li>
+    <li>Tap <strong>New Player</strong>.</li>
+    <li>Enter their name and starting credits (default $50).</li>
+    <li>They can now place bets up to their credit balance.</li>
+  </ol>
+
+  <h3>Adding Credits</h3>
+  <p>Tap the <strong>+</strong> button next to a player's name. Enter the amount. Credits are added instantly.</p>
+  <p>Use negative amounts to <em>deduct</em> credits if needed (e.g., cash settlement mid-tournament).</p>
+
+  <h3>Checking Balances</h3>
+  <p>The Players tab shows every registered player with their current credit balance and total wagered. Players also see their own balance in the betting screen.</p>
+
+  <h3>Handling Disputes</h3>
+  <ul>
+    <li><strong>"I didn't place that bet"</strong> &mdash; check the Book tab for the bet timestamp and bettor name. Void if confirmed error.</li>
+    <li><strong>"My credits are wrong"</strong> &mdash; review their bet history. Each bet deducts credits; voids refund them. Add credits to correct.</li>
+    <li><strong>"The odds changed on me"</strong> &mdash; bets lock in the odds at time of placement. Subsequent line moves don't affect existing bets.</li>
+  </ul>
+</section>
+
+<!-- 7. Settlement -->
+<section class="gm-section" id="settlement">
+  <h2>7. Settlement</h2>
+  <h3>How Auto-Settlement Works</h3>
+  <p>When a match is finalized (score entered and status set to "final"), the system automatically settles all active bets on that match:</p>
+  <table class="gm-table">
+    <tr><th>Bet Type</th><th>Settlement Logic</th></tr>
+    <tr><td><strong>Match Winner</strong></td><td>Winning team &rarr; bet wins (payout = stake &times; decimal odds). Losing team &rarr; bet loses. Draw &rarr; team bets push (stake returned), draw bets win.</td></tr>
+    <tr><td><strong>Match Margin</strong></td><td>Exact score match (e.g., "7-3") &rarr; bet wins. Any other score &rarr; bet loses.</td></tr>
+    <tr><td><strong>Flight Winner</strong></td><td>Settles when ALL matches in the flight are final. Team with most points wins. Tiebreaker: head-to-head result.</td></tr>
+  </table>
+
+  <h3>Push Rules</h3>
+  <p>A push returns the full stake to the bettor. Pushes happen when:</p>
+  <ul>
+    <li>A match ends in a draw (5-5) and the bet was on a team (not on "draw").</li>
+  </ul>
+
+  <h3>Settlement Happens Twice</h3>
+  <p>Settlement runs both <strong>client-side</strong> (instant visual update) and <strong>server-side</strong> (authoritative). The server is the source of truth. If there's ever a discrepancy, the server version wins on the next sync (every 30 seconds).</p>
+
+  <div class="gm-tip">
+    <strong>Tip:</strong>
+    After entering all scores for a round, tap <strong>Settle Round</strong> to batch-finalize. This is faster than tapping each match individually and ensures server-side settlement fires for all bet types.
+  </div>
+</section>
+
+<!-- 8. Troubleshooting -->
+<section class="gm-section" id="troubleshooting">
+  <h2>8. Troubleshooting</h2>
+
+  <h3>Stale Data / Not Updating</h3>
+  <ul>
+    <li>Tap the <strong>Sync</strong> button (or pull down to refresh).</li>
+    <li>The app syncs every 30 seconds automatically. If data looks stale, force a sync.</li>
+    <li>Clear browser cache if the app seems stuck on an old version.</li>
+  </ul>
+
+  <h3>Bet Rejected</h3>
+  <table class="gm-table">
+    <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+    <tr><td>"Insufficient credits"</td><td>Player doesn't have enough balance.</td><td>Add credits in Players tab or reduce stake.</td></tr>
+    <tr><td>"Max single bet is $100"</td><td>Stake exceeds per-bet limit.</td><td>Split into two smaller bets.</td></tr>
+    <tr><td>"Max exposure per match"</td><td>Total wagered on this match hit $500 cap.</td><td>Lock the match or wait for settlement.</td></tr>
+    <tr><td>"Max 10 active bets"</td><td>Bettor has 10 unsettled bets.</td><td>Wait for matches to settle or void stale bets.</td></tr>
+    <tr><td>"Player not found"</td><td>Bettor isn't registered.</td><td>Register them in Players tab first.</td></tr>
+  </table>
+
+  <h3>Offline / No Signal</h3>
+  <p>The app works offline for viewing. Bets placed offline are queued and auto-submitted when connectivity returns. A "pending" badge appears on queued bets.</p>
+
+  <h3>Disputed Bet</h3>
+  <ol>
+    <li>Find the bet in the Book tab (filter by bettor name).</li>
+    <li>Check the timestamp, odds, and stake.</li>
+    <li>If the bet was placed in error, void it (credits auto-refund).</li>
+    <li>If it's a legitimate dispute about odds, the locked-in odds at placement time are final.</li>
+  </ol>
+</section>
+
+<!-- 9. End of Tournament -->
+<section class="gm-section" id="end-of-tournament">
+  <h2>9. End of Tournament</h2>
+
+  <h3>Final Settlement Checklist</h3>
+  <ol class="gm-steps">
+    <li><strong>Verify all scores are entered</strong> &mdash; check each flight, each round. No match should show "scheduled".</li>
+    <li><strong>Settle all rounds</strong> &mdash; use Settle Round for each round if not already done.</li>
+    <li><strong>Check flight winner bets</strong> &mdash; these only settle when ALL matches in a flight are final.</li>
+    <li><strong>Review the Book</strong> &mdash; look for any "active" bets that should have settled. Investigate and resolve.</li>
+    <li><strong>Export data</strong> &mdash; tap <strong>Export Data</strong> in Admin. This downloads a JSON file with all matches, bets, players, and settings.</li>
+    <li><strong>Settle IOUs</strong> &mdash; use the player credit balances to determine who owes what.</li>
+  </ol>
+
+  <h3>Settling IOUs</h3>
+  <p>After all bets are settled:</p>
+  <ul>
+    <li><strong>Credits &gt; starting amount:</strong> Player is owed money (winnings).</li>
+    <li><strong>Credits &lt; starting amount:</strong> Player owes the book (losses).</li>
+    <li><strong>Credits = starting amount:</strong> Player broke even.</li>
+  </ul>
+  <p>The P&amp;L section in the Book tab shows the house position. Positive P&amp;L = the book collected more than it paid out.</p>
+
+  <h3>Exporting Data</h3>
+  <p>The export includes: all matches with scores, all bets with settlement status, all player balances, odds overrides, and announcements. Save this file for your records.</p>
+</section>
+
+<!-- 10. Rules of the Book -->
+<section class="gm-section" id="rules">
+  <h2>10. Rules of the Book</h2>
+
+  <h3>Bet Limits</h3>
+  <table class="gm-table">
+    <tr><th>Limit</th><th>Amount</th></tr>
+    <tr><td>Max single bet</td><td>$100</td></tr>
+    <tr><td>Max exposure per match</td><td>$500 total wagered</td></tr>
+    <tr><td>Max active bets per bettor</td><td>10</td></tr>
+    <tr><td>Min bet</td><td>$1</td></tr>
+  </table>
+
+  <h3>Odds & Vig</h3>
+  <ul>
+    <li>All odds include a <strong>10% house margin</strong> (5% juice per side).</li>
+    <li>Odds are generated from a handicap-based probability model with bilinear interpolation.</li>
+    <li>The GM can move lines manually in 25-point increments.</li>
+    <li>Odds are locked at the moment of bet placement &mdash; later line moves don't affect existing bets.</li>
+  </ul>
+
+  <h3>Void Policy</h3>
+  <ul>
+    <li>Bets can only be voided by the GM (admin).</li>
+    <li>Voiding refunds the full stake to the bettor's credits.</li>
+    <li>Valid reasons to void: duplicate bet, wrong match selected, player error confirmed by both parties.</li>
+    <li>Bets are <strong>not voided</strong> because a bettor changed their mind or because they're losing.</li>
+  </ul>
+
+  <h3>Dispute Resolution</h3>
+  <ol>
+    <li>The GM's decision is final on all bet-related disputes.</li>
+    <li>The system's recorded odds and timestamps are the source of truth.</li>
+    <li>If a match result is disputed, the official scorer's card determines the outcome.</li>
+    <li>In case of a scoring error discovered after settlement, the GM may revert and re-enter the correct score. All affected bets will be re-settled.</li>
+  </ol>
+
+  <h3>Match Cancellation</h3>
+  <ul>
+    <li>If a match cannot be completed (weather, injury), all bets on that match are voided.</li>
+    <li>Use the Void button on each affected bet in the Book tab.</li>
+  </ul>
+
+  <div class="gm-critical">
+    <strong>Golden Rule:</strong>
+    When in doubt, the house always errs on the side of the bettor. This is a social game among friends &mdash; the goal is fun, not profit maximization. A happy bettor comes back next year.
+  </div>
+</section>
+
+<a href="/app/" class="gm-back">&larr; Back to App</a>
+
+</div>
+</body>
+</html>

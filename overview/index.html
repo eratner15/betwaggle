@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GM Operations Guide — Waggle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:#1A472A; --green-light:#2D6A3E; --gold:#D4AF37;
+      --dark:#0D2818; --ivory:#F5F0E8; --white:#FAFAF7;
+      --text:#1a1a1a; --muted:#6B7280; --border:#DDD8CC;
+      --red:#DC2626; --amber:#D97706; --win:#16A34A;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--ivory);color:var(--text);-webkit-font-smoothing:antialiased}
+    a{color:var(--green);text-decoration:none}
+
+    /* ── Header ── */
+    .header{background:var(--dark);color:#fff;padding:32px;text-align:center;border-bottom:3px solid var(--gold)}
+    .header img{height:48px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto}
+    .header h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:6px}
+    .header p{font-size:14px;color:rgba(255,255,255,0.6)}
+
+    /* ── Nav ── */
+    .toc{background:var(--white);border-bottom:1px solid var(--border);padding:16px 32px;position:sticky;top:0;z-index:10;overflow-x:auto;white-space:nowrap}
+    .toc a{font-size:12px;font-weight:600;color:var(--muted);margin-right:20px;text-decoration:none;display:inline-block}
+    .toc a:hover{color:var(--green)}
+
+    /* ── Layout ── */
+    .page{max-width:860px;margin:0 auto;padding:48px 32px 80px}
+
+    /* ── Section ── */
+    .section{margin-bottom:56px}
+    .section-num{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+    .section h2{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--dark);margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+
+    /* ── Prose ── */
+    p{font-size:15px;line-height:1.75;color:var(--text);margin-bottom:12px}
+    p:last-child{margin-bottom:0}
+
+    /* ── Steps ── */
+    .steps{list-style:none;counter-reset:step}
+    .steps li{counter-increment:step;display:flex;gap:14px;margin-bottom:16px;padding:14px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px}
+    .steps li::before{content:counter(step);background:var(--green);color:#fff;font-size:12px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .steps li .body{font-size:14px;line-height:1.6}
+    .steps li strong{color:var(--dark)}
+
+    /* ── Info boxes ── */
+    .box{border-radius:10px;padding:16px 20px;margin:16px 0;font-size:14px;line-height:1.6}
+    .box.tip{background:#f0f7f2;border-left:3px solid var(--win)}
+    .box.warn{background:#fffbeb;border-left:3px solid var(--amber)}
+    .box.danger{background:#fef2f2;border-left:3px solid var(--red)}
+    .box strong{display:block;margin-bottom:4px}
+
+    /* ── Table ── */
+    table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}
+    th{background:var(--dark);color:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+    td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even) td{background:rgba(26,71,42,0.02)}
+
+    /* ── Rules ── */
+    .rule{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .rule:last-child{border-bottom:none}
+    .rule .icon{font-size:18px;flex-shrink:0;width:28px;text-align:center}
+    .rule .text{font-size:14px;line-height:1.6}
+    .rule strong{color:var(--dark)}
+
+    /* ── Print ── */
+    @media print{
+      .toc,.header img{display:none}
+      .header{padding:16px;page-break-after:avoid}
+      .section{page-break-inside:avoid}
+      body{background:#fff}
+      .box{border:1px solid #ccc}
+    }
+    @media(max-width:600px){
+      .page{padding:24px 16px 60px}
+      .toc{padding:12px 16px}
+      .header{padding:24px 16px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="/logo.png" alt="Waggle">
+  <h1>GM Operations Guide</h1>
+  <p>Everything you need to run the book — from first bet to final settlement.</p>
+</div>
+
+<nav class="toc">
+  <a href="#quickstart">Quick Start</a>
+  <a href="#bets">Taking Bets</a>
+  <a href="#scores">Entering Scores</a>
+  <a href="#book">Managing the Book</a>
+  <a href="#lines">Line Management</a>
+  <a href="#players">Players</a>
+  <a href="#settlement">Settlement</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+  <a href="#endofday">End of Tournament</a>
+  <a href="#rules">House Rules</a>
+</nav>
+
+<div class="page">
+
+  <!-- 1. Quick Start -->
+  <div class="section" id="quickstart">
+    <div class="section-num">Section 1</div>
+    <h2>Quick Start</h2>
+    <p>Your event is live. Here's how to open the book in under two minutes.</p>
+    <ol class="steps">
+      <li><div class="body"><strong>Open your event link</strong> — the URL you received after creation (e.g. <code>betwaggle.com/your-event/</code>). Works on any phone, no download.</div></li>
+      <li><div class="body"><strong>Tap the Admin tab</strong> at the bottom of the screen. Enter your 4-digit PIN. You're now in GM mode.</div></li>
+      <li><div class="body"><strong>Share the link</strong> with your group. Text it, print the QR code, or paste it in the group chat. Everyone opens it and can place bets immediately.</div></li>
+      <li><div class="body"><strong>Start taking bets.</strong> Tap "Take Bet" in the Admin panel. Select the match, pick a side, enter the stake, confirm. Done.</div></li>
+    </ol>
+    <div class="box tip"><strong>Pro tip</strong> Open the link on your own phone, enter the PIN, and keep the Admin tab open all day. Players use the same link from their phones — they just don't have the PIN.</div>
+  </div>
+
+  <!-- 2. Taking Bets -->
+  <div class="section" id="bets">
+    <div class="section-num">Section 2</div>
+    <h2>Taking Bets</h2>
+    <p>The book accepts three types of bets: <strong>match bets</strong> (moneyline on a specific match), <strong>flight winner futures</strong>, and <strong>margin props</strong> (win by X+ holes).</p>
+    <ol class="steps">
+      <li><div class="body"><strong>Tap "Take Bet"</strong> in the Admin panel (or players can bet directly from the Bet tab).</div></li>
+      <li><div class="body"><strong>Select the match</strong> — bets are organized by round. Active rounds show live odds.</div></li>
+      <li><div class="body"><strong>Pick a side</strong> — the moneyline shows next to each team. Negative = favorite, positive = underdog.</div></li>
+      <li><div class="body"><strong>Enter the bettor's name and stake.</strong> The system calculates the payout automatically. Confirm.</div></li>
+    </ol>
+    <div class="box warn"><strong>Walk-up bets</strong> Players can walk up and bet verbally — just log it in the app immediately. Don't let bets stack up unrecorded. If a match is about to start, the app will warn you.</div>
+    <table>
+      <tr><th>Bet Type</th><th>Where to Find It</th><th>Settles When</th></tr>
+      <tr><td>Match moneyline</td><td>Bet tab → select round → pick match</td><td>Score entered for that match</td></tr>
+      <tr><td>Flight winner future</td><td>Bet tab → Futures section</td><td>Final round of the flight</td></tr>
+      <tr><td>Margin prop</td><td>Bet tab → Props section</td><td>Score entered for that match</td></tr>
+    </table>
+  </div>
+
+  <!-- 3. Entering Scores -->
+  <div class="section" id="scores">
+    <div class="section-num">Section 3</div>
+    <h2>Entering Scores</h2>
+    <p>Scores flow directly into bet settlement. Enter them as soon as each group finishes — don't batch them.</p>
+    <ol class="steps">
+      <li><div class="body"><strong>Go to Admin → Scores.</strong> You'll see a grid of all matches for the current round, organized by flight.</div></li>
+      <li><div class="body"><strong>Tap the match.</strong> Enter the point score for each team (e.g. Team A: 7, Team B: 3).</div></li>
+      <li><div class="body"><strong>Confirm the score.</strong> The app settles all bets on that match automatically — winners' balances update in real time.</div></li>
+      <li><div class="body"><strong>After all matches in a round are scored,</strong> tap "Settle Round" to confirm the full round is complete. This triggers flight-winner futures settlement if applicable.</div></li>
+    </ol>
+    <div class="box tip"><strong>Delegate scoring</strong> You can share your admin PIN with a trusted scorer (caddie master, tournament director). They can enter scores from their phone while you manage the book.</div>
+    <div class="box warn"><strong>Reverting a score</strong> If you enter a wrong score, tap the match and update it. If bets have already settled, you'll be asked to confirm before unsettling them. This creates an announcement in the feed so there's a paper trail.</div>
+  </div>
+
+  <!-- 4. Managing the Book -->
+  <div class="section" id="book">
+    <div class="section-num">Section 4</div>
+    <h2>Managing the Book</h2>
+    <p>The <strong>Danger Board</strong> (Admin → Book) shows your exposure at a glance. Check it after every round of bets.</p>
+    <table>
+      <tr><th>Indicator</th><th>What It Means</th><th>Action</th></tr>
+      <tr><td>Red match row</td><td>Heavy one-sided action — you'll pay out more than you took in if that side wins</td><td>Move the line toward the heavy side (see Section 5)</td></tr>
+      <tr><td>High total exposure</td><td>Total payout risk across all open bets is elevated</td><td>Tighten bet limits or stop new bets on that match</td></tr>
+      <tr><td>Green match row</td><td>Balanced action — book is healthy</td><td>No action needed</td></tr>
+    </table>
+    <div class="box danger"><strong>Never let one match carry more than 30% of total exposure.</strong> If a single match is dominating your book, move the line immediately or cap further betting on it.</div>
+    <p>The book's edge comes from the built-in vig (juice) on every bet — roughly 10% margin. As long as action is reasonably balanced, the house wins over time. Your job is to keep it balanced.</p>
+  </div>
+
+  <!-- 5. Line Management -->
+  <div class="section" id="lines">
+    <div class="section-num">Section 5</div>
+    <h2>Line Management</h2>
+    <p>Lines are set automatically from handicap differentials. You can move them in Admin → Lines.</p>
+    <p><strong>When to move a line:</strong></p>
+    <ul style="padding-left:20px;margin-bottom:12px;font-size:14px;line-height:2">
+      <li>80%+ of money is on one side of a match</li>
+      <li>A player reports an injury or is withdrawn</li>
+      <li>Weather dramatically changes scoring conditions</li>
+      <li>A late pairing substitution changes the handicap math</li>
+    </ul>
+    <p><strong>How to move a line:</strong> Admin → Lines → select match → drag the slider toward the heavy side. The odds update for new bets only — existing bets keep their original line.</p>
+    <div class="box tip"><strong>Rule of thumb:</strong> Move the line 10-15 points when you need to attract action on the other side. If Team A is -140 and everyone's betting A, move them to -160 to cool it down and offer +135 on B instead of +120.</div>
+    <table>
+      <tr><th>Moneyline</th><th>Implied Win %</th><th>What It Means</th></tr>
+      <tr><td>-200</td><td>67%</td><td>Heavy favorite — 2:1 odds against</td></tr>
+      <tr><td>-150</td><td>60%</td><td>Solid favorite</td></tr>
+      <tr><td>-120</td><td>55%</td><td>Slight favorite</td></tr>
+      <tr><td>+100 (even)</td><td>50%</td><td>Pick 'em</td></tr>
+      <tr><td>+130</td><td>43%</td><td>Slight underdog</td></tr>
+      <tr><td>+200</td><td>33%</td><td>Big underdog</td></tr>
+    </table>
+  </div>
+
+  <!-- 6. Player Management -->
+  <div class="section" id="players">
+    <div class="section-num">Section 6</div>
+    <h2>Player Management</h2>
+    <p>Players start with a credit balance set by the GM. They use credits to bet. Credits are redeemed for cash at the end of the tournament.</p>
+    <ol class="steps">
+      <li><div class="body"><strong>Set starting credits:</strong> Admin → Players → set the buy-in amount for each player (e.g. $100 starting balance).</div></li>
+      <li><div class="body"><strong>Add credits mid-tournament:</strong> If a player wants to top up, Admin → Players → select player → Add Credits. Enter amount and note (e.g. "cash received").</div></li>
+      <li><div class="body"><strong>Check balances anytime:</strong> Admin → Players → sorted by balance. Green = positive, red = negative (owes the book).</div></li>
+    </ol>
+    <div class="box warn"><strong>Disputes</strong> If a player disputes a bet, pull up Admin → Bets → find the bet by player and match. You can void any individual bet — this returns the stake to the player and reverses any winnings. Always communicate voids publicly.</div>
+  </div>
+
+  <!-- 7. Settlement -->
+  <div class="section" id="settlement">
+    <div class="section-num">Section 7</div>
+    <h2>Settlement</h2>
+    <p>Bet settlement is automatic. When you enter a final score, all bets on that match settle immediately.</p>
+    <table>
+      <tr><th>Bet Type</th><th>Settlement Trigger</th><th>Payout</th></tr>
+      <tr><td>Match moneyline (win)</td><td>Score finalized</td><td>Stake × (ML odds / 100) + stake</td></tr>
+      <tr><td>Match moneyline (lose)</td><td>Score finalized</td><td>Stake lost</td></tr>
+      <tr><td>Push (tied match)</td><td>Score finalized, equal points</td><td>Stake returned (void)</td></tr>
+      <tr><td>Flight winner future</td><td>All flight matches final</td><td>Stake × (futures odds / 100) + stake</td></tr>
+      <tr><td>Margin prop</td><td>Score finalized</td><td>Settled if winning margin ≥ bet selection</td></tr>
+    </table>
+    <div class="box tip"><strong>Settlement announcements</strong> Every settled bet creates an announcement in the group feed. Players see their results in real time — no need to make manual announcements.</div>
+    <div class="box warn"><strong>Pushed matches</strong> If the point total is exactly split (e.g. 5-5 in a 10-point match), all bets push and stakes are returned. This is the correct behavior — don't override it.</div>
+  </div>
+
+  <!-- 8. Troubleshooting -->
+  <div class="section" id="troubleshooting">
+    <div class="section-num">Section 8</div>
+    <h2>Troubleshooting</h2>
+    <div class="rule"><div class="icon">📵</div><div class="text"><strong>Player says odds look wrong</strong> — Ask them to hard-refresh the page (pull down on mobile). Odds are cached for 2 minutes. If still wrong after refresh, check Admin → Lines for the match.</div></div>
+    <div class="rule"><div class="icon">💳</div><div class="text"><strong>Bet won't submit</strong> — The player may be out of credits. Check Admin → Players → their balance. If they need more, add credits or have them settle their tab first.</div></div>
+    <div class="rule"><div class="icon">🔄</div><div class="text"><strong>Score was entered wrong</strong> — Tap the match in Admin → Scores and update it. If bets settled, confirm the prompt to unsettle and re-settle. Announce it in the group chat to avoid confusion.</div></div>
+    <div class="rule"><div class="icon">📶</div><div class="text"><strong>No internet on the course</strong> — The app caches the last-known odds and bet history. Players can still view their bets offline. New bets won't submit until signal returns. Take them on paper and log them when back online.</div></div>
+    <div class="rule"><div class="icon">🔑</div><div class="text"><strong>Forgot admin PIN</strong> — The PIN is shown in your launch confirmation email and on the event admin page. Contact the event creator to retrieve it.</div></div>
+    <div class="rule"><div class="icon">👤</div><div class="text"><strong>Wrong player name on a bet</strong> — Void the bet (Admin → Bets → void) and re-enter it under the correct player. The void returns the original stake.</div></div>
+  </div>
+
+  <!-- 9. End of Tournament -->
+  <div class="section" id="endofday">
+    <div class="section-num">Section 9</div>
+    <h2>End of Tournament</h2>
+    <ol class="steps">
+      <li><div class="body"><strong>Confirm all scores are entered</strong> and all rounds are settled. Admin → Scores should show all matches as "Final".</div></li>
+      <li><div class="body"><strong>Check the balances board.</strong> Admin → Players → sort by balance. This is your final IOU sheet. Players with positive balances are owed cash. Players with negative balances owe the house.</div></li>
+      <li><div class="body"><strong>Export the ledger.</strong> Admin → Export → CSV. Download the full bet history and balance sheet. Keep this for your records.</div></li>
+      <li><div class="body"><strong>Settle up in cash</strong> at the 19th hole. The book should net close to zero once you account for the house vig. Any surplus goes to the prize pool or house fund.</div></li>
+      <li><div class="body"><strong>Mark the event closed.</strong> Admin → Settings → Close Event. This disables new bets and locks the book.</div></li>
+    </ol>
+    <div class="box tip"><strong>The house edge</strong> With standard 10% vig, the house keeps roughly $5 for every $100 wagered on a balanced book. On a $1,000 handle, expect ~$50 net to the house after all payouts. Use it for the 19th hole tab.</div>
+  </div>
+
+  <!-- 10. House Rules -->
+  <div class="section" id="rules">
+    <div class="section-num">Section 10</div>
+    <h2>House Rules</h2>
+    <p>Post these at the bar or read them out at the first tee. Clear rules prevent disputes.</p>
+    <div class="rule"><div class="icon">💰</div><div class="text"><strong>Max single bet: $100.</strong> No bet larger than $100 on any one outcome. The house may reduce this limit at any time.</div></div>
+    <div class="rule"><div class="icon">⏱</div><div class="text"><strong>Bets lock at tee-off.</strong> No new bets on a match once the group has reached the first tee. The app enforces this automatically.</div></div>
+    <div class="rule"><div class="icon">🚫</div><div class="text"><strong>No bet reversals.</strong> Once a bet is confirmed, it stands. The GM may void a bet in cases of clear data entry error — not because the bettor changed their mind.</div></div>
+    <div class="rule"><div class="icon">🏌️</div><div class="text"><strong>Handicap-based odds.</strong> Lines are set from official GHIN handicap indexes. Player-reported handicaps are not accepted. The GM's line decisions are final.</div></div>
+    <div class="rule"><div class="icon">🤝</div><div class="text"><strong>Disputes go to the GM.</strong> Any bet dispute must be raised before the next round begins. The GM reviews the bet log and makes a final ruling. No appeals.</div></div>
+    <div class="rule"><div class="icon">📋</div><div class="text"><strong>Settle before you leave.</strong> All balances must be settled in cash at the end of the tournament. The book does not carry credit across events.</div></div>
+    <div class="rule"><div class="icon">🍺</div><div class="text"><strong>This is for fun.</strong> Stakes should be friendly. The book is here to make the competition more interesting — not to create financial stress. The GM reserves the right to cap any player's action.</div></div>
+  </div>
+
+</div>
+
+<footer style="background:var(--dark);color:rgba(255,255,255,0.5);text-align:center;padding:24px;font-size:12px">
+  <img src="/logo.png" alt="Waggle" style="height:28px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;filter:brightness(0.6)">
+  Waggle by <a href="https://betwaggle.com" style="color:var(--gold)">BetWaggle</a> · <a href="/" style="color:var(--gold)">Back to Waggle</a>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1A472A">
+  <title>Turnberry Isle Member-Guest 2026</title>
+
+  <!-- Open Graph — makes iMessage/WhatsApp/text previews look great -->
+  <meta property="og:title" content="Turnberry Isle Member-Guest 2026">
+  <meta property="og:description" content="Live scores, betting odds & Calcutta tracker for the 2026 Men's Member-Guest at Turnberry Isle. 48 teams, 8 flights, March 20-21.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/app/">
+  <meta property="og:image" content="https://betwaggle.com/app/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Turnberry Isle Member-Guest 2026 — Live Tournament Board">
+  <meta property="og:site_name" content="Turnberry Isle Member-Guest">
+
+  <!-- Twitter / iMessage -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Turnberry Isle Member-Guest 2026">
+  <meta name="twitter:description" content="Live scores, odds & side action for 48 teams across 8 flights. Soffer Course, March 20-21.">
+  <meta name="twitter:image" content="https://betwaggle.com/app/og-image.svg">
+
+  <!-- General -->
+  <meta name="description" content="Live scores, betting board & Calcutta tracker for the 2026 Turnberry Isle Men's Member-Guest tournament. 48 teams, 8 flights, Soffer Course.">
+  <meta name="apple-mobile-web-app-title" content="MG 2026">
+  <link rel="apple-touch-icon" href="/app/icon-180.svg">
+  <link rel="icon" type="image/svg+xml" href="/app/icon-180.svg">
+  <link rel="manifest" href="/app/manifest.json">
+  <!-- #19: Preconnect for fonts (avoid render-blocking @import) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/css/styles.css">
+  <style>
+    @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+  </style>
+</head>
+<body>
+  <header class="mg-header">
+    <h1>Member-Guest 2026</h1>
+    <div class="mg-subtitle">Turnberry Isle &bull; Soffer Course</div>
+  </header>
+
+  <!-- #5: Loading skeleton -->
+  <div id="app">
+    <div class="mg-content mg-skeleton">
+      <div class="mg-card skeleton-pulse" style="height:80px"></div>
+      <div style="width:120px;height:16px;border-radius:4px;margin-bottom:12px" class="skeleton-pulse"></div>
+      <div class="mg-flight-grid">
+        <div class="mg-flight-card skeleton-pulse" style="height:100px"></div>
+        <div class="mg-flight-card skeleton-pulse" style="height:100px"></div>
+        <div class="mg-flight-card skeleton-pulse" style="height:100px"></div>
+        <div class="mg-flight-card skeleton-pulse" style="height:100px"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mg-nav">
+    <div class="mg-nav-inner">
+      <a href="#dashboard" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M9 21V9h6v12"/></svg>
+        <span class="nav-label">Home</span>
+      </a>
+      <a href="#flights" data-tab="flights">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span class="nav-label">Flights</span>
+      </a>
+      <a href="#bet" data-tab="bet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span class="nav-label">Bet</span>
+      </a>
+      <a href="#mybets" data-tab="mybets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="nav-label">My Bets</span>
+      </a>
+      <a href="#scorecard" data-tab="scorecard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
+        <span class="nav-label">Scores</span>
+      </a>
+      <a href="#scenarios" data-tab="scenarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="nav-label">What-If</span>
+      </a>
+      <a href="#settle" data-tab="settle" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="nav-label">Settle</span>
+      </a>
+      <a href="#admin" data-tab="admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="nav-label">Admin</span>
+      </a>
+    </div>
+  </nav>
+
+  <div id="mg-toast" class="mg-toast"></div>
+
+  <!-- Outdoor mode toggle — high contrast for on-course glare -->
+  <button class="outdoor-toggle" id="outdoor-toggle" onclick="toggleOutdoorMode()">
+    <span id="outdoor-icon">&#9728;</span> <span id="outdoor-label">Sun</span>
+  </button>
+
+  <script>
+    // Outdoor mode — persist preference and auto-detect
+    function toggleOutdoorMode() {
+      var active = document.body.classList.toggle('outdoor-mode');
+      localStorage.setItem('waggle_outdoor', active ? '1' : '0');
+      var label = document.getElementById('outdoor-label');
+      var icon = document.getElementById('outdoor-icon');
+      if (label) label.textContent = active ? 'Indoor' : 'Sun';
+      if (icon) icon.innerHTML = active ? '&#9789;' : '&#9728;';
+    }
+    // Restore on load
+    (function() {
+      var saved = localStorage.getItem('waggle_outdoor');
+      if (saved === '1') {
+        document.body.classList.add('outdoor-mode');
+        var label = document.getElementById('outdoor-label');
+        var icon = document.getElementById('outdoor-icon');
+        if (label) label.textContent = 'Indoor';
+        if (icon) icon.innerHTML = '&#9789;';
+      }
+    })();
+  </script>
+
+  <script type="module" src="/app/js/app.js"></script>
+  <script>
+    // Nuclear cache buster — force fresh on stale mobile clients
+    var MG_VERSION = 15;
+    var storedVer = parseInt(localStorage.getItem('mg_sw_ver') || '0');
+    if (storedVer < MG_VERSION) {
+      // Nuke everything and reload
+      localStorage.removeItem('mg_state');
+      localStorage.setItem('mg_sw_ver', MG_VERSION);
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+        }).then(function() {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(r) { r.unregister(); });
+              window.location.reload(true);
+            });
+          } else {
+            window.location.reload(true);
+          }
+        });
+      } else {
+        window.location.reload(true);
+      }
+    } else {
+      localStorage.setItem('mg_sw_ver', MG_VERSION);
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/app/sw.js?v=13').then(function(reg) {
+          reg.update();
+        }).catch(function(){});
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Turnberry Isle Member-Guest 2026",
+  "short_name": "MG 2026",
+  "description": "Live scores, betting odds & Calcutta tracker. 48 teams, 8 flights.",
+  "start_url": "/app/",
+  "display": "standalone",
+  "background_color": "#F5F0E8",
+  "theme_color": "#1A472A",
+  "icons": [
+    {
+      "src": "/app/icon-180.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

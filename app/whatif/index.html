@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What-If Analysis — MG 2026</title>
+<style>
+  :root {
+    --green: #1a4a2e;
+    --green-light: #2d6b42;
+    --green-mid: #235035;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --gold-dim: #8a6e2a;
+    --cream: #f5f0e8;
+    --text: #1a1a1a;
+    --muted: #666;
+    --r4r5-bg: #fffbe6;
+    --r4r5-border: #e8c96a;
+    --tie-bg: #fff3e0;
+    --tie-border: #fb8c00;
+    --winner-bg: #e8f5e9;
+    --winner-border: #2d6b42;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--cream); color: var(--text); }
+
+  header {
+    background: var(--green);
+    color: white;
+    padding: 20px 24px;
+    border-bottom: 3px solid var(--gold);
+  }
+  header h1 { font-size: 1.4rem; color: var(--gold); letter-spacing: 0.5px; }
+  header p { font-size: 0.85rem; color: #aed4b8; margin-top: 4px; }
+
+  .info-bar {
+    background: #fff8e1;
+    border-bottom: 1px solid var(--gold-dim);
+    padding: 10px 24px;
+    font-size: 0.82rem;
+    color: #6d4c00;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+
+  .flight-card {
+    background: white;
+    border: 1px solid #d0c9bb;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+  }
+
+  .flight-header {
+    background: var(--green);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .flight-name { font-size: 1rem; font-weight: bold; color: var(--gold); }
+  .flight-winner-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .badge-winner { background: var(--gold); color: var(--green); }
+  .badge-tied { background: #fb8c00; color: white; }
+
+  /* Standings table */
+  .standings { padding: 10px 0; }
+  .standings table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .standings th {
+    background: #f0ebe0;
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    border-bottom: 1px solid #ddd;
+  }
+  .standings th.num { text-align: right; }
+  .standings td { padding: 6px 10px; border-bottom: 1px solid #f0ebe0; }
+  .standings td.num { text-align: right; font-family: monospace; font-size: 0.85rem; }
+  .standings tr.rank-1 td { font-weight: bold; }
+  .standings tr.rank-1 td.pts { color: var(--green); }
+  .standings tr.tied-1 td { background: #fffde7; }
+
+  /* Matches */
+  .matches-toggle {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    color: var(--green);
+    cursor: pointer;
+    background: #f5f0e8;
+    border-top: 1px solid #ddd;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .matches-toggle:hover { background: #ede8db; }
+
+  .matches-list { display: none; }
+  .matches-list.open { display: block; }
+
+  .match-row {
+    display: flex;
+    align-items: center;
+    padding: 7px 16px;
+    border-bottom: 1px solid #f0ebe0;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
+  .match-row:last-child { border-bottom: none; }
+  .match-row.approx { background: var(--r4r5-bg); border-left: 3px solid var(--r4r5-border); }
+  .match-round {
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 28px;
+    font-style: italic;
+  }
+  .match-teams { flex: 1; }
+  .team-a { color: var(--text); }
+  .team-b { color: var(--muted); }
+  .match-score {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .score-box {
+    width: 32px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: white;
+  }
+  .score-sep { color: var(--muted); font-size: 0.8rem; }
+  .score-edit {
+    width: 26px; height: 22px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .score-edit:hover { background: var(--green); color: white; border-color: var(--green); }
+
+  .approx-tag {
+    font-size: 0.65rem;
+    background: var(--gold-dim);
+    color: white;
+    padding: 1px 5px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Score edit modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 320px;
+    max-width: 95vw;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .modal h3 { color: var(--green); font-size: 1rem; margin-bottom: 4px; }
+  .modal .match-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 16px; }
+  .slider-group { margin: 12px 0; }
+  .slider-group label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  .score-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--green);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 12px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  .score-display span { color: var(--gold); }
+  .score-display .sep { color: rgba(255,255,255,0.4); font-weight: normal; }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--green);
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 10px; border: none; border-radius: 6px;
+    font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-cancel { background: #eee; color: var(--text); }
+  .btn-cancel:hover { background: #ddd; }
+
+  .hth-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 4px 16px 8px;
+    font-style: italic;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 1.2rem; }
+  }
+
+  @media print {
+    .matches-toggle, .matches-list, .score-edit { display: none !important; }
+    .flight-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⛳ What-If Analysis — MG 2026</h1>
+  <p>Adjust match scores to see how flight standings change. R4/R5 marked as approx (5–5) until corrected.</p>
+</header>
+
+<div class="info-bar">
+  <strong>Note:</strong> R4 &amp; R5 scores were entered as approximate 5–5 splits. Edit any match below to simulate the real outcome.
+  Standings update live. H2H tiebreaker used when teams are tied in total points.
+</div>
+
+<div class="container">
+  <div class="grid" id="flightGrid"></div>
+</div>
+
+<!-- Score Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Edit Score</h3>
+    <p class="match-label" id="modalLabel"></p>
+    <div class="score-display">
+      <span id="modalScoreA">5</span>
+      <span class="sep">–</span>
+      <span id="modalScoreB">5</span>
+    </div>
+    <div class="slider-group">
+      <label id="modalSliderLabel">Team A score (0–10)</label>
+      <input type="range" id="modalSlider" min="0" max="10" step="0.5" value="5">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveScore()">Save &amp; Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+
+const TEAMS = {
+  1:  { member:"Billy Green",       guest:"Joe Pryor",         flight:"woods" },
+  2:  { member:"Zachary Phlegar",    guest:"Chase Cury",        flight:"woods" },
+  3:  { member:"Ryan Wolter",        guest:"Shane Wolter",      flight:"woods" },
+  4:  { member:"Ariel Saban",        guest:"Mark Wagenberg",    flight:"woods" },
+  5:  { member:"Jason Goldberg",     guest:"Matt Scarafoni",    flight:"woods" },
+  6:  { member:"Scott Weiselberg",   guest:"Jon Weber",         flight:"woods" },
+  7:  { member:"Jonathan Shapero",   guest:"Jonny Slater",      flight:"palmer" },
+  8:  { member:"Shlomi Asayag",      guest:"Anthony Pollak",    flight:"palmer" },
+  9:  { member:"Bradley Moskovitz",  guest:"Max Winter",        flight:"palmer" },
+  10: { member:"Brett Weiselberg",   guest:"Andrew Hausdorff",  flight:"palmer" },
+  11: { member:"Michael Rau",        guest:"Joseph Dabrowski",  flight:"palmer" },
+  12: { member:"Bruce Silcoff",      guest:"Joseph Young",      flight:"palmer" },
+  13: { member:"Robert Sherkin",     guest:"Adam Polan",        flight:"nicklaus" },
+  14: { member:"Noah Storch",        guest:"Drew Romano",       flight:"nicklaus" },
+  15: { member:"Michael Messinger",  guest:"Logan Izenstark",   flight:"nicklaus" },
+  16: { member:"Lawrence Weinstein", guest:"Nathan Smith",      flight:"nicklaus" },
+  17: { member:"Michael Papadakis",  guest:"Rick Bielen",       flight:"nicklaus" },
+  18: { member:"Bud Thomas",         guest:"Brian Leek",        flight:"nicklaus" },
+  19: { member:"Steven Scheck",      guest:"Bradley Sherman",   flight:"hogan" },
+  20: { member:"Jason Morjain",      guest:"Bryan Morjain",     flight:"hogan" },
+  21: { member:"Michael Conway",     guest:"Miles Rubin",       flight:"hogan" },
+  22: { member:"David Arison",       guest:"Omer Tiroche",      flight:"hogan" },
+  23: { member:"Barry Lewin",        guest:"John Martin",       flight:"hogan" },
+  24: { member:"Glenn Kaplan",       guest:"Aaron Hattaway",    flight:"hogan" },
+  25: { member:"Stephen Miller",     guest:"Jeff Weshler",      flight:"boros" },
+  26: { member:"Adam Froman",        guest:"Brian Cohen",       flight:"boros" },
+  27: { member:"Arnold Thorstad",    guest:"Matt Pfennig",      flight:"boros" },
+  28: { member:"Stephen Vecchitto",  guest:"Norm Wedderburn",   flight:"boros" },
+  29: { member:"Harry Salinas",      guest:"Anthony Sauce",     flight:"boros" },
+  30: { member:"Glenn Singer",       guest:"Kenny Braeseke",    flight:"boros" },
+  31: { member:"David Vecchitto",    guest:"Matthew Vecchitto", flight:"trevino" },
+  32: { member:"Ricardo Malfitano",  guest:"Keith Greenberg",   flight:"trevino" },
+  33: { member:"Kenneth Zucker",     guest:"Mat Sposta",        flight:"trevino" },
+  34: { member:"Lon Goldstein",      guest:"Larry Weissman",    flight:"trevino" },
+  35: { member:"Jason Ellman",       guest:"Vincent Elefante",  flight:"trevino" },
+  36: { member:"Robert Sigler",      guest:"David Firestone",   flight:"trevino" },
+  37: { member:"Robert Stein",       guest:"Mike Malkin",       flight:"sarazen" },
+  38: { member:"Neil Rosenfeld",     guest:"Richard Chipman",   flight:"sarazen" },
+  39: { member:"Tyler Gold",         guest:"Jeff Leach",        flight:"sarazen" },
+  40: { member:"Nick Wall",          guest:"Alex Ardente",      flight:"sarazen" },
+  41: { member:"Paul Riemer",        guest:"Josh Diamond",      flight:"sarazen" },
+  42: { member:"Murry Shapero",      guest:"Greg Slater",       flight:"sarazen" },
+  43: { member:"Gary Pyott",         guest:"Ryan Tucker",       flight:"player" },
+  44: { member:"Drew Seder",         guest:"Rob Grinberg",      flight:"player" },
+  45: { member:"Brent Porges",       guest:"Frank Smookler",    flight:"player" },
+  46: { member:"Jordan Sayfie",      guest:"Morten Aagaard",    flight:"player" },
+  47: { member:"Evan Ratner",        guest:"Craig Posner",      flight:"player" },
+  48: { member:"Rajiv Sharma",       guest:"Ashwani Mayur",     flight:"player" }
+};
+
+const FLIGHTS = {
+  woods:    { name: "Woods Flight",    teams: [1,2,3,4,5,6] },
+  palmer:   { name: "Palmer Flight",   teams: [7,8,9,10,11,12] },
+  nicklaus: { name: "Nicklaus Flight", teams: [13,14,15,16,17,18] },
+  hogan:    { name: "Hogan Flight",    teams: [19,20,21,22,23,24] },
+  boros:    { name: "Boros Flight",    teams: [25,26,27,28,29,30] },
+  trevino:  { name: "Trevino Flight",  teams: [31,32,33,34,35,36] },
+  sarazen:  { name: "Sarazen Flight",  teams: [37,38,39,40,41,42] },
+  player:   { name: "Player Flight",   teams: [43,44,45,46,47,48] }
+};
+
+const FLIGHT_ORDER = ["woods","palmer","nicklaus","hogan","boros","trevino","sarazen","player"];
+
+// All 120 match pairings [teamA, teamB] per round
+const PAIRINGS = {
+  woods:      { 1:[[1,6],[2,5],[3,4]], 2:[[2,3],[1,5],[6,4]], 3:[[5,3],[6,2],[1,4]], 4:[[1,3],[4,2],[5,6]], 5:[[4,5],[1,2],[3,6]] },
+  palmer:     { 1:[[7,12],[8,11],[9,10]], 2:[[8,9],[7,11],[12,10]], 3:[[11,9],[12,8],[7,10]], 4:[[7,9],[10,8],[11,12]], 5:[[10,11],[7,8],[9,12]] },
+  nicklaus:   { 1:[[13,18],[14,17],[15,16]], 2:[[14,15],[13,17],[18,16]], 3:[[17,15],[18,14],[13,16]], 4:[[13,15],[16,14],[17,18]], 5:[[16,17],[13,14],[15,18]] },
+  hogan:      { 1:[[19,24],[20,23],[21,22]], 2:[[20,21],[19,23],[24,22]], 3:[[23,21],[24,20],[19,22]], 4:[[19,21],[22,20],[23,24]], 5:[[22,23],[19,20],[21,24]] },
+  boros:      { 1:[[25,30],[26,29],[27,28]], 2:[[26,27],[25,29],[30,28]], 3:[[29,27],[30,26],[25,28]], 4:[[25,27],[28,26],[29,30]], 5:[[28,29],[25,26],[27,30]] },
+  trevino:    { 1:[[31,36],[32,35],[33,34]], 2:[[32,33],[31,35],[36,34]], 3:[[35,33],[36,32],[31,34]], 4:[[31,33],[34,32],[35,36]], 5:[[34,35],[31,32],[33,36]] },
+  sarazen:    { 1:[[37,42],[38,41],[39,40]], 2:[[38,39],[37,41],[42,40]], 3:[[41,39],[42,38],[37,40]], 4:[[37,39],[40,38],[41,42]], 5:[[40,41],[37,38],[39,42]] },
+  player:     { 1:[[43,48],[44,47],[45,46]], 2:[[44,45],[43,47],[48,46]], 3:[[47,45],[48,44],[43,46]], 4:[[43,45],[46,44],[47,48]], 5:[[46,47],[43,44],[45,48]] }
+};
+
+// ========== STATE ==========
+// scores[matchId] = { scoreA, scoreB, status, teamA, teamB }
+let scores = {};
+
+// Helper: short team name
+function tname(id) {
+  const t = TEAMS[id];
+  if (!t) return `T${id}`;
+  return t.member.split(" ").pop() + "/" + t.guest.split(" ").pop();
+}
+
+// Build all match IDs
+function getAllMatches() {
+  const matches = [];
+  for (const flightId of FLIGHT_ORDER) {
+    for (let r = 1; r <= 5; r++) {
+      const pairs = PAIRINGS[flightId][r];
+      for (let p = 0; p < 3; p++) {
+        const [a, b] = pairs[p];
+        matches.push({
+          id: `${flightId}-R${r}-P${p+1}`,
+          flight: flightId,
+          round: r,
+          pairing: p+1,
+          teamA: a,
+          teamB: b
+        });
+      }
+    }
+  }
+  return matches;
+}
+
+// Compute standings for a flight from current scores
+function computeStandings(flightId) {
+  const teams = FLIGHTS[flightId].teams;
+  const pts = {};
+  const h2h = {}; // h2h[a][b] = pts a scored against b
+
+  teams.forEach(t => { pts[t] = 0; h2h[t] = {}; });
+
+  for (let r = 1; r <= 5; r++) {
+    const pairs = PAIRINGS[flightId][r];
+    for (let p = 0; p < 3; p++) {
+      const [tA, tB] = pairs[p];
+      const id = `${flightId}-R${r}-P${p+1}`;
+      const s = scores[id];
+      if (s && s.status === 'final') {
+        pts[tA] = (pts[tA] || 0) + (s.scoreA || 0);
+        pts[tB] = (pts[tB] || 0) + (s.scoreB || 0);
+        h2h[tA][tB] = (h2h[tA][tB] || 0) + (s.scoreA || 0);
+        h2h[tB][tA] = (h2h[tB][tA] || 0) + (s.scoreB || 0);
+      }
+    }
+  }
+
+  // Sort: total pts desc, then H2H
+  const sorted = teams.slice().sort((a, b) => {
+    if (pts[b] !== pts[a]) return pts[b] - pts[a];
+    // H2H tiebreaker
+    const aVsB = h2h[a][b] || 0;
+    const bVsA = h2h[b][a] || 0;
+    return bVsA - aVsB;
+  });
+
+  return sorted.map((t, i) => ({
+    teamId: t,
+    pts: pts[t],
+    rank: i + 1
+  }));
+}
+
+// Determine if there's a tie at the top after H2H
+function getWinnerStatus(flightId) {
+  const standings = computeStandings(flightId);
+  if (!standings.length) return { tied: false, winner: null };
+  const top = standings[0];
+  const second = standings[1];
+  if (!second) return { tied: false, winner: top.teamId, pts: top.pts };
+
+  if (top.pts !== second.pts) return { tied: false, winner: top.teamId, pts: top.pts };
+
+  // Check if H2H actually breaks tie
+  const pairs = [];
+  for (let r = 1; r <= 5; r++) {
+    const ps = PAIRINGS[flightId][r];
+    for (let p = 0; p < 3; p++) {
+      pairs.push({ r, p, tA: ps[p][0], tB: ps[p][1] });
+    }
+  }
+  // H2H between top and second
+  let h2hA = 0, h2hB = 0;
+  pairs.forEach(({r, p, tA, tB}) => {
+    if ((tA === top.teamId && tB === second.teamId) || (tA === second.teamId && tB === top.teamId)) {
+      const id = `${flightId}-R${r}-P${p+1}`;
+      const s = scores[id];
+      if (s && s.status === 'final') {
+        if (tA === top.teamId) { h2hA += s.scoreA||0; h2hB += s.scoreB||0; }
+        else { h2hA += s.scoreB||0; h2hB += s.scoreA||0; }
+      }
+    }
+  });
+
+  if (h2hA !== h2hB) return { tied: false, winner: top.teamId, pts: top.pts, h2h: true };
+  return { tied: true, tiedTeams: standings.filter(s => s.pts === top.pts).map(s => s.teamId), pts: top.pts };
+}
+
+// ========== RENDER ==========
+
+function renderFlight(flightId) {
+  const flight = FLIGHTS[flightId];
+  const standings = computeStandings(flightId);
+  const winStatus = getWinnerStatus(flightId);
+
+  let badge = '';
+  if (winStatus.tied) {
+    badge = `<span class="flight-winner-badge badge-tied">TIE — ${winStatus.tiedTeams.map(t => tname(t).split('/')[0]).join(' / ')}</span>`;
+  } else if (winStatus.winner) {
+    badge = `<span class="flight-winner-badge badge-winner">🏆 ${tname(winStatus.winner).split('/')[0]}</span>`;
+  }
+
+  const maxPts = standings.length ? standings[0].pts : 0;
+
+  const standingsRows = standings.map(s => {
+    const tied = s.pts === maxPts && winStatus.tied;
+    return `<tr class="${s.rank === 1 || tied ? 'rank-1' : ''} ${tied ? 'tied-1' : ''}">
+      <td>${s.rank}</td>
+      <td>${tname(s.teamId)}</td>
+      <td class="num pts">${s.pts}</td>
+    </tr>`;
+  }).join('');
+
+  const matchRows = [];
+  for (let r = 1; r <= 5; r++) {
+    const pairs = PAIRINGS[flightId][r];
+    for (let p = 0; p < 3; p++) {
+      const [tA, tB] = pairs[p];
+      const id = `${flightId}-R${r}-P${p+1}`;
+      const s = scores[id];
+      const isApprox = s && s._approx;
+      const sA = s ? s.scoreA : '?';
+      const sB = s ? s.scoreB : '?';
+
+      matchRows.push(`
+        <div class="match-row ${isApprox ? 'approx' : ''}">
+          <span class="match-round">R${r}P${p+1}</span>
+          <div class="match-teams">
+            <div class="team-a">${tname(tA)}</div>
+            <div class="team-b">${tname(tB)}</div>
+          </div>
+          <div class="match-score">
+            <span class="score-box">${sA}</span>
+            <span class="score-sep">–</span>
+            <span class="score-box">${sB}</span>
+          </div>
+          ${isApprox ? '<span class="approx-tag">approx</span>' : ''}
+          <button class="score-edit" onclick="openModal('${id}',${tA},${tB},${sA},${sB})" title="Edit score">✎</button>
+        </div>
+      `);
+    }
+  }
+
+  const tiedNote = winStatus.tied
+    ? `<p class="hth-note">Tiebreaker: H2H pts between tied teams. Edit R4/R5 scores above to resolve.</p>`
+    : (winStatus.h2h ? `<p class="hth-note">Winner determined by head-to-head tiebreaker.</p>` : '');
+
+  return `
+    <div class="flight-card" id="card-${flightId}">
+      <div class="flight-header">
+        <span class="flight-name">${flight.name}</span>
+        ${badge}
+      </div>
+      <div class="standings">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th class="num">Pts</th></tr></thead>
+          <tbody>${standingsRows}</tbody>
+        </table>
+      </div>
+      ${tiedNote}
+      <div class="matches-toggle" onclick="toggleMatches('${flightId}')">
+        <span>Matches (edit to update)</span>
+        <span id="toggle-${flightId}">▼</span>
+      </div>
+      <div class="matches-list" id="matches-${flightId}">
+        ${matchRows.join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  const grid = document.getElementById('flightGrid');
+  grid.innerHTML = FLIGHT_ORDER.map(f => renderFlight(f)).join('');
+}
+
+function toggleMatches(flightId) {
+  const list = document.getElementById(`matches-${flightId}`);
+  const icon = document.getElementById(`toggle-${flightId}`);
+  list.classList.toggle('open');
+  icon.textContent = list.classList.contains('open') ? '▲' : '▼';
+}
+
+// ========== MODAL ==========
+let editState = {};
+
+function openModal(matchId, tA, tB, sA, sB) {
+  editState = { matchId, tA, tB, sA: parseFloat(sA) || 5, sB: parseFloat(sB) || 5 };
+  document.getElementById('modalTitle').textContent = `Edit Match Score`;
+  document.getElementById('modalLabel').textContent = `${tname(tA)} vs ${tname(tB)}`;
+  document.getElementById('modalSliderLabel').textContent = `${tname(tA)} score (0–10)`;
+  const slider = document.getElementById('modalSlider');
+  slider.value = editState.sA;
+  updateModalDisplay(editState.sA);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editState = {};
+}
+
+document.getElementById('modalSlider').addEventListener('input', e => {
+  updateModalDisplay(parseFloat(e.target.value));
+});
+
+function updateModalDisplay(sA) {
+  const sB = 10 - sA;
+  document.getElementById('modalScoreA').textContent = sA % 1 === 0 ? sA : sA.toFixed(1);
+  document.getElementById('modalScoreB').textContent = sB % 1 === 0 ? sB : sB.toFixed(1);
+}
+
+function saveScore() {
+  const sA = parseFloat(document.getElementById('modalSlider').value);
+  const sB = 10 - sA;
+  const { matchId, tA, tB } = editState;
+  scores[matchId] = {
+    scoreA: sA, scoreB: sB, status: 'final',
+    teamA: tA, teamB: tB,
+    _approx: false
+  };
+  closeModal();
+  renderAll();
+}
+
+// Click outside to close
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ========== LOAD FROM API ==========
+async function loadScores() {
+  try {
+    const resp = await fetch('/app/api/state', { headers: { 'X-Admin-Pin': '2026' } });
+    const state = await resp.json();
+    const raw = state.scores || {};
+
+    // Mark R4/R5 as approx if they're exactly 5-5
+    for (const [id, s] of Object.entries(raw)) {
+      const parts = id.split('-');
+      const round = parseInt(parts[1]?.replace('R','') || '0');
+      const isApprox = round >= 4 && s.scoreA === 5 && s.scoreB === 5;
+      scores[id] = { ...s, _approx: isApprox };
+    }
+  } catch(e) {
+    console.warn('Could not load from API, using empty state:', e);
+  }
+  renderAll();
+}
+
+loadScores();
+</script>
+</body>
+</html>

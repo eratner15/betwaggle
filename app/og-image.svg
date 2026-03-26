@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1A472A"/>
+
+  <!-- Subtle border inset -->
+  <rect x="24" y="24" width="1152" height="582" rx="2" fill="none" stroke="#D4AF37" stroke-width="1" opacity="0.3"/>
+
+  <!-- Golf ball graphic — right side -->
+  <circle cx="960" cy="300" r="120" fill="white" opacity="0.08"/>
+  <circle cx="960" cy="300" r="100" fill="white" opacity="0.06"/>
+  <!-- Dimple pattern -->
+  <circle cx="935" cy="260" r="6" fill="white" opacity="0.07"/>
+  <circle cx="960" cy="250" r="6" fill="white" opacity="0.07"/>
+  <circle cx="985" cy="260" r="6" fill="white" opacity="0.07"/>
+  <circle cx="945" cy="285" r="6" fill="white" opacity="0.07"/>
+  <circle cx="975" cy="285" r="6" fill="white" opacity="0.07"/>
+  <circle cx="935" cy="310" r="6" fill="white" opacity="0.07"/>
+  <circle cx="960" cy="300" r="6" fill="white" opacity="0.07"/>
+  <circle cx="985" cy="310" r="6" fill="white" opacity="0.07"/>
+  <circle cx="945" cy="335" r="6" fill="white" opacity="0.07"/>
+  <circle cx="975" cy="335" r="6" fill="white" opacity="0.07"/>
+  <circle cx="960" cy="355" r="6" fill="white" opacity="0.07"/>
+
+  <!-- Small decorative line above title -->
+  <line x1="100" y1="180" x2="220" y2="180" stroke="#D4AF37" stroke-width="2" opacity="0.6"/>
+
+  <!-- Main title -->
+  <text x="100" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="white" letter-spacing="6">MEMBER-GUEST</text>
+  <text x="100" y="330" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="white" letter-spacing="6">2026</text>
+
+  <!-- Club name -->
+  <text x="100" y="390" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#D4AF37" letter-spacing="8">TURNBERRY ISLE</text>
+
+  <!-- Small decorative line below club name -->
+  <line x1="100" y1="410" x2="340" y2="410" stroke="#D4AF37" stroke-width="1" opacity="0.4"/>
+
+  <!-- Details -->
+  <text x="100" y="455" font-family="Georgia, 'Times New Roman', serif" font-size="22" fill="white" opacity="0.9">Soffer Course  |  March 20-21</text>
+
+  <!-- Stats -->
+  <text x="100" y="500" font-family="Georgia, 'Times New Roman', serif" font-size="18" fill="white" opacity="0.5" letter-spacing="2">48 Teams  |  8 Flights  |  Live Odds</text>
+</svg>

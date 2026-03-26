@@ -1,0 +1,35 @@
+{
+  "name": "betwaggle",
+  "compatibility_date": "2026-02-10",
+  "workers_dev": true,
+  "main": "worker.js",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "routing": {
+      "run_worker_first": true
+    }
+  },
+  "routes": [
+    {
+      "pattern": "betwaggle.com/*",
+      "zone_name": "betwaggle.com"
+    },
+    {
+      "pattern": "www.betwaggle.com/*",
+      "zone_name": "betwaggle.com"
+    }
+  ],
+  "d1_databases": [
+    { "binding": "WAGGLE_DB", "database_name": "waggle-db", "database_id": "68a932a6-0767-406f-8167-161bb3033dd5" }
+  ],
+  "kv_namespaces": [
+    { "binding": "MG_BOOK", "id": "9cce45f658ad416ba777e715911316c0" }
+  ],
+  "triggers": {
+    "crons": ["0 13 * * 1"]
+  },
+  "vars": {
+    "GOLF_COURSE_API_KEY": "COBW6GTT7745YL3L5E7DBZRLTQ"
+  }
+}

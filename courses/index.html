@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Find Your Course — Waggle</title>
+  <meta name="description" content="Search 30,000+ golf courses. View scorecards, par, slope, rating — then set up a live sportsbook for your group in minutes.">
+
+  <meta property="og:title" content="Find Your Course — Waggle">
+  <meta property="og:description" content="Search 30,000+ golf courses. View scorecards, then set up a live sportsbook for your group.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/courses/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <meta name="theme-color" content="#0D2818">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --forest:#0D2818;--green:#1B4332;--green-mid:#2D6A4F;--sage:#52B788;
+      --ivory:#F5F0E8;--ivory-dk:#EDE8DF;--gold:#C9A84C;--gold-dk:#9A7A2E;
+      --text:#1A1A1A;--text-2:#3D3D3D;--muted:#7A7A7A;--rule:#D4CFC7;
+    }
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--ivory);color:var(--text);-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+
+    /* Header */
+    .header{background:var(--forest);padding:20px 32px;display:flex;align-items:center;justify-content:space-between}
+    .header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+    .header-logo img{height:32px;border-radius:6px}
+    .header-nav{display:flex;gap:20px;align-items:center}
+    .header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500;transition:color 0.2s}
+    .header-nav a:hover{color:#fff}
+    .header-nav .cta{background:var(--gold);color:var(--forest);padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}
+
+    /* Hero */
+    .hero{background:var(--forest);color:#fff;padding:48px 32px 56px;text-align:center}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.15;margin-bottom:12px}
+    .hero h1 em{font-style:italic;color:var(--gold)}
+    .hero p{font-size:16px;color:rgba(255,255,255,0.6);max-width:520px;margin:0 auto 32px;line-height:1.6}
+    .hero .stat{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);padding:8px 20px;border-radius:100px;font-size:13px;font-weight:600;color:var(--gold);letter-spacing:0.5px}
+
+    /* Search */
+    .search-wrap{max-width:640px;margin:-28px auto 0;padding:0 20px;position:relative;z-index:10}
+    .search-box{display:flex;align-items:center;background:#fff;border:2px solid var(--rule);border-radius:14px;padding:4px;box-shadow:0 8px 32px rgba(13,40,24,0.12)}
+    .search-box:focus-within{border-color:var(--green-mid);box-shadow:0 8px 32px rgba(13,40,24,0.18)}
+    .search-icon{padding:12px 14px;color:var(--muted)}
+    .search-box input{flex:1;border:none;outline:none;font-size:16px;font-family:inherit;padding:14px 0;background:transparent;color:var(--text)}
+    .search-box input::placeholder{color:var(--muted)}
+    .search-clear{padding:12px 14px;color:var(--muted);cursor:pointer;font-size:18px;display:none}
+
+    /* Autocomplete dropdown */
+    .autocomplete{position:absolute;top:100%;left:20px;right:20px;background:#fff;border:1px solid var(--rule);border-top:none;border-radius:0 0 14px 14px;box-shadow:0 12px 32px rgba(13,40,24,0.15);max-height:360px;overflow-y:auto;display:none;z-index:20}
+    .autocomplete.show{display:block}
+    .ac-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid var(--rule)}
+    .ac-item:last-child{border-bottom:none;border-radius:0 0 14px 14px}
+    .ac-item:hover,.ac-item.ac-active{background:var(--ivory-dk)}
+    .ac-item .ac-icon{width:36px;height:36px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .ac-item .ac-icon svg{width:18px;height:18px;fill:#fff}
+    .ac-item .ac-info{flex:1;min-width:0}
+    .ac-item .ac-name{font-weight:700;font-size:14px;color:var(--forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ac-item .ac-course{font-size:12px;color:var(--green-mid);font-weight:600}
+    .ac-item .ac-loc{font-size:12px;color:var(--muted)}
+    .ac-item .ac-arrow{color:var(--muted);font-size:18px;flex-shrink:0}
+    .ac-empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+    .ac-loading{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+    .ac-loading .ac-spin{width:16px;height:16px;border:2px solid var(--rule);border-top-color:var(--green-mid);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+
+    /* Results */
+    .results-wrap{max-width:960px;margin:40px auto;padding:0 20px}
+    .results-status{font-size:13px;color:var(--muted);margin-bottom:20px;font-weight:500}
+    .results-grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:640px){.results-grid{grid-template-columns:1fr 1fr}}
+    @media(min-width:900px){.results-grid{grid-template-columns:1fr 1fr 1fr}}
+
+    .course-card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:24px;transition:transform 0.15s,box-shadow 0.15s,border-color 0.15s;cursor:pointer;display:flex;flex-direction:column;gap:12px}
+    .course-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(13,40,24,0.1);border-color:var(--green-mid)}
+    .course-card .club{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--forest);line-height:1.25}
+    .course-card .course-name{font-size:13px;color:var(--green-mid);font-weight:600}
+    .course-card .location{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:4px}
+    .course-card .location svg{width:14px;height:14px;fill:var(--muted)}
+    .course-card .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:12px;border-top:1px solid var(--rule)}
+    .course-card .view-link{font-size:13px;font-weight:700;color:var(--green-mid);display:flex;align-items:center;gap:4px}
+    .course-card .play-btn{font-size:12px;font-weight:700;color:var(--forest);background:var(--gold);padding:6px 14px;border-radius:6px;white-space:nowrap}
+
+    /* Empty / initial state */
+    .initial-state{text-align:center;padding:60px 20px}
+    .initial-state h3{font-family:'Playfair Display',serif;font-size:22px;color:var(--forest);margin-bottom:8px}
+    .initial-state p{color:var(--muted);font-size:14px;line-height:1.6;max-width:400px;margin:0 auto}
+    .popular-courses{max-width:600px;margin:32px auto 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+    .popular-chip{background:var(--ivory-dk);border:1px solid var(--rule);padding:8px 16px;border-radius:100px;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all 0.15s}
+    .popular-chip:hover{background:var(--green);color:#fff;border-color:var(--green)}
+
+    /* Loading */
+    .loading{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+    .spinner{width:24px;height:24px;border:3px solid var(--rule);border-top-color:var(--green-mid);border-radius:50%;animation:spin 0.6s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Footer */
+    .footer{text-align:center;padding:48px 20px 32px;color:var(--muted);font-size:13px}
+    .footer a{color:var(--green-mid);font-weight:600}
+
+    @media(max-width:560px){
+      .header{padding:16px 20px}
+      .hero{padding:32px 20px 44px}
+      .hero h1{font-size:28px}
+      .search-wrap{margin-top:-22px}
+      .results-wrap{margin-top:28px}
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="/" class="header-logo">
+      <img src="/logo.png" alt="Waggle">
+      <span>Waggle</span>
+    </a>
+    <nav class="header-nav">
+      <a href="/">Home</a>
+      <a href="/create/" class="cta">Create Event</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Find your course.<br><em>Set up the match.</em></h1>
+    <p>Search 30,000+ courses across the U.S. View the full scorecard, then set up a live sportsbook for your group in minutes.</p>
+    <div class="stat">30,000+ courses in database</div>
+  </section>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <div class="search-icon">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <input type="text" id="search" placeholder="Search by course name or city..." autocomplete="off" autofocus>
+      <div class="search-clear" id="clear" onclick="clearSearch()">&times;</div>
+    </div>
+    <div class="autocomplete" id="autocomplete"></div>
+  </div>
+
+  <div class="results-wrap">
+    <div id="results">
+      <div class="initial-state">
+        <h3>Start typing to search</h3>
+        <p>Find any course in the United States. View the scorecard, par, slope, and rating — then set up a match.</p>
+        <div class="popular-courses">
+          <div class="popular-chip" onclick="quickSearch('Pebble Beach')">Pebble Beach</div>
+          <div class="popular-chip" onclick="quickSearch('Pinehurst')">Pinehurst</div>
+          <div class="popular-chip" onclick="quickSearch('Bethpage')">Bethpage</div>
+          <div class="popular-chip" onclick="quickSearch('Bandon Dunes')">Bandon Dunes</div>
+          <div class="popular-chip" onclick="quickSearch('Streamsong')">Streamsong</div>
+          <div class="popular-chip" onclick="quickSearch('TPC Sawgrass')">TPC Sawgrass</div>
+          <div class="popular-chip" onclick="quickSearch('Torrey Pines')">Torrey Pines</div>
+          <div class="popular-chip" onclick="quickSearch('Cabot Citrus')">Cabot Citrus</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Waggle by <a href="https://betwaggle.com/">BetWaggle</a> · <a href="/">Home</a> · <a href="/create/">Create Event</a></p>
+  </footer>
+
+  <script>
+    const input = document.getElementById('search');
+    const results = document.getElementById('results');
+    const clearBtn = document.getElementById('clear');
+    const ac = document.getElementById('autocomplete');
+    let debounce = null;
+    let acData = [];    // current autocomplete results
+    let acIdx = -1;     // keyboard navigation index
+    let lastQuery = ''; // avoid duplicate API calls
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      const val = input.value.trim();
+      clearBtn.style.display = val ? 'block' : 'none';
+      if (val.length === 0) { hideAc(); showInitial(); return; }
+      if (val.length < 2) { hideAc(); return; }
+      // Show loading state in dropdown
+      ac.innerHTML = '<div class="ac-loading"><span class="ac-spin"></span>Searching...</div>';
+      ac.classList.add('show');
+      debounce = setTimeout(() => fetchAc(val), 200);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (!ac.classList.contains('show') || acData.length === 0) {
+        if (e.key === 'Enter' && input.value.trim().length >= 3) {
+          hideAc();
+          searchFull(input.value.trim());
+        }
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acIdx = Math.min(acIdx + 1, acData.length - 1);
+        highlightAc();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acIdx = Math.max(acIdx - 1, -1);
+        highlightAc();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (acIdx >= 0 && acData[acIdx]) {
+          goToCourse(acData[acIdx].id);
+        } else {
+          hideAc();
+          searchFull(input.value.trim());
+        }
+      } else if (e.key === 'Escape') {
+        hideAc();
+      }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-wrap')) hideAc();
+    });
+
+    async function fetchAc(q) {
+      if (q === lastQuery) return;
+      lastQuery = q;
+      try {
+        const res = await fetch(`/api/courses/search?q=${encodeURIComponent(q)}`);
+        acData = await res.json();
+        acIdx = -1;
+        if (!acData || acData.length === 0) {
+          ac.innerHTML = '<div class="ac-empty">No courses found — try a different search</div>';
+          ac.classList.add('show');
+          return;
+        }
+        // Show top 8 in dropdown
+        const shown = acData.slice(0, 8);
+        ac.innerHTML = shown.map((c, i) => `
+          <div class="ac-item" data-idx="${i}" onclick="goToCourse('${c.id}')">
+            <div class="ac-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+            <div class="ac-info">
+              <div class="ac-name">${esc(c.club_name)}</div>
+              ${c.course_name && c.course_name !== c.club_name ? `<div class="ac-course">${esc(c.course_name)}</div>` : ''}
+              <div class="ac-loc">${esc(c.location)}</div>
+            </div>
+            <div class="ac-arrow">&rarr;</div>
+          </div>
+        `).join('');
+        if (acData.length > 8) {
+          ac.innerHTML += `<div class="ac-item" onclick="hideAc();searchFull('${esc(q)}')"><div class="ac-info" style="text-align:center"><div class="ac-name" style="color:var(--green-mid)">See all ${acData.length} results</div></div></div>`;
+        }
+        ac.classList.add('show');
+      } catch {
+        ac.innerHTML = '<div class="ac-empty">Search failed — try again</div>';
+        ac.classList.add('show');
+      }
+    }
+
+    function highlightAc() {
+      ac.querySelectorAll('.ac-item').forEach((el, i) => {
+        el.classList.toggle('ac-active', i === acIdx);
+      });
+    }
+
+    function hideAc() {
+      ac.classList.remove('show');
+      acIdx = -1;
+    }
+
+    function goToCourse(id) {
+      window.location.href = `/courses/${id}`;
+    }
+
+    function clearSearch() {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      lastQuery = '';
+      hideAc();
+      showInitial();
+      input.focus();
+    }
+
+    function quickSearch(q) {
+      input.value = q;
+      clearBtn.style.display = 'block';
+      searchFull(q);
+    }
+
+    function showInitial() {
+      results.innerHTML = `
+        <div class="initial-state">
+          <h3>Start typing to search</h3>
+          <p>Find any course in the United States. View the scorecard, par, slope, and rating — then set up a match.</p>
+          <div class="popular-courses">
+            <div class="popular-chip" onclick="quickSearch('Pebble Beach')">Pebble Beach</div>
+            <div class="popular-chip" onclick="quickSearch('Pinehurst')">Pinehurst</div>
+            <div class="popular-chip" onclick="quickSearch('Bethpage')">Bethpage</div>
+            <div class="popular-chip" onclick="quickSearch('Bandon Dunes')">Bandon Dunes</div>
+            <div class="popular-chip" onclick="quickSearch('Streamsong')">Streamsong</div>
+            <div class="popular-chip" onclick="quickSearch('TPC Sawgrass')">TPC Sawgrass</div>
+            <div class="popular-chip" onclick="quickSearch('Torrey Pines')">Torrey Pines</div>
+            <div class="popular-chip" onclick="quickSearch('Cabot Citrus')">Cabot Citrus</div>
+          </div>
+        </div>`;
+    }
+
+    async function searchFull(q) {
+      hideAc();
+      results.innerHTML = '<div class="loading"><div class="spinner"></div>Searching courses...</div>';
+      try {
+        const res = await fetch(`/api/courses/search?q=${encodeURIComponent(q)}`);
+        const courses = await res.json();
+        if (!courses || courses.length === 0) {
+          results.innerHTML = `
+            <div class="results-status">No courses found for "${esc(q)}"</div>
+            <div class="initial-state" style="padding:32px 20px">
+              <p>Try a different spelling or search by city name.</p>
+            </div>`;
+          return;
+        }
+        results.innerHTML = `
+          <div class="results-status">${courses.length} course${courses.length > 1 ? 's' : ''} found</div>
+          <div class="results-grid">
+            ${courses.map(c => `
+              <a href="/courses/${c.id}" class="course-card">
+                <div class="club">${esc(c.club_name)}</div>
+                ${c.course_name && c.course_name !== c.club_name ? `<div class="course-name">${esc(c.course_name)}</div>` : ''}
+                <div class="location">
+                  <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                  ${esc(c.location)}
+                </div>
+                <div class="card-footer">
+                  <span class="view-link">View Scorecard <span style="font-size:16px">&rarr;</span></span>
+                  <span class="play-btn">Play Here</span>
+                </div>
+              </a>
+            `).join('')}
+          </div>`;
+      } catch (e) {
+        results.innerHTML = '<div class="results-status">Search failed — try again.</div>';
+      }
+    }
+
+    function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  </script>
+</body>
+</html>

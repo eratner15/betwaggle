@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Waggle — Live Golf Sportsbook. 10 Games. No App.</title>
+  <meta name="description" content="Hole-by-hole live scoring with real odds on Nassau, skins, wolf, Vegas, banker, bloodsome, stableford, and stroke play. Every phone. No app download. Automatic settlement.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Waggle — The Sportsbook for Your Golf Group">
+  <meta property="og:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Waggle">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Waggle — The Sportsbook for Your Golf Group">
+  <meta name="twitter:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.jpg">
+
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#0D2818">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Waggle">
+  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtY.woff2" as="font" type="font/woff2" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #0D2818;
+      --green:    #1B4332;
+      --green-mid:#2D6A4F;
+      --sage:     #52B788;
+      --ivory:    #F5F0E8;
+      --ivory-dk: #EDE8DF;
+      --gold:     #C9A84C;
+      --gold-dk:  #9A7A2E;
+      --text:     #1A1A1A;
+      --text-2:   #3D3D3D;
+      --muted:    #7A7A7A;
+      --rule:     #D4CFC7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ──────────────────────────────────────────
+       NAV
+    ────────────────────────────────────────── */
+    nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo img { height: 28px; filter: brightness(10); opacity: .9; }
+    .nav-logo span {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
+    .nav-demo {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      letter-spacing: .02em;
+      border-bottom: 1px solid rgba(255,255,255,.25);
+      padding: 12px 4px 12px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-demo:hover { color: #fff; border-color: rgba(255,255,255,.6); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* ──────────────────────────────────────────
+       HERO
+    ────────────────────────────────────────── */
+    .hero {
+      background: var(--forest);
+      position: relative;
+      overflow: hidden;
+      padding: 88px 20px 0;
+    }
+
+    /* Subtle texture overlay */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(82,183,136,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(201,168,76,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 56px;
+      align-items: end;
+    }
+
+    @media (min-width: 860px) {
+      .hero-inner { grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding-bottom: 80px; }
+    }
+
+    .hero-copy { padding-bottom: 20px; }
+    @media (min-width: 860px) { .hero-copy { padding-bottom: 0; } }
+
+    .hero-kicker {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(30px, 6vw, 54px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: rgba(255,255,255,.7);
+    }
+
+    .hero-sub {
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(255,255,255,.6);
+      line-height: 1.6;
+      max-width: 400px;
+      margin-bottom: 24px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--forest);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      padding: 15px 32px;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: #d9b85c; transform: translateY(-1px); }
+
+    .hero-fine {
+      font-size: 12px;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .03em;
+    }
+
+    /* ──────────────────────────────────────────
+       PRODUCT MOCKUP
+    ────────────────────────────────────────── */
+    .mockup-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .mockup {
+      background: #0A1F12;
+      border: 1px solid rgba(255,255,255,.1);
+      border-bottom: none;
+      border-radius: 14px 14px 0 0;
+      width: 100%;
+      max-width: 340px;
+      overflow: hidden;
+      box-shadow: 0 -8px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(201,168,76,.15);
+    }
+
+    .mockup-header {
+      background: var(--green);
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .mockup-event-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+    .mockup-event-meta {
+      font-size: 11px;
+      color: rgba(255,255,255,.45);
+      margin-top: 3px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .mockup-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+    .mockup-match {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 13px 14px;
+    }
+    .match-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); font-weight: 600; }
+    .live-dot {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; color: var(--gold);
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    .match-lines { display: flex; flex-direction: column; gap: 7px; }
+    .match-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .team-name { font-size: 13px; color: rgba(255,255,255,.85); font-weight: 500; }
+    .team-hi { font-size: 11px; color: rgba(255,255,255,.35); margin-left: 5px; }
+    .odds-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 3px;
+      letter-spacing: .02em;
+    }
+    .odds-fav { background: rgba(82,183,136,.2); color: var(--sage); }
+    .odds-dog { background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); }
+
+    .match-score-line {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      font-size: 12px;
+      color: rgba(255,255,255,.4);
+      display: flex;
+      justify-content: space-between;
+    }
+    .score-status { color: var(--sage); font-weight: 600; }
+
+    .mockup-bets { display: flex; flex-direction: column; gap: 6px; }
+    .bet-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: rgba(255,255,255,.04);
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.05);
+    }
+    .bet-player { font-size: 12px; color: rgba(255,255,255,.55); }
+    .bet-amount { font-size: 12px; font-weight: 600; color: var(--gold); }
+
+    .mockup-footer {
+      padding: 12px 18px 18px;
+      display: flex;
+      gap: 8px;
+    }
+    .mockup-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: .03em;
+    }
+    .mockup-btn-primary { background: var(--gold); color: var(--forest); }
+    .mockup-btn-secondary { background: rgba(255,255,255,.07); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.1); }
+
+    /* ──────────────────────────────────────────
+       PROOF STRIP
+    ────────────────────────────────────────── */
+    .proof-strip {
+      background: var(--green);
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .proof-item {
+      padding: 20px 24px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,.1);
+      flex: 1;
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+    .proof-item:last-child { border-right: none; }
+
+    .proof-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--gold);
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .proof-label {
+      font-size: 11px;
+      color: rgba(255,255,255,.5);
+      font-weight: 400;
+      letter-spacing: .03em;
+    }
+
+    /* ──────────────────────────────────────────
+       BODY SECTIONS
+    ────────────────────────────────────────── */
+    .section {
+      padding: 48px 20px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold-dk);
+      margin-bottom: 18px;
+      display: block;
+    }
+
+    .section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 34px);
+      color: var(--forest);
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .section-rule {
+      width: 32px;
+      height: 2px;
+      background: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .section p {
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-2);
+      line-height: 1.8;
+      margin-bottom: 16px;
+      max-width: 580px;
+    }
+
+    /* ──────────────────────────────────────────
+       HOW IT WORKS
+    ────────────────────────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      margin-top: 40px;
+    }
+
+    @media (min-width: 600px) {
+      .steps-grid { grid-template-columns: 1fr 1fr; gap: 0; }
+    }
+
+    .step {
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+      padding-right: 28px;
+    }
+
+    @media (min-width: 600px) {
+      .step:nth-child(odd) { padding-right: 40px; border-right: 1px solid var(--rule); }
+      .step:nth-child(even) { padding-left: 40px; padding-right: 0; }
+      .step:nth-child(1), .step:nth-child(2) { border-top: 1px solid var(--rule); }
+    }
+
+    .step-numeral {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--gold-dk);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .step h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+
+    .step p {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ──────────────────────────────────────────
+       FORMATS
+    ────────────────────────────────────────── */
+    .formats-section {
+      background: var(--forest);
+      padding: 48px 20px;
+    }
+    .formats-inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .formats-inner .section-label { color: var(--gold); }
+    .formats-inner h2 { color: #fff; margin-bottom: 8px; }
+    .formats-inner .section-rule { background: var(--gold); margin-bottom: 36px; }
+
+    .formats-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .formats-table tr {
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .formats-table tr:last-child { border-bottom: none; }
+    .formats-table td {
+      padding: 14px 0;
+      font-size: 14px;
+      vertical-align: top;
+    }
+    .format-name {
+      font-weight: 600;
+      color: rgba(255,255,255,.85);
+      width: 160px;
+      padding-right: 24px;
+    }
+    .format-desc {
+      color: rgba(255,255,255,.4);
+      font-weight: 300;
+      line-height: 1.5;
+    }
+    .format-tag {
+      font-size: 10px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
+      background: rgba(201,168,76,.12);
+      padding: 2px 7px;
+      border-radius: 3px;
+      white-space: nowrap;
+      margin-left: 12px;
+    }
+
+    /* ──────────────────────────────────────────
+       PRICING
+    ────────────────────────────────────────── */
+    .pricing-section {
+      background: var(--ivory-dk);
+      padding: 48px 20px;
+      border-top: 1px solid var(--rule);
+    }
+    .pricing-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .pricing-inner .section-label { color: var(--gold-dk); }
+    .pricing-inner h2 { color: var(--forest); }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 40px;
+    }
+    @media (min-width: 560px) { .pricing-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .price-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 24px 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-card.featured {
+      border-color: var(--forest);
+      border-width: 1.5px;
+    }
+
+    .price-type {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .price-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .price-period {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .price-details {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 28px;
+      flex: 1;
+    }
+
+    .price-detail {
+      font-size: 13px;
+      color: var(--text-2);
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .price-detail::before {
+      content: '';
+      width: 16px;
+      height: 1px;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .price-cta {
+      display: block;
+      background: var(--forest);
+      margin-top: auto;
+      color: #fff;
+      text-align: center;
+      padding: 14px;
+      min-height: 48px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: background .2s;
+    }
+    .price-cta:hover { background: var(--green-mid); }
+
+    .price-card.featured .price-cta {
+      background: var(--gold);
+      color: var(--forest);
+    }
+    .price-card.featured .price-cta:hover { background: #d9b85c; }
+
+    /* ──────────────────────────────────────────
+       FINAL CTA
+    ────────────────────────────────────────── */
+    .final-cta {
+      background: var(--forest);
+      padding: 52px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .final-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(82,183,136,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .final-cta-inner { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; }
+
+    .final-cta h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 38px);
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .final-cta p {
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(255,255,255,.5);
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+    .final-cta .btn-primary { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+
+    .final-links {
+      margin-top: 24px;
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+    }
+    .final-links a {
+      font-size: 13px;
+      color: rgba(255,255,255,.4);
+      text-decoration: none;
+      letter-spacing: .04em;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+      padding: 12px 4px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .2s;
+    }
+    .final-links a:hover { color: rgba(255,255,255,.7); }
+
+    /* ──────────────────────────────────────────
+       FOOTER
+    ────────────────────────────────────────── */
+    footer {
+      background: #070F09;
+      padding: 24px 28px;
+      text-align: center;
+    }
+    footer p {
+      font-size: 12px;
+      color: rgba(255,255,255,.25);
+      letter-spacing: .04em;
+    }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+    footer a:hover { color: rgba(255,255,255,.6); }
+
+    /* Entrance animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/logo.png" alt="Waggle">
+      <span>Waggle</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-demo" href="/courses/">Find a Course</a>
+      <a class="nav-demo" href="/demo/">See a live event</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+
+      <div class="hero-copy">
+        <span class="hero-kicker">Live Scoring &middot; Live Odds &middot; 8 Games</span>
+        <h1>Your group plays<br>for real money.<br><em>Track it properly.</em></h1>
+        <p class="hero-sub">Live odds on every match. Scores update hole by hole on every phone. Settlement is automatic &mdash; no spreadsheet, no arguments.</p>
+        <div class="hero-actions">
+          <a href="/create/" class="btn-primary">Set Up Your Event</a>
+          <span class="hero-fine">No app download &middot; Ready in five minutes &middot; Free for casual rounds</span>
+        </div>
+      </div>
+
+      <div class="mockup-wrap">
+        <div class="mockup">
+          <div class="mockup-header">
+            <div class="mockup-event-name">The Dunes Trip &middot; 2025</div>
+            <div class="mockup-event-meta">Round 2 &middot; 4 teams &middot; Nassau + Skins</div>
+          </div>
+          <div class="mockup-body">
+
+            <div class="mockup-match">
+              <div class="match-meta">
+                <span class="match-label">Match 1 &middot; Thru 11</span>
+                <span class="live-dot">Live</span>
+              </div>
+              <div class="match-lines">
+                <div class="match-line">
+                  <span><span class="team-name">Thomas / Walsh</span><span class="team-hi">+4.5</span></span>
+                  <span class="odds-pill odds-fav">&minus;160</span>
+                </div>
+                <div class="match-line">
+                  <span><span class="team-name">Perkins / Reed</span><span class="team-hi">+6.0</span></span>
+                  <span class="odds-pill odds-dog">+135</span>
+                </div>
+              </div>
+              <div class="match-score-line">
+                <span>Front 9: Thomas/Walsh +$20</span>
+                <span class="score-status">3 UP thru 11</span>
+              </div>
+            </div>
+
+            <div class="mockup-bets">
+              <div class="bet-item">
+                <span class="bet-player">J. Morrison &mdash; Thomas/Walsh</span>
+                <span class="bet-amount">$40 to win $25</span>
+              </div>
+              <div class="bet-item">
+                <span class="bet-player">B. Hutchins &mdash; Perkins/Reed</span>
+                <span class="bet-amount">$30 to win $40</span>
+              </div>
+            </div>
+
+          </div>
+          <div class="mockup-footer">
+            <div class="mockup-btn mockup-btn-primary">Place a Bet</div>
+            <div class="mockup-btn mockup-btn-secondary">Scoreboard</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROOF STRIP -->
+  <div class="proof-strip">
+    <div class="proof-item">
+      <div class="proof-num">8</div>
+      <div class="proof-label">game formats</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">$0</div>
+      <div class="proof-label">app to download</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">5 min</div>
+      <div class="proof-label">to set up</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">Auto</div>
+      <div class="proof-label">settlement</div>
+    </div>
+  </div>
+
+  <!-- BODY COPY -->
+  <div class="section reveal">
+    <h2>The Nassau has always<br>been this serious.</h2>
+    <div class="section-rule"></div>
+    <p>The group chat isn't a scoreboard. The folded card in someone's back pocket isn't a settlement. Waggle is the live sportsbook your group has been running manually for years &mdash; finally on every phone, automatically.</p>
+  </div>
+
+  <!-- PRICING -->
+  <div class="pricing-section reveal">
+    <div class="pricing-inner">
+      <span class="section-label">Pricing</span>
+      <h2>One event. One price.</h2>
+      <div class="section-rule"></div>
+
+      <div class="pricing-grid">
+        <div class="price-card">
+          <span class="price-type">Weekend Warrior</span>
+          <div class="price-amount" style="font-size:2.2rem">Free</div>
+          <span class="price-period">casual rounds, always free</span>
+          <div class="price-details">
+            <span class="price-detail">All 8 game formats, live scoring</span>
+            <span class="price-detail">Hole-by-hole scorecard + game summaries</span>
+            <span class="price-detail">Perfect for a spontaneous money match</span>
+            <span class="price-detail">No payment, no account required</span>
+          </div>
+          <a href="/create/" class="price-cta">Start a Free Round</a>
+        </div>
+        <div class="price-card featured">
+          <span class="price-type">Buddies Trip</span>
+          <div class="price-amount">$29</div>
+          <span class="price-period">per event, under $4/person for groups of 8+</span>
+          <div class="price-details">
+            <span class="price-detail">All 8 formats with live scoring + betting</span>
+            <span class="price-detail">GHIN lookup, handicaps auto-filled, no typing</span>
+            <span class="price-detail">AI picks best format + pairings for your group</span>
+            <span class="price-detail">Live odds recalculate every hole</span>
+            <span class="price-detail">Shareable settlement card at round end</span>
+            <span class="price-detail">Any phone, no app required</span>
+          </div>
+          <a href="/create/" class="price-cta">Set Up Your Trip</a>
+        </div>
+        <div class="price-card">
+          <span class="price-type">Member-Guest</span>
+          <div class="price-amount">$149</div>
+          <span class="price-period">per event, unlimited players</span>
+          <div class="price-details">
+            <span class="price-detail">Multi-round round-robin bracket</span>
+            <span class="price-detail">Flight assignments and pairing management</span>
+            <span class="price-detail">Futures market before the event</span>
+            <span class="price-detail">Everything in the Buddies Trip tier</span>
+          </div>
+          <a href="/create/" class="price-cta">Set Up Your Tournament</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section reveal" style="padding-top:0">
+    <span class="section-label">How It Works</span>
+    <h2>Four steps.<br>One link to your group.</h2>
+    <div class="section-rule"></div>
+
+    <div class="steps-grid">
+      <div class="step">
+        <span class="step-numeral">I.</span>
+        <h3>Set up your event</h3>
+        <p>Pick your games, set handicaps, add players. Five minutes. No account required.</p>
+      </div>
+      <div class="step">
+        <span class="step-numeral">II.</span>
+        <h3>Share one link</h3>
+        <p>Everyone opens the live sportsbook on their phone. Place bets before or during the round.</p>
+      </div>
+      <div class="step">
+        <span class="step-numeral">III.</span>
+        <h3>Score hole by hole</h3>
+        <p>One person enters gross scores. Odds, standings, and pots update on every phone instantly.</p>
+      </div>
+      <div class="step">
+        <span class="step-numeral">IV.</span>
+        <h3>Share the settlement card</h3>
+        <p>Who won. What they're owed. Drop it in the group chat. No arguments.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMATS -->
+  <div class="formats-section reveal">
+    <div class="formats-inner">
+      <span class="section-label">Game Formats</span>
+      <h2>Eight games. Run simultaneously.</h2>
+      <div class="section-rule"></div>
+      <table class="formats-table">
+        <tr>
+          <td class="format-name">Nassau</td>
+          <td class="format-desc">Front nine, back nine, and total. Live standings update hole by hole. Press button when 2&nbsp;down.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Skins</td>
+          <td class="format-desc">Pot multiplier tracks carryovers in real time. Win the hole outright to collect.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Wolf</td>
+          <td class="format-desc">Rotating wolf picks a partner (or goes lone wolf) before each hole. Order enforced automatically.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Vegas</td>
+          <td class="format-desc">Team scores form a two-digit number. Difference in numbers = points. Calculated exactly right.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Stableford</td>
+          <td class="format-desc">Points for birdies and eagles, deductions for bogeys. Net leaderboard after every hole.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Banker</td>
+          <td class="format-desc">Rotating banker sets the line. Everyone bets against the banker each hole.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Bloodsome</td>
+          <td class="format-desc">Shamble format — best drive, then alternate shot. Team net score per hole.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Stroke Play</td>
+          <td class="format-desc">Net leaderboard updates after every hole. Handicap strokes applied automatically.</td>
+        </tr>
+        <tr>
+          <td class="format-name">Member-Guest<span class="format-tag">$149</span></td>
+          <td class="format-desc">Multi-round bracket, flight assignments, futures market, and all eight formats above.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- COURSE DIRECTORY -->
+  <div class="reveal" style="background:var(--forest);padding:44px 20px;text-align:center;color:#fff">
+    <div style="max-width:640px;margin:0 auto">
+      <span style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">Course Directory</span>
+      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:700;margin:12px 0 8px;line-height:1.15">30,000+ courses.<br><em style="color:var(--gold)">Full scorecards.</em></h2>
+      <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:28px">Search any course in the U.S. View par, stroke index, slope, and rating for every tee — then set up your match right there.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;transition:background 0.2s">Set Up Your Event</a>
+        <a href="/courses/" style="display:inline-block;background:rgba(255,255,255,0.1);color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid rgba(255,255,255,0.2);transition:background 0.2s">Find Your Course</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta reveal">
+    <div class="final-cta-inner">
+      <h2>The trip is in six weeks.<br>Set it up today.</h2>
+      <p>One link. Every format. Automatic settlement.</p>
+      <a href="/create/" class="btn-primary">Create Your Event</a>
+      <div class="final-links">
+        <a href="/demo/">See a live demo first</a>
+        <a href="/overview/">GM setup guide</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Waggle by <a href="/">Cafecito AI</a> &nbsp;&middot;&nbsp; <a href="/courses/">Find a Course</a> &nbsp;&middot;&nbsp; <a href="/demo/">See a live demo</a> &nbsp;&middot;&nbsp; <a href="/overview/">GM guide</a></p>
+  </footer>
+
+  <script>
+    // Capture UTM and ref params for attribution tracking
+    (function() {
+      const p = new URLSearchParams(window.location.search);
+      const src = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(function(k) {
+        if (p.get(k)) src[k] = p.get(k);
+      });
+      if (Object.keys(src).length) {
+        try { sessionStorage.setItem('waggle_source', JSON.stringify(src)); } catch(e) {}
+      }
+    })();
+  </script>
+
+  <script>
+    // Scroll-triggered entrance animations
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+    } else {
+      document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+    }
+  </script>
+
+</body>
+</html>
