@@ -728,17 +728,118 @@
     .reveal.visible { opacity: 1; transform: translateY(0); }
     @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
-    /* Mobile responsive for inline grids */
+    /* ──────────────────────────────────────────
+       MOBILE-FIRST OVERRIDES (375px baseline)
+    ────────────────────────────────────────── */
+
+    /* Nav: hide secondary links on small screens */
+    @media (max-width: 600px) {
+      nav { padding: 16px 16px; }
+      .nav-links { gap: 10px; }
+      .nav-demo { font-size: 11px; padding: 10px 2px; }
+    }
+
+    /* Hero: tighter on mobile */
+    @media (max-width: 600px) {
+      .hero { padding: 72px 16px 0; }
+      .hero-inner { gap: 32px; }
+      .hero-copy { padding-bottom: 8px; }
+      .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
+      .hero-sub { font-size: 15px; margin-bottom: 20px; }
+      .hero-fine { font-size: 11px; }
+      /* CTA full-width on mobile */
+      .btn-primary { display: block; text-align: center; padding: 16px 24px; font-size: 16px; }
+      /* Mockup: constrain and add breathing room */
+      .mockup { max-width: 300px; }
+    }
+
+    /* Proof strip: 2x2 grid on small screens instead of cramped row */
+    @media (max-width: 480px) {
+      .proof-strip {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        flex-wrap: unset;
+        overflow-x: unset;
+      }
+      .proof-item {
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+        padding: 16px 12px;
+      }
+      .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
+      .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
+      .proof-num { font-size: 28px; }
+      .proof-label { font-size: 11px; }
+    }
+
+    /* Body sections: less padding on mobile */
+    @media (max-width: 600px) {
+      .section { padding: 48px 16px; }
+      .section h2 { font-size: 26px; }
+      .section p { font-size: 15px; }
+    }
+
+    /* Inline grids: stack on mobile */
     @media (max-width: 640px) {
       /* 4-column how-it-works becomes 2x2 */
       div[style*="grid-template-columns:repeat(4"] {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 20px !important;
       }
-      /* 3-column value props become stacked */
+      /* 3-column value props stack vertically */
       div[style*="grid-template-columns:repeat(3"] {
         grid-template-columns: 1fr !important;
-        gap: 12px !important;
+        gap: 10px !important;
+      }
+    }
+
+    /* Pricing: stack on mobile, featured card on top */
+    @media (max-width: 700px) {
+      .pricing-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      .price-card.featured {
+        order: -1;
+        transform: none;
+      }
+      .price-card.featured:hover { transform: none; }
+      .price-card { border-radius: 12px; }
+    }
+
+    /* Formats table: larger touch targets on mobile */
+    @media (max-width: 600px) {
+      .formats-table td { padding: 12px 8px; font-size: 13px; }
+      .format-name { font-size: 14px; }
+      .format-desc { font-size: 12px; line-height: 1.5; }
+    }
+
+    /* How-it-works dark section: less padding on mobile */
+    @media (max-width: 600px) {
+      div[style*="background:var(--forest);padding:64px"] {
+        padding: 48px 16px !important;
+      }
+    }
+
+    /* Final CTA: full-width button on mobile */
+    @media (max-width: 600px) {
+      .final-cta .btn-primary { display: block; width: 100%; text-align: center; }
+      .final-cta h2 { font-size: 24px; }
+    }
+
+    /* Footer: tighter on mobile */
+    @media (max-width: 600px) {
+      footer { padding: 36px 16px 24px !important; }
+    }
+
+    /* Course directory section: stack buttons */
+    @media (max-width: 480px) {
+      div[style*="display:flex;gap:12px;justify-content:center"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      div[style*="display:flex;gap:12px;justify-content:center"] a {
+        text-align: center !important;
       }
     }
 
