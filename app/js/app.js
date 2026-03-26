@@ -2878,6 +2878,137 @@ window.MG = {
       state._feed.unshift(result.item);
       route();
     }
+  },
+
+  // ── Scorecard Scanner (AI OCR) ──
+  async scanScorecard(file) {
+    if (!file) return;
+    toast('Scanning scorecard...');
+
+    const resultsDiv = document.getElementById('scan-results');
+    if (resultsDiv) {
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div class="mg-card" style="padding:16px;text-align:center"><div style="font-size:13px;color:var(--mg-text-muted)">AI is reading the scorecard...</div></div>';
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch(`/${state._slug}/api/scan-scorecard`, {
+        method: 'POST',
+        headers: { 'X-Admin-Token': sessionStorage.getItem('mg_admin_token') || '' },
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.ok && data.scores) {
+        const holes = Object.keys(data.scores).sort((a, b) => parseInt(a) - parseInt(b));
+        const players = state._config?.players || [];
+
+        let preview = `<div class="mg-card" style="padding:16px">
+          <div style="font-size:14px;font-weight:700;color:var(--mg-gold-dim);margin-bottom:4px">Scores Extracted</div>
+          <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:12px">Confidence: ${data.confidence || 'unknown'}${data.notes ? ' \u2014 ' + data.notes : ''}</div>
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'SF Mono',monospace">
+              <tr style="border-bottom:1px solid var(--mg-border)">
+                <th style="text-align:left;padding:4px;font-size:10px;color:var(--mg-text-muted)">Hole</th>
+                ${holes.map(h => '<th style="text-align:center;padding:4px;min-width:24px">' + h + '</th>').join('')}
+              </tr>`;
+
+        players.forEach(p => {
+          preview += `<tr style="border-bottom:1px solid var(--mg-border)">
+            <td style="padding:4px;font-weight:600;font-size:11px;white-space:nowrap">${p.name.split(' ')[0]}</td>
+            ${holes.map(h => '<td style="text-align:center;padding:4px;font-weight:600">' + (data.scores[h]?.[p.name] ?? '-') + '</td>').join('')}
+          </tr>`;
+        });
+
+        preview += `</table></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button onclick="window.MG.applyScanScores()" class="mg-btn mg-btn-gold" style="flex:1">Apply All Scores</button>
+            <button onclick="document.getElementById('scan-results').style.display='none'" style="flex:1;padding:10px;background:var(--mg-surface);border:1.5px solid var(--mg-border);border-radius:8px;font-size:13px;font-weight:600;color:var(--mg-text-muted);cursor:pointer">Cancel</button>
+          </div>
+        </div>`;
+
+        if (resultsDiv) resultsDiv.innerHTML = preview;
+        state._scannedScores = data.scores;
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      } else {
+        if (resultsDiv) resultsDiv.innerHTML = `<div class="mg-card" style="padding:16px"><div style="color:var(--mg-loss)">Could not read scorecard. ${data.raw ? 'AI response: ' + data.raw.slice(0, 200) : data.parseError || 'Try again.'}</div></div>`;
+      }
+    } catch (e) {
+      if (resultsDiv) resultsDiv.innerHTML = `<div class="mg-card" style="padding:16px"><div style="color:var(--mg-loss)">Scan failed: ${e.message}</div></div>`;
+    }
+    // Reset file input so same file can be re-selected
+    const cam = document.getElementById('scorecard-camera');
+    if (cam) cam.value = '';
+  },
+
+  async applyScanScores() {
+    const scores = state._scannedScores;
+    if (!scores) { toast('No scanned scores'); return; }
+
+    const holes = Object.keys(scores).sort((a, b) => parseInt(a) - parseInt(b));
+    let applied = 0;
+
+    for (const hole of holes) {
+      const holeScores = scores[hole];
+      if (!holeScores || Object.keys(holeScores).length === 0) continue;
+      try {
+        await Sync.submitHoleScores(parseInt(hole), holeScores);
+        applied++;
+      } catch (e) {
+        console.error('Failed to submit hole', hole, e);
+      }
+    }
+
+    toast(applied + ' holes saved');
+    state._scannedScores = null;
+    document.getElementById('scan-results').style.display = 'none';
+    if (navigator.vibrate) navigator.vibrate(30);
+    syncFromServer();
+  },
+
+  // ── Round Manager ──
+  async startNextRound(roundNumber, course, courseId) {
+    const c = course || state._nextRoundCourse || '';
+    const cId = courseId || state._nextRoundCourseId || '';
+    if (!confirm('Start Round ' + roundNumber + '? This archives current scores and resets the scorecard.')) return;
+    const result = await Sync.apiFetch('event/start-round', 'POST', { roundNumber, course: c, courseId: cId });
+    if (result?.ok) {
+      if (navigator.vibrate) navigator.vibrate([30, 80, 30]);
+      toast('Round ' + roundNumber + ' started!');
+      state._nextRoundCourse = null;
+      state._nextRoundCourseId = null;
+      syncFromServer();
+    } else {
+      toast(result?.error || 'Failed to start round');
+    }
+  },
+
+  async searchNextRoundCourse(query) {
+    if (query.length < 2) return;
+    try {
+      const res = await fetch('/api/courses/search?q=' + encodeURIComponent(query));
+      const courses = await res.json();
+      const container = document.getElementById('next-round-results');
+      if (!container) return;
+      container.innerHTML = courses.slice(0, 5).map(c =>
+        `<button onclick="window.MG.selectNextRoundCourse('${(c.club_name || '').replace(/'/g, "\\'")}', '${c.id}')"
+          style="display:block;width:100%;text-align:left;padding:10px;margin-top:4px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:6px;cursor:pointer;font-size:13px;color:var(--mg-text)">
+          <div style="font-weight:600">${c.club_name || ''}</div>
+          <div style="font-size:11px;color:var(--mg-text-muted)">${c.location || ''}</div>
+        </button>`
+      ).join('');
+    } catch {}
+  },
+
+  selectNextRoundCourse(name, id) {
+    const input = document.getElementById('next-round-course');
+    if (input) input.value = name;
+    document.getElementById('next-round-results').innerHTML = '';
+    state._nextRoundCourse = name;
+    state._nextRoundCourseId = id;
   }
 };
 

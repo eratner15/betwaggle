@@ -1092,6 +1092,19 @@ export function renderRoundFeed(state) {
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       Score Hole ${nextHole} <span style="font-weight:400;opacity:.7">\u00b7 Par ${nextPar}</span>
     </button>`;
+    // Scan scorecard button (camera + AI)
+    if (state.adminAuthed) {
+      html += `<div style="display:flex;gap:8px;margin-bottom:10px">
+        <button onclick="document.getElementById('scorecard-camera').click()"
+          style="flex:1;padding:12px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;font-size:13px;font-weight:600;color:var(--mg-gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Scan Scorecard
+        </button>
+        <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
+          onchange="window.MG.scanScorecard(this.files[0])">
+      </div>`;
+    }
+    html += `<div id="scan-results" style="display:none"></div>`;
   } else if (roundComplete && !state._spectatorMode) {
     html += `<a href="#settle" style="display:block;width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3)">View Settlement</a>`;
   }
@@ -1262,6 +1275,44 @@ export function renderRoundFeed(state) {
       <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--mg-gold);margin-bottom:8px">ROUND COMPLETE</div>
       <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:14px">Final results are ready</div>
       <a href="#settle" class="mg-btn mg-btn-primary" style="text-decoration:none;display:inline-block;width:auto;padding:11px 32px;font-size:15px">View Settlement</a>
+    </div>`;
+  }
+
+  // ============================================================
+  // ROUND MANAGER — set up next round (only when current round is done)
+  // ============================================================
+  if (roundComplete && state.adminAuthed) {
+    const currentRound = config?.event?.currentRound || 1;
+    const roundsConfig = config?.rounds;
+    const nextRound = currentRound + 1;
+    const nextRoundInfo = roundsConfig?.[nextRound];
+
+    html += `<div class="mg-card" style="padding:16px;border:1.5px solid var(--mg-gold);margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:12px">Set Up Round ${nextRound}</div>`;
+
+    if (nextRoundInfo) {
+      html += `<div style="padding:12px;background:rgba(212,175,55,.04);border:1px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--mg-green)">${escHtml(nextRoundInfo.course || '')}</div>
+        <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">${escHtml(nextRoundInfo.tees || '')} &middot; Par ${nextRoundInfo.par || 72}</div>
+      </div>
+      <button onclick="window.MG.startNextRound(${nextRound}, '${escHtml(nextRoundInfo.course || '').replace(/'/g, "\\'")}', '${escHtml(nextRoundInfo.courseId || '').replace(/'/g, "\\'")}')"
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
+        Start Round ${nextRound}: ${escHtml(nextRoundInfo.course || 'Next Course')}
+      </button>`;
+    } else {
+      html += `<div style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Select course for Round ${nextRound}:</div>
+        <input type="text" id="next-round-course" placeholder="Search course..." oninput="window.MG.searchNextRoundCourse(this.value)"
+          style="width:100%;padding:10px;background:var(--mg-surface);color:var(--mg-text);border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px;box-sizing:border-box">
+        <div id="next-round-results"></div>
+      </div>
+      <button onclick="window.MG.startNextRound(${nextRound})"
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
+        Start Round ${nextRound}
+      </button>`;
+    }
+
+    html += `<div style="margin-top:10px;font-size:11px;color:var(--mg-text-muted);text-align:center">This archives Round ${currentRound} scores and resets the scorecard</div>
     </div>`;
   }
 

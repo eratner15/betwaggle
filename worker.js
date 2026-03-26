@@ -4328,6 +4328,152 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ ok: true, config: cloneConfig }), { headers: EVENT_CORS });
   }
 
+  // POST /scan-scorecard — AI-powered scorecard OCR
+  if (path === 'scan-scorecard' && request.method === 'POST') {
+    if (!env.ANTHROPIC_API_KEY) {
+      return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: EVENT_CORS });
+    }
+
+    const formData = await request.formData();
+    const image = formData.get('image');
+    if (!image) return new Response(JSON.stringify({ error: 'No image provided' }), { status: 400, headers: EVENT_CORS });
+
+    // Convert image to base64
+    const imageBytes = await image.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
+    const mediaType = image.type || 'image/jpeg';
+
+    // Get player names and course pars from config
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    const cfg = cfgRaw ? JSON.parse(cfgRaw) : {};
+    const playerNames = (cfg.players || []).map(p => p.name);
+    const coursePars = cfg.coursePars || [];
+
+    // Call Claude Vision to extract scores
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64Image },
+            },
+            {
+              type: 'text',
+              text: `Extract golf scores from this scorecard image. The players are: ${playerNames.join(', ')}. The course has ${coursePars.length} holes with pars: ${coursePars.join(', ')}.
+
+Return ONLY a JSON object with this exact format (no markdown, no explanation):
+{
+  "scores": {
+    "1": {"${playerNames[0]}": 5, "${playerNames[1] || 'Player2'}": 4},
+    "2": {"${playerNames[0]}": 4, "${playerNames[1] || 'Player2'}": 3}
+  },
+  "confidence": "high" or "medium" or "low",
+  "notes": "any issues or unclear numbers"
+}
+
+Match player names to rows on the scorecard. If a score is unclear, use your best guess and note it. Only include holes that have scores written.`
+            }
+          ]
+        }]
+      })
+    });
+
+    const aiResult = await aiRes.json();
+    const text = aiResult.content?.[0]?.text || '';
+
+    // Parse the JSON from Claude's response
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in response');
+      const parsed = JSON.parse(jsonMatch[0]);
+      return new Response(JSON.stringify({ ok: true, ...parsed }), { headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ ok: true, raw: text, parseError: e.message }), { headers: EVENT_CORS });
+    }
+  }
+
+  // POST /event/start-round — start a new round (archive scores, reset scorecard)
+  if (path === 'event/start-round' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    const { roundNumber, course, courseId, tees } = body;
+
+    const cfgRaw2 = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw2) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw2);
+
+    // Archive current round scores
+    const currentHoles = await env.MG_BOOK.get(`${K}:holes`, 'json');
+    const currentGameState = await env.MG_BOOK.get(`${K}:game-state`, 'json');
+    const currentRound = config.event?.currentRound || 1;
+    if (currentHoles) {
+      await env.MG_BOOK.put(`${K}:archive:round-${currentRound}:holes`, JSON.stringify(currentHoles));
+    }
+    if (currentGameState) {
+      await env.MG_BOOK.put(`${K}:archive:round-${currentRound}:game-state`, JSON.stringify(currentGameState));
+    }
+
+    // Clear live state for new round
+    await env.MG_BOOK.delete(`${K}:holes`);
+    await env.MG_BOOK.delete(`${K}:game-state`);
+    await env.MG_BOOK.delete(`${K}:scores`);
+
+    // Update config with new round info
+    if (!config.event) config.event = {};
+    config.event.currentRound = roundNumber || (currentRound + 1);
+    if (course) config.event.venue = course;
+    if (courseId) config.course = { id: courseId, name: course };
+
+    // Update course pars if a new course was selected
+    if (courseId) {
+      try {
+        const courseRes = await fetch(`https://betwaggle.com/api/courses/${courseId}`);
+        if (courseRes.ok) {
+          const courseData = await courseRes.json();
+          if (courseData.pars?.length >= 18) {
+            config.coursePars = courseData.pars;
+            config.courseHcpIndex = courseData.strokeIndex || [];
+          }
+        }
+      } catch {}
+
+      // For custom courses, check rounds config
+      if (config.rounds?.[roundNumber]) {
+        const roundConfig = config.rounds[roundNumber];
+        if (roundConfig.courseId === 'pga-frisco-west' && config.westCoursePars) {
+          config.coursePars = config.westCoursePars;
+          config.courseHcpIndex = config.westCourseHcpIndex || [];
+        }
+      }
+    }
+
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+
+    // Add feed item
+    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+    feed.push({
+      id: `round-${Date.now()}`,
+      type: 'system',
+      player: 'Waggle',
+      text: `Round ${config.event.currentRound} started${course ? ' \u2014 ' + course : ''}`,
+      ts: Date.now(),
+    });
+    while (feed.length > 200) feed.shift();
+    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
+
+    return new Response(JSON.stringify({ ok: true, round: config.event.currentRound }), { headers: EVENT_CORS });
+  }
+
   return null;
 }
 
