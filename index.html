@@ -26,8 +26,8 @@
   <meta name="theme-color" content="#0D2818">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Waggle">
-  <link rel="apple-touch-icon" href="/logo.png">
-  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/png" href="/waggle_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtY.woff2" as="font" type="font/woff2" crossorigin>
@@ -493,26 +493,31 @@
     /* ──────────────────────────────────────────
        FORMATS
     ────────────────────────────────────────── */
+    /* FAQ accordion */
+    .faq-item.open .faq-answer { max-height: 200px; }
+    .faq-item.open .faq-arrow { transform: rotate(45deg); }
+
     .formats-section {
-      background: var(--forest);
+      background: var(--ivory);
       padding: 48px 20px;
     }
     .formats-inner {
       max-width: 720px;
       margin: 0 auto;
     }
-    .formats-inner .section-label { color: var(--gold); }
-    .formats-inner h2 { color: #fff; margin-bottom: 8px; }
+    .formats-inner .section-label { color: var(--gold-dk); }
+    .formats-inner h2 { color: var(--forest); margin-bottom: 8px; }
     .formats-inner .section-rule { background: var(--gold); margin-bottom: 36px; }
 
     .format-card {
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      border-bottom: 1px solid var(--rule);
       border-left: 3px solid transparent;
       transition: border-color .3s ease;
     }
     .format-card:last-child { border-bottom: none; }
     .format-card.open {
-      border-left-color: var(--gold);
+      border-left-color: var(--gold-dk);
+      background: #fff;
     }
     .format-card-header {
       width: 100%;
@@ -533,15 +538,15 @@
       min-width: 0;
     }
     .format-card-name {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 15px;
-      color: rgba(255,255,255,.85);
+      color: var(--forest);
       white-space: nowrap;
     }
     .format-card-oneliner {
       font-size: 14px;
-      color: rgba(255,255,255,.4);
-      font-weight: 300;
+      color: var(--muted);
+      font-weight: 400;
     }
     .format-card-right {
       display: flex;
@@ -552,7 +557,7 @@
     .format-player-badge {
       font-size: 11px;
       letter-spacing: .05em;
-      color: var(--gold);
+      color: var(--gold-dk);
       font-weight: 600;
       background: rgba(201,168,76,.12);
       padding: 3px 8px;
@@ -561,7 +566,7 @@
     }
     .format-card-arrow {
       font-size: 18px;
-      color: rgba(255,255,255,.35);
+      color: var(--muted);
       transition: transform .25s ease;
       flex-shrink: 0;
     }
@@ -581,25 +586,25 @@
     }
     .format-card-body-inner p {
       font-size: 14px;
-      color: rgba(255,255,255,.55);
+      color: var(--text-2);
       line-height: 1.65;
       margin: 0 0 10px;
     }
     .format-best-for {
       font-size: 13px;
-      color: var(--gold);
+      color: var(--gold-dk);
       font-weight: 600;
       margin-bottom: 10px;
     }
     .format-guide-link {
       font-size: 13px;
-      color: rgba(255,255,255,.5);
+      color: var(--forest);
       text-decoration: underline;
       text-underline-offset: 3px;
       transition: color .2s;
     }
     .format-guide-link:hover {
-      color: var(--gold);
+      color: var(--gold-dk);
     }
     @media (max-width: 560px) {
       .format-card-oneliner { display: none; }
@@ -962,7 +967,7 @@
   <!-- NAV -->
   <nav>
     <a class="nav-logo" href="/">
-      <img src="/logo.png" alt="Waggle">
+      <img src="/waggle_logo.jpg" alt="Waggle">
       <span>Waggle</span>
     </a>
     <div class="nav-links">
@@ -1308,10 +1313,19 @@
           </div>
         </div>
       </div>
-      <style>
-        .faq-item.open .faq-answer { max-height: 200px; }
-        .faq-item.open .faq-arrow { transform: rotate(45deg); }
-      </style>
+      <script>
+        // FAQ accordion — toggle open/close on click
+        document.addEventListener('click', function(e) {
+          var btn = e.target.closest('.faq-item button');
+          if (!btn) return;
+          var item = btn.parentElement;
+          var wasOpen = item.classList.contains('open');
+          // Close all
+          document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+          // Toggle clicked
+          if (!wasOpen) item.classList.add('open');
+        });
+      </script>
 
     </div>
   </div>
@@ -1342,6 +1356,18 @@
           <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Drop the settlement</div>
           <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Who won. What they owe. Venmo links. Group chat. Done.</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSE DIRECTORY (moved between How It Works and Formats for visual rhythm) -->
+  <div class="reveal" style="background:var(--ivory);padding:48px 20px;text-align:center">
+    <div style="max-width:640px;margin:0 auto">
+      <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dk)">Course Directory</span>
+      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:700;color:var(--forest);margin:12px 0 8px;line-height:1.15">30,000+ courses.<br><em style="color:var(--gold-dk)">Full scorecards.</em></h2>
+      <p style="font-size:15px;color:var(--text-2);line-height:1.6;margin-bottom:28px">Search any course in the U.S. View par, stroke index, slope, and rating for every tee.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="/courses/" style="display:inline-block;background:var(--forest);color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none">Find Your Course</a>
       </div>
     </div>
   </div>
@@ -1533,34 +1559,21 @@
     </div>
   </div>
 
-  <!-- COURSE DIRECTORY -->
-  <div class="reveal" style="background:var(--forest);padding:44px 20px;text-align:center;color:#fff">
-    <div style="max-width:640px;margin:0 auto">
-      <span style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gold)">Course Directory</span>
-      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:700;margin:12px 0 8px;line-height:1.15">30,000+ courses.<br><em style="color:var(--gold)">Full scorecards.</em></h2>
-      <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:28px">Search any course in the U.S. View par, stroke index, slope, and rating for every tee — then set up your match right there.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;transition:background 0.2s">Create Your Outing</a>
-        <a href="/courses/" style="display:inline-block;background:rgba(255,255,255,0.1);color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid rgba(255,255,255,0.2);transition:background 0.2s">Find Your Course</a>
-      </div>
-    </div>
-  </div>
+  <!-- (Course Directory moved above Formats) -->
 
   <!-- FINAL CTA -->
   <div class="final-cta reveal">
     <div class="final-cta-inner">
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
-      <div style="max-width:400px;margin:0 auto">
-        <form onsubmit="captureEmail(event)" style="display:flex;gap:8px">
-          <input type="email" id="email-input" placeholder="Your email" required style="flex:1;padding:14px 16px;border-radius:6px;border:1.5px solid var(--rule);font-size:15px">
-          <button type="submit" style="padding:14px 24px;background:var(--gold);color:var(--forest);border:none;border-radius:6px;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap">Get Started</button>
-        </form>
-        <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Free rounds available. No credit card required.</p>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35)">Create Your Outing</a>
+        <span style="font-size:13px;color:var(--muted)">Free for casual rounds. No credit card required.</span>
       </div>
       <div class="final-links">
-        <a href="/demo/">See a live demo first</a>
-        <a href="/overview/">GM setup guide</a>
+        <a href="/demo/">See it live first</a>
+        <a href="/overview/">Setup guide</a>
+        <a href="/games/">Game rules</a>
       </div>
     </div>
   </div>
