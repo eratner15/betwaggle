@@ -666,6 +666,24 @@ window.MG = {
   },
 
   // Admin
+  async inlineAuth() {
+    const input = document.getElementById("inline-pin");
+    if (!input) return;
+    const pin = input.value;
+    if (!pin || pin.length < 4) { toast("Enter your PIN"); input.focus(); return; }
+    const ok = await Sync.adminAuth(pin);
+    if (ok) {
+      state.adminAuthed = true;
+      persist();
+      if (navigator.vibrate) navigator.vibrate(30);
+      toast("Commissioner unlocked");
+      route();
+    } else {
+      toast("Invalid PIN");
+      input.value = "";
+    }
+  },
+
   async checkPin() {
     const input = document.getElementById("admin-pin");
     if (!input) return;

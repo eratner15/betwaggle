@@ -781,6 +781,24 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
+  // COMMISSIONER UNLOCK (inline — no admin tab needed)
+  // ============================================================
+  if (!state.adminAuthed && !state._spectatorMode) {
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <input type="tel" id="inline-pin" maxlength="8" placeholder="PIN" inputmode="numeric"
+        style="width:80px;padding:10px 12px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;text-align:center;letter-spacing:4px;font-family:'SF Mono',monospace"
+        onkeydown="if(event.key==='Enter')window.MG.inlineAuth()">
+      <button onclick="window.MG.inlineAuth()"
+        style="flex:1;padding:10px 16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Unlock Commissioner</button>
+    </div>`;
+  } else if (state.adminAuthed && !state._spectatorMode) {
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:rgba(212,175,55,.06);border:1px solid var(--mg-gold);border-radius:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--mg-gold-dim)">Commissioner Mode</div>
+      <button onclick="window.MG.adminLogout();location.reload()" style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">Lock</button>
+    </div>`;
+  }
+
+  // ============================================================
   // CARD 1: STANDINGS (most important — what everyone wants first)
   // ============================================================
   {
