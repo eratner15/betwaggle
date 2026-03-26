@@ -2691,6 +2691,30 @@ window.MG = {
     refresh();
   },
 
+  // ── What-If Battle Mode ──
+  setWhatIfPlayer(which, name) {
+    if (!state._scenario) state._scenario = {};
+    if (which === 'my') state._scenario.myPlayer = name;
+    else state._scenario.rivalPlayer = name;
+    if (navigator.vibrate) navigator.vibrate(20);
+    route();
+  },
+
+  setWhatIfScore(hole, who, score) {
+    if (!state._scenario) state._scenario = {};
+    if (!state._scenario.simHoles) state._scenario.simHoles = {};
+    if (!state._scenario.simHoles[hole]) state._scenario.simHoles[hole] = {};
+    state._scenario.simHoles[hole][who] = score;
+    if (navigator.vibrate) navigator.vibrate(30);
+    route();
+  },
+
+  resetWhatIf() {
+    if (!state._scenario) state._scenario = {};
+    state._scenario.simHoles = {};
+    route();
+  },
+
   // ── Activity Feed / Trash Talk ──
   async sendChirp() {
     const input = document.getElementById('feed-chirp-input');
@@ -2734,6 +2758,24 @@ window.MG = {
       syncFromServer();
     } else {
       toast('Import failed');
+    }
+  },
+
+  async addPlayerInline() {
+    const nameEl = document.getElementById('add-player-name');
+    const hcpEl = document.getElementById('add-player-hcp');
+    if (!nameEl || !nameEl.value.trim()) { toast('Enter a name'); return; }
+    const name = nameEl.value.trim();
+    const hi = parseFloat(hcpEl?.value) || 0;
+    const result = await Sync.apiFetch('event/add-player', 'POST', { name, handicapIndex: hi });
+    if (result?.ok) {
+      if (navigator.vibrate) navigator.vibrate(30);
+      toast(name + ' added');
+      nameEl.value = '';
+      if (hcpEl) hcpEl.value = '';
+      syncFromServer();
+    } else {
+      toast(result?.error || 'Failed to add player');
     }
   },
 

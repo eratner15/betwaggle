@@ -964,6 +964,17 @@ export function renderRoundFeed(state) {
       html += `<div style="text-align:center;padding:10px 0 0;font-size:13px;color:var(--mg-text-muted)">${state.adminAuthed ? 'Tap the score button to enter hole 1' : 'Waiting for round to start...'}</div>`;
     }
 
+    // Add Player inline (admin only)
+    if (state.adminAuthed) {
+      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--mg-border)">
+        <div style="display:flex;gap:6px">
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--mg-border);border-radius:6px;font-size:14px">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--mg-border);border-radius:6px;font-size:14px;text-align:center">
+          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+        </div>
+      </div>`;
+    }
+
     html += `</div></div>`;
   }
 
@@ -4646,6 +4657,7 @@ function renderRoundScenarios(state) {
   const holesPerRound = config?.holesPerRound || 18;
   const games = config?.games || {};
   const pars = getCoursePars(config);
+  const structure = config?.structure || {};
 
   // Scramble-specific What-If view
   if (games.scramble) {
@@ -4659,57 +4671,85 @@ function renderRoundScenarios(state) {
     if (!scoredHoles.includes(h)) remainingHoles.push(h);
   }
 
-  // Simulated scores stored in state._scenario.simHoles = { holeNum: { playerName: score } }
+  // Scenario state
   if (!state._scenario) state._scenario = {};
   if (!state._scenario.simHoles) state._scenario.simHoles = {};
-  const simHoles = state._scenario.simHoles;
+  const scenario = state._scenario;
+  const simHoles = scenario.simHoles;
+  const myPlayer = scenario.myPlayer || (state.bettorName || players[0]?.name || '');
+  const rivalPlayer = scenario.rivalPlayer || '';
+
+  const currentPnl = computeRoundPnL(gameState, players, games, structure);
 
   let html = '';
 
-  // Header
-  html += `<div style="margin-bottom:16px">
-    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-text)">What If...</div>
-    <div style="font-size:13px;color:var(--mg-text-muted);margin-top:2px">See how remaining holes change the outcome</div>
-  </div>`;
+  // ── Player Selectors ──
+  html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">What-If Battle Mode</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:4px">You</div>
+        <select id="whatif-my-player" onchange="window.MG.setWhatIfPlayer('my', this.value)" style="width:100%;padding:10px;border:1.5px solid var(--mg-gold);border-radius:8px;font-size:14px;font-weight:600;background:rgba(212,175,55,.04)">
+          ${players.map(p => `<option value="${escHtml(p.name)}" ${p.name === myPlayer ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:10px;font-size:14px;font-weight:700;color:var(--mg-text-muted)">vs</div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:4px">Rival</div>
+        <select id="whatif-rival" onchange="window.MG.setWhatIfPlayer('rival', this.value)" style="width:100%;padding:10px;border:1.5px solid var(--mg-loss, #ef4444);border-radius:8px;font-size:14px;font-weight:600;background:rgba(239,68,68,.04)">
+          <option value="">Select rival...</option>
+          ${players.filter(p => p.name !== myPlayer).map(p => `<option value="${escHtml(p.name)}" ${p.name === rivalPlayer ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
 
-  // Current standings
-  const currentPnl = computeRoundPnL(gameState, players, games, config?.structure);
-  const hasPnl = Object.values(currentPnl).some(v => v !== 0);
-  const nassau = gameState?.nassau || {};
+  // ── Battle Mode Header ──
+  if (myPlayer) {
+    const myPnl = currentPnl[myPlayer] || 0;
+    const rivalPnl = rivalPlayer ? (currentPnl[rivalPlayer] || 0) : 0;
 
-  if (hasPnl || holesPlayed > 0) {
-    const sorted = [...players].sort((a, b) => (currentPnl[b.name] || 0) - (currentPnl[a.name] || 0));
-    html += `<div class="mg-card" style="padding:12px;margin-bottom:12px">
-      <div class="mg-card-header" style="margin-bottom:8px">CURRENT STANDINGS · THRU ${holesPlayed}</div>`;
-    sorted.forEach((p, i) => {
-      const money = currentPnl[p.name] || 0;
-      const moneyStr = money === 0 ? 'E' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-      const moneyColor = money > 0 ? '#22c55e' : money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-        <span style="font-size:14px;font-weight:${i === 0 && money > 0 ? '700' : '500'}">${escHtml(p.name)}</span>
-        <span style="font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</span>
-      </div>`;
-    });
-    // Nassau status
-    const nassauParts = [];
-    if (nassau.frontWinner) nassauParts.push(`Front: ${escHtml(nassau.frontWinner)}`);
-    if (nassau.backWinner) nassauParts.push(`Back: ${escHtml(nassau.backWinner)}`);
-    if (nassau.totalWinner) nassauParts.push(`Total: ${escHtml(nassau.totalWinner)}`);
-    if (nassauParts.length > 0) {
-      html += `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--mg-border)">Nassau: ${nassauParts.join(' · ')}</div>`;
+    // Compute projected delta using simulated scores
+    // Translate my/rival keys to player names for computeSimulatedPnL
+    let projMyPnl = myPnl;
+    let projRivalPnl = rivalPnl;
+    const simCount = Object.keys(simHoles).length;
+    if (simCount > 0) {
+      const translatedSim = {};
+      Object.entries(simHoles).forEach(([h, scores]) => {
+        translatedSim[h] = {};
+        if (scores.my !== undefined && myPlayer) translatedSim[h][myPlayer] = scores.my;
+        if (scores.rival !== undefined && rivalPlayer) translatedSim[h][rivalPlayer] = scores.rival;
+      });
+      const mergedPnl = computeSimulatedPnL(gameState, translatedSim, players, games, structure, holesPerRound, pars, holes);
+      projMyPnl = mergedPnl[myPlayer] || 0;
+      if (rivalPlayer) projRivalPnl = mergedPnl[rivalPlayer] || 0;
     }
-    // Skins leader
-    const skinsHoles = gameState?.skins?.holes || {};
-    const skinsCount = {};
-    players.forEach(p => { skinsCount[p.name] = 0; });
-    Object.values(skinsHoles).forEach(h => { if (h.winner && skinsCount.hasOwnProperty(h.winner)) skinsCount[h.winner]++; });
-    const skinsEntries = Object.entries(skinsCount).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
-    if (skinsEntries.length > 0) {
-      html += `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:4px">Skins: ${skinsEntries.map(([n, c]) => `${escHtml(n)} (${c})`).join(', ')}</div>`;
-    }
-    html += `</div>`;
+    const projDelta = projMyPnl - projRivalPnl;
+    const curDelta = myPnl - rivalPnl;
+    const showProjected = simCount > 0;
+    const displayDelta = showProjected ? projDelta : curDelta;
+
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--mg-border)">
+      <div style="text-align:center;flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--mg-gold-dim)">${escHtml(myPlayer.split(' ')[0])}</div>
+        <div style="font-size:20px;font-weight:800;color:${(showProjected ? projMyPnl : myPnl) >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'};font-family:'SF Mono',monospace">${(showProjected ? projMyPnl : myPnl) >= 0 ? '+' : ''}$${Math.abs(showProjected ? projMyPnl : myPnl)}</div>
+        ${showProjected && projMyPnl !== myPnl ? `<div style="font-size:10px;color:var(--mg-text-muted)">was ${myPnl >= 0 ? '+' : ''}$${Math.abs(myPnl)}</div>` : ''}
+      </div>
+      <div style="text-align:center;padding:0 12px">
+        <div style="font-size:10px;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:1px">${showProjected ? 'Projected' : 'Delta'}</div>
+        <div id="whatif-delta" style="font-size:28px;font-weight:900;color:${displayDelta >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'};font-family:'SF Mono',monospace;transition:transform .15s">${displayDelta >= 0 ? '+' : ''}$${Math.abs(displayDelta)}</div>
+        ${showProjected && displayDelta !== curDelta ? `<div style="font-size:10px;color:${displayDelta > curDelta ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'}">${displayDelta > curDelta ? '+' : ''}$${displayDelta - curDelta} swing</div>` : ''}
+      </div>
+      <div style="text-align:center;flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--mg-loss, #ef4444)">${rivalPlayer ? escHtml(rivalPlayer.split(' ')[0]) : '---'}</div>
+        <div style="font-size:20px;font-weight:800;color:${rivalPlayer ? ((showProjected ? projRivalPnl : rivalPnl) >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)') : 'var(--mg-text-muted)'};font-family:'SF Mono',monospace">${rivalPlayer ? ((showProjected ? projRivalPnl : rivalPnl) >= 0 ? '+' : '') + '$' + Math.abs(showProjected ? projRivalPnl : rivalPnl) : '---'}</div>
+        ${showProjected && rivalPlayer && projRivalPnl !== rivalPnl ? `<div style="font-size:10px;color:var(--mg-text-muted)">was ${rivalPnl >= 0 ? '+' : ''}$${Math.abs(rivalPnl)}</div>` : ''}
+      </div>
+    </div>`;
   }
+  html += `</div>`;
 
+  // ── All holes scored ──
   if (remainingHoles.length === 0) {
     html += `<div class="mg-card" style="padding:20px;text-align:center;color:var(--mg-text-muted)">
       All ${holesPerRound} holes have been scored. View <a href="#settle" style="color:var(--mg-gold)">settlement</a> for final results.
@@ -4717,73 +4757,73 @@ function renderRoundScenarios(state) {
     return html;
   }
 
-  // Simulated holes input
-  const simCount = Object.keys(simHoles).length;
-  html += `<div class="mg-card" style="padding:12px">
-    <div class="mg-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <span>SIMULATE REMAINING HOLES</span>
-      <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 8px;border-radius:4px;font-weight:700">${remainingHoles.length} left</span>
-    </div>`;
+  // ── What-If Buttons — one row per remaining hole ──
+  const scoreOptions = [
+    { label: 'Eagle', diff: -2 },
+    { label: 'Birdie', diff: -1 },
+    { label: 'Par', diff: 0 },
+    { label: 'Bogey', diff: 1 },
+    { label: 'Dbl', diff: 2 },
+  ];
 
-  remainingHoles.forEach(h => {
-    const par = pars[h - 1] || 4;
-    const hasSim = !!simHoles[h];
-    html += `<div style="padding:10px 0;${h !== remainingHoles[remainingHoles.length - 1] ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:600">Hole ${h} <span style="font-size:11px;color:var(--mg-text-muted);font-weight:400">Par ${par}</span></span>
-        ${hasSim ? `<span style="font-size:10px;color:var(--mg-gold-dim);font-weight:700;cursor:pointer" onclick="window.MG.clearSimHole(${h})">Clear</span>` : ''}
+  if (myPlayer) {
+    const simCount = Object.keys(simHoles).length;
+    html += `<div class="mg-card" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted)">${remainingHoles.length} Holes Remaining</div>
+        ${simCount > 0 ? `<button onclick="window.MG.resetWhatIf()" style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">Clear</button>` : ''}
       </div>`;
-    players.forEach(p => {
-      const simScore = simHoles[h]?.[p.name];
-      // Score buttons: range based on par
-      const scores = [par - 2, par - 1, par, par + 1, par + 2];
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:12px;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name)}</span>
-        <div style="display:flex;gap:3px">`;
-      scores.forEach(s => {
-        const selected = simScore === s;
-        const label = s === par - 2 ? 'Eag' : s === par - 1 ? 'Bir' : s === par ? 'Par' : s === par + 1 ? 'Bog' : 'Dbl';
-        html += `<button style="min-width:32px;height:28px;border-radius:6px;border:1px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${selected ? 'rgba(212,175,55,0.15)' : 'transparent'};color:${selected ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};font-size:10px;font-weight:${selected ? '800' : '600'};cursor:pointer" onclick="window.MG.setSimHoleScore(${h},'${escHtml(p.name)}',${s})">${s}</button>`;
-      });
-      html += `</div></div>`;
-    });
-    html += `</div>`;
-  });
-  html += `</div>`;
 
-  // Reset button
-  if (simCount > 0) {
-    html += `<div style="margin-top:8px">
-      <button class="mg-btn" style="width:100%;border:1px solid var(--mg-green);color:var(--mg-green);background:transparent;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px" onclick="window.MG.resetRoundScenarios()">Reset All Scenarios</button>
-    </div>`;
-  }
+    remainingHoles.forEach(h => {
+      const par = pars[h - 1] || 4;
+      const myScore = simHoles[h]?.my;
+      const rivalScore = simHoles[h]?.rival;
 
-  // Projected P&L — merge real game state with simulated holes
-  if (simCount > 0) {
-    // Build a merged gameState by replaying skins/nassau with sim scores
-    const mergedPnl = computeSimulatedPnL(gameState, simHoles, players, games, config?.structure, holesPerRound, pars, holes);
-    const projSorted = [...players].sort((a, b) => (mergedPnl[b.name] || 0) - (mergedPnl[a.name] || 0));
-
-    html += `<div class="mg-card" style="padding:12px;margin-top:12px;border:2px solid var(--mg-gold)">
-      <div class="mg-card-header" style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
-        <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 6px;border-radius:3px;font-weight:800">SIM</span>
-        PROJECTED P&L
-      </div>`;
-    projSorted.forEach((p, i) => {
-      const money = mergedPnl[p.name] || 0;
-      const cur = currentPnl[p.name] || 0;
-      const diff = money - cur;
-      const moneyStr = money === 0 ? 'E' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-      const moneyColor = money > 0 ? '#22c55e' : money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
-      const diffStr = diff === 0 ? '' : diff > 0 ? `(+$${diff})` : `(-$${Math.abs(diff)})`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < projSorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-        <span style="font-size:14px;font-weight:${i === 0 && money > 0 ? '700' : '500'}">${escHtml(p.name)}</span>
-        <div style="text-align:right">
-          <span style="font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</span>
-          ${diffStr ? `<span style="font-size:11px;color:var(--mg-text-muted);margin-left:4px">${diffStr}</span>` : ''}
+      html += `<div style="padding:10px 0;border-bottom:1px solid var(--mg-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:700;color:var(--mg-text)">Hole ${h}</div>
+          <div style="font-size:12px;color:var(--mg-text-muted)">Par ${par}</div>
         </div>
-      </div>`;
+        <div style="margin-bottom:6px">
+          <div style="font-size:10px;color:var(--mg-gold-dim);font-weight:600;margin-bottom:4px">${escHtml(myPlayer.split(' ')[0])}</div>
+          <div style="display:flex;gap:4px">`;
+
+      scoreOptions.forEach(opt => {
+        const score = par + opt.diff;
+        const selected = myScore === score;
+        html += `<button onclick="window.MG.setWhatIfScore(${h},'my',${score})"
+          style="flex:1;min-height:48px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
+          border:2px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};
+          background:${selected ? 'var(--mg-gold)' : 'var(--mg-surface, transparent)'};
+          color:${selected ? 'var(--mg-green, #1A472A)' : 'var(--mg-text)'};
+          -webkit-tap-highlight-color:transparent">${score}<div style="font-size:8px;font-weight:500;margin-top:1px;opacity:.6">${opt.label}</div></button>`;
+      });
+
+      html += `</div></div>`;
+
+      // Rival scores (only if rival selected)
+      if (rivalPlayer) {
+        html += `<div>
+          <div style="font-size:10px;color:var(--mg-loss, #ef4444);font-weight:600;margin-bottom:4px">${escHtml(rivalPlayer.split(' ')[0])}</div>
+          <div style="display:flex;gap:4px">`;
+
+        scoreOptions.forEach(opt => {
+          const score = par + opt.diff;
+          const selected = rivalScore === score;
+          html += `<button onclick="window.MG.setWhatIfScore(${h},'rival',${score})"
+            style="flex:1;min-height:48px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
+            border:2px solid ${selected ? 'var(--mg-loss, #ef4444)' : 'var(--mg-border)'};
+            background:${selected ? 'rgba(239,68,68,.1)' : 'var(--mg-surface, transparent)'};
+            color:${selected ? 'var(--mg-loss, #ef4444)' : 'var(--mg-text)'};
+            -webkit-tap-highlight-color:transparent">${score}<div style="font-size:8px;font-weight:500;margin-top:1px;opacity:.6">${opt.label}</div></button>`;
+        });
+
+        html += `</div></div>`;
+      }
+
+      html += `</div>`;
     });
+
     html += `</div>`;
   }
 
