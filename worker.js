@@ -559,24 +559,34 @@ export default {
         const slug = 'frisco-ranch-buddies';
         const existing = await env.MG_BOOK.get(`config:${slug}`, 'text');
         if (existing) {
-          // Patch commissioner to Joe Weill on existing event
+          // Patch existing event with latest config
           const cfg = JSON.parse(existing);
-          if (cfg.event.adminContact !== 'joe@joeweill.com') {
-            cfg.event.adminContact = 'joe@joeweill.com';
-            await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
-            // Index for Joe's dashboard
-            const joeSlugs = (await env.MG_BOOK.get('commissioner:joe@joeweill.com', 'json')) || [];
-            if (!joeSlugs.includes(slug)) { joeSlugs.push(slug); await env.MG_BOOK.put('commissioner:joe@joeweill.com', JSON.stringify(joeSlugs)); }
-            return new Response(JSON.stringify({ ok: true, slug, status: 'patched_commissioner', commissioner: 'joe@joeweill.com', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
-          }
-          return new Response(JSON.stringify({ ok: true, slug, status: 'already_exists', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
+          cfg.event.adminContact = 'joe@joeweill.com';
+          // Add all game options
+          cfg.games = { skins: true, nassau: true, wolf: true, vegas: true, stableford: true, match_play: true, nines: false, scramble: false };
+          // Add round info
+          cfg.rounds = {
+            1: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
+            2: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
+            3: { course: 'Fields Ranch West', tees: 'Combo Tees (~6,400 yds)', par: 72 },
+          };
+          cfg.westCoursePars = [5, 4, 3, 4, 3, 5, 4, 4, 5, 3, 4, 3, 4, 4, 4, 3, 5, 5];
+          cfg.westCourseHcpIndex = [7, 3, 9, 1, 17, 11, 5, 15, 13, 12, 4, 16, 2, 8, 18, 14, 6, 10];
+          await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
+          // Index for Joe's dashboard
+          const joeSlugs = (await env.MG_BOOK.get('commissioner:joe@joeweill.com', 'json')) || [];
+          if (!joeSlugs.includes(slug)) { joeSlugs.push(slug); await env.MG_BOOK.put('commissioner:joe@joeweill.com', JSON.stringify(joeSlugs)); }
+          // Also keep Evan indexed
+          const evanSlugs = (await env.MG_BOOK.get('commissioner:evan.ratner@gmail.com', 'json')) || [];
+          if (!evanSlugs.includes(slug)) { evanSlugs.push(slug); await env.MG_BOOK.put('commissioner:evan.ratner@gmail.com', JSON.stringify(evanSlugs)); }
+          return new Response(JSON.stringify({ ok: true, slug, status: 'patched', commissioner: 'joe@joeweill.com', games: Object.keys(cfg.games).filter(g => cfg.games[g]), rounds: cfg.rounds, url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
         }
         const config = {
           event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: '2026', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
           scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
           structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
           features: { betting: true },
-          games: { skins: true, nassau: true, wolf: true },
+          games: { skins: true, nassau: true, wolf: true, vegas: true, stableford: true, match_play: true, nines: false, scramble: false },
           holesPerRound: 18,
           players: [
             { name: 'Joe Weill', handicapIndex: 15, venmo: '@joe-weill' },
@@ -593,9 +603,18 @@ export default {
           wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
           theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
-          // Fields Ranch East at PGA Frisco — Par 72 (from BlueGolf scorecard)
+          // 3 rounds at PGA Frisco
+          rounds: {
+            1: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
+            2: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
+            3: { course: 'Fields Ranch West', tees: 'Combo Tees (~6,400 yds)', par: 72 },
+          },
+          // Default to Round 1: Fields Ranch East
           coursePars: [5, 4, 5, 3, 4, 4, 4, 3, 4, 4, 4, 4, 3, 5, 4, 4, 3, 5],
           courseHcpIndex: [9, 5, 17, 11, 7, 1, 13, 15, 3, 8, 12, 4, 10, 2, 14, 6, 18, 16],
+          // West course data for Round 3
+          westCoursePars: [5, 4, 3, 4, 3, 5, 4, 4, 5, 3, 4, 3, 4, 4, 4, 3, 5, 5],
+          westCourseHcpIndex: [7, 3, 9, 1, 17, 11, 5, 15, 13, 12, 4, 16, 2, 8, 18, 14, 6, 10],
         };
         await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
         await env.MG_BOOK.put(`${slug}:settings`, JSON.stringify({ announcements: ['Welcome to the Frisco Ranch Buddies Trip! Nassau $10, Skins $5, Wolf active. Auto-press at 2-down.'], lockedMatches: [], oddsOverrides: {} }));
