@@ -470,7 +470,7 @@ export function renderRoundFeed(state) {
   const games = config?.games || {};
   // Slug for flash dedup — prefer stored slug, fall back to URL parse
   const slug = state._slug ||
-    (location.pathname.match(/\/([a-z0-9_-]+)/)?.[1]) || 'event';
+    (location.pathname.match(/\/waggle\/([a-z0-9_-]+)/)?.[1]) || 'event';
 
   // Init flash baseline on first render so we don't replay history
   initFlashBaseline(slug, holes);
@@ -1630,8 +1630,30 @@ function renderAdminScorecard(state) {
   const vegasTeamB = state._vegasTeamB ?? gameState?.vegas?.teamB ?? [];
   const vegasAssigned = vegasTeamA.length > 0 || vegasTeamB.length > 0;
 
+  // ── Dispute banners (if any open) ──
+  let html = '';
+  const disputes = state._disputes || [];
+  const openDisputes = disputes.filter(d => d.status === 'open');
+  if (openDisputes.length > 0) {
+    html += `<div style="margin-bottom:12px">`;
+    openDisputes.forEach(d => {
+      html += `<div class="dispute-banner">
+        <div class="dispute-icon">\u26A0\uFE0F</div>
+        <div class="dispute-body">
+          <div class="dispute-title">Score Dispute — Hole ${d.hole}: ${escHtml(d.player)}</div>
+          <div class="dispute-desc">Server: ${d.serverScore ?? '?'} &middot; Claimed: ${d.claimedScore}${d.reason ? ' &mdash; ' + escHtml(d.reason) : ''}</div>
+          <div class="dispute-actions">
+            <button class="dispute-btn accept" onclick="window.MG.resolveDispute('${d.id}','accept')">Accept ${d.claimedScore}</button>
+            <button class="dispute-btn override" onclick="window.MG.resolveDispute('${d.id}','reject')">Keep ${d.serverScore ?? 'current'}</button>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
   // ── Hole selector ──
-  let html = `<div class="mg-card" style="padding:12px">
+  html += `<div class="mg-card" style="padding:12px">
     <div class="mg-card-header" style="margin-bottom:8px">HOLE SELECTOR</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px">`;
   for (let h = 1; h <= holesPerRound; h++) {
@@ -2091,7 +2113,7 @@ function renderAdminSettings(state) {
   let html = "";
 
   // Join link — derive slug from event URL (/:slug/)
-  const eventUrlSlug = (state._config?.event?.url || '').replace(/.*\/([^/]+)\/.*/, '$1') || window.location.pathname.split('/')[1] || '';
+  const eventUrlSlug = (state._config?.event?.url || '').replace(/.*\/waggle\/([^/]+)\/.*/, '$1') || window.location.pathname.split('/')[2] || '';
   const joinUrl = window.location.origin + '/join/' + eventUrlSlug;
   html += `<div class="mg-card" style="margin-bottom:16px">
     <div class="mg-card-header" style="margin-bottom:8px">PLAYER JOIN LINK</div>
@@ -3188,23 +3210,30 @@ export function renderSettlement(state) {
     html += `</div>`;
 
     if (payPairs.length > 0) {
-      html += `<div class="mg-card" style="padding:12px;border:2px solid var(--mg-gold)">
-        <div class="mg-card-header" style="margin-bottom:10px">WHO PAYS WHO</div>`;
-      const noteText = encodeURIComponent(`${eventName} · Waggle`);
+      html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
+        <div class="mg-card-header" style="margin-bottom:12px">WHO PAYS WHO</div>
+        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:12px">Tap a name to open payment app with amount pre-filled</div>`;
       payPairs.forEach(({ from, to, amount }) => {
+        const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle Settlement`);
         const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(to)}&amount=${amount}&note=${noteText}`;
         const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(to)}&amount=${amount}&note=${noteText}`;
         const cashappUrl = `https://cash.app/$${encodeURIComponent(to.split(' ')[0].toLowerCase())}/${amount}`;
-        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--mg-border)">
-          <div>
-            <div style="font-size:15px;font-weight:700"><span style="color:#ef4444">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)">pays</span> <span style="color:#22c55e">${escHtml(to)}</span></div>
-            <div style="font-size:24px;font-weight:900;color:var(--mg-text);margin-top:2px">$${amount}</div>
+        html += `<div style="padding:14px 0;border-bottom:1px solid var(--mg-border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="font-size:15px;font-weight:700"><span style="color:#ef4444">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)">pays</span> <span style="color:#22c55e">${escHtml(to)}</span></div>
+            </div>
+            <div style="font-size:28px;font-weight:900;color:var(--mg-text)">$${amount}</div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <div style="display:flex;gap:8px">
             <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-              style="display:inline-block;background:#3D95CE;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">Venmo</a>
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#3D95CE;color:#fff;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
+              Venmo $${amount}</a>
             <a href="${cashappUrl}" target="_blank" rel="noopener"
-              style="display:inline-block;background:#00D64F;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">Cash App</a>
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#00D64F;color:#fff;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm3.5 14.3c-.7.9-1.8 1.4-3.2 1.4-1.6 0-2.8-.6-3.6-1.6l1.5-1.5c.5.6 1.2 1 2.1 1 .7 0 1.2-.3 1.2-.8s-.4-.7-1.4-1l-.8-.2c-1.8-.5-2.6-1.3-2.6-2.8 0-2 1.5-3.1 3.3-3.1 1.3 0 2.4.5 3.1 1.3l-1.4 1.4c-.4-.5-1-.8-1.7-.8-.6 0-1 .3-1 .7 0 .4.3.6 1.1.8l.9.3c2 .6 2.8 1.4 2.8 2.9 0 .8-.3 1.5-.8 2z"/></svg>
+              Cash App</a>
           </div>
         </div>`;
       });

@@ -15,17 +15,18 @@ import * as Sync from './sync.js';
 // submitWolfPick, saveVegasTeams, apiFetch
 
 // Detect event slug and base path from URL
-// Supports /:slug/ (betwaggle.com/:slug/) and /app/ as default
+// betwaggle.com/:slug/ — events at root level
 function getEventInfo() {
   const path = location.pathname;
-  // Match /app/ as the SPA base (default)
-  if (path.startsWith('/app/') || path === '/app') {
-    return { slug: 'mg', basePath: '/app' };
+  // betwaggle.com/:slug/ pattern (primary)
+  const match = path.match(/^\/([a-z0-9_-]+)/);
+  if (match && !['app','create','ads','marketing','courses','overview','tour','gtm','api','join','affiliate','health','go','demo'].includes(match[1])) {
+    return { slug: match[1], basePath: `/${match[1]}` };
   }
-  // Match /:slug/ — any top-level slug (exclude known static pages)
-  const slugMatch = path.match(/^\/([a-z0-9_-]+)/);
-  if (slugMatch && !['create', 'marketing', 'ads', 'api', 'demo', 'courses', 'join', 'go', 'success', 'overview', 'tour', 'gtm'].includes(slugMatch[1])) {
-    return { slug: slugMatch[1], basePath: `/${slugMatch[1]}` };
+  // Backward compat: /waggle/:slug/ (old URLs)
+  const waggleMatch = path.match(/^\/waggle\/([a-z0-9_-]+)/);
+  if (waggleMatch) {
+    return { slug: waggleMatch[1], basePath: `/${waggleMatch[1]}` };
   }
   return { slug: 'mg', basePath: '/app' };
 }
@@ -99,6 +100,7 @@ async function bootstrap() {
   state._cashBetModal = null; // cash bet entry modal {desc, amount} or null
   state._scoreModal = null;  // player score entry modal {hole, scores} or null
   state._feed = [];           // activity feed items from server
+  state._disputes = [];       // open/resolved score disputes
   // Scenario / What-If state (transient)
   state._scenario = {
     flightId: config.flightOrder?.[0] || null,
@@ -243,6 +245,12 @@ async function syncFromServer() {
       state._feed = feedItems;
     }
 
+    // Sync disputes
+    const disputeItems = await Sync.fetchDisputes();
+    if (disputeItems) {
+      state._disputes = disputeItems;
+    }
+
     // Sync season data if this event is part of a season
     const seasonId = state._config?.seasonId;
     if (seasonId && !state._seasonData) {
@@ -274,7 +282,7 @@ async function flushMutationQueue() {
         let result = null;
         switch (mutation.type) {
           case 'scores':
-            result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores);
+            result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores, mutation.ts);
             break;
           case 'bet':
             result = await Sync.submitBet(mutation.payload);
@@ -497,6 +505,7 @@ function persist() {
   delete toSave._takeBet;
   delete toSave._allPlayers;
   delete toSave._feed;
+  delete toSave._disputes;
   delete toSave._playerFilter;
   save(toSave);
 
@@ -754,6 +763,28 @@ window.MG = {
     if (overlay) overlay.remove();
   },
 
+  // ─── Score Disputes ───
+  async resolveDispute(disputeId, resolution) {
+    const result = await Sync.resolveDispute(disputeId, resolution);
+    if (result?.ok) {
+      toast(resolution === 'accept' ? 'Score corrected' : 'Dispute rejected — keeping original score');
+      // Re-sync to get updated state
+      syncFromServer();
+    } else {
+      toast('Failed to resolve dispute');
+    }
+  },
+
+  async fileDispute(holeNum, player, claimedScore, reason) {
+    const result = await Sync.fileDispute(holeNum, player, claimedScore, reason);
+    if (result?.ok) {
+      toast('Dispute filed — commissioner will review');
+      syncFromServer();
+    } else {
+      toast('Failed to file dispute');
+    }
+  },
+
   // ─── Settlement Card ───
   shareSettlement() {
     const eventName = state._config?.event?.name || 'Golf Event';
@@ -822,31 +853,120 @@ window.MG = {
     if (games.nassau && structure.nassauBet > 0) stakeParts.push(`Nassau $${structure.nassauBet}`);
     if (games.skins && structure.skinsBet > 0) stakeParts.push(`Skins $${structure.skinsBet}`);
     if (games.wolf) stakeParts.push('Wolf');
+    if (games.vegas) stakeParts.push('Vegas');
 
-    let lines = [eventName];
-    if (stakeParts.length > 0) lines.push(stakeParts.join(' · '));
+    const gs = state._gameState;
+    const holes = state._holes || {};
+    const holesPlayed = Object.keys(holes).length;
+    const eventDate = config?.event?.dates?.day1 || '';
+
+    // ── Build premium share text ──
+    let lines = [];
+
+    // Header block
+    lines.push(`\u26F3 ${eventName}`);
+    if (eventDate) lines.push(`\u{1F4C5} ${eventDate}`);
+    if (stakeParts.length > 0) lines.push(`\u{1F3B0} ${stakeParts.join(' \u00b7 ')}`);
+    if (holesPlayed > 0) lines.push(`\u{1F3CC}\u{FE0F} ${holesPlayed} holes played`);
     lines.push('');
+
+    // Standings with medal emojis and bar chart
     if (sorted.length > 0 && Object.values(pnl).some(v => v !== 0)) {
-      lines.push('Standings');
+      lines.push('\u{1F3C6} FINAL STANDINGS');
+      lines.push('\u2500'.repeat(24));
+      const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+      const maxNameLen = Math.max(...sorted.map(p => p.name.length));
       sorted.forEach((p, i) => {
         const money = pnl[p.name] || 0;
-        const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-        lines.push(`${i + 1}. ${p.name}  ${moneyStr}`);
+        const moneyStr = money === 0 ? '  Even' : money > 0 ? ` +$${money}` : ` -$${Math.abs(money)}`;
+        const medal = i < 3 ? medals[i] : '  ';
+        const bar = money > 0 ? '\u{1F7E2}'.repeat(Math.min(Math.ceil(money / 10), 5)) : money < 0 ? '\u{1F534}'.repeat(Math.min(Math.ceil(Math.abs(money) / 10), 5)) : '\u26AA';
+        const name = p.name.padEnd(maxNameLen);
+        lines.push(`${medal} ${name} ${moneyStr}  ${bar}`);
       });
-      if (pairs.length > 0) {
-        lines.push('');
-        lines.push('Payments');
-        pairs.forEach(({ from, to, amount }) => {
-          lines.push(`${from} pays ${to}  $${amount}`);
+      lines.push('');
+    }
+
+    // Skins highlights
+    if (games.skins && gs?.skins?.holes) {
+      const skinWinners = Object.entries(gs.skins.holes).filter(([, d]) => d.winner);
+      if (skinWinners.length > 0) {
+        lines.push('\u{1F4B0} SKINS');
+        const tally = {};
+        skinWinners.forEach(([h, d]) => {
+          if (!tally[d.winner]) tally[d.winner] = { holes: [], total: 0 };
+          tally[d.winner].holes.push(parseInt(h));
+          tally[d.winner].total += (d.potWon || 1);
         });
+        Object.entries(tally)
+          .sort((a, b) => b[1].total - a[1].total)
+          .forEach(([name, data]) => {
+            lines.push(`   ${name}: \u00d7${data.total} (H${data.holes.join(', H')})`);
+          });
+        const carries = Object.entries(gs.skins.holes).filter(([, d]) => d.carried);
+        if (carries.length > 0) {
+          lines.push(`   Carried: H${carries.map(([h]) => h).join(', H')}`);
+        }
+        lines.push('');
       }
     }
-    lines.push('');
+
+    // Nassau results
+    if (games.nassau && gs?.nassau) {
+      const nas = gs.nassau;
+      lines.push('\u{1F3CC}\u{FE0F} NASSAU');
+      if (nas.frontWinner) lines.push(`   Front 9: ${nas.frontWinner} \u2705`);
+      if (nas.backWinner) lines.push(`   Back 9:  ${nas.backWinner} \u2705`);
+      if (nas.totalWinner) lines.push(`   Overall: ${nas.totalWinner} \u2705`);
+      if (nas.presses?.length > 0) {
+        const activePresses = nas.presses.filter(p => p.active || p.winner);
+        if (activePresses.length > 0) lines.push(`   Presses: ${activePresses.length}`);
+      }
+      lines.push('');
+    }
+
+    // Wolf results
+    if (games.wolf && gs?.wolf?.running) {
+      const wolfRunning = gs.wolf.running;
+      const wolfPlayers = Object.entries(wolfRunning).sort((a, b) => (b[1] || 0) - (a[1] || 0));
+      if (wolfPlayers.length > 0) {
+        lines.push('\u{1F43A} WOLF');
+        wolfPlayers.forEach(([name, pts]) => {
+          lines.push(`   ${name}: ${pts} pts`);
+        });
+        lines.push('');
+      }
+    }
+
+    // Payments
+    if (pairs.length > 0) {
+      lines.push('\u{1F4B8} SETTLE UP');
+      lines.push('\u2500'.repeat(24));
+      pairs.forEach(({ from, to, amount }) => {
+        lines.push(`   ${from} \u2192 ${to}:  $${amount}`);
+      });
+      lines.push('');
+    }
+
+    // Footer
+    lines.push('\u2500'.repeat(24));
+    lines.push(`Powered by Waggle \u26F3`);
     lines.push(url);
+
     const text = lines.join('\n');
 
     if (navigator.share) {
-      navigator.share({ title: eventName, text }).catch(() => {
+      // Try sharing with the canvas image if available
+      const tryShareWithImage = async () => {
+        try {
+          // Quick check if exportSettlementCard can give us a blob
+          if (typeof window.MG.exportSettlementCard === 'function') {
+            // Share text only for now — image export is a separate button
+          }
+        } catch {}
+        return navigator.share({ title: `${eventName} \u2014 Settlement`, text });
+      };
+      tryShareWithImage().catch(() => {
         navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
       });
     } else {
@@ -1676,11 +1796,11 @@ window.MG = {
     toast("Data exported");
   },
 
-  resetData() {
+  async resetData() {
     if (!confirm("Reset ALL tournament data? This cannot be undone.")) return;
     const savedConfig = state._config;
     const matches = generateMatches(savedConfig);
-    state = reset(matches, getEventInfo().slug);
+    state = await reset(matches, getEventInfo().slug);
     state._config = savedConfig;
     state._adminFlight = state._config.flightOrder[0];
     state._adminRound = 1;
@@ -2230,8 +2350,28 @@ window.MG = {
     const headline = isWin ? 'CASHED' : 'LOCKED IN';
 
     const eventLabel = state._config?.event?.name || 'Golf Event';
-    const eventUrl = state._config?.event?.url || location.hostname;
-    const text = `${headline}\n\n${d.name}\n${d.desc} (${d.ml})\n${isWin ? 'Risked' : 'Risking'} $${d.stake} ${isWin ? '\u2192 Won' : 'to win'} $${d.toWin}\n\n"${d.taunt}"\n\n${eventLabel}\n${eventUrl}`;
+    const eventUrl = location.href.replace(/#.*$/, '');
+    const lines = [];
+    lines.push(isWin ? '\u{1F4B0} CASHED \u{1F4B0}' : '\u{1F512} LOCKED IN');
+    lines.push('');
+    lines.push(`\u{1F3CC}\u{FE0F} ${eventLabel}`);
+    lines.push('\u2500'.repeat(20));
+    lines.push(`${d.name}`);
+    lines.push(`${d.desc}`);
+    lines.push('');
+    lines.push(`Line:    ${d.ml}`);
+    lines.push(`${isWin ? 'Risked' : 'Risking'}:  $${d.stake}`);
+    lines.push(`${isWin ? 'Won' : 'To Win'}:    $${d.toWin}`);
+    if (isWin) {
+      lines.push('');
+      lines.push(`\u{1F4B5} P&L: +$${d.toWin}`);
+    }
+    lines.push('');
+    lines.push(`\u201C${d.taunt}\u201D`);
+    lines.push('');
+    lines.push('\u2500'.repeat(20));
+    lines.push(`Waggle \u26F3 ${eventUrl}`);
+    const text = lines.join('\n');
 
     const overlay = document.getElementById('share-overlay');
 

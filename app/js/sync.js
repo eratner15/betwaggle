@@ -252,14 +252,17 @@ export async function fetchState() {
 }
 
 // ── Submit hole scores (admin token if available, otherwise player-mode for round events) ──
-export async function submitHoleScores(holeNum, scores) {
+// Includes clientTs for conflict detection on the server
+export async function submitHoleScores(holeNum, scores, clientTs) {
   try {
     // Include admin token if present; server accepts unauthenticated for quick/buddies_trip
     const headers = ADMIN_TOKEN ? adminHeaders() : publicHeaders();
+    const payload = { holeNum, scores };
+    if (clientTs) payload.clientTs = clientTs;
     const res = await offlineAwareFetch(`${API}/hole`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ holeNum, scores }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -269,6 +272,8 @@ export async function submitHoleScores(holeNum, scores) {
     return await res.json();
   } catch (e) {
     console.warn('Hole submit failed (offline?):', e);
+    // Re-throw 'offline' errors so callers can distinguish offline from server errors
+    if (e.message === 'offline') throw e;
     return null;
   }
 }
@@ -378,6 +383,41 @@ export async function postChirp(player, text, emoji) {
     console.warn('Chirp failed:', e);
     return null;
   }
+}
+
+// ── Fetch disputes ──
+export async function fetchDisputes() {
+  try {
+    const res = await offlineAwareFetch(`${API}/disputes`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// ── File a dispute ──
+export async function fileDispute(holeNum, player, claimedScore, reason) {
+  try {
+    const res = await offlineAwareFetch(`${API}/disputes`, {
+      method: 'POST',
+      headers: publicHeaders(),
+      body: JSON.stringify({ holeNum, player, claimedScore, reason }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// ── Resolve a dispute (admin) ──
+export async function resolveDispute(disputeId, resolution, correctedScore) {
+  try {
+    const res = await offlineAwareFetch(`${API}/disputes/resolve`, {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ disputeId, resolution, correctedScore }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
 }
 
 // ── Generic admin API call ──

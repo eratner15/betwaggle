@@ -38,11 +38,12 @@
   <link rel="stylesheet" href="/app/css/styles.css">
   <style>
     @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+    @keyframes waggle-pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
   </style>
 </head>
 <body>
   <header class="mg-header">
-    <h1>Member-Guest 2026</h1>
+    <h1>Member-Guest 2026 <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;vertical-align:middle;margin-left:6px;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span></h1>
     <div class="mg-subtitle">Turnberry Isle &bull; Soffer Course</div>
   </header>
 

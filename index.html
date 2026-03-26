@@ -11,7 +11,7 @@
   <meta property="og:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://betwaggle.com/">
-  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:image" content="https://cafecito-ai.com/og-card.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Waggle">
@@ -20,7 +20,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Waggle — The Sportsbook for Your Golf Group">
   <meta name="twitter:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
-  <meta name="twitter:image" content="https://betwaggle.com/og-card.jpg">
+  <meta name="twitter:image" content="https://cafecito-ai.com/og-card.jpg">
 
   <!-- PWA / Mobile -->
   <meta name="theme-color" content="#0D2818">
@@ -728,62 +728,192 @@
     <div class="hero-inner">
 
       <div class="hero-copy">
-        <span class="hero-kicker">Live Scoring &middot; Live Odds &middot; 8 Games</span>
-        <h1>Your group plays<br>for real money.<br><em>Track it properly.</em></h1>
-        <p class="hero-sub">Live odds on every match. Scores update hole by hole on every phone. Settlement is automatic &mdash; no spreadsheet, no arguments.</p>
+        <span class="hero-kicker">Nassau &middot; Skins &middot; Wolf &middot; Vegas &middot; 8 Games</span>
+        <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
+        <p class="hero-sub">$29 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic. Try the demo &rarr;</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary">Set Up Your Event</a>
-          <span class="hero-fine">No app download &middot; Ready in five minutes &middot; Free for casual rounds</span>
+          <a href="/create/" class="btn-primary">Create Your Tournament</a>
+          <span class="hero-fine">No app download &middot; Every phone &middot; Free for casual rounds</span>
         </div>
       </div>
 
       <div class="mockup-wrap">
-        <div class="mockup">
+        <div class="mockup" id="demo-mockup">
           <div class="mockup-header">
-            <div class="mockup-event-name">The Dunes Trip &middot; 2025</div>
-            <div class="mockup-event-meta">Round 2 &middot; 4 teams &middot; Nassau + Skins</div>
+            <div class="mockup-event-name">The Dunes Trip &middot; 2026</div>
+            <div class="mockup-event-meta" id="demo-meta">Round 2 &middot; 4 players &middot; Nassau + Skins</div>
           </div>
-          <div class="mockup-body">
-
-            <div class="mockup-match">
-              <div class="match-meta">
-                <span class="match-label">Match 1 &middot; Thru 11</span>
-                <span class="live-dot">Live</span>
-              </div>
-              <div class="match-lines">
-                <div class="match-line">
-                  <span><span class="team-name">Thomas / Walsh</span><span class="team-hi">+4.5</span></span>
-                  <span class="odds-pill odds-fav">&minus;160</span>
-                </div>
-                <div class="match-line">
-                  <span><span class="team-name">Perkins / Reed</span><span class="team-hi">+6.0</span></span>
-                  <span class="odds-pill odds-dog">+135</span>
-                </div>
-              </div>
-              <div class="match-score-line">
-                <span>Front 9: Thomas/Walsh +$20</span>
-                <span class="score-status">3 UP thru 11</span>
-              </div>
-            </div>
-
-            <div class="mockup-bets">
-              <div class="bet-item">
-                <span class="bet-player">J. Morrison &mdash; Thomas/Walsh</span>
-                <span class="bet-amount">$40 to win $25</span>
-              </div>
-              <div class="bet-item">
-                <span class="bet-player">B. Hutchins &mdash; Perkins/Reed</span>
-                <span class="bet-amount">$30 to win $40</span>
-              </div>
-            </div>
-
+          <div class="mockup-body" id="demo-body">
+            <!-- Interactive demo renders here -->
           </div>
-          <div class="mockup-footer">
-            <div class="mockup-btn mockup-btn-primary">Place a Bet</div>
-            <div class="mockup-btn mockup-btn-secondary">Scoreboard</div>
+          <div class="mockup-footer" id="demo-nav">
+            <div class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer">Place a Bet</div>
+            <div class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer">Scoreboard</div>
           </div>
         </div>
       </div>
+      <script>
+      // Interactive demo — let visitors play with the app before signing up
+      (function() {
+        var demoState = {
+          view: 'live', // 'live' | 'bet' | 'scores' | 'settle'
+          hole: 11,
+          match: {
+            teamA: 'Thomas / Walsh', teamAhi: '+4.5', teamAodds: -160,
+            teamB: 'Perkins / Reed', teamBhi: '+6.0', teamBodds: 135,
+            scoreA: 3, status: '3 UP thru 11'
+          },
+          bets: [
+            { player: 'J. Morrison', team: 'Thomas/Walsh', stake: 40, toWin: 25, status: 'active' },
+            { player: 'B. Hutchins', team: 'Perkins/Reed', stake: 30, toWin: 40, status: 'active' }
+          ],
+          skins: [
+            { hole: 3, winner: 'Thomas', pot: 2 },
+            { hole: 7, winner: 'Perkins', pot: 1 },
+            { hole: 9, winner: 'Walsh', pot: 3 }
+          ],
+          nassau: { front: { leader: 'Thomas/Walsh', amount: 20 }, back: null, total: null },
+          players: [
+            { name: 'Thomas', pnl: 45 },
+            { name: 'Walsh', pnl: 20 },
+            { name: 'Perkins', pnl: -30 },
+            { name: 'Reed', pnl: -35 }
+          ]
+        };
+
+        function renderDemo() {
+          var body = document.getElementById('demo-body');
+          var nav = document.getElementById('demo-nav');
+          if (!body) return;
+          var v = demoState.view;
+
+          // Update nav highlight
+          document.getElementById('demo-btn-bet').className = 'mockup-btn ' + (v === 'bet' ? 'mockup-btn-primary' : 'mockup-btn-secondary');
+          document.getElementById('demo-btn-scores').className = 'mockup-btn ' + (v === 'scores' || v === 'settle' ? 'mockup-btn-primary' : 'mockup-btn-secondary');
+
+          if (v === 'live' || v === 'bet') {
+            var m = demoState.match;
+            var oddsA = m.teamAodds < 0 ? '\u2212' + Math.abs(m.teamAodds) : '+' + m.teamAodds;
+            var oddsB = m.teamBodds < 0 ? '\u2212' + Math.abs(m.teamBodds) : '+' + m.teamBodds;
+            body.innerHTML =
+              '<div class="mockup-match">' +
+                '<div class="match-meta"><span class="match-label">Match 1 \u00b7 Thru ' + demoState.hole + '</span><span class="live-dot">Live</span></div>' +
+                '<div class="match-lines">' +
+                  '<div class="match-line" onclick="demoBet(\'A\')" style="cursor:pointer;padding:4px 0;border-radius:4px;transition:background .15s">' +
+                    '<span><span class="team-name">' + m.teamA + '</span><span class="team-hi">' + m.teamAhi + '</span></span>' +
+                    '<span class="odds-pill odds-fav" id="odds-a">' + oddsA + '</span>' +
+                  '</div>' +
+                  '<div class="match-line" onclick="demoBet(\'B\')" style="cursor:pointer;padding:4px 0;border-radius:4px;transition:background .15s">' +
+                    '<span><span class="team-name">' + m.teamB + '</span><span class="team-hi">' + m.teamBhi + '</span></span>' +
+                    '<span class="odds-pill odds-dog" id="odds-b">' + oddsB + '</span>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="match-score-line"><span>Front 9: Thomas/Walsh +$20</span><span class="score-status">' + m.status + '</span></div>' +
+              '</div>' +
+              '<div class="mockup-bets">' +
+                demoState.bets.map(function(b) {
+                  return '<div class="bet-item"><span class="bet-player">' + b.player + ' \u2014 ' + b.team + '</span><span class="bet-amount">$' + b.stake + ' to win $' + b.toWin + '</span></div>';
+                }).join('') +
+              '</div>' +
+              (v === 'bet' ? '<div id="demo-betslip" style="margin-top:8px;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;animation:fadeIn .3s ease">' +
+                '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Bet Slip</div>' +
+                '<div style="font-size:13px;color:#fff;font-weight:600;margin-bottom:6px">Thomas / Walsh to win</div>' +
+                '<div style="display:flex;gap:6px;margin-bottom:8px">' +
+                  ['$10','$25','$50','$100'].map(function(amt,i) {
+                    return '<div onclick="demoPlaceBet(' + amt.slice(1) + ')" style="flex:1;padding:8px 4px;text-align:center;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:' + (i===1?'var(--gold);color:var(--forest)':'rgba(255,255,255,.08);color:rgba(255,255,255,.5)') + '">' + amt + '</div>';
+                  }).join('') +
+                '</div>' +
+                '<div style="font-size:11px;color:rgba(255,255,255,.4)">To win: $15.63 at \u2212160</div>' +
+              '</div>' : '');
+          } else if (v === 'scores') {
+            body.innerHTML =
+              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Skins Won</div>' +
+              demoState.skins.map(function(s) {
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px">' +
+                  '<span style="color:rgba(255,255,255,.7)"><strong style="color:#fff">' + s.winner + '</strong> \u00b7 Hole ' + s.hole + '</span>' +
+                  '<span style="color:var(--gold);font-weight:700">\u00d7' + s.pot + '</span></div>';
+              }).join('') +
+              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px">Nassau</div>' +
+              '<div style="padding:10px 12px;background:rgba(82,183,136,.1);border:1px solid rgba(82,183,136,.2);border-radius:6px">' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.7)"><span>Front 9</span><span style="color:var(--sage);font-weight:700">Thomas/Walsh +$20</span></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.5);margin-top:4px"><span>Back 9</span><span>In progress...</span></div>' +
+              '</div>' +
+              '<div onclick="demoSwitch(\'settle\')" style="margin-top:12px;text-align:center;padding:10px;background:var(--gold);color:var(--forest);border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.03em">View Settlement</div>';
+          } else if (v === 'settle') {
+            body.innerHTML =
+              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Final Standings</div>' +
+              demoState.players.map(function(p) {
+                var c = p.pnl > 0 ? 'var(--sage)' : p.pnl < 0 ? '#ef4444' : 'rgba(255,255,255,.5)';
+                var str = p.pnl > 0 ? '+$' + p.pnl : p.pnl < 0 ? '-$' + Math.abs(p.pnl) : 'Even';
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
+                  '<span style="font-size:14px;color:#fff;font-weight:600">' + p.name + '</span>' +
+                  '<span style="font-size:18px;font-weight:800;color:' + c + '">' + str + '</span></div>';
+              }).join('') +
+              '<div style="margin-top:12px;padding:12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:6px">' +
+                '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Who Pays Who</div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:rgba(255,255,255,.7)"><span style="color:#ef4444">Reed</span> pays <span style="color:var(--sage)">Thomas</span></span><span style="font-weight:800;color:#fff">$35</span></div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:4px"><span style="color:rgba(255,255,255,.7)"><span style="color:#ef4444">Perkins</span> pays <span style="color:var(--sage)">Walsh</span></span><span style="font-weight:800;color:#fff">$20</span></div>' +
+                '<div style="display:flex;gap:6px;margin-top:8px">' +
+                  '<div style="flex:1;padding:8px;text-align:center;background:#3D95CE;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Venmo</div>' +
+                  '<div style="flex:1;padding:8px;text-align:center;background:#00D64F;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Cash App</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">Powered by Waggle \u00b7 betwaggle.com</div>';
+          }
+        }
+
+        // Switch views
+        window.demoSwitch = function(view) {
+          demoState.view = view;
+          renderDemo();
+        };
+
+        // Tap on odds → open bet slip
+        window.demoBet = function(side) {
+          demoState.view = 'bet';
+          renderDemo();
+          // Flash the selected odds pill
+          var el = document.getElementById(side === 'A' ? 'odds-a' : 'odds-b');
+          if (el) { el.style.background = 'rgba(201,168,76,.4)'; setTimeout(function() { el.style.background = ''; }, 300); }
+        };
+
+        // Place a bet → animate confirmation
+        window.demoPlaceBet = function(amount) {
+          demoState.bets.push({ player: 'You', team: 'Thomas/Walsh', stake: amount, toWin: Math.round(amount * 0.625), status: 'active' });
+          demoState.view = 'live';
+          renderDemo();
+          // Flash bet confirmation
+          var body = document.getElementById('demo-body');
+          if (body) {
+            var flash = document.createElement('div');
+            flash.style.cssText = 'position:absolute;inset:0;background:rgba(82,183,136,.15);z-index:10;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--sage);animation:fadeIn .3s ease;pointer-events:none';
+            flash.textContent = 'Bet placed! $' + amount + ' on Thomas/Walsh';
+            body.style.position = 'relative';
+            body.appendChild(flash);
+            setTimeout(function() { flash.remove(); }, 1500);
+          }
+        };
+
+        // Auto-cycle: increment hole every 4 seconds for live feel
+        setInterval(function() {
+          if (demoState.view !== 'live') return;
+          if (demoState.hole < 18) {
+            demoState.hole++;
+            // Animate odds shift
+            var shift = Math.floor(Math.random() * 30) - 15;
+            demoState.match.teamAodds = Math.min(-110, Math.max(-250, demoState.match.teamAodds + shift));
+            demoState.match.teamBodds = -demoState.match.teamAodds - 25;
+            var up = demoState.match.scoreA + (Math.random() > 0.6 ? 1 : 0);
+            demoState.match.scoreA = Math.min(up, 5);
+            demoState.match.status = demoState.match.scoreA + ' UP thru ' + demoState.hole;
+            renderDemo();
+          }
+        }, 4000);
+
+        // Initial render
+        renderDemo();
+      })();
+      </script>
 
     </div>
   </section>
@@ -970,7 +1100,7 @@
 
   <!-- FOOTER -->
   <footer>
-    <p>Waggle by <a href="/">Cafecito AI</a> &nbsp;&middot;&nbsp; <a href="/courses/">Find a Course</a> &nbsp;&middot;&nbsp; <a href="/demo/">See a live demo</a> &nbsp;&middot;&nbsp; <a href="/overview/">GM guide</a></p>
+    <p>Waggle by <a href="/">Waggle</a> &nbsp;&middot;&nbsp; <a href="/courses/">Find a Course</a> &nbsp;&middot;&nbsp; <a href="/demo/">See a live demo</a> &nbsp;&middot;&nbsp; <a href="/overview/">GM guide</a></p>
   </footer>
 
   <script>
