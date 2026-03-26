@@ -540,7 +540,7 @@ function updateNav(view) {
       // Relabel for round context
       if (label) {
         if (tab === "dashboard") label.textContent = "The Board";
-        if (tab === "admin") label.textContent = "Scorecard";
+        if (tab === "admin") label.textContent = "Admin";
       }
     } else {
       // MG tournament mode: original tab set
@@ -556,7 +556,7 @@ function updateNav(view) {
       // Restore original MG labels
       if (label) {
         if (tab === "dashboard") label.textContent = "The Board";
-        if (tab === "admin") label.textContent = "Scorecard";
+        if (tab === "admin") label.textContent = "Admin";
       }
     }
   });
