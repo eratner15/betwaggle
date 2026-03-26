@@ -240,29 +240,28 @@
     }
 
     .mockup {
-      background: #070E0A;
+      background: #FAF8F5;
       border: 1px solid rgba(255,255,255,.1);
       border-bottom: none;
       border-radius: 14px 14px 0 0;
       width: 100%;
       max-width: 340px;
       overflow: hidden;
-      box-shadow: 0 -8px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(201,168,76,.15);
+      box-shadow: 0 -8px 48px rgba(0,0,0,.4), 0 0 0 1.5px var(--gold);
     }
 
     .mockup-header {
-      background: #0F1F15;
+      background: var(--forest);
       padding: 14px 18px 12px;
-      border-bottom: 1px solid var(--gold);
+      border-bottom: 2px solid var(--gold);
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
     .mockup-event-name {
       font-family: 'Playfair Display', serif;
       font-size: 16px;
-      color: #D4B65C;
+      color: var(--gold);
       font-weight: 700;
       letter-spacing: .03em;
-      text-shadow: 0 1px 4px rgba(0,0,0,.3);
     }
     .mockup-event-meta {
       font-size: 11px;
@@ -275,10 +274,11 @@
     .mockup-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 
     .mockup-match {
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
+      background: #fff;
+      border: 1px solid var(--rule);
       border-radius: 8px;
       padding: 13px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
     .match-meta {
       display: flex;
@@ -286,7 +286,7 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); font-weight: 600; }
+    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
     .live-dot {
       display: flex; align-items: center; gap: 5px;
       font-size: 10px; font-weight: 700; color: var(--gold);
@@ -310,8 +310,8 @@
       align-items: center;
       justify-content: space-between;
     }
-    .team-name { font-size: 13px; color: rgba(255,255,255,.85); font-weight: 500; }
-    .team-hi { font-size: 11px; color: rgba(255,255,255,.35); margin-left: 5px; }
+    .team-name { font-size: 13px; color: var(--text); font-weight: 600; }
+    .team-hi { font-size: 11px; color: var(--muted); margin-left: 5px; }
     .odds-pill {
       font-size: 12px;
       font-weight: 600;
@@ -319,19 +319,19 @@
       border-radius: 3px;
       letter-spacing: .02em;
     }
-    .odds-fav { background: none; color: var(--gold); font-family: 'SF Mono','Menlo',monospace; font-weight: 700; }
-    .odds-dog { background: none; color: rgba(255,255,255,.45); font-family: 'SF Mono','Menlo',monospace; font-weight: 600; }
+    .odds-fav { background: none; color: var(--forest); font-family: 'SF Mono','Menlo',monospace; font-weight: 700; }
+    .odds-dog { background: none; color: var(--muted); font-family: 'SF Mono','Menlo',monospace; font-weight: 600; }
 
     .match-score-line {
       margin-top: 10px;
       padding-top: 10px;
-      border-top: 1px solid rgba(255,255,255,.07);
+      border-top: 1px solid var(--rule);
       font-size: 12px;
-      color: rgba(255,255,255,.4);
+      color: var(--muted);
       display: flex;
       justify-content: space-between;
     }
-    .score-status { color: var(--sage); font-weight: 600; }
+    .score-status { color: var(--green-mid); font-weight: 600; }
 
     .mockup-bets { display: flex; flex-direction: column; gap: 6px; }
     .bet-item {
@@ -339,12 +339,12 @@
       align-items: center;
       justify-content: space-between;
       padding: 9px 12px;
-      background: rgba(255,255,255,.04);
+      background: #fff;
       border-radius: 6px;
-      border: 1px solid rgba(255,255,255,.05);
+      border: 1px solid var(--rule);
     }
-    .bet-player { font-size: 12px; color: rgba(255,255,255,.55); }
-    .bet-amount { font-size: 12px; font-weight: 600; color: var(--gold); }
+    .bet-player { font-size: 12px; color: var(--muted); }
+    .bet-amount { font-size: 12px; font-weight: 700; color: var(--gold-dk); }
 
     .mockup-footer {
       padding: 12px 18px 18px;
@@ -360,8 +360,8 @@
       text-align: center;
       letter-spacing: .03em;
     }
-    .mockup-btn-primary { background: var(--gold); color: var(--forest); }
-    .mockup-btn-secondary { background: rgba(255,255,255,.07); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.1); }
+    .mockup-btn-primary { background: var(--gold); color: var(--forest); font-weight: 700; }
+    .mockup-btn-secondary { background: #fff; color: var(--forest); border: 1px solid var(--rule); font-weight: 600; }
 
     /* ──────────────────────────────────────────
        PROOF STRIP
