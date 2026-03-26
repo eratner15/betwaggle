@@ -572,6 +572,7 @@ function persist() {
   delete toSave._holes;
   delete toSave._scorecardHole;
   delete toSave._scorecardScores;
+  delete toSave._scrambleScores;
   delete toSave._vegasTeamA;
   delete toSave._vegasTeamB;
   delete toSave._scorecardDay;
@@ -731,9 +732,16 @@ window.MG = {
   setScorecardHole(holeNum) {
     state._scorecardHole = parseInt(holeNum);
     state._scorecardScores = {};
+    state._scrambleScores = {};
     // Pre-fill existing scores if already entered
     const existing = state._holes?.[state._scorecardHole];
-    if (existing) state._scorecardScores = { ...existing };
+    if (existing) {
+      state._scorecardScores = { ...existing };
+      // Also pre-fill scramble scores if in scramble mode
+      if (state._config?.games?.scramble) {
+        state._scrambleScores = { ...(existing.scores || existing) };
+      }
+    }
     refresh();
   },
 

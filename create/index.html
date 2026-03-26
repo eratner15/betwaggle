@@ -189,6 +189,7 @@
       autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
       games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, nines:false, scramble:false },
+      scrambleTeams: [],
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
       course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
@@ -676,6 +677,27 @@
           </div>
           ` : ''}
 
+          ${W.games.scramble ? `
+          <div style="margin-top:16px;margin-bottom:16px;padding:16px;background:var(--white);border:1.5px solid var(--green);border-radius:12px">
+            <label style="margin-bottom:4px">Scramble Teams</label>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Teams are auto-paired from your roster. Edit names below (one team per line).</div>
+            <textarea id="scramble-teams" placeholder="Team Smith / Jones\nTeam Williams / Brown"
+              oninput="W.scrambleTeams=this.value.split('\\n').map(s=>s.trim()).filter(Boolean).map(n=>({name:n}));render()"
+              style="width:100%;min-height:80px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical">${(W.scrambleTeams.length > 0
+                ? W.scrambleTeams.map(t => t.name || t).join('\\n')
+                : (function() {
+                    const pl = W.roster.map(r => r.name || r.member).filter(Boolean);
+                    const auto = [];
+                    for (let i = 0; i < pl.length; i += 2) {
+                      if (i + 1 < pl.length) auto.push(pl[i] + ' / ' + pl[i+1]);
+                      else auto.push(pl[i]);
+                    }
+                    return auto.join('\\n');
+                  })()
+              )}</textarea>
+          </div>
+          ` : ''}
+
           <label>Holes per round</label>
           <select onchange="W.scoring.holesPerMatch=parseInt(this.value)">
             <option value="9" ${W.scoring.holesPerMatch===9?'selected':''}>9 holes</option>
@@ -995,6 +1017,7 @@
         features:W.features,
         games:W.games,
         holesPerRound: W.holesPerRound || 18,
+        ...(W.games.scramble && W.scrambleTeams.length > 0 ? { scrambleTeams: W.scrambleTeams } : {}),
         wolfOrder: W.roster.map(r => r.name || r.member).filter(Boolean),
         players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0, venmo: r.venmo || '' })).filter(p => p.name),
         roster: W.roster.map(r => isTeam
