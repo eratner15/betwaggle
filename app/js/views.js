@@ -890,7 +890,6 @@ export function renderRoundFeed(state) {
 
     html += `</div></div>`;
   }
-  }
 
   // ============================================================
   // SECTION 3: LIVE STANDINGS CARD
