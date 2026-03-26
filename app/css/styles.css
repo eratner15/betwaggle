@@ -163,7 +163,7 @@ body {
   margin-bottom: 6px;
 }
 .mg-flight-card .flight-leader {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--mg-text);
   margin-bottom: 2px;
@@ -216,7 +216,7 @@ body {
   color: var(--mg-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .mg-match-teams {
   display: flex;
@@ -265,23 +265,23 @@ body {
 .mg-standings {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
   min-width: 340px;
 }
 .mg-standings th {
   text-align: left;
   font-weight: 600;
   color: var(--mg-text-secondary);
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 5px 4px;
+  padding: 6px 4px;
   border-bottom: 2px solid var(--mg-border);
   white-space: nowrap;
 }
 .mg-standings th:not(:first-child):not(:nth-child(2)) { text-align: center; }
 .mg-standings td {
-  padding: 6px 4px;
+  padding: 8px 4px;
   border-bottom: 1px solid var(--mg-border);
   white-space: nowrap;
 }
@@ -361,7 +361,7 @@ body {
   gap: 8px;
 }
 .mg-admin-match-teams {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   min-width: 0;
   overflow: hidden;
@@ -581,7 +581,7 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--mg-text-secondary);
 }
 .mg-bet-result {
@@ -611,8 +611,8 @@ body {
   font-weight: 500;
 }
 .mg-balance-amount {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: var(--mg-green);
 }
 
@@ -781,8 +781,8 @@ input[type="number"] {
 /* Utility */
 .text-center { text-align: center; }
 .text-muted { color: var(--mg-text-secondary); }
-.text-sm { font-size: 12px; }
-.text-xs { font-size: 10px; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
 .mt-2 { margin-top: 8px; }
 .mt-4 { margin-top: 16px; }
 .mb-2 { margin-bottom: 8px; }
@@ -827,7 +827,7 @@ input[type="number"] {
   text-align: center;
   -webkit-tap-highlight-color: transparent;
 }
-.mg-preset-btn:active, .mg-preset-btn.active { background: var(--mg-green); color: #fff; border-color: var(--mg-green); }
+.mg-preset-btn:active, .mg-preset-btn.active { background: var(--mg-gold); color: #fff; border-color: var(--mg-gold-dim); }
 
 /* ─── Scenario / What-If ──────────────────────────────── */
 .mg-scenario-flights {
@@ -885,9 +885,9 @@ input[type="number"] {
   -webkit-tap-highlight-color: transparent;
 }
 .mg-score-btn:hover {
-  background: var(--mg-green);
+  background: var(--mg-gold);
   color: #fff;
-  border-color: var(--mg-green);
+  border-color: var(--mg-gold);
 }
 .mg-score-btn.selected {
   background: var(--mg-gold);
@@ -1357,6 +1357,98 @@ body[data-outdoor="true"] .dispute-btn {
   padding: 12px 20px;
   font-size: 15px;
   min-height: 48px;
+}
+
+/* ─── COUNTRY CLUB POLISH ───────────────────────────── */
+
+/* Gold section divider — use between major sections */
+.mg-section-divider,
+hr.mg-divider {
+  border: none;
+  border-top: 1px solid var(--mg-gold-accent);
+  margin: 20px 0;
+}
+
+/* Settlement payment amounts — huge and bold */
+.settlement-amount,
+.mg-payment-amount {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Venmo/CashApp buttons — subtle depth */
+.mg-payment-btn,
+.venmo-btn,
+.cashapp-btn {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.mg-payment-btn:active,
+.venmo-btn:active,
+.cashapp-btn:active {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transform: scale(0.98);
+}
+
+/* Powered by footer — gold accent line above */
+.mg-footer,
+.powered-by {
+  border-top: 1px solid var(--mg-gold);
+  padding-top: 12px;
+  margin-top: 16px;
+}
+
+/* Scorecard birdie circles — larger */
+.birdie,
+.score-birdie {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--mg-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* Eagle double-circle — gold premium look */
+.eagle,
+.score-eagle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--mg-gold);
+  box-shadow: 0 0 0 2px var(--mg-surface), 0 0 0 4px var(--mg-gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--mg-gold-dim);
+}
+
+/* Scorecard even-column gold tint for visual rhythm */
+.scorecard th:nth-child(even),
+.scorecard td:nth-child(even) {
+  background: rgba(212,175,55,0.03);
+}
+
+/* Bet result amounts — prominent */
+.mg-bet-result {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+/* Match card padding bump */
+.mg-match {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+/* Admin match entry cards — breathing room */
+.mg-admin-match {
+  padding: 14px;
+  margin-bottom: 12px;
 }
 
 /* ─── AUTO-PRESS INDICATOR ───────────────────────────── */

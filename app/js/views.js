@@ -620,6 +620,43 @@ export function renderRoundFeed(state) {
     ${nassauStatusText ? `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:5px">${nassauStatusText}</div>` : ''}
   </div>`;
 
+  // ── 3b. Current Leader card ──
+  if (gameState && scoredHoles.length > 0) {
+    const leaderPnl = computeRoundPnL(gameState, players, games, config?.structure);
+    const leaderSorted = [...players].sort((a, b) => (leaderPnl[b.name] || 0) - (leaderPnl[a.name] || 0));
+    const leader = leaderSorted[0];
+    const leaderMoney = leaderPnl[leader?.name] || 0;
+
+    if (leader && leaderMoney > 0) {
+      // Skins leader
+      const skinsHolesL = gameState?.skins?.holes || {};
+      const skinsCountL = {};
+      players.forEach(p => { skinsCountL[p.name] = 0; });
+      Object.values(skinsHolesL).forEach(h => { if (h.winner && skinsCountL.hasOwnProperty(h.winner)) skinsCountL[h.winner]++; });
+      const skinsLeaderEntry = Object.entries(skinsCountL).sort((a, b) => b[1] - a[1])[0];
+      const skinsLeaderText = skinsLeaderEntry && skinsLeaderEntry[1] > 0 ? `${escHtml(skinsLeaderEntry[0])} (${skinsLeaderEntry[1]} skin${skinsLeaderEntry[1] !== 1 ? 's' : ''})` : '';
+
+      // Nassau summary
+      const nassauL = gameState?.nassau || {};
+      const nassauParts = [];
+      if (nassauL.frontWinner) nassauParts.push(`${escHtml(nassauL.frontWinner)} leads front`);
+      if (nassauL.backWinner) nassauParts.push(`${escHtml(nassauL.backWinner)} leads back`);
+
+      html += `<div class="mg-card" style="border:2px solid var(--mg-gold);padding:14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--mg-gold-dim);text-transform:uppercase">Current Leader</div>
+            <div style="font-size:18px;font-weight:800;color:var(--mg-green);margin-top:2px">${escHtml(leader.name)}</div>
+            <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">Thru ${scoredHoles.length} holes</div>
+          </div>
+          <div style="font-size:28px;font-weight:900;color:#22c55e">+$${leaderMoney}</div>
+        </div>
+        ${nassauParts.length > 0 ? `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--mg-border)">Nassau: ${nassauParts.join(' · ')}</div>` : ''}
+        ${skinsLeaderText ? `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:${nassauParts.length > 0 ? '4' : '8'}px;${nassauParts.length === 0 ? 'padding-top:8px;border-top:1px solid var(--mg-border)' : ''}">Skins leader: ${skinsLeaderText}</div>` : ''}
+      </div>`;
+    }
+  }
+
   // ── 4. Live leaderboard (stroke net + running P&L) ──
   const strokeRunning = gameState?.stroke?.running || {};
   const strokeEntries = Object.entries(strokeRunning).sort((a, b) => a[1] - b[1]);

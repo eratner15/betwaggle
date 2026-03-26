@@ -422,6 +422,17 @@ function route() {
   app.innerHTML = `<div class="mg-content">${html}</div>`;
   updateNav(view);
 
+  // Demo exit button
+  if (state._slug === 'cabot-citrus-invitational' || state._slug === 'demo') {
+    if (!document.getElementById('demo-exit-btn')) {
+      const exitBtn = document.createElement('div');
+      exitBtn.id = 'demo-exit-btn';
+      exitBtn.innerHTML = '<a href="/" style="display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--mg-gold);color:var(--mg-green);border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.2)">Exit Demo</a>';
+      exitBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:200;';
+      document.body.appendChild(exitBtn);
+    }
+  }
+
   // Auto-dismiss full-screen hole flash overlay after 5 seconds
   const flashOverlay = document.getElementById('hole-flash-overlay');
   if (flashOverlay) {
@@ -2477,6 +2488,21 @@ window.MG = {
   },
   resetScenarios() {
     state._scenario.simResults = {};
+    refresh();
+  },
+  // Round-mode scenario handlers
+  setSimHoleScore(hole, playerName, score) {
+    if (!state._scenario.simHoles) state._scenario.simHoles = {};
+    if (!state._scenario.simHoles[hole]) state._scenario.simHoles[hole] = {};
+    state._scenario.simHoles[hole][playerName] = score;
+    refresh();
+  },
+  clearSimHole(hole) {
+    if (state._scenario.simHoles) delete state._scenario.simHoles[hole];
+    refresh();
+  },
+  resetRoundScenarios() {
+    state._scenario.simHoles = {};
     refresh();
   },
 
