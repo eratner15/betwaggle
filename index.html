@@ -184,8 +184,11 @@
     .hero-actions {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
       gap: 14px;
+    }
+    @media (min-width: 860px) {
+      .hero-actions { align-items: flex-start; }
     }
 
     .btn-primary {
@@ -868,8 +871,8 @@
         <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
         <p class="hero-sub">$32 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic. Try the demo &rarr;</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary">Create Your Tournament</a>
-          <span class="hero-fine">No app download &middot; Every phone &middot; Free for casual rounds</span>
+          <a href="/create/" class="btn-primary" style="text-align:center">Create Your Tournament</a>
+          <span class="hero-fine" style="text-align:center">No app download &middot; Every phone &middot; Free for casual rounds</span>
         </div>
       </div>
 
@@ -1030,21 +1033,7 @@
           }
         };
 
-        // Auto-cycle: increment hole every 4 seconds for live feel
-        setInterval(function() {
-          if (demoState.view !== 'live') return;
-          if (demoState.hole < 18) {
-            demoState.hole++;
-            // Animate odds shift
-            var shift = Math.floor(Math.random() * 30) - 15;
-            demoState.match.teamAodds = Math.min(-110, Math.max(-250, demoState.match.teamAodds + shift));
-            demoState.match.teamBodds = -demoState.match.teamAodds - 25;
-            var up = demoState.match.scoreA + (Math.random() > 0.6 ? 1 : 0);
-            demoState.match.scoreA = Math.min(up, 5);
-            demoState.match.status = demoState.match.scoreA + ' UP thru ' + demoState.hole;
-            renderDemo();
-          }
-        }, 4000);
+        // Static demo — no auto-cycling. Users click to explore.
 
         // Initial render
         renderDemo();
@@ -1082,20 +1071,26 @@
     <p>The group chat isn't a scoreboard. The folded card in someone's back pocket isn't a settlement.</p>
     <p style="font-weight:600;color:var(--forest);font-size:19px;line-height:1.6;margin-top:12px">Waggle is the live sportsbook your group has been running manually for years &mdash; finally on every phone, automatically.</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px">
-      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
-        <div style="font-size:28px;margin-bottom:8px">&#128241;</div>
-        <div style="font-size:13px;font-weight:700;color:var(--forest)">Every Phone</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">No app. No download. Works instantly.</div>
+      <div style="text-align:center;padding:24px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--forest)">Every Phone</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">No app. No download. Works instantly.</div>
       </div>
-      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
-        <div style="font-size:28px;margin-bottom:8px">&#9971;</div>
-        <div style="font-size:13px;font-weight:700;color:var(--forest)">Live Scoring</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Odds update hole by hole on every device.</div>
+      <div style="text-align:center;padding:24px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--forest)">Live Scoring</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">Odds update hole by hole on every device.</div>
       </div>
-      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
-        <div style="font-size:28px;margin-bottom:8px">&#128176;</div>
-        <div style="font-size:13px;font-weight:700;color:var(--forest)">Auto Settlement</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Venmo links. No arguments. No math.</div>
+      <div style="text-align:center;padding:24px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:var(--forest)">Auto Settlement</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">Venmo links. No arguments. No math.</div>
       </div>
     </div>
   </div>

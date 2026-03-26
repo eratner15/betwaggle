@@ -3213,11 +3213,18 @@ export function renderSettlement(state) {
       html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
         <div class="mg-card-header" style="margin-bottom:12px">WHO PAYS WHO</div>
         <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:12px">Tap a name to open payment app with amount pre-filled</div>`;
+      // Build venmo handle lookup from config players
+      const venmoHandles = {};
+      (config?.players || config?.roster || []).forEach(p => {
+        if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
+      });
       payPairs.forEach(({ from, to, amount }) => {
         const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle Settlement`);
-        const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(to)}&amount=${amount}&note=${noteText}`;
-        const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(to)}&amount=${amount}&note=${noteText}`;
-        const cashappUrl = `https://cash.app/$${encodeURIComponent(to.split(' ')[0].toLowerCase())}/${amount}`;
+        // Use Venmo handle if available, otherwise fall back to name
+        const toVenmo = venmoHandles[to] || to;
+        const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
+        const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
+        const cashappUrl = `https://cash.app/$${encodeURIComponent(toVenmo.split(' ')[0].toLowerCase())}/${amount}`;
         html += `<div style="padding:14px 0;border-bottom:1px solid var(--mg-border)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div>

@@ -428,7 +428,7 @@
       const tab = W._rosterTab || 'paste';
       const ph = isTeam
         ? 'Tiger Woods, Rory McIlroy, 2.2, -0.7\nPhil Mickelson, Jon Rahm, 7.3, 1.4\nDustin Johnson, Justin Thomas, 4.1, 3.8'
-        : 'Tiger Woods, 2.2\nRory McIlroy, -0.7\nDustin Johnson, 3.1\nJon Rahm, 1.4';
+        : 'Tiger Woods, 2.2, @tigerwoods\nRory McIlroy, -0.7, @rorymci\nDustin Johnson, 3.1\nJon Rahm, 1.4, @jonrahm';
       const tabBtn = (id,label) => `<button onclick="W._rosterTab='${id}';render()" style="flex:1;padding:10px;border:none;border-bottom:2px solid ${tab===id?'var(--green)':'transparent'};background:transparent;font-size:13px;font-weight:${tab===id?700:500};color:${tab===id?'var(--green)':'var(--muted)'};cursor:pointer">${label}</button>`;
 
       const ghinPanel = `
@@ -469,7 +469,7 @@
 
       const pastePanel = `
         <div style="padding:16px">
-          <p style="font-size:13px;color:var(--muted);margin-bottom:10px">${isTeam?'Member, Guest, Member HI, Guest HI — one team per line':'Name, Handicap — one player per line'}. Tab or comma separated.</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px">${isTeam?'Member, Guest, Member HI, Guest HI — one team per line':'Name, Handicap, @Venmo (optional) — one player per line'}. Tab or comma separated.</p>
           <textarea id="ri" placeholder="${ph}" oninput="parseRosterLive(this.value)" style="min-height:160px;font-size:16px">${W._rosterRaw||''}</textarea>
           <div id="roster-inline-preview" style="margin-top:8px"></div>
         </div>`;
@@ -496,7 +496,7 @@
         html += `<div class="roster-count">${W.roster.length} ${isTeam?'teams':'players'} ready</div>
           <div class="roster-preview">${W.roster.map((r,i)=>isTeam
             ?`<div class="roster-row"><span class="num">${i+1}</span><span class="name">${esc(r.member)} / ${esc(r.guest)}</span><span class="hcp">${r.combined}</span></div>`
-            :`<div class="roster-row"><span class="num">${i+1}</span><span class="name">${esc(r.name)}</span><span class="hcp">${r.handicap}</span></div>`
+            :`<div class="roster-row"><span class="num">${i+1}</span><span class="name">${esc(r.name)}${r.venmo?'<span style="color:var(--muted);font-weight:400;margin-left:6px;font-size:11px">'+esc(r.venmo)+'</span>':''}</span><span class="hcp">${r.handicap}</span></div>`
           ).join('')}</div>`;
       }
       if (W._rosterError) html += `<div class="error">${W._rosterError}</div>`;
@@ -812,11 +812,18 @@
           if (isNaN(mhi) || isNaN(ghi)) { W._rosterError = `Line ${i+1}: Handicaps must be numbers`; W.roster = parsed; return; }
           parsed.push({ member: parts[0], guest: parts[1], memberHI: mhi, guestHI: ghi, combined: +(mhi+ghi).toFixed(1) });
         } else {
-          if (parts.length < 2) { W._rosterError = `Line ${i+1}: Need "Name, Handicap"`; W.roster = parsed; return; }
-          const hi = parseFloat(parts[parts.length-1]);
-          const name = parts.slice(0,-1).join(' ');
-          if (isNaN(hi)) { W._rosterError = `Line ${i+1}: Last value must be a number`; W.roster = parsed; return; }
-          parsed.push({ name, handicap: hi });
+          if (parts.length < 2) { W._rosterError = `Line ${i+1}: Need "Name, Handicap" (optional: @venmo)`; W.roster = parsed; return; }
+          // Check if last part is a venmo handle (starts with @)
+          let venmo = '';
+          let hiIdx = parts.length - 1;
+          if (parts.length >= 3 && parts[parts.length-1].startsWith('@')) {
+            venmo = parts[parts.length-1];
+            hiIdx = parts.length - 2;
+          }
+          const hi = parseFloat(parts[hiIdx]);
+          const name = parts.slice(0, hiIdx).join(' ');
+          if (isNaN(hi)) { W._rosterError = `Line ${i+1}: Handicap must be a number`; W.roster = parsed; return; }
+          parsed.push({ name, handicap: hi, venmo: venmo || '' });
         }
       }
       W.roster = parsed;
@@ -933,7 +940,7 @@
         games:W.games,
         holesPerRound: W.holesPerRound || 18,
         wolfOrder: W.roster.map(r => r.name || r.member).filter(Boolean),
-        players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0 })).filter(p => p.name),
+        players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0, venmo: r.venmo || '' })).filter(p => p.name),
         roster: W.roster.map(r => isTeam
           ? [{ name: r.member, handicapIndex: r.memberHI ?? 0 }, r.guest && r.guest !== r.member ? { name: r.guest, handicapIndex: r.guestHI ?? 0 } : null]
           : [{ name: r.name, handicapIndex: r.handicap ?? 0 }]
