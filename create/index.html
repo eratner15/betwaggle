@@ -196,7 +196,7 @@
       scrambleTeamNameFormat: 'captain', // 'captain' or 'numbered'
       scrambleNumTeams: 20,
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
-      course: null, _courseQuery: '', _courseResults: [], _courseSearching: false, _editingPlayer: -1,
+      course: null, _courseQuery: '', _courseResults: [], _courseSearching: false, _editingPlayer: -1, _rounds: [],
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
     };
 
@@ -1083,6 +1083,7 @@
         ...(W.course ? { course: { id: W.course.id, name: W.course.club_name } } : {}),
         ...(W._coursePars?.length === 18 ? { coursePars: W._coursePars } : {}),
         ...(W._courseHcpIndex?.length === 18 ? { courseHcpIndex: W._courseHcpIndex } : {}),
+        ...(W._rounds?.length > 0 ? { rounds: Object.fromEntries(W._rounds.map((r, i) => [i + 1, { course: r.course, courseId: r.courseId, tees: r.tees, par: 72 }])) } : {}),
         meta:{source:metaSource},
         promoCode: W.promoCode || '',
       };
@@ -1513,8 +1514,32 @@
         <input type="text" value="${W.name && !W.name.startsWith('Buddies Trip') ? esc(W.name) : ''}" placeholder="Buddies Trip ${fmtDate(W.date1)||''}"
           oninput="W.name=this.value" style="font-size:16px">
 
-        <label>Date</label>
-        <input type="date" value="${W.date1}" oninput="W.date1=this.value;render()" style="font-size:16px">
+        <label>Dates</label>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Start</div>
+            <input type="date" value="${W.date1}" oninput="W.date1=this.value;render()" style="font-size:16px;width:100%">
+          </div>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">End (if multi-day)</div>
+            <input type="date" value="${W.date2||''}" oninput="W.date2=this.value;render()" style="font-size:16px;width:100%">
+          </div>
+        </div>
+
+        <label style="margin-top:16px">Rounds <span style="font-weight:400;color:var(--muted);font-size:11px">${(W._rounds||[]).length || 1} round${(W._rounds||[]).length !== 1 ? 's' : ''}</span></label>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Add a round for each 18 you're playing. You can assign different courses to each round.</div>
+        <div id="rounds-list">
+          ${(W._rounds && W._rounds.length > 0 ? W._rounds : [{course: W.course ? W.course.club_name : '', tees: '', label: 'Round 1'}]).map((rd, ri) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dk);min-width:24px">R${ri+1}</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600">${esc(rd.course || 'No course set')}</div>
+              ${rd.tees ? `<div style="font-size:11px;color:var(--muted)">${esc(rd.tees)}</div>` : ''}
+            </div>
+            ${(W._rounds||[]).length > 1 ? `<button onclick="removeRound(${ri})" style="background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer">&times;</button>` : ''}
+          </div>`).join('')}
+        </div>
+        <button onclick="addRound()" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;margin-bottom:4px">+ Add Another Round</button>
 
         <label>Admin PIN</label>
         <input type="text" inputmode="numeric" maxlength="8" value="${W.adminPin}" placeholder="4+ digits"
@@ -1825,20 +1850,53 @@
       W.course = c;
       W._courseQuery = c.club_name + (c.course_name ? ' — ' + c.course_name : '');
       W._courseResults = [];
-      // Update the venue field with the course name
       W.venue = W._courseQuery;
+
+      // Also assign to current round (or first round if no rounds yet)
+      if (!W._rounds || W._rounds.length === 0) {
+        W._rounds = [{ course: c.club_name, courseId: c.id, tees: '', label: 'Round 1' }];
+      } else {
+        // Assign to the last round that has no course, or add a new one
+        const emptyRound = W._rounds.find(r => !r.course);
+        if (emptyRound) {
+          emptyRound.course = c.club_name;
+          emptyRound.courseId = c.id;
+        } else {
+          // All rounds have courses — update the first one
+          W._rounds[0].course = c.club_name;
+          W._rounds[0].courseId = c.id;
+        }
+      }
+
       render();
       // Load full scorecard data in the background to get pars
       fetch(`/api/courses/${c.id}`).then(r => r.json()).then(data => {
-        if (data?.tees?.length > 0) {
-          // Try to get men's white/blue tee pars
-          const tee = data.tees.find(t => /white|blue|regular/i.test(t.tee_name)) || data.tees[0];
+        if (data?.pars?.length >= 18) {
+          W._coursePars = data.pars;
+          W._courseHcpIndex = data.strokeIndex || [];
+        } else if (data?.tees?.length > 0) {
+          const tee = data.tees.find(t => /three|white|blue|regular/i.test(t.name)) || data.tees[0];
           if (tee?.holes?.length >= 18) {
             W._coursePars = tee.holes.slice(0,18).map(h => h.par || 4);
             W._courseHcpIndex = tee.holes.slice(0,18).map(h => h.handicap || null);
           }
         }
       }).catch(() => {});
+    }
+
+    function addRound() {
+      if (!W._rounds) W._rounds = [];
+      const num = W._rounds.length + 1;
+      W._rounds.push({ course: '', courseId: null, tees: '', label: 'Round ' + num });
+      render();
+    }
+
+    function removeRound(i) {
+      if (!W._rounds || W._rounds.length <= 1) return;
+      W._rounds.splice(i, 1);
+      // Re-label
+      W._rounds.forEach((r, idx) => { r.label = 'Round ' + (idx + 1); });
+      render();
     }
 
     // ── GHIN player search ──
