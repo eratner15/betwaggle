@@ -623,7 +623,88 @@ export default {
       }
     }
 
-    // Seed the Frisco buddies trip event
+    // Seed Joe's Frisco trip (v2 — clean slate)
+    if (url.pathname === '/api/seed-frisco-v2' && request.method === 'GET') {
+      try {
+        const slug = 'pga-frisco-2026';
+        // Delete old version if exists
+        await env.MG_BOOK.delete(`config:${slug}`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:holes`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:game-state`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:bets`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:feed`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:settings`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:scores`).catch(()=>{});
+        await env.MG_BOOK.delete(`${slug}:players`).catch(()=>{});
+
+        const config = {
+          event: {
+            name: 'PGA Frisco 2026',
+            shortName: 'PGA Frisco',
+            venue: 'Fields Ranch at PGA Frisco',
+            url: `https://betwaggle.com/${slug}/`,
+            dates: { day1: '2026-03-28', day2: '2026-03-29' },
+            format: 'nassau',
+            adminPin: '1234',
+            adminContact: 'joe@joeweill.com',
+            eventType: 'buddies_trip',
+            slug: slug,
+          },
+          scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
+          structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
+          features: { betting: true },
+          games: { nassau: true, skins: true, wolf: true, vegas: false, stableford: false, match_play: false, stroke_play: false, banker: false, bloodsome: false, bingo: false, nines: false, scramble: false },
+          holesPerRound: 18,
+          players: [
+            { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
+            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
+            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
+            { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+          ],
+          roster: [
+            { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
+            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
+            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
+            { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+          ],
+          wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+          teams: {}, flights: {}, flightOrder: [], pairings: {},
+          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+          course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
+          coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
+          courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
+        };
+
+        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+        await env.MG_BOOK.put(`${slug}:settings`, JSON.stringify({
+          announcements: ['Welcome to PGA Frisco 2026! Nassau $10, Skins $5, Wolf. Auto-press at 2-down. Let\'s go.'],
+          lockedMatches: [], oddsOverrides: {},
+        }));
+
+        // Index for both Joe and Evan
+        for (const email of ['joe@joeweill.com', 'evan.ratner@gmail.com']) {
+          const slugs = (await env.MG_BOOK.get(`commissioner:${email}`, 'json')) || [];
+          if (!slugs.includes(slug)) { slugs.push(slug); await env.MG_BOOK.put(`commissioner:${email}`, JSON.stringify(slugs)); }
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          slug,
+          url: `https://betwaggle.com/${slug}/`,
+          adminUrl: `https://betwaggle.com/${slug}/#admin`,
+          adminPin: '1234',
+          commissioner: 'joe@joeweill.com',
+          players: ['Joe Weill (15)', 'Andrew Morrison (12)', 'Rob Edgerton (18)', 'Ben Samuels (10)'],
+          games: 'Nassau $10, Skins $5, Wolf (auto-press at 2-down)',
+          course: 'Fields Ranch East at PGA Frisco — Par 72',
+          instructions: 'Joe: open the admin URL, enter PIN 1234, go to Settings to toggle games or change stakes. Go to Scorecard tab to enter scores on game day.',
+        }), { headers: { 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Seed the Frisco buddies trip event (v1 — legacy)
     if (url.pathname === '/api/seed-frisco' && request.method === 'GET') {
       try {
         const slug = 'frisco-ranch-buddies';
