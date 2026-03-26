@@ -2914,7 +2914,19 @@ async function handleAffiliatePage(url, env) {
 // ─── Serve dynamic event HTML ──────────────────────────────────────────
 
 async function serveEventHtml(slug, request, env) {
-  const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+  let configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+
+  // If config not found, try seeding known events synchronously then retry
+  if (!configRaw) {
+    if (slug === 'pga-frisco-2026') {
+      await seedFriscoV2(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'cabot-citrus-invitational') {
+      await seedDemoEvent(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    }
+  }
+
   if (!configRaw) {
     return new Response(`<!DOCTYPE html><html><head><title>Event Not Found</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
