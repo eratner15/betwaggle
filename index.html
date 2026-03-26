@@ -996,7 +996,7 @@
           <a href="/create/" class="btn-secondary" style="text-align:center">Open the Book</a>
           <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
           <div style="margin-top:10px;text-align:center">
-            <a href="/my-events/" style="font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;letter-spacing:.04em">Already playing? Find your match &rarr;</a>
+            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em">Already playing? Find your match &rarr;</a>
           </div>
         </div>
       </div>
@@ -1011,8 +1011,8 @@
             <!-- Interactive demo renders here -->
           </div>
           <div class="mockup-footer" id="demo-nav">
-            <div class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer">Place a Bet</div>
-            <div class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer">Scoreboard</div>
+            <div class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer">Lay Action</div>
+            <div class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer">The Board</div>
           </div>
         </div>
       </div>
@@ -1080,49 +1080,49 @@
                 }).join('') +
               '</div>' +
               (v === 'bet' ? '<div id="demo-betslip" style="margin-top:8px;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;animation:fadeIn .3s ease">' +
-                '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Bet Slip</div>' +
-                '<div style="font-size:13px;color:#fff;font-weight:600;margin-bottom:6px">Thomas / Walsh to win</div>' +
+                '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Bet Slip</div>' +
+                '<div style="font-size:13px;color:var(--forest);font-weight:600;margin-bottom:6px">Thomas / Walsh to win</div>' +
                 '<div style="display:flex;gap:6px;margin-bottom:8px">' +
                   ['$10','$25','$50','$100'].map(function(amt,i) {
-                    return '<div onclick="demoPlaceBet(' + amt.slice(1) + ')" style="flex:1;padding:8px 4px;text-align:center;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:' + (i===1?'var(--gold);color:var(--forest)':'rgba(255,255,255,.08);color:rgba(255,255,255,.5)') + '">' + amt + '</div>';
+                    return '<div onclick="demoPlaceBet(' + amt.slice(1) + ')" style="flex:1;padding:8px 4px;text-align:center;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:' + (i===1?'var(--gold);color:var(--forest)':'rgba(255,255,255,.08);color:var(--muted)') + '">' + amt + '</div>';
                   }).join('') +
                 '</div>' +
-                '<div style="font-size:11px;color:rgba(255,255,255,.4)">To win: $15.63 at \u2212160</div>' +
+                '<div style="font-size:11px;color:var(--gold-dk)">To win: $15.63 at \u2212160</div>' +
               '</div>' : '');
           } else if (v === 'scores') {
             body.innerHTML =
-              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Skins Won</div>' +
+              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Skins Won</div>' +
               demoState.skins.map(function(s) {
-                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px">' +
-                  '<span style="color:rgba(255,255,255,.7)"><strong style="color:#fff">' + s.winner + '</strong> \u00b7 Hole ' + s.hole + '</span>' +
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:13px">' +
+                  '<span style="color:var(--text-2)"><strong style="color:var(--forest)">' + s.winner + '</strong> \u00b7 Hole ' + s.hole + '</span>' +
                   '<span style="color:var(--gold);font-weight:700">\u00d7' + s.pot + '</span></div>';
               }).join('') +
-              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px">Nassau</div>' +
-              '<div style="padding:10px 12px;background:rgba(82,183,136,.1);border:1px solid rgba(82,183,136,.2);border-radius:6px">' +
-                '<div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.7)"><span>Front 9</span><span style="color:var(--sage);font-weight:700">Thomas/Walsh +$20</span></div>' +
-                '<div style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.5);margin-top:4px"><span>Back 9</span><span>In progress...</span></div>' +
+              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px">Nassau</div>' +
+              '<div style="padding:10px 12px;background:rgba(26,71,42,.06);border:1px solid rgba(26,71,42,.15);border-radius:6px">' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-2)"><span>Front 9</span><span style="color:var(--sage);font-weight:700">Thomas/Walsh +$20</span></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:4px"><span>Back 9</span><span>In progress...</span></div>' +
               '</div>' +
               '<div onclick="demoSwitch(\'settle\')" style="margin-top:12px;text-align:center;padding:10px;background:var(--gold);color:var(--forest);border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.03em">View Settlement</div>';
           } else if (v === 'settle') {
             body.innerHTML =
-              '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Final Standings</div>' +
+              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Final Standings</div>' +
               demoState.players.map(function(p) {
                 var c = p.pnl > 0 ? 'var(--sage)' : p.pnl < 0 ? '#ef4444' : 'rgba(255,255,255,.5)';
                 var str = p.pnl > 0 ? '+$' + p.pnl : p.pnl < 0 ? '-$' + Math.abs(p.pnl) : 'Even';
-                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">' +
-                  '<span style="font-size:14px;color:#fff;font-weight:600">' + p.name + '</span>' +
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule)">' +
+                  '<span style="font-size:14px;color:var(--forest);font-weight:600">' + p.name + '</span>' +
                   '<span style="font-size:18px;font-weight:800;color:' + c + '">' + str + '</span></div>';
               }).join('') +
               '<div style="margin-top:12px;padding:12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:6px">' +
-                '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Who Pays Who</div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:rgba(255,255,255,.7)"><span style="color:#ef4444">Reed</span> pays <span style="color:var(--sage)">Thomas</span></span><span style="font-weight:800;color:#fff">$35</span></div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:4px"><span style="color:rgba(255,255,255,.7)"><span style="color:#ef4444">Perkins</span> pays <span style="color:var(--sage)">Walsh</span></span><span style="font-weight:800;color:#fff">$20</span></div>' +
+                '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Who Pays Who</div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--text-2)"><span style="color:#ef4444">Reed</span> pays <span style="color:var(--sage)">Thomas</span></span><span style="font-weight:800;color:var(--forest)">$35</span></div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:4px"><span style="color:var(--text-2)"><span style="color:#ef4444">Perkins</span> pays <span style="color:var(--sage)">Walsh</span></span><span style="font-weight:800;color:var(--forest)">$20</span></div>' +
                 '<div style="display:flex;gap:6px;margin-top:8px">' +
                   '<div style="flex:1;padding:8px;text-align:center;background:#3D95CE;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Venmo</div>' +
                   '<div style="flex:1;padding:8px;text-align:center;background:#00D64F;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Cash App</div>' +
                 '</div>' +
               '</div>' +
-              '<div style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">Powered by Waggle \u00b7 betwaggle.com</div>';
+              '<div style="text-align:center;margin-top:10px;font-size:10px;color:var(--muted)">Powered by Waggle \u00b7 betwaggle.com</div>';
           }
         }
 
@@ -1646,12 +1646,12 @@
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/create/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
-        <a href="/courses/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
-        <a href="/overview/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
+        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
+        <a href="/courses/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
+        <a href="/overview/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
-      <p style="font-size:11px;color:rgba(255,255,255,.3);margin:0">betwaggle.com</p>
+      <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>
     </div>
   </footer>
 
