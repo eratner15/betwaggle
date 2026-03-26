@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Partner with Waggle — Earn on Every Outing | Waggle Affiliates</title>
+  <meta name="description" content="Earn $8-$12 for every paid golf outing created through your affiliate link. Join the Waggle affiliate program for golf trip organizers, content creators, and course pros.">
+  <link rel="canonical" href="https://betwaggle.com/affiliates/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Partner with Waggle — Earn on Every Outing">
+  <meta property="og:description" content="Earn $8-$12 for every paid golf outing created through your affiliate link. Join the Waggle affiliate program.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/affiliates/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Waggle">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Partner with Waggle — Earn on Every Outing">
+  <meta name="twitter:description" content="Earn $8-$12 for every paid golf outing created through your affiliate link. Join the Waggle affiliate program.">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.svg">
+
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#0D2818">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #0D2818;
+      --green:    #1B4332;
+      --green-mid:#2D6A4F;
+      --sage:     #52B788;
+      --ivory:    #F5F0E8;
+      --ivory-dk: #EDE8DF;
+      --gold:     #C9A84C;
+      --gold-dk:  #9A7A2E;
+      --text:     #1A1A1A;
+      --text-2:   #3D3D3D;
+      --muted:    #7A7A7A;
+      --rule:     #D4CFC7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo img { height: 28px; filter: brightness(10); opacity: .9; }
+    .nav-logo span {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px;
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      letter-spacing: .02em;
+      border-bottom: 1px solid rgba(255,255,255,.25);
+      padding: 12px 4px 12px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-link:hover { color: #fff; border-color: rgba(255,255,255,.6); }
+
+    /* HERO */
+    .hero {
+      background: var(--forest);
+      position: relative;
+      overflow: hidden;
+      padding: 100px 20px 80px;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(82,183,136,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(201,168,76,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: rgba(255,255,255,.7);
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* SECTIONS */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 20px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--green);
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    /* HOW IT WORKS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 32px;
+      margin-bottom: 16px;
+    }
+
+    .step {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--gold);
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .step h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.55;
+    }
+
+    /* TIERS TABLE */
+    .tiers-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tiers-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    .tiers-table th {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--rule);
+    }
+
+    .tiers-table td {
+      font-size: 15px;
+      color: var(--text);
+      padding: 16px;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: top;
+    }
+
+    .tiers-table tr:last-child td { border-bottom: none; }
+
+    .tier-name {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .tier-commission {
+      font-weight: 600;
+      color: var(--gold-dk);
+    }
+
+    .tier-highlight {
+      background: rgba(201,168,76,.06);
+    }
+
+    /* EXPANDABLE CARDS */
+    .audience-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .audience-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+
+    .audience-card.open {
+      border-color: var(--sage);
+    }
+
+    .audience-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .audience-header:hover {
+      background: rgba(82,183,136,.03);
+    }
+
+    .audience-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .audience-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--muted);
+      transition: transform .25s ease;
+      flex-shrink: 0;
+    }
+
+    .audience-card.open .audience-arrow {
+      transform: rotate(180deg);
+    }
+
+    .audience-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease;
+    }
+
+    .audience-card.open .audience-body {
+      max-height: 300px;
+    }
+
+    .audience-body-inner {
+      padding: 0 24px 20px;
+    }
+
+    .audience-body-inner p {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* SIGNUP FORM */
+    .form-section {
+      background: var(--forest);
+      padding: 80px 20px;
+    }
+
+    .form-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .form-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .form-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,.6);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,.7);
+      margin-bottom: 6px;
+      letter-spacing: .02em;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 8px;
+      color: #fff;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255,255,255,.35);
+    }
+
+    .form-group select option {
+      background: var(--forest);
+      color: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--gold);
+    }
+
+    .form-submit {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      color: var(--forest);
+      background: var(--gold);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: .01em;
+      transition: background .2s, transform .1s;
+      margin-top: 8px;
+    }
+
+    .form-submit:hover {
+      background: #d4b35a;
+    }
+
+    .form-submit:active {
+      transform: scale(.98);
+    }
+
+    .form-submit:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .form-result {
+      margin-top: 20px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .form-result.success {
+      display: block;
+      background: rgba(82,183,136,.15);
+      color: var(--sage);
+      border: 1px solid rgba(82,183,136,.3);
+    }
+
+    .form-result.error {
+      display: block;
+      background: rgba(220,53,69,.15);
+      color: #e57373;
+      border: 1px solid rgba(220,53,69,.3);
+    }
+
+    .form-result .affiliate-link {
+      display: block;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--gold);
+      word-break: break-all;
+      cursor: pointer;
+    }
+
+    .form-result .affiliate-link:hover {
+      background: rgba(255,255,255,.1);
+    }
+
+    /* FOOTER */
+    .footer {
+      background: var(--green);
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .footer p {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+    }
+
+    .footer a {
+      color: rgba(255,255,255,.6);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,.2);
+    }
+
+    .footer a:hover {
+      color: #fff;
+      border-color: rgba(255,255,255,.5);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .hero { padding: 90px 16px 60px; }
+      .hero p { font-size: 16px; }
+      .section { padding: 60px 16px; }
+      .section-title { font-size: 24px; margin-bottom: 36px; }
+      .tiers-table th, .tiers-table td { padding: 12px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/logo.png" alt="Waggle">
+      <span>Waggle</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/games/">Games</a>
+      <a class="nav-link" href="/create/">Create Outing</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>Partner with Waggle — Earn on Every <em>Outing</em></h1>
+      <p>You are already the person who organizes the trip, picks the games, and settles the bets. Now get paid for it.</p>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section">
+    <h2 class="section-title">How It Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Sign Up</h3>
+        <p>Get a free affiliate link in under a minute. No fees, no commitment.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Share</h3>
+        <p>Send your link to your golf group, followers, league members, or tournament players.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Earn</h3>
+        <p>Earn $8 for every paid outing created through your link. That is 25% of the $32 outing fee.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AFFILIATE TIERS -->
+  <section class="section" style="padding-top: 0;">
+    <h2 class="section-title">Affiliate Tiers</h2>
+    <div class="tiers-wrap">
+      <table class="tiers-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Requirement</th>
+            <th>Commission</th>
+            <th>Extras</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tier-name">Starter</td>
+            <td>Sign up</td>
+            <td class="tier-commission">$8/outing (25%)</td>
+            <td>Personal tracking link</td>
+          </tr>
+          <tr class="tier-highlight">
+            <td class="tier-name">Pro</td>
+            <td>10+ outings/month</td>
+            <td class="tier-commission">$10/outing (31%)</td>
+            <td>Custom landing page, priority support</td>
+          </tr>
+          <tr>
+            <td class="tier-name">Ambassador</td>
+            <td>50+ outings/month</td>
+            <td class="tier-commission">$12/outing (37%)</td>
+            <td>Co-branded materials, featured on site</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TARGET AUDIENCES -->
+  <section class="section" style="padding-top: 0;">
+    <h2 class="section-title">Who Is This For</h2>
+    <div class="audience-cards">
+
+      <div class="audience-card">
+        <div class="audience-header" onclick="toggleCard(this)">
+          <h3>Golf Trip Organizers</h3>
+          <svg class="audience-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="audience-body">
+          <div class="audience-body-inner">
+            <p>You are already doing the work -- booking the trip, collecting money, tracking bets on napkins, settling up at the 19th hole. Waggle handles the scoring, odds, and payouts automatically. Your affiliate link earns you cash every time your group uses it. Organize the trip, share the link, get paid.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="audience-header" onclick="toggleCard(this)">
+          <h3>Golf Content Creators</h3>
+          <svg class="audience-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="audience-body">
+          <div class="audience-body-inner">
+            <p>Review Waggle on your channel, mention it in your podcast, or drop the link in your bio. Your audience already bets on the course -- they just need a better way to do it. Waggle converts because it works on every phone, requires no app download, and settles bets automatically. Recurring outings mean recurring commissions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="audience-header" onclick="toggleCard(this)">
+          <h3>Course Pros and Tournament Directors</h3>
+          <svg class="audience-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="audience-body">
+          <div class="audience-body-inner">
+            <p>Offer Waggle as a turnkey sportsbook experience for your outings and tournaments. No hardware, no setup, no app installs -- players scan a QR code and they are in. Live leaderboards, real-time odds, and automatic settlement make every event feel professional. Earn a commission on every outing you run through the platform.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="audience-header" onclick="toggleCard(this)">
+          <h3>Golf League Organizers</h3>
+          <svg class="audience-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="audience-body">
+          <div class="audience-body-inner">
+            <p>Weekly leagues with automated scoring, side games, and live odds for every match. Your members get a better experience and you earn on every outing all season long. One link, recurring revenue, zero extra work on your end.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SIGNUP FORM -->
+  <section class="form-section" id="signup">
+    <div class="form-wrap">
+      <h2 class="form-title">Get Your Affiliate Link</h2>
+      <p class="form-subtitle">Free to join. Start earning immediately.</p>
+
+      <form id="affiliateForm" onsubmit="return handleSubmit(event)">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="John Smith" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="john@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="promotion_method">How will you promote Waggle?</label>
+          <select id="promotion_method" name="promotion_method" required>
+            <option value="" disabled selected>Select one</option>
+            <option value="golf_trips">I organize golf trips</option>
+            <option value="content">I create golf content (YouTube, podcast, blog)</option>
+            <option value="course_pro">I am a course pro or tournament director</option>
+            <option value="league">I run a golf league</option>
+            <option value="social">I have a social media following</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="website_url">Website or Social URL (optional)</label>
+          <input type="url" id="website_url" name="website_url" placeholder="https://...">
+        </div>
+
+        <button type="submit" class="form-submit" id="submitBtn">Apply Now</button>
+      </form>
+
+      <div class="form-result" id="formResult"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p><a href="/">Waggle</a> &mdash; The sportsbook for your golf group.</p>
+  </footer>
+
+  <script>
+    function toggleCard(header) {
+      var card = header.parentElement;
+      var isOpen = card.classList.contains('open');
+      // Close all cards first
+      document.querySelectorAll('.audience-card').forEach(function(c) {
+        c.classList.remove('open');
+      });
+      // Toggle clicked card
+      if (!isOpen) {
+        card.classList.add('open');
+      }
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      var btn = document.getElementById('submitBtn');
+      var result = document.getElementById('formResult');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      result.className = 'form-result';
+      result.style.display = 'none';
+
+      var body = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        promotion_method: document.getElementById('promotion_method').value,
+        website_url: document.getElementById('website_url').value.trim() || null
+      };
+
+      try {
+        var resp = await fetch('/api/affiliate-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        var data = await resp.json();
+
+        if (data.ok) {
+          result.className = 'form-result success';
+          result.innerHTML = 'You are in. Your affiliate link is ready:' +
+            '<span class="affiliate-link" onclick="copyLink(this)" title="Click to copy">' + data.link + '</span>' +
+            '<span style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px;display:block;">Click the link to copy it to your clipboard.</span>';
+          document.getElementById('affiliateForm').style.display = 'none';
+        } else {
+          result.className = 'form-result error';
+          result.textContent = data.error || 'Something went wrong. Please try again.';
+        }
+      } catch (err) {
+        result.className = 'form-result error';
+        result.textContent = 'Network error. Please try again.';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Apply Now';
+      return false;
+    }
+
+    function copyLink(el) {
+      var text = el.textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        el.style.borderColor = 'var(--sage)';
+        setTimeout(function() { el.style.borderColor = ''; }, 1500);
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1250,7 +1250,7 @@
       const nassauOn = W.games.nassau;
       const skinsOn = W.games.skins;
 
-      // Compute cost display: $29 / num players
+      // Compute cost display: $32 / num players
       const numPlayers = W.roster.length || 4;
       const perPerson = Math.round(2900 / Math.max(numPlayers, 1)) / 100;
 
@@ -1352,7 +1352,7 @@
         <div class="hint">For magic link login — skip the PIN on game day.</div>
 
         <div style="margin-top:20px;padding:12px 14px;background:#f0f7f2;border:1px solid rgba(26,71,42,0.15);border-radius:10px;font-size:13px;color:var(--dark)">
-          <strong>$29 total</strong> — shared across your group.
+          <strong>$32 total</strong> — shared across your group.
           ${W.roster.length >= 2 ? `<strong>${(29/W.roster.length).toFixed(2)}/person</strong> for ${W.roster.length} players.` : ''}
           Share one link with everyone. Live odds, live scores, automatic settlement.
         </div>`;

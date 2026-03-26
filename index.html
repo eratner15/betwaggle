@@ -505,41 +505,106 @@
     .formats-inner h2 { color: #fff; margin-bottom: 8px; }
     .formats-inner .section-rule { background: var(--gold); margin-bottom: 36px; }
 
-    .formats-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .formats-table tr {
+    .format-card {
       border-bottom: 1px solid rgba(255,255,255,.08);
+      border-left: 3px solid transparent;
+      transition: border-color .3s ease;
     }
-    .formats-table tr:last-child { border-bottom: none; }
-    .formats-table td {
-      padding: 14px 0;
-      font-size: 14px;
-      vertical-align: top;
+    .format-card:last-child { border-bottom: none; }
+    .format-card.open {
+      border-left-color: var(--gold);
     }
-    .format-name {
+    .format-card-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      gap: 12px;
+    }
+    .format-card-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+    .format-card-name {
       font-weight: 600;
+      font-size: 15px;
       color: rgba(255,255,255,.85);
-      width: 160px;
-      padding-right: 24px;
+      white-space: nowrap;
     }
-    .format-desc {
+    .format-card-oneliner {
+      font-size: 14px;
       color: rgba(255,255,255,.4);
       font-weight: 300;
-      line-height: 1.5;
     }
-    .format-tag {
-      font-size: 10px;
-      letter-spacing: .07em;
-      text-transform: uppercase;
+    .format-card-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .format-player-badge {
+      font-size: 11px;
+      letter-spacing: .05em;
       color: var(--gold);
       font-weight: 600;
       background: rgba(201,168,76,.12);
-      padding: 2px 7px;
+      padding: 3px 8px;
       border-radius: 3px;
       white-space: nowrap;
-      margin-left: 12px;
+    }
+    .format-card-arrow {
+      font-size: 18px;
+      color: rgba(255,255,255,.35);
+      transition: transform .25s ease;
+      flex-shrink: 0;
+    }
+    .format-card.open .format-card-arrow {
+      transform: rotate(45deg);
+    }
+    .format-card-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .35s ease;
+    }
+    .format-card.open .format-card-body {
+      max-height: 260px;
+    }
+    .format-card-body-inner {
+      padding: 0 12px 18px 12px;
+    }
+    .format-card-body-inner p {
+      font-size: 14px;
+      color: rgba(255,255,255,.55);
+      line-height: 1.65;
+      margin: 0 0 10px;
+    }
+    .format-best-for {
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .format-guide-link {
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color .2s;
+    }
+    .format-guide-link:hover {
+      color: var(--gold);
+    }
+    @media (max-width: 560px) {
+      .format-card-oneliner { display: none; }
+      .format-card-header { padding: 14px 8px; }
+      .format-card-body-inner { padding: 0 8px 16px 8px; }
     }
 
     /* ──────────────────────────────────────────
@@ -1263,44 +1328,184 @@
       <span class="section-label">Game Formats</span>
       <h2>Eight games. Run simultaneously.</h2>
       <div class="section-rule"></div>
-      <table class="formats-table">
-        <tr>
-          <td class="format-name">Nassau</td>
-          <td class="format-desc">Front nine, back nine, and total. Live standings update hole by hole. Press button when 2&nbsp;down.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Skins</td>
-          <td class="format-desc">Pot multiplier tracks carryovers in real time. Win the hole outright to collect.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Wolf</td>
-          <td class="format-desc">Rotating wolf picks a partner (or goes lone wolf) before each hole. Order enforced automatically.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Vegas</td>
-          <td class="format-desc">Team scores form a two-digit number. Difference in numbers = points. Calculated exactly right.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Stableford</td>
-          <td class="format-desc">Points for birdies and eagles, deductions for bogeys. Net leaderboard after every hole.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Banker</td>
-          <td class="format-desc">Rotating banker sets the line. Everyone bets against the banker each hole.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Bloodsome</td>
-          <td class="format-desc">Shamble format — best drive, then alternate shot. Team net score per hole.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Stroke Play</td>
-          <td class="format-desc">Net leaderboard updates after every hole. Handicap strokes applied automatically.</td>
-        </tr>
-        <tr>
-          <td class="format-name">Member-Guest<span class="format-tag">$149</span></td>
-          <td class="format-desc">Multi-round bracket, flight assignments, futures market, and all eight formats above.</td>
-        </tr>
-      </table>
+      <div class="formats-cards" id="formatsCards">
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Nassau</span>
+              <span class="format-card-oneliner">Front nine, back nine, and overall.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">2-4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>The backbone of golf gambling. Three bets in one: front nine, back nine, and the overall 18. Press when you're down to double the action.</p>
+              <div class="format-best-for">Best for: Groups who want structured betting with escalation potential.</div>
+              <a href="/games/nassau/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Skins</span>
+              <span class="format-card-oneliner">Win the hole outright, take the pot.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">2-8 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Lowest score on a hole wins the skin. Ties carry over, building massive pots on later holes.</p>
+              <div class="format-best-for">Best for: Large groups where any player can steal a hole.</div>
+              <a href="/games/skins/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Wolf</span>
+              <span class="format-card-oneliner">Pick your partner each hole.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Rotating wolf chooses a partner after seeing each tee shot -- or goes Lone Wolf for double stakes.</p>
+              <div class="format-best-for">Best for: Groups who enjoy strategy and reading opponents.</div>
+              <a href="/games/wolf/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Vegas</span>
+              <span class="format-card-oneliner">Team scores form a two-digit number.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Each team combines their scores into a two-digit number (lower score is tens digit). Difference in numbers equals points. Birdie flips the losing team's digits.</p>
+              <div class="format-best-for">Best for: Consistent partnerships who want volatile swings.</div>
+              <a href="/games/vegas/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Stableford</span>
+              <span class="format-card-oneliner">Points for performance, not total strokes.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">2-8 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Score points for birdies and eagles, lose points for bogeys and worse. Rewards aggressive play and prevents blowup holes from ruining your round.</p>
+              <div class="format-best-for">Best for: Mixed-handicap groups.</div>
+              <a href="/games/stableford/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Banker</span>
+              <span class="format-card-oneliner">Rotating banker sets the stakes.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">3-4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Each hole has a designated banker who plays against the field. Points are awarded based on performance vs par.</p>
+              <div class="format-best-for">Best for: Groups who want rotating pressure.</div>
+              <a href="/games/banker/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Bloodsome</span>
+              <span class="format-card-oneliner">Opponents pick your ball.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Best drive, then the opposing team picks which ball your team plays. Alternate shot from there.</p>
+              <div class="format-best-for">Best for: Teams who enjoy strategic sabotage.</div>
+              <a href="/games/bloodsome/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="format-card">
+          <button class="format-card-header" onclick="toggleFormatCard(this)">
+            <span class="format-card-left">
+              <span class="format-card-name">Match Play</span>
+              <span class="format-card-oneliner">Hole-by-hole head-to-head.</span>
+            </span>
+            <span class="format-card-right">
+              <span class="format-player-badge">2-4 players</span>
+              <span class="format-card-arrow">+</span>
+            </span>
+          </button>
+          <div class="format-card-body">
+            <div class="format-card-body-inner">
+              <p>Win the hole, win the point. No total strokes -- just who played each hole better.</p>
+              <div class="format-best-for">Best for: Two players or two teams who want direct competition.</div>
+              <a href="/games/match-play/" class="format-guide-link">Read the full guide</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <script>
+      function toggleFormatCard(btn) {
+        var card = btn.parentElement;
+        var container = document.getElementById('formatsCards');
+        var cards = container.querySelectorAll('.format-card');
+        var wasOpen = card.classList.contains('open');
+        for (var i = 0; i < cards.length; i++) {
+          cards[i].classList.remove('open');
+        }
+        if (!wasOpen) {
+          card.classList.add('open');
+        }
+      }
+      </script>
     </div>
   </div>
 
@@ -1322,13 +1527,43 @@
     <div class="final-cta-inner">
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
-      <a href="/create/" class="btn-primary">Create Your Outing</a>
+      <div style="max-width:400px;margin:0 auto">
+        <form onsubmit="captureEmail(event)" style="display:flex;gap:8px">
+          <input type="email" id="email-input" placeholder="Your email" required style="flex:1;padding:14px 16px;border-radius:6px;border:1.5px solid var(--rule);font-size:15px">
+          <button type="submit" style="padding:14px 24px;background:var(--gold);color:var(--forest);border:none;border-radius:6px;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap">Get Started</button>
+        </form>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Free rounds available. No credit card required.</p>
+      </div>
       <div class="final-links">
         <a href="/demo/">See a live demo first</a>
         <a href="/overview/">GM setup guide</a>
       </div>
     </div>
   </div>
+  <script>
+  async function captureEmail(e) {
+    e.preventDefault();
+    var email = document.getElementById('email-input').value;
+    if (!email) return;
+    var btn = e.target.querySelector('button');
+    btn.textContent = '...';
+    btn.disabled = true;
+    try {
+      await fetch('/api/email-capture', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email, source: 'landing_page', opted_in_newsletter: true})
+      });
+      document.getElementById('email-input').value = '';
+      document.getElementById('email-input').placeholder = 'You are in! Check your email.';
+      document.getElementById('email-input').disabled = true;
+      btn.textContent = 'Sent';
+    } catch(err) {
+      btn.textContent = 'Get Started';
+      btn.disabled = false;
+    }
+  }
+  </script>
 
   <!-- FOOTER -->
   <footer style="background:var(--forest);padding:48px 20px 32px;text-align:center">

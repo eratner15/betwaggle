@@ -94,10 +94,23 @@ export default {
       return handleCourseDetailPage(coursePageMatch[1], env);
     }
 
+    // ===== EMAIL CAPTURE =====
+    if (url.pathname === '/api/email-capture' && request.method === 'POST') {
+      return handleEmailCapture(request, env);
+    }
+    if (url.pathname === '/api/email-capture' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
+    // ===== UNSUBSCRIBE =====
+    if (url.pathname === '/api/unsubscribe' && request.method === 'GET') {
+      return handleUnsubscribe(url, env);
+    }
+
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -112,7 +125,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -248,6 +261,14 @@ export default {
     }
     if (url.pathname === '/affiliate/' || url.pathname === '/affiliate') {
       return handleAffiliatePage(url, env);
+    }
+
+    // /api/affiliate-signup — public affiliate signup from /affiliates/ page
+    if (url.pathname === '/api/affiliate-signup' && request.method === 'POST') {
+      return handleAffiliateSignup(request, env);
+    }
+    if (url.pathname === '/api/affiliate-signup' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
     // /api/leads — lead tracker CRUD
@@ -408,9 +429,10 @@ export default {
     return new Response(assetResp.body, { status: assetResp.status, headers: hdrs });
   },
 
-  // Weekly marketing digest cron (every Monday 9 AM ET = 13:00 UTC)
+  // Cron handler: weekly digest + drip emails
   async scheduled(event, env, ctx) {
     ctx.waitUntil(sendWeeklyMarketingDigest(env));
+    ctx.waitUntil(processDripEmails(env));
   },
 };
 
@@ -1667,7 +1689,7 @@ async function handleAdsGenerate(request, env) {
   if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
 
   const segDesc = {
-    trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($29)',
+    trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($32)',
     club: 'golf club members or staff running member-guests or charity outings ($149)',
     pro: 'club professionals offering a live betting add-on to members',
   };
@@ -1811,6 +1833,44 @@ async function handleCampaignsDelete(url, env) {
 }
 
 // ─── Affiliate link generator ──────────────────────────────────────────
+
+// ─── Affiliate Signup (public /affiliates/ page) ──────────────────────
+async function handleAffiliateSignup(request, env) {
+  const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: h }); }
+  const { name, email, promotion_method, website_url } = body || {};
+  if (!name || !name.trim()) return new Response(JSON.stringify({ error: 'Name is required' }), { status: 400, headers: h });
+  if (!email || !email.trim()) return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: h });
+
+  // Generate 8-char alphanumeric affiliate_id
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let affiliate_id = '';
+  for (let i = 0; i < 8; i++) affiliate_id += chars[Math.floor(Math.random() * chars.length)];
+
+  const record = {
+    affiliate_id,
+    name: name.trim(),
+    email: email.trim(),
+    promotion_method: promotion_method || '',
+    website_url: website_url || '',
+    created_at: new Date().toISOString(),
+    status: 'pending',
+    referrals: 0
+  };
+
+  try {
+    await env.MG_BOOK.put(`affiliate:${affiliate_id}`, JSON.stringify(record));
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Failed to save. Please try again.' }), { status: 500, headers: h });
+  }
+
+  return new Response(JSON.stringify({
+    ok: true,
+    affiliate_id,
+    link: `https://betwaggle.com/create/?ref=${affiliate_id}`
+  }), { headers: h });
+}
 
 function handleAffiliateGenerate(url) {
   const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
@@ -3097,4 +3157,228 @@ async function handleGhinSearch(q, env) {
     }));
     return new Response(JSON.stringify(golfers), { headers: h });
   } catch { return new Response(JSON.stringify([]), { headers: h }); }
+}
+
+
+// ─── Email Capture & Drip Pipeline ─────────────────────────────────────────
+
+const EMAIL_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+
+async function handleEmailCapture(request, env) {
+  try {
+    const body = await request.json();
+    const { email, source, game_interest, course_interest, opted_in_newsletter } = body;
+
+    // Validate email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), { status: 400, headers: EMAIL_CORS });
+    }
+
+    // Rate limit: 3 per IP per 10 min
+    if (env.MG_BOOK) {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const rlKey = `email-rl:${ip}`;
+      const rlCount = parseInt(await env.MG_BOOK.get(rlKey, 'text') || '0', 10);
+      if (rlCount >= 3) {
+        return new Response(JSON.stringify({ error: 'Too many requests. Try again later.' }), { status: 429, headers: EMAIL_CORS });
+      }
+      await env.MG_BOOK.put(rlKey, String(rlCount + 1), { expirationTtl: 600 });
+    }
+
+    if (!env.MG_BOOK) {
+      return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EMAIL_CORS });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const kvKey = `email:${normalizedEmail}`;
+
+    // Check if already exists
+    const existing = await env.MG_BOOK.get(kvKey, 'json');
+    if (existing) {
+      return new Response(JSON.stringify({ ok: true, message: 'Already subscribed' }), { headers: EMAIL_CORS });
+    }
+
+    const record = {
+      email: normalizedEmail,
+      source: source || 'landing_page',
+      game_interest: game_interest || null,
+      course_interest: course_interest || null,
+      opted_in_newsletter: opted_in_newsletter !== false,
+      created_at: new Date().toISOString(),
+      drip_step: 0,
+      converted: false,
+    };
+
+    await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+
+    // Send welcome email
+    if (env.RESEND_API_KEY && record.opted_in_newsletter) {
+      try {
+        await sendDripEmail(env, normalizedEmail, 0, record.source);
+        record.drip_step = 1;
+        await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+      } catch (e) {
+        console.error('Welcome email failed:', e.message);
+      }
+    }
+
+    return new Response(JSON.stringify({ ok: true }), { headers: EMAIL_CORS });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: EMAIL_CORS });
+  }
+}
+
+async function handleUnsubscribe(url, env) {
+  const email = (url.searchParams.get('email') || '').toLowerCase().trim();
+  if (!email || !env.MG_BOOK) {
+    return new Response(unsubscribeHtml(false), { headers: { 'Content-Type': 'text/html' } });
+  }
+  const kvKey = `email:${email}`;
+  const record = await env.MG_BOOK.get(kvKey, 'json');
+  if (record) {
+    record.opted_in_newsletter = false;
+    await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+  }
+  return new Response(unsubscribeHtml(true), { headers: { 'Content-Type': 'text/html' } });
+}
+
+function unsubscribeHtml(success) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribed — Waggle</title><style>body{font-family:'Inter',system-ui,sans-serif;background:#0D2818;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px}h1{font-size:28px;margin-bottom:12px}.msg{color:rgba(255,255,255,.6);font-size:15px}a{color:#C9A84C}</style></head><body><div><h1>${success ? 'You have been unsubscribed.' : 'Something went wrong.'}</h1><p class="msg">${success ? 'Sorry to see you go. You will not receive any more emails from Waggle.' : 'We could not process your request. Please try again.'}</p><p style="margin-top:24px"><a href="https://betwaggle.com">Back to betwaggle.com</a></p></div></body></html>`;
+}
+
+// Drip email sequence definitions
+const DRIP_SEQUENCE = [
+  { // Step 0: Welcome (sent immediately on capture)
+    dayOffset: 0,
+    subject: 'Your golf group is about to get serious',
+    bodyFn: (source) => {
+      const gameRec = source === 'game_guide' ? 'Check out the full game library' : source === 'course_search' ? 'We already loaded your course' : 'Start with the Nassau — every group loves it';
+      return dripEmailHtml({
+        headline: 'Welcome to Waggle',
+        body: `<p style="margin:0 0 16px">You just found the easiest way to run golf bets with your group. No app download. No spreadsheets. No collecting cash at the end.</p><p style="margin:0 0 16px">Waggle handles Nassau, skins, wolf, Vegas, banker, bloodsome, stableford, and stroke play — all from a single shared link on every phone.</p><p style="margin:0 0 24px">${gameRec}.</p>`,
+        ctaUrl: 'https://betwaggle.com/demo/',
+        ctaText: 'See It Live',
+        email: '{{email}}',
+      });
+    },
+  },
+  { // Step 1: Day 3
+    dayOffset: 3,
+    subject: 'The Nassau: Why every golf trip needs this game',
+    bodyFn: () => dripEmailHtml({
+      headline: 'The Nassau: The Original Golf Bet',
+      body: `<p style="margin:0 0 16px">There is a reason every serious golf group runs a Nassau. Three bets in one — front nine, back nine, overall — so the match stays alive all day. Down after 9? You still have a shot at two out of three.</p><p style="margin:0 0 16px">Waggle tracks the Nassau automatically. Presses, automatic two-down presses, handicap adjustments — all handled. Your group just plays.</p><p style="margin:0 0 24px">Set up a Nassau in 60 seconds. Share the link. Everyone sees live odds on their phone.</p>`,
+      ctaUrl: 'https://betwaggle.com/games/nassau/',
+      ctaText: 'Learn the Nassau',
+      email: '{{email}}',
+    }),
+  },
+  { // Step 2: Day 7
+    dayOffset: 7,
+    subject: 'We already loaded your course scorecard',
+    bodyFn: () => dripEmailHtml({
+      headline: '30,000+ Courses. Your Scorecard Is Ready.',
+      body: `<p style="margin:0 0 16px">Waggle has scorecards for over 30,000 courses across the US. Pars, stroke index, handicap holes — all preloaded. Just search your course and go.</p><p style="margin:0 0 16px">We also integrate with GHIN so you can pull official handicap indexes for every player. Fair matches, no arguments.</p><p style="margin:0 0 24px">Find your course and see the full scorecard now.</p>`,
+      ctaUrl: 'https://betwaggle.com/courses/',
+      ctaText: 'Find Your Course',
+      email: '{{email}}',
+    }),
+  },
+  { // Step 3: Day 14
+    dayOffset: 14,
+    subject: 'Your buddy trip is in a few weeks — here is the game plan',
+    bodyFn: () => dripEmailHtml({
+      headline: 'The Perfect 3-Game Combo',
+      body: `<p style="margin:0 0 16px">For a full-day trip, we recommend stacking three games: Nassau for the main match, skins for individual hole prizes, and wolf for the afternoon round when everyone is loose.</p><p style="margin:0 0 16px">Waggle runs all three simultaneously on the same scorecard. One link, three games, automatic settlement at the end.</p><p style="margin:0 0 24px">Your group will wonder how they ever did this with a spreadsheet.</p>`,
+      ctaUrl: 'https://betwaggle.com/games/',
+      ctaText: 'See All Games',
+      email: '{{email}}',
+    }),
+  },
+  { // Step 4: Day 21
+    dayOffset: 21,
+    subject: 'The group chat is not a scoreboard',
+    bodyFn: () => dripEmailHtml({
+      headline: 'Stop Texting Scores. Start Playing.',
+      body: `<p style="margin:0 0 16px">You know how it goes. Somebody texts their score wrong. Nobody remembers who had a press on 14. The guy who lost "forgot" to Venmo you.</p><p style="margin:0 0 16px">Waggle fixes all of it. Live scoring on every phone. Automatic bet calculations. A final settlement screen that tells everyone exactly what they owe.</p><p style="margin:0 0 24px">Set up your first round in under a minute. Free to try.</p>`,
+      ctaUrl: 'https://betwaggle.com/create/',
+      ctaText: 'Create Your Outing',
+      email: '{{email}}',
+    }),
+  },
+];
+
+function dripEmailHtml({ headline, body, ctaUrl, ctaText, email }) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f5f0e8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:24px 16px">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden">
+      <!-- Header -->
+      <tr><td style="background:#0D2818;padding:28px 32px;text-align:center">
+        <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:#C9A84C;letter-spacing:.02em">Waggle</span>
+      </td></tr>
+      <!-- Body -->
+      <tr><td style="padding:32px 32px 24px">
+        <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#0D2818;margin:0 0 20px;line-height:1.3">${headline}</h1>
+        <div style="font-size:15px;line-height:1.7;color:#3D3D3D">${body}</div>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr><td style="background:#C9A84C;border-radius:6px;text-align:center">
+          <a href="${ctaUrl}" style="display:inline-block;padding:14px 32px;color:#0D2818;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.03em">${ctaText}</a>
+        </td></tr></table>
+      </td></tr>
+      <!-- Footer -->
+      <tr><td style="padding:20px 32px 28px;border-top:1px solid #eee;text-align:center">
+        <p style="font-size:11px;color:#7A7A7A;margin:0 0 8px">Powered by Waggle — betwaggle.com</p>
+        <a href="https://betwaggle.com/api/unsubscribe?email=${encodeURIComponent(email)}" style="font-size:11px;color:#7A7A7A;text-decoration:underline">Unsubscribe</a>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+async function sendDripEmail(env, email, stepIndex, source) {
+  const step = DRIP_SEQUENCE[stepIndex];
+  if (!step) return;
+  const html = step.bodyFn(source || 'landing_page').replace(/\{\{email\}\}/g, email);
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'tips@betwaggle.com',
+      to: [email],
+      subject: step.subject,
+      html,
+    }),
+  });
+}
+
+async function processDripEmails(env) {
+  if (!env.MG_BOOK || !env.RESEND_API_KEY) return;
+  try {
+    const list = await env.MG_BOOK.list({ prefix: 'email:' });
+    const now = Date.now();
+    for (const key of list.keys) {
+      try {
+        const record = await env.MG_BOOK.get(key.name, 'json');
+        if (!record || !record.opted_in_newsletter || !record.created_at) continue;
+        const createdAt = new Date(record.created_at).getTime();
+        const daysSinceCreated = (now - createdAt) / (1000 * 60 * 60 * 24);
+        const currentStep = record.drip_step || 0;
+
+        // Find next step to send
+        if (currentStep >= DRIP_SEQUENCE.length) continue;
+        const nextStep = DRIP_SEQUENCE[currentStep];
+        if (!nextStep || daysSinceCreated < nextStep.dayOffset) continue;
+
+        // Send the email
+        await sendDripEmail(env, record.email, currentStep, record.source);
+        record.drip_step = currentStep + 1;
+        await env.MG_BOOK.put(key.name, JSON.stringify(record));
+      } catch (e) {
+        console.error('Drip error for', key.name, e.message);
+      }
+    }
+  } catch (e) {
+    console.error('processDripEmails error:', e.message);
+  }
 }
