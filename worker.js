@@ -1315,6 +1315,12 @@ async function handleWaggleSuccess(url, env) {
     return Response.redirect('https://betwaggle.com/', 302);
   }
 
+  const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const originalPrice = originalAmountCents ? (originalAmountCents / 100).toFixed(0) : '';
+  const actualPrice = (actualAmountCents !== undefined && promoDiscount > 0) ? (actualAmountCents / 100).toFixed(0) : '';
+  const escEventName = esc(eventName);
+  const escEventUrl = esc(eventUrl);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1347,53 +1353,87 @@ async function handleWaggleSuccess(url, env) {
     .check { width: 56px; height: 56px; background: var(--green-mid); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 28px; }
     .check svg { width: 26px; height: 26px; }
     h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--forest); margin-bottom: 10px; }
-    .event-name { font-size: 15px; color: var(--muted); margin-bottom: 36px; }
+    .event-name { font-size: 15px; color: var(--muted); margin-bottom: 16px; }
     .share-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--green-mid); margin-bottom: 10px; }
     .link-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .link-box { flex: 1; background: #F9FAFB; border: 1px solid #D1D5DB; border-radius: 8px; padding: 11px 14px; font-size: 14px; color: var(--forest); font-weight: 500; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .copy-btn { flex-shrink: 0; padding: 11px 18px; background: var(--green-mid); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background .15s; white-space: nowrap; }
     .copy-btn:hover { background: var(--forest); }
     .copy-btn.copied { background: #059669; }
-    .share-note { font-size: 12px; color: var(--muted); margin-bottom: 32px; line-height: 1.5; }
+    .share-note { font-size: 12px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
     .divider { border: none; border-top: 1px solid #E5E7EB; margin: 0 0 28px; }
-    .steps { text-align: left; margin-bottom: 32px; }
-    .steps-title { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
-    .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; color: var(--text); line-height: 1.5; }
-    .step-num { flex-shrink: 0; width: 22px; height: 22px; background: var(--ivory); border: 1px solid #D1D5DB; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--green-mid); margin-top: 1px; }
     ${adminPin ? `.pin-box { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: var(--forest); text-align: left; } .pin-box strong { display: block; margin-bottom: 4px; } .pin-code { font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700; letter-spacing: .12em; color: var(--green-mid); }` : ''}
     .btn-primary { display: block; background: var(--gold); color: var(--forest); font-size: 15px; font-weight: 600; padding: 15px 32px; border-radius: 8px; text-decoration: none; transition: background .2s; letter-spacing: .01em; }
     .btn-primary:hover { background: #d9b85c; }
     .btn-secondary { display: block; margin-top: 12px; font-size: 13px; color: var(--muted); text-decoration: none; text-align: center; }
     .btn-secondary:hover { color: var(--green-mid); }
+    .share-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+    .share-actions button { padding: 14px 24px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .share-btn { background: var(--gold); color: var(--forest); }
+    .share-btn:hover { background: #d9b85c; }
+    .copy-link-btn { background: #fff; color: var(--forest); border: 1.5px solid #D4CFC7 !important; }
+    .copy-link-btn:hover { background: #F9FAFB; }
+    .onboard-step { display: flex; gap: 12px; align-items: flex-start; }
+    .onboard-num { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: var(--forest); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
     <h1>Your sportsbook is live.</h1>
-    <p class="event-name">${eventName}</p>
-    <p class="share-label">Share with your group</p>
+    <p class="event-name">${escEventName}</p>
+
+    ${promoLabel ? `<div style="text-align:center;margin:0 0 20px;font-size:14px;color:var(--muted)">
+      <span style="text-decoration:line-through">$${originalPrice}</span> <span style="color:#16A34A;font-weight:700">$${actualPrice}</span> <span style="background:rgba(22,163,74,.1);color:#16A34A;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">${esc(promoLabel)}</span>
+    </div>` : ''}
+
+    <div style="text-align:center;margin:24px 0">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(eventUrl)}&bgcolor=FAFAF7&color=0D2818"
+        width="280" height="280" alt="QR code" style="border-radius:12px;border:2px solid #E5E1D8">
+      <div style="font-size:13px;color:#7A7A7A;margin-top:8px">Hold this up -- everyone scans to join</div>
+    </div>
+
+    <div class="share-actions">
+      <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${escEventName}',url:'${escEventUrl}'}).catch(function(){});}else{navigator.clipboard.writeText('${escEventUrl}');}">Share with Group</button>
+      <button class="copy-link-btn" onclick="navigator.clipboard.writeText('${escEventUrl}').then(function(){this.textContent='Copied!';}.bind(this))">Copy Link</button>
+    </div>
+
+    <p class="share-label" style="margin-top:24px">Event link</p>
     <div class="link-row">
       <div class="link-box" id="event-link">${eventUrl}</div>
       <button class="copy-btn" id="copy-btn" onclick="copyLink()">Copy</button>
     </div>
     <p class="share-note">Everyone opens this on their phone. No download needed.</p>
+
     <hr class="divider">
+
     ${adminPin ? `<div class="pin-box"><strong>Your admin PIN -- keep this safe</strong><div class="pin-code">${adminPin}</div><div style="font-size:12px;color:#6B7280;margin-top:6px">You'll need this to manage bets and settle the round.</div></div>` : ''}
-    <div class="steps">
-      <div class="steps-title">What to do next</div>
-      <div class="step"><div class="step-num">1</div><div>Copy the link above and send it to your group in the chat</div></div>
-      <div class="step"><div class="step-num">2</div><div>Open the event yourself first -- walk through setting your bets</div></div>
-      <div class="step"><div class="step-num">3</div><div>On the first tee, everyone confirms their bets and tees off</div></div>
-      <div class="step"><div class="step-num">4</div><div>After each hole, update scores -- settlements calculate automatically</div></div>
+
+    <div style="max-width:400px;margin:0 auto 32px;text-align:left">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D2818;margin-bottom:16px">Get Started</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="onboard-step">
+          <div class="onboard-num">1</div>
+          <div><div style="font-weight:600;font-size:14px">Share the link</div><div style="font-size:12px;color:#7A7A7A">Text or airdrop the QR code above to your group</div></div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-num">2</div>
+          <div><div style="font-weight:600;font-size:14px">Enter scores on game day</div><div style="font-size:12px;color:#7A7A7A">Open Admin tab, enter gross scores hole by hole</div></div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-num">3</div>
+          <div><div style="font-weight:600;font-size:14px">Share the settlement card</div><div style="font-size:12px;color:#7A7A7A">Drop it in the group chat. Venmo links included.</div></div>
+        </div>
+      </div>
     </div>
+
     <a href="${eventUrl}" class="btn-primary">Open my event</a>
     <a href="https://betwaggle.com/" class="btn-secondary">Back to Waggle</a>
   </div>
   <script>
     function copyLink() {
-      const link = document.getElementById('event-link').textContent.trim();
-      const btn = document.getElementById('copy-btn');
+      var link = document.getElementById('event-link').textContent.trim();
+      var btn = document.getElementById('copy-btn');
       navigator.clipboard.writeText(link).then(function() {
         btn.textContent = 'Copied!';
         btn.classList.add('copied');

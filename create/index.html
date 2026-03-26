@@ -172,7 +172,7 @@
       autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
       games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false },
-      theme: 'club', adminPin: '', adminContact: '', slug: '', _rosterRaw: '', _rosterError: '', _launchError: '',
+      theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
       course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
     };
@@ -794,6 +794,17 @@
           </div>
           <div style="text-align:right;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6">${isWarrior?'Track any match<br>free during beta':'Unlimited players<br>& bets included'}</div>
         </div>
+        <div style="margin-top:20px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px">
+          <label style="margin-top:0">Promo Code <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="promo-input" placeholder="Enter code" value="${esc(W.promoCode)}"
+              style="flex:1;text-transform:uppercase;letter-spacing:1px;font-weight:600"
+              oninput="this.value=this.value.toUpperCase()">
+            <button type="button" onclick="validatePromo()"
+              style="padding:12px 20px;background:var(--dark);color:var(--gold);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Apply</button>
+          </div>
+          <div id="promo-result" style="margin-top:8px;font-size:13px">${W.promoCode && W._promoValid ? '<span style="color:var(--win);font-weight:600">' + W._promoMsg + '</span>' : ''}</div>
+        </div>
         ${W._launchError?`<div class="error">${W._launchError}</div>`:''}`;
     }
 
@@ -896,6 +907,32 @@
       return Object.values(W.dayRounds).reduce((s, arr) => s + arr.length, 0);
     }
 
+    // ── Promo Code Validation ──
+    async function validatePromo() {
+      var code = document.getElementById('promo-input').value.trim();
+      var result = document.getElementById('promo-result');
+      if (!code) { result.innerHTML = ''; W.promoCode = ''; W._promoValid = false; W._promoMsg = ''; return; }
+      try {
+        var res = await fetch('/api/validate-promo', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({code: code})
+        });
+        var data = await res.json();
+        if (data.valid) {
+          W.promoCode = code.toUpperCase();
+          W._promoValid = true;
+          W._promoMsg = data.label + (data.discount === 100 ? ' -- FREE' : ' -- ' + data.discount + '% off');
+          result.innerHTML = '<span style="color:var(--win);font-weight:600">' + W._promoMsg + '</span>';
+        } else {
+          W.promoCode = '';
+          W._promoValid = false;
+          W._promoMsg = '';
+          result.innerHTML = '<span style="color:var(--lose)">Invalid code</span>';
+        }
+      } catch(e) { result.innerHTML = '<span style="color:var(--lose)">Could not validate</span>'; }
+    }
+
     // ── Launch ──
     async function launch() {
       W._launchError='';
@@ -949,6 +986,7 @@
         ...(W._coursePars?.length === 18 ? { coursePars: W._coursePars } : {}),
         ...(W._courseHcpIndex?.length === 18 ? { courseHcpIndex: W._courseHcpIndex } : {}),
         meta:{source:metaSource},
+        promoCode: W.promoCode || '',
       };
       try {
         const res=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
