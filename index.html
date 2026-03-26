@@ -159,25 +159,26 @@
 
     .hero h1 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(30px, 6vw, 54px);
+      font-size: clamp(34px, 7vw, 60px);
       font-weight: 700;
       color: #fff;
-      line-height: 1.1;
-      margin-bottom: 14px;
+      line-height: 1.08;
+      margin-bottom: 18px;
     }
 
     .hero h1 em {
       font-style: italic;
-      color: rgba(255,255,255,.7);
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,.3);
     }
 
     .hero-sub {
-      font-size: 15px;
-      font-weight: 300;
-      color: rgba(255,255,255,.6);
-      line-height: 1.6;
-      max-width: 400px;
-      margin-bottom: 24px;
+      font-size: 17px;
+      font-weight: 400;
+      color: rgba(255,255,255,.75);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 28px;
     }
 
     .hero-actions {
@@ -191,20 +192,22 @@
       display: inline-block;
       background: var(--gold);
       color: var(--forest);
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: .02em;
-      padding: 15px 32px;
-      border-radius: 4px;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      padding: 18px 40px;
+      border-radius: 6px;
       text-decoration: none;
-      transition: background .2s, transform .15s;
+      transition: background .2s, transform .15s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(201,168,76,.35);
     }
-    .btn-primary:hover { background: #d9b85c; transform: translateY(-1px); }
+    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(201,168,76,.5); }
 
     .hero-fine {
-      font-size: 12px;
-      color: rgba(255,255,255,.35);
-      letter-spacing: .03em;
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .04em;
+      font-weight: 500;
     }
 
     /* ──────────────────────────────────────────
@@ -362,32 +365,34 @@
 
     .proof-num {
       font-family: 'Playfair Display', serif;
-      font-size: 24px;
+      font-size: 32px;
       color: var(--gold);
-      font-weight: 600;
+      font-weight: 700;
       line-height: 1;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 20px rgba(201,168,76,.2);
     }
     .proof-label {
-      font-size: 11px;
-      color: rgba(255,255,255,.5);
-      font-weight: 400;
-      letter-spacing: .03em;
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      font-weight: 500;
+      letter-spacing: .04em;
+      text-transform: uppercase;
     }
 
     /* ──────────────────────────────────────────
        BODY SECTIONS
     ────────────────────────────────────────── */
     .section {
-      padding: 48px 20px;
+      padding: 64px 20px;
       max-width: 720px;
       margin: 0 auto;
     }
 
     .section-label {
       font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .12em;
+      font-weight: 700;
+      letter-spacing: .14em;
       text-transform: uppercase;
       color: var(--gold-dk);
       margin-bottom: 18px;
@@ -396,22 +401,22 @@
 
     .section h2 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(24px, 4vw, 34px);
+      font-size: clamp(28px, 5vw, 40px);
       color: var(--forest);
-      line-height: 1.2;
-      margin-bottom: 20px;
+      line-height: 1.15;
+      margin-bottom: 24px;
     }
 
     .section-rule {
-      width: 32px;
-      height: 2px;
+      width: 48px;
+      height: 3px;
       background: var(--gold);
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .section p {
-      font-size: 16px;
-      font-weight: 300;
+      font-size: 17px;
+      font-weight: 400;
       color: var(--text-2);
       line-height: 1.8;
       margin-bottom: 16px;
@@ -544,22 +549,35 @@
 
     .price-card {
       background: #fff;
-      border: 1px solid var(--rule);
-      padding: 24px 20px;
+      border: 2px solid var(--rule);
+      padding: 28px 24px;
       position: relative;
       display: flex;
       flex-direction: column;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .price-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
     }
 
     .price-card.featured {
-      border-color: var(--forest);
-      border-width: 1.5px;
+      border-color: var(--gold);
+      border-width: 2px;
+      box-shadow: 0 4px 24px rgba(201,168,76,.2);
+      transform: scale(1.02);
+    }
+    .price-card.featured:hover {
+      transform: scale(1.02) translateY(-4px);
+      box-shadow: 0 8px 32px rgba(201,168,76,.3);
     }
 
     .price-type {
       font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .1em;
+      font-weight: 700;
+      letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 16px;
@@ -568,11 +586,14 @@
 
     .price-amount {
       font-family: 'Playfair Display', serif;
-      font-size: 44px;
+      font-size: 52px;
       font-weight: 700;
       color: var(--forest);
       line-height: 1;
       margin-bottom: 8px;
+    }
+    .price-card.featured .price-amount {
+      color: var(--gold-dk);
     }
 
     .price-period {
