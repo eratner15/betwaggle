@@ -479,6 +479,28 @@ function route() {
       }
     }, 5000);
   }
+
+  // Update floating score button (FAB)
+  const fab = document.getElementById('score-fab');
+  const fabText = document.getElementById('score-fab-text');
+  if (fab && isRoundMode && !state._trophyMode) {
+    const holes = state._holes || {};
+    const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+    const holesPerRound = state._config?.holesPerRound || 18;
+    const latestHole = scoredHoles.length > 0 ? Math.max(...scoredHoles) : 0;
+    const roundComplete = scoredHoles.length >= holesPerRound;
+    if (roundComplete) {
+      fab.style.display = 'none';
+    } else {
+      const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+      const pars = state._config?.coursePars || [];
+      const par = pars[nextHole - 1] || 4;
+      fab.style.display = 'flex';
+      fabText.textContent = `Hole ${nextHole} \u00b7 Par ${par}`;
+    }
+  } else if (fab) {
+    fab.style.display = 'none';
+  }
 }
 
 function updateNav(view) {
@@ -531,16 +553,19 @@ function updateNav(view) {
         if (tab === 'scenarios') label.textContent = 'What-If';
       }
     } else if (isRoundMode) {
-      // Round mode: Feed · Scorecard · Bet · My Bets · Score  (Flights + Settle hidden)
-      if (tab === "flights" || tab === "settle") {
+      // Round mode: The Board · Scenarios · Settle (hide all others)
+      if (['flights', 'bet', 'mybets', 'scorecard', 'admin'].includes(tab)) {
         a.style.display = 'none';
       } else {
         a.style.display = '';
       }
+      // Show settle tab in round mode
+      if (tab === 'settle') a.style.display = '';
       // Relabel for round context
       if (label) {
-        if (tab === "dashboard") label.textContent = "The Board";
-        if (tab === "admin") label.textContent = "Admin";
+        if (tab === 'dashboard') label.textContent = 'The Board';
+        if (tab === 'scenarios') label.textContent = 'Scenarios';
+        if (tab === 'settle') label.textContent = 'Settle';
       }
     } else {
       // MG tournament mode: original tab set

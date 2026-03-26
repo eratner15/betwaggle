@@ -1537,3 +1537,90 @@ hr.mg-divider {
   color: var(--mg-gold-dim);
   font-style: italic;
 }
+
+/* ─── BOARD CARDS — Progressive Disclosure ────────── */
+.board-card {
+  background: var(--mg-surface);
+  border: 1.5px solid var(--mg-border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(26,71,42,0.04);
+}
+.board-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.board-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mg-text-muted);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+.board-card-summary {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mg-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-card-chev {
+  flex-shrink: 0;
+  color: var(--mg-text-muted);
+  transition: transform .15s ease;
+}
+.board-card.open .board-card-chev {
+  transform: rotate(180deg);
+}
+.board-card-body {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--mg-border);
+}
+.board-card.open .board-card-body {
+  display: block;
+}
+
+/* Score FAB */
+.score-fab {
+  position: fixed;
+  bottom: calc(var(--mg-nav-height) + var(--safe-bottom) + 16px);
+  right: 16px;
+  z-index: 90;
+  background: var(--mg-gold);
+  color: var(--mg-green);
+  border: none;
+  border-radius: 28px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(201,168,76,.4), 0 2px 8px rgba(0,0,0,.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: .02em;
+}
+.score-fab:active {
+  transform: scale(0.95);
+}
+
+/* Leader highlight in standings */
+.board-standings-leader {
+  border-left: 3px solid var(--mg-gold);
+  background: rgba(212,175,55,.04);
+}
