@@ -45,8 +45,8 @@
       --gold:     #C9A84C;
       --gold-dk:  #9A7A2E;
       --text:     #1A1A1A;
-      --text-2:   #3D3D3D;
-      --muted:    #7A7A7A;
+      --text-2:   #2D3748;
+      --muted:    #6B7280;
       --rule:     #D4CFC7;
     }
 
@@ -69,7 +69,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 28px;
+      padding: 24px 32px;
     }
 
     .nav-logo {
@@ -115,7 +115,7 @@
       background: var(--forest);
       position: relative;
       overflow: hidden;
-      padding: 88px 20px 0;
+      padding: 96px 20px 0;
     }
 
     /* Subtle texture overlay */
@@ -136,7 +136,7 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 56px;
+      gap: 64px;
       align-items: end;
     }
 
@@ -162,7 +162,7 @@
       font-size: clamp(34px, 7vw, 60px);
       font-weight: 700;
       color: #fff;
-      line-height: 1.08;
+      line-height: 1.05;
       margin-bottom: 18px;
     }
 
@@ -176,9 +176,9 @@
       font-size: 17px;
       font-weight: 400;
       color: rgba(255,255,255,.75);
-      line-height: 1.7;
+      line-height: 1.75;
       max-width: 420px;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
     }
 
     .hero-actions {
@@ -197,18 +197,18 @@
       color: var(--forest);
       font-size: 17px;
       font-weight: 700;
-      letter-spacing: .03em;
+      letter-spacing: .04em;
       padding: 18px 40px;
       border-radius: 6px;
       text-decoration: none;
       transition: background .2s, transform .15s, box-shadow .2s;
       box-shadow: 0 4px 20px rgba(201,168,76,.35);
     }
-    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(201,168,76,.5); }
+    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
 
     .btn-secondary {
       display: inline-block;
-      background: transparent;
+      background: rgba(255,255,255,.05);
       color: rgba(255,255,255,.8);
       font-size: 15px;
       font-weight: 600;
@@ -364,6 +364,7 @@
     ────────────────────────────────────────── */
     .proof-strip {
       background: var(--green);
+      border-top: 1px solid rgba(201,168,76,.3);
       display: flex;
       justify-content: center;
       flex-wrap: nowrap;
@@ -372,7 +373,7 @@
     }
 
     .proof-item {
-      padding: 20px 24px;
+      padding: 24px 28px;
       text-align: center;
       border-right: 1px solid rgba(255,255,255,.1);
       flex: 1;
@@ -388,7 +389,7 @@
       font-weight: 700;
       line-height: 1;
       margin-bottom: 6px;
-      text-shadow: 0 0 20px rgba(201,168,76,.2);
+      text-shadow: 0 0 20px rgba(201,168,76,.2), 0 2px 4px rgba(0,0,0,.15);
     }
     .proof-label {
       font-size: 12px;
@@ -402,13 +403,13 @@
        BODY SECTIONS
     ────────────────────────────────────────── */
     .section {
-      padding: 64px 20px;
+      padding: 72px 24px;
       max-width: 720px;
       margin: 0 auto;
     }
 
     .section-label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .14em;
       text-transform: uppercase;
@@ -420,9 +421,10 @@
     .section h2 {
       font-family: 'Playfair Display', serif;
       font-size: clamp(28px, 5vw, 40px);
+      font-weight: 700;
       color: var(--forest);
       line-height: 1.15;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .section-rule {
@@ -438,7 +440,7 @@
       color: var(--text-2);
       line-height: 1.8;
       margin-bottom: 16px;
-      max-width: 580px;
+      max-width: 560px;
     }
 
     /* ──────────────────────────────────────────
@@ -499,6 +501,7 @@
 
     .formats-section {
       background: var(--ivory);
+      border-top: 1px solid rgba(201,168,76,.3);
       padding: 48px 20px;
     }
     .formats-inner {
@@ -618,7 +621,7 @@
     .pricing-section {
       background: var(--ivory-dk);
       padding: 48px 20px;
-      border-top: 1px solid var(--rule);
+      border-top: 1px solid rgba(201,168,76,.3);
     }
     .pricing-inner {
       max-width: 960px;
@@ -637,8 +640,8 @@
 
     .price-card {
       background: #fff;
-      border: 2px solid var(--rule);
-      padding: 28px 24px;
+      border: 2.5px solid var(--rule);
+      padding: 32px 28px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -653,7 +656,7 @@
 
     .price-card.featured {
       border-color: var(--gold);
-      border-width: 2px;
+      border-width: 2.5px;
       box-shadow: 0 4px 24px rgba(201,168,76,.2);
       transform: scale(1.02);
     }
@@ -674,7 +677,7 @@
 
     .price-amount {
       font-family: 'Playfair Display', serif;
-      font-size: 52px;
+      font-size: 56px;
       font-weight: 700;
       color: var(--forest);
       line-height: 1;
@@ -799,7 +802,7 @@
     ────────────────────────────────────────── */
     footer {
       background: #070F09;
-      padding: 24px 28px;
+      padding: 56px 24px 36px;
       text-align: center;
     }
     footer p {
@@ -829,7 +832,7 @@
 
     /* Hero: tighter on mobile */
     @media (max-width: 600px) {
-      .hero { padding: 72px 16px 0; }
+      .hero { padding: 80px 16px 0; }
       .hero-inner { gap: 32px; }
       .hero-copy { padding-bottom: 8px; }
       .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
@@ -852,7 +855,7 @@
       .proof-item {
         border-right: none;
         border-bottom: 1px solid rgba(255,255,255,.1);
-        padding: 16px 12px;
+        padding: 18px 14px;
       }
       .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
       .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
@@ -1174,7 +1177,7 @@
   <!-- FEATURE STRIP — two differentiators -->
   <div style="background:var(--forest);padding:56px 20px" class="reveal">
     <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:32px">
-      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:28px 24px">
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:32px 28px">
         <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">Course Directory</div>
         <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.2">30,000+ courses preloaded.</div>
         <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:16px">Full scorecards with par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
@@ -1184,7 +1187,7 @@
         </div>
         <a href="/courses/" style="display:inline-block;margin-top:16px;color:var(--gold);font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
       </div>
-      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:28px 24px">
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:32px 28px">
         <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">GHIN Integration</div>
         <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.2">Handicaps auto-filled.</div>
         <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:16px">Enter a GHIN number, get their official handicap index instantly. No typing, no guessing, no sandbaggers.</p>
@@ -1280,7 +1283,7 @@
       <div style="max-width:640px;margin:40px auto 0">
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:20px">Common Questions</div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             What counts as one outing?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1289,7 +1292,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             Do all players need to pay?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1298,7 +1301,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             Can I try it free first?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1307,7 +1310,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             What if we lose cell service?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1606,9 +1609,9 @@
   </script>
 
   <!-- FOOTER -->
-  <footer style="background:var(--forest);padding:48px 20px 32px;text-align:center">
+  <footer style="background:var(--forest);padding:56px 24px 36px;text-align:center;border-top:1px solid rgba(201,168,76,.2)">
     <div style="max-width:640px;margin:0 auto">
-      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
         <a href="/create/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
