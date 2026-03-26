@@ -163,6 +163,23 @@
   <div class="nav-bar" id="nav-bar"></div>
 
   <script>
+    // Check for abandoned checkout
+    (async function() {
+      try {
+        const email = localStorage.getItem('waggle_last_email') || '';
+        if (email) {
+          const res = await fetch('/api/pending-checkout?email=' + encodeURIComponent(email));
+          const data = await res.json();
+          if (data.pending) {
+            const banner = document.createElement('div');
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#C9A84C;color:#0D2818;padding:14px 20px;z-index:1000;text-align:center;font-size:14px;font-weight:600';
+            banner.innerHTML = 'You have an unfinished checkout for "' + data.eventName + '". <a href="/api/create-checkout?resume=' + data.tempId + '" style="color:#0D2818;text-decoration:underline;margin-left:8px">Resume checkout</a> <button onclick="this.parentElement.remove()" style="border:none;background:none;cursor:pointer;margin-left:12px;font-size:18px;color:#0D2818">&times;</button>';
+            document.body.prepend(banner);
+          }
+        }
+      } catch {}
+    })();
+
     const W = {
       step: 0, type: '', name: '', venue: '', date1: '', date2: '', format: '',
       roster: [], teamsPerFlight: 6, flights: [], pairings: {},
@@ -171,7 +188,7 @@
       structure: { nassauBet: 10, skinsBet: 5 }, // per-game stakes
       autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
-      games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false },
+      games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, nines:false, scramble:false },
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
       course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
@@ -594,6 +611,8 @@
           {id:'stableford',  name:'Stableford',  emoji:'⭐', desc:'Points for birdies, eagles, bogeys — net score'},
           {id:'match_play',  name:'Match Play',   emoji:'⚔️', desc:'Hole-by-hole head-to-head with handicap strokes'},
           {id:'stroke_play', name:'Stroke Play',  emoji:'📊', desc:'Lowest net total score wins the round'},
+          {id:'nines', name:'3-Player 9s', emoji:'9️⃣', desc:'9 points per hole split among 3 players. Ties split.'},
+          {id:'scramble', name:'Team Scramble', emoji:'🤝', desc:'Team best-ball. One score per team per hole. Full leaderboard.'},
         ];
         const anyGame = Object.values(W.games).some(Boolean);
         const hasRoster = W.roster.length >= 2;
@@ -988,6 +1007,7 @@
         meta:{source:metaSource},
         promoCode: W.promoCode || '',
       };
+      if (W.adminContact) localStorage.setItem('waggle_last_email', W.adminContact.trim().toLowerCase());
       try {
         const res=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
         const data=await res.json();
@@ -1509,6 +1529,31 @@
           render();
         })
         .catch(() => {});
+    })();
+
+    // Check for cloned event config
+    (function checkClone() {
+      const cloneParams = new URLSearchParams(window.location.search);
+      if (cloneParams.get('clone') === 'true') {
+        try {
+          const cloneConfig = JSON.parse(sessionStorage.getItem('waggle_clone_config'));
+          if (cloneConfig) {
+            W.name = cloneConfig.event?.name || '';
+            W.venue = cloneConfig.event?.venue || '';
+            W.games = cloneConfig.games || W.games;
+            W.scoring = cloneConfig.scoring || W.scoring;
+            W.structure = cloneConfig.structure || W.structure;
+            // Pre-fill roster from players
+            if (cloneConfig.players?.length > 0) {
+              W.roster = cloneConfig.players.map(function(p) { return { name: p.name, handicap: p.handicapIndex || 0, venmo: p.venmo || '' }; });
+              W._rosterRaw = W.roster.map(function(r) { return r.venmo ? r.name + ', ' + r.handicap + ', ' + r.venmo : r.name + ', ' + r.handicap; }).join('\n');
+            }
+            sessionStorage.removeItem('waggle_clone_config');
+            W.type = cloneConfig.event?.eventType || 'trip';
+            W.step = 1;
+          }
+        } catch(e) {}
+      }
     })();
 
     render();

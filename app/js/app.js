@@ -106,6 +106,7 @@ async function bootstrap() {
   state._feed = [];           // activity feed items from server
   state._spectatorMode = isSpectator;  // spectator mode (view-only)
   state._disputes = [];       // open/resolved score disputes
+  state._trophyMode = window.__WAGGLE_TROPHY_MODE__ === true;  // read-only trophy room for completed events
   // Scenario / What-If state (transient)
   state._scenario = {
     flightId: config.flightOrder?.[0] || null,
@@ -380,6 +381,14 @@ function route() {
     }
   }
 
+  // Trophy mode: default to settle view and restrict to results-relevant views only
+  if (state._trophyMode) {
+    if (view === 'admin' || view === 'bet' || view === 'mybets' || (view === 'dashboard' && !location.hash)) {
+      location.hash = '#settle';
+      return;
+    }
+  }
+
   let html = "";
   switch (view) {
     case "dashboard":
@@ -481,6 +490,19 @@ function updateNav(view) {
     if (state._spectatorMode) {
       if (tab === 'bet' || tab === 'mybets' || tab === 'admin') {
         a.style.display = 'none';
+      }
+    }
+
+    // Trophy mode: hide admin, bet, mybets; show settle; relabel dashboard
+    if (state._trophyMode) {
+      if (tab === 'admin' || tab === 'bet' || tab === 'mybets') {
+        a.style.display = 'none';
+      }
+      if (tab === 'settle') {
+        a.style.display = '';
+      }
+      if (tab === 'dashboard' && label) {
+        label.textContent = 'Results';
       }
     }
 
@@ -2570,6 +2592,47 @@ window.MG = {
       route();
     } else {
       toast('Could not send message');
+    }
+  },
+
+  async bulkImportPlayers() {
+    const input = document.getElementById('bulk-players-input');
+    if (!input || !input.value.trim()) return;
+    const lines = input.value.trim().split('\n').filter(l => l.trim());
+    const players = lines.map(line => {
+      const parts = line.split(/[,\t]+/).map(s => s.trim());
+      if (parts.length < 2) return null;
+      let venmo = '';
+      let hiIdx = parts.length - 1;
+      if (parts.length >= 3 && parts[parts.length-1].startsWith('@')) {
+        venmo = parts[parts.length-1];
+        hiIdx = parts.length - 2;
+      }
+      return { name: parts.slice(0, hiIdx).join(' '), handicapIndex: parseFloat(parts[hiIdx]) || 0, venmo };
+    }).filter(Boolean);
+
+    if (players.length === 0) { toast('No valid players found'); return; }
+
+    const result = await Sync.apiFetch('event/bulk-add-players', 'POST', { players });
+    if (result?.ok) {
+      toast(result.added + ' players added' + (result.skipped > 0 ? ', ' + result.skipped + ' skipped' : ''));
+      input.value = '';
+      syncFromServer();
+    } else {
+      toast('Import failed');
+    }
+  },
+
+  async inviteCoAdmin() {
+    const input = document.getElementById('co-admin-email');
+    if (!input || !input.value.trim()) return;
+    const result = await Sync.apiFetch('event/invite-admin', 'POST', { email: input.value.trim() });
+    if (result?.ok) {
+      toast('Co-organizer invited: ' + result.email);
+      input.value = '';
+      syncFromServer();
+    } else {
+      toast(result?.error || 'Invite failed');
     }
   },
 

@@ -1514,6 +1514,14 @@ function renderAdminPlayers(state) {
     html += `</tbody></table></div></div>`;
   }
 
+  // Bulk Import Players
+  html += `<div class="mg-card" style="padding:16px;margin-top:12px">
+    <div class="mg-card-header">Bulk Import Players</div>
+    <p style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Name, Handicap, @Venmo (optional) — one per line</p>
+    <textarea id="bulk-players-input" style="width:100%;min-height:100px;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="Tiger Woods, 0.6, @tigerwoods\nRory McIlroy, -1.2"></textarea>
+    <button class="mg-btn mg-btn-primary" style="margin-top:8px" onclick="window.MG.bulkImportPlayers()">Import Players</button>
+  </div>`;
+
   return html;
 }
 
@@ -2182,6 +2190,21 @@ function renderAdminSettings(state) {
       <input type="text" id="announcement-input" placeholder="Type announcement..." style="flex:1;padding:8px 10px;border:2px solid var(--mg-border);border-radius:8px;font-size:14px">
       <button class="mg-btn mg-btn-primary" style="width:auto;padding:8px 16px" onclick="window.MG.postAnnouncement()">Post</button>
     </div>
+  </div>`;
+
+  // Co-Organizers
+  const coAdminEmails = state._config?.event?.adminEmails || [];
+  html += `<div class="mg-card" style="padding:16px;margin-top:12px">
+    <div class="mg-card-header">Co-Organizers</div>
+    <p style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Invite someone to help manage this event</p>
+    <div style="display:flex;gap:8px">
+      <input type="email" id="co-admin-email" placeholder="Email address" style="flex:1;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px">
+      <button class="mg-btn mg-btn-gold" style="width:auto;padding:10px 16px;font-size:13px" onclick="window.MG.inviteCoAdmin()">Invite</button>
+    </div>
+    ${coAdminEmails.length > 0 ? `
+    <div style="margin-top:10px">
+      ${coAdminEmails.map(e => `<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--mg-border);color:var(--mg-text)">${escHtml(e)}</div>`).join('')}
+    </div>` : ''}
   </div>`;
 
   // Export / Reset
@@ -3214,12 +3237,23 @@ export function renderSettlement(state) {
   const games = config?.games || {};
   const holesPlayed = Object.keys(holes).length;
 
-  let html = `<div class="mg-section-title" style="display:flex;justify-content:space-between;align-items:center">
+  const isTrophy = state._trophyMode;
+
+  let html = '';
+
+  if (isTrophy) {
+    html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-gold),var(--mg-gold-dim));padding:20px;text-align:center;border:none">
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-green)">Trophy Room</div>
+      <div style="font-size:13px;color:var(--mg-green);opacity:.7;margin-top:4px">${escHtml(config?.event?.name || 'Golf Event')} &middot; Final Results</div>
+    </div>`;
+  }
+
+  html += `<div class="mg-section-title" style="display:flex;justify-content:space-between;align-items:center">
     <span>Settlement Card</span>
     <div style="display:flex;gap:8px">
-      <button class="mg-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--mg-surface);border:1px solid var(--mg-border);color:var(--mg-text)" onclick="window.MG.getRecap()">AI Recap</button>
-      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.exportSettlementCard()">📸 Export</button>
-      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.shareSettlement()">Share</button>
+      ${isTrophy ? '' : `<button class="mg-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--mg-surface);border:1px solid var(--mg-border);color:var(--mg-text)" onclick="window.MG.getRecap()">AI Recap</button>
+      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.exportSettlementCard()">&#x1F4F8; Export</button>
+      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.shareSettlement()">Share</button>`}
     </div>
   </div>
   <div id="mg-recap-card" style="display:none"></div>`;
@@ -3387,6 +3421,40 @@ export function renderSettlement(state) {
     html += `</div>`;
   }
 
+  // ── 3-Player 9s ──
+  if (games.nines && gameState.nines?.running) {
+    const ninesRunning = gameState.nines.running;
+    const ninesPlayers = Object.entries(ninesRunning).sort((a, b) => b[1] - a[1]);
+
+    html += `<div class="mg-card" style="padding:12px">
+      <div class="mg-card-header" style="margin-bottom:10px">3-PLAYER 9s</div>`;
+
+    ninesPlayers.forEach(([name, pts], i) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--mg-border)">
+        <span style="font-size:13px;font-weight:${i === 0 ? '700' : '400'}">${escHtml(name)}</span>
+        <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--mg-gold)' : 'inherit'}">${pts} pts</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Team Scramble ──
+  if (games.scramble && gameState.scramble?.leaderboard) {
+    html += `<div class="mg-card" style="padding:12px">
+      <div class="mg-card-header" style="margin-bottom:10px">SCRAMBLE LEADERBOARD</div>`;
+
+    gameState.scramble.leaderboard.forEach((entry, i) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--mg-border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--mg-text-muted);width:16px">${entry.position}</span>
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '400'}">${escHtml(entry.team)}</span>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--mg-gold)' : 'inherit'}">${entry.total}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
   // ── Vegas ──
   if (games.vegas && gameState.vegas?.scores) {
     const vs = gameState.vegas.scores;
@@ -3461,6 +3529,12 @@ export function renderSettlement(state) {
       });
       html += `</div>`;
     }
+  }
+
+  if (isTrophy) {
+    html += `<div class="mg-card" style="text-align:center;padding:20px;font-size:13px;color:var(--mg-text-muted);border:1px dashed var(--mg-border)">
+      This event is archived. Share the link to revisit these results anytime.
+    </div>`;
   }
 
   html += `<div style="text-align:center;padding:16px 0;font-size:11px;color:var(--mg-text-muted)">Powered by Waggle · betwaggle.com</div>`;

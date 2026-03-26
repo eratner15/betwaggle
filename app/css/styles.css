@@ -1481,3 +1481,59 @@ hr.mg-divider {
   background: var(--mg-loss);
   animation: pulse 1s ease-in-out infinite;
 }
+
+/* ─── INLINE LEDGER UPDATES ──────────────────────────── */
+/* Replaces floating toasts — ink-drying-on-paper feel */
+@keyframes ledgerFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ledgerFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.ledger-update {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mg-win);
+  padding: 4px 0;
+  animation: ledgerFadeIn .2s ease-out, ledgerFadeOut .3s ease-in 2.5s forwards;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  letter-spacing: .02em;
+}
+.ledger-update.loss {
+  color: var(--mg-loss);
+}
+.ledger-update.neutral {
+  color: var(--mg-text-muted);
+}
+
+/* ─── 3-PLAYER 9s ────────────────────────────────────── */
+.nines-points {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--mg-gold);
+}
+
+/* ─── SCRAMBLE LEADERBOARD ───────────────────────────── */
+.scramble-position {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mg-text-muted);
+  min-width: 24px;
+}
+.scramble-position:first-child {
+  color: var(--mg-gold);
+}
+.scramble-total {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-size: 16px;
+  font-weight: 800;
+}
+.scramble-whatif {
+  font-size: 11px;
+  color: var(--mg-gold-dim);
+  font-style: italic;
+}

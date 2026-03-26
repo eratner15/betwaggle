@@ -479,9 +479,23 @@
             '<a href="/' + e.slug + '/#dashboard" class="btn-open">Open</a>' +
             '<a href="/' + e.slug + '/#admin" class="btn-admin">Admin</a>' +
             '<a href="/' + e.slug + '/#settle" class="btn-settle">Settlement</a>' +
+            '<a href="#" onclick="cloneEvent(\'' + e.slug + '\');return false" style="padding:10px 16px;background:#fff;color:var(--gold-dk);border:1.5px solid var(--gold);border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Clone</a>' +
           '</div>' +
         '</div>';
       }).join('');
+    }
+
+    async function cloneEvent(slug) {
+      try {
+        var res = await fetch('/' + slug + '/api/event/clone', { method: 'POST', headers: {'X-Admin-Token': sessionStorage.getItem('mg_admin_token') || ''} });
+        var data = await res.json();
+        if (data.ok && data.config) {
+          sessionStorage.setItem('waggle_clone_config', JSON.stringify(data.config));
+          window.location.href = '/create/?clone=true';
+        } else {
+          alert(data.error || 'Could not clone event');
+        }
+      } catch(e) { alert('Could not clone event'); }
     }
 
     function escapeHtml(str) {

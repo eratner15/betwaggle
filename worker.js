@@ -257,6 +257,26 @@ export default {
       return new Response(null, { headers: EVENT_CORS });
     }
 
+    // GET /api/create-checkout?resume=TEMP_ID — resume abandoned checkout
+    if (url.pathname === '/api/create-checkout' && request.method === 'GET' && url.searchParams.get('resume')) {
+      return handleResumeCheckout(url, env);
+    }
+
+    // GET /api/pending-checkout?email={email} — check for abandoned checkout
+    if (url.pathname === '/api/pending-checkout' && request.method === 'GET') {
+      const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+      if (!email) return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      const pending = await env.MG_BOOK.get(`pending-checkout:${email}`, 'json');
+      if (pending) {
+        // Check if temp config still exists
+        const tempConfig = await env.MG_BOOK.get(`pending:${pending.tempId}`, 'text');
+        if (tempConfig) {
+          return new Response(JSON.stringify({ pending: true, eventName: pending.eventName, tempId: pending.tempId }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+      }
+      return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+
     // /api/validate-promo — validate a promo code
     if (url.pathname === '/api/validate-promo' && request.method === 'POST') {
       return handleValidatePromo(request, env);
@@ -268,6 +288,14 @@ export default {
     // /api/checkout-success — Stripe redirect after payment
     if (url.pathname === '/api/checkout-success' && request.method === 'GET') {
       return handleCheckoutSuccess(url, env);
+    }
+
+    // POST /api/admin/refund — refund a Stripe payment
+    if (url.pathname === '/api/admin/refund' && request.method === 'POST') {
+      return handleAdminRefund(request, env);
+    }
+    if (url.pathname === '/api/admin/refund' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: EVENT_CORS });
     }
 
     // /api/stripe-webhook — Stripe webhook for resilient activation
@@ -1365,6 +1393,16 @@ async function handleCreateCheckout(request, env) {
   }
   await env.MG_BOOK.put(`pending:${tempId}`, JSON.stringify(config), { expirationTtl: 7200 });
 
+  // Store pending checkout reference for recovery
+  const pendingEmail = (config.event?.adminContact || '').trim().toLowerCase();
+  if (pendingEmail) {
+    await env.MG_BOOK.put(`pending-checkout:${pendingEmail}`, JSON.stringify({
+      tempId,
+      eventName: config.event?.name,
+      createdAt: Date.now()
+    }), { expirationTtl: 7200 }); // 2 hours, same as temp config
+  }
+
   const stripeBody = new URLSearchParams({
     'payment_method_types[]': 'card',
     'line_items[0][price_data][currency]': 'usd',
@@ -1407,6 +1445,52 @@ async function handleCreateCheckout(request, env) {
   return new Response(JSON.stringify({ checkoutUrl: session.url }), { headers: EVENT_CORS });
 }
 
+async function handleResumeCheckout(url, env) {
+  const tempId = url.searchParams.get('resume');
+  if (!tempId) return Response.redirect('https://betwaggle.com/create/', 302);
+
+  const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
+  if (!configRaw) return Response.redirect('https://betwaggle.com/create/?error=expired', 302);
+
+  if (!env.STRIPE_SECRET_KEY) return Response.redirect('https://betwaggle.com/create/', 302);
+
+  const config = JSON.parse(configRaw);
+  const eventType = config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
+  const amount = config.meta?.actualAmountCents || (WAGGLE_PRICES[eventType] ?? 3200);
+  const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
+  const discountedLabel = config.meta?.promoDiscount ? `${label} (${config.meta.promoDiscount}% off — ${config.meta.promoLabel})` : label;
+
+  const stripeBody = new URLSearchParams({
+    'payment_method_types[]': 'card',
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': discountedLabel,
+    'line_items[0][price_data][product_data][description]': `${config.event?.name || 'Golf Event'} \u00b7 ${config.event?.venue || ''}`,
+    'line_items[0][price_data][unit_amount]': String(amount),
+    'line_items[0][quantity]': '1',
+    'mode': 'payment',
+    'success_url': `https://betwaggle.com/api/checkout-success?session_id={CHECKOUT_SESSION_ID}&tmp=${tempId}`,
+    'cancel_url': 'https://betwaggle.com/create/',
+    'metadata[waggle_temp_id]': tempId,
+    'metadata[event_name]': config.event?.name || '',
+    'metadata[event_type]': eventType,
+  });
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: stripeBody.toString(),
+  });
+
+  if (!stripeRes.ok) return Response.redirect('https://betwaggle.com/create/?error=stripe_error', 302);
+
+  const session = await stripeRes.json();
+  if (session.url) return Response.redirect(session.url, 302);
+  return Response.redirect('https://betwaggle.com/create/', 302);
+}
+
 async function handleCheckoutSuccess(url, env) {
   const sessionId = url.searchParams.get('session_id');
   const tempId = url.searchParams.get('tmp');
@@ -1436,8 +1520,15 @@ async function handleCheckoutSuccess(url, env) {
 
   const config = JSON.parse(configRaw);
   if (organizerEmail) config.meta = { ...(config.meta || {}), organizerEmail };
+  config.meta = { ...(config.meta || {}), stripe_session_id: sessionId };
   const result = await activateEvent(config, env);
   await env.MG_BOOK.delete(`pending:${tempId}`);
+
+  // Clean up pending-checkout recovery key
+  const pendingEmail2 = (config.event?.adminContact || '').trim().toLowerCase();
+  if (pendingEmail2) {
+    await env.MG_BOOK.delete(`pending-checkout:${pendingEmail2}`).catch(() => {});
+  }
 
   const refCode = config.meta?.source?.ref || config.meta?.ref_code || '';
   if (refCode && env.WAGGLE_DB) {
@@ -1858,6 +1949,55 @@ async function handleCourseDetailPage(courseId, env) {
   return new Response(html, {
     headers: { 'Content-Type': 'text/html', 'Cache-Control': 'public, max-age=3600' }
   });
+}
+
+// ─── Admin Refund ─────────────────────────────────────────────────────────
+
+async function handleAdminRefund(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const { slug, reason } = body;
+  if (!slug) return new Response(JSON.stringify({ error: 'slug required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+  if (!configRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+
+  const config = JSON.parse(configRaw);
+  const stripeSessionId = config.meta?.stripe_session_id;
+  if (!stripeSessionId) return new Response(JSON.stringify({ error: 'No Stripe session found for this event' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+
+  try {
+    // Get the payment intent from the session
+    const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${stripeSessionId}`, {
+      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` }
+    });
+    const session = await sessionRes.json();
+    const paymentIntentId = session.payment_intent;
+
+    if (!paymentIntentId) return new Response(JSON.stringify({ error: 'No payment intent found' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+    // Create refund
+    const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `payment_intent=${paymentIntentId}&reason=requested_by_customer`
+    });
+    const refund = await refundRes.json();
+
+    if (refund.id) {
+      // Mark event as refunded
+      config.event.status = 'refunded';
+      config.event.refundedAt = new Date().toISOString();
+      config.event.refundReason = reason || '';
+      await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+
+      return new Response(JSON.stringify({ ok: true, refundId: refund.id, amount: refund.amount }), { headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response(JSON.stringify({ error: 'Refund failed', details: refund }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 }
 
 // ─── Stripe Webhook ───────────────────────────────────────────────────────
@@ -2581,6 +2721,12 @@ async function serveEventHtml(slug, request, env) {
   </script>` : ''}
 </head>
 <body>
+  ${config.event?.status === 'complete' ? `
+<div style="background:linear-gradient(135deg,#C9A84C,#9A7A2E);color:#0D2818;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
+  Trophy Room &mdash; ${eventName} &mdash; Final Results
+</div>
+<script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
+` : ''}
   ${(slug === 'demo' || slug === 'cabot-citrus-invitational') ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
@@ -2675,21 +2821,22 @@ function wggNetScores(grossScores, players, holeNum, strokeIndex) {
   return net;
 }
 
-function wggRunSkins(holeNum, grossScores, prevState, players, strokeIndex) {
+function wggRunSkins(holeNum, grossScores, prevState, players, strokeIndex, grossOnly) {
   const holes = { ...(prevState.holes || {}) };
   const events = [];
-  const net = wggNetScores(grossScores, players, holeNum, strokeIndex);
-  const netVals = Object.values(net);
-  const minNet = Math.min(...netVals);
-  const winners = Object.keys(net).filter(n => net[n] === minNet);
+  // Gross-only mode: use raw scores (no handicap strokes). Eliminates "where do the strokes fall" arguments.
+  const compareScores = grossOnly ? grossScores : wggNetScores(grossScores, players, holeNum, strokeIndex);
+  const vals = Object.values(compareScores);
+  const minVal = Math.min(...vals);
+  const winners = Object.keys(compareScores).filter(n => compareScores[n] === minVal);
   const prevPot = prevState.pot || 1;
 
   if (winners.length === 1) {
-    holes[holeNum] = { winner: winners[0], potWon: prevPot, net, gross: grossScores };
+    holes[holeNum] = { winner: winners[0], potWon: prevPot, compareScores, gross: grossScores };
     events.push({ type: 'skin_won', hole: holeNum, winner: winners[0], pot: prevPot });
     return { pot: 1, holes, events };
   }
-  holes[holeNum] = { winner: null, carried: true, potBefore: prevPot, net, gross: grossScores };
+  holes[holeNum] = { winner: null, carried: true, potBefore: prevPot, compareScores, gross: grossScores };
   events.push({ type: 'skin_carried', hole: holeNum, potBefore: prevPot, potAfter: prevPot + 1 });
   return { pot: prevPot + 1, holes, events };
 }
@@ -2871,7 +3018,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (!adminContact) return new Response(JSON.stringify({ error: 'No commissioner contact configured' }), { status: 400, headers: EVENT_CORS });
     const normalizePhone = s => s.replace(/[^0-9]/g, '');
     const isEmail = contact.includes('@');
-    const contactMatch = isEmail ? contact === adminContact : normalizePhone(contact) === normalizePhone(adminContact) || contact === adminContact;
+    const adminEmails = (eventConfig?.event?.adminEmails || []).map(e => e.toLowerCase());
+    const contactMatch = isEmail ? (contact === adminContact || adminEmails.includes(contact)) : normalizePhone(contact) === normalizePhone(adminContact) || contact === adminContact;
     if (!contactMatch) return new Response(JSON.stringify({ error: 'Contact does not match commissioner on file' }), { status: 401, headers: EVENT_CORS });
 
     const magicToken = crypto.randomUUID();
@@ -3421,7 +3569,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
       try {
         if (games.skins) {
           const prev = gameState.skins || { pot: 1, holes: {} };
-          const result = wggRunSkins(holeNum, scores, prev, players, strokeIndex);
+          const grossOnly = cfg?.structure?.skinsGrossOnly === true;
+          const result = wggRunSkins(holeNum, scores, prev, players, strokeIndex, grossOnly);
           gameState.skins = { pot: result.pot, holes: result.holes };
           allEvents.push(...result.events);
         }
@@ -3568,6 +3717,93 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ ok: true, player }), { headers: EVENT_CORS });
   }
 
+  // POST /event/invite-admin — invite a co-organizer by email
+  if (path === 'event/invite-admin' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    const { email } = body;
+    if (!email || !email.includes('@')) return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400, headers: EVENT_CORS });
+
+    const configRaw2 = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!configRaw2) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config2 = JSON.parse(configRaw2);
+
+    // Add to admin list
+    if (!config2.event.adminEmails) config2.event.adminEmails = [];
+    const normalizedEmail = email.trim().toLowerCase();
+    if (config2.event.adminEmails.includes(normalizedEmail)) {
+      return new Response(JSON.stringify({ error: 'Already an admin' }), { status: 400, headers: EVENT_CORS });
+    }
+    config2.event.adminEmails.push(normalizedEmail);
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config2));
+
+    // Also index for /my-events/
+    const existingSlugs = (await env.MG_BOOK.get(`commissioner:${normalizedEmail}`, 'json')) || [];
+    if (!existingSlugs.includes(slug)) {
+      existingSlugs.push(slug);
+      await env.MG_BOOK.put(`commissioner:${normalizedEmail}`, JSON.stringify(existingSlugs));
+    }
+
+    // Send invite email if Resend is configured
+    if (env.RESEND_API_KEY) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'tips@betwaggle.com',
+            to: normalizedEmail,
+            subject: `You've been added as co-organizer: ${config2.event?.name || 'Event'}`,
+            html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
+              <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+                <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
+              </div>
+              <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
+                <p style="font-size:16px;font-weight:600;color:#0D2818">You're now a co-organizer</p>
+                <p style="font-size:14px;color:#3D3D3D;line-height:1.6">You've been invited to help manage <strong>${config2.event?.name || 'an event'}</strong>. You can enter scores, manage bets, and run the settlement.</p>
+                <a href="https://betwaggle.com/${slug}/#admin" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open Admin Panel</a>
+              </div>
+            </div>`
+          })
+        });
+      } catch {}
+    }
+
+    return new Response(JSON.stringify({ ok: true, email: normalizedEmail }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/bulk-add-players — add multiple players at once
+  if (path === 'event/bulk-add-players' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    const { players } = body; // array of { name, handicapIndex, venmo }
+    if (!Array.isArray(players) || players.length === 0) {
+      return new Response(JSON.stringify({ error: 'players array required' }), { status: 400, headers: EVENT_CORS });
+    }
+
+    const cfgRaw2 = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw2) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const cfg2 = JSON.parse(cfgRaw2);
+    if (!cfg2.players) cfg2.players = [];
+    if (!cfg2.roster) cfg2.roster = [];
+
+    const added = [];
+    const skipped = [];
+    for (const p of players) {
+      if (!p.name) { skipped.push({ ...p, reason: 'No name' }); continue; }
+      const name = p.name.trim();
+      const exists = cfg2.players.some(existing => existing.name.toLowerCase() === name.toLowerCase());
+      if (exists) { skipped.push({ ...p, reason: 'Duplicate' }); continue; }
+      const player = { name, handicapIndex: parseFloat(p.handicapIndex) || 0, venmo: p.venmo || '' };
+      cfg2.players.push(player);
+      cfg2.roster.push(player);
+      added.push(player);
+    }
+
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg2));
+    return new Response(JSON.stringify({ ok: true, added: added.length, skipped: skipped.length, details: { added, skipped } }), { headers: EVENT_CORS });
+  }
+
   // POST /event/remove-player — admin can remove a player
   if (path === 'event/remove-player' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
@@ -3597,6 +3833,37 @@ async function handleEventApi(slug, path, request, env, ctx) {
     settings.bettingClosed = true;
     await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(settings));
     return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/clone — create a new event based on this one's config
+  if (path === 'event/clone' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!configRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(configRaw);
+    // Strip runtime state, keep structure
+    const cloneConfig = {
+      event: {
+        ...config.event,
+        name: config.event.name + ' (Copy)',
+        status: undefined,
+        completedAt: undefined,
+        dates: {}, // clear dates — user sets new ones
+      },
+      scoring: config.scoring,
+      structure: config.structure,
+      features: config.features,
+      games: config.games,
+      holesPerRound: config.holesPerRound,
+      players: config.players,
+      roster: config.roster,
+      wolfOrder: config.wolfOrder,
+      course: config.course,
+      coursePars: config.coursePars,
+      courseHcpIndex: config.courseHcpIndex,
+      theme: config.theme,
+    };
+    return new Response(JSON.stringify({ ok: true, config: cloneConfig }), { headers: EVENT_CORS });
   }
 
   return null;
