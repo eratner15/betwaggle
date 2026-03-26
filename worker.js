@@ -553,6 +553,47 @@ export default {
       }
     }
 
+    // Seed the Frisco buddies trip event
+    if (url.pathname === '/api/seed-frisco' && request.method === 'GET') {
+      try {
+        const slug = 'frisco-ranch-buddies';
+        const existing = await env.MG_BOOK.get(`config:${slug}`, 'text');
+        if (existing) return new Response(JSON.stringify({ ok: true, slug, status: 'already_exists', url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
+        const config = {
+          event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: '2026', adminContact: 'evan.ratner@gmail.com', eventType: 'buddies_trip', slug },
+          scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
+          structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
+          features: { betting: true },
+          games: { skins: true, nassau: true, wolf: true },
+          holesPerRound: 18,
+          players: [
+            { name: 'Joe Weill', handicapIndex: 15, venmo: '@joe-weill' },
+            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '@andrew-morrison' },
+            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '@rob-edgerton' },
+            { name: 'Ben Samuels', handicapIndex: 10, venmo: '@ben-samuels' },
+          ],
+          roster: [
+            { name: 'Joe Weill', handicapIndex: 15, venmo: '@joe-weill' },
+            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '@andrew-morrison' },
+            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '@rob-edgerton' },
+            { name: 'Ben Samuels', handicapIndex: 10, venmo: '@ben-samuels' },
+          ],
+          wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+          teams: {}, flights: {}, flightOrder: [], pairings: {},
+          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+          // Fields Ranch East at PGA Frisco — Par 72 (from BlueGolf scorecard)
+          coursePars: [5, 4, 5, 3, 4, 4, 4, 3, 4, 4, 4, 4, 3, 5, 4, 4, 3, 5],
+          courseHcpIndex: [9, 5, 17, 11, 7, 1, 13, 15, 3, 8, 12, 4, 10, 2, 14, 6, 18, 16],
+        };
+        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+        await env.MG_BOOK.put(`${slug}:settings`, JSON.stringify({ announcements: ['Welcome to the Frisco Ranch Buddies Trip! Nassau $10, Skins $5, Wolf active. Auto-press at 2-down.'], lockedMatches: [], oddsOverrides: {} }));
+        const commEmail = 'evan.ratner@gmail.com';
+        const existingSlugs = (await env.MG_BOOK.get(`commissioner:${commEmail}`, 'json')) || [];
+        if (!existingSlugs.includes(slug)) { existingSlugs.push(slug); await env.MG_BOOK.put(`commissioner:${commEmail}`, JSON.stringify(existingSlugs)); }
+        return new Response(JSON.stringify({ ok: true, slug, url: `https://betwaggle.com/${slug}/`, adminPin: '2026', players: config.players.map(p => `${p.name} (${p.venmo})`), games: 'Nassau $10 + Skins $5 + Wolf' }), { headers: { 'Content-Type': 'application/json' } });
+      } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
+    }
+
     // Serve static assets
     const assetResp = await env.ASSETS.fetch(request);
     const hdrs = new Headers(assetResp.headers);
