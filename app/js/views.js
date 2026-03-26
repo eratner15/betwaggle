@@ -977,9 +977,12 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // CARD 3: SCORECARD (premium country-club styling)
+  // CARD 3: SCORECARD + COURSE (combined — one card for all scoring data)
   // ============================================================
   if (players.length > 0) {
+    // Course info for the card header
+    const courseNameForCard = config?.event?.course || config?.event?.venue || config?.course?.name || '';
+    const progressForCard = scoredHoles.length === 0 ? 'Not started' : roundComplete ? 'Complete' : `Thru ${scoredHoles.length}`;
     // Compute summary: front/back/total for the viewer (or first player)
     const viewerName = state.bettorName || (players[0] ? players[0].name : '');
     let frontTotal = 0, frontPar = 0, backTotal = 0, backPar = 0, frontScored = false, backScored = false;
@@ -1009,11 +1012,25 @@ export function renderRoundFeed(state) {
 
     html += `<div class="board-card" id="board-card-scorecard">
       <button class="board-card-header" onclick="document.getElementById('board-card-scorecard').classList.toggle('open')">
-        <div class="board-card-title">Scores</div>
-        <div class="board-card-summary">${scorecardSummary}</div>
+        <div class="board-card-title">Scorecard</div>
+        <div class="board-card-summary">${courseNameForCard ? escHtml(courseNameForCard) + ' \u00b7 ' : ''}Par ${totalPar} \u00b7 ${progressForCard}</div>
         <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="board-card-body">`;
+
+    // Round selector if multi-round
+    const roundsInfoSC = config?.rounds;
+    const hasMultiRoundSC = roundsInfoSC && typeof roundsInfoSC === 'object' && Object.keys(roundsInfoSC).length > 1;
+    if (hasMultiRoundSC) {
+      html += `<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">`;
+      Object.entries(roundsInfoSC).forEach(([num, rd]) => {
+        html += `<div style="flex-shrink:0;padding:6px 12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:6px;font-size:11px">
+          <span style="font-weight:700;color:var(--mg-green)">R${num}</span>
+          <span style="color:var(--mg-text-muted);margin-left:4px">${escHtml(rd.course || '')}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
 
     // Inline scorecard — groups of 4 players, front 9 + back 9
     const groupSize = 4;
@@ -1115,132 +1132,7 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // CARD 4: COURSE (reference info, collapsed by default)
-  // ============================================================
-  {
-    const courseNameC1 = config?.event?.course || config?.event?.venue || config?.course?.name || '';
-    const teeName = config?.event?.tees || config?.tees || '';
-    const eventDate = config?.event?.date || '';
-    const roundsInfo = config?.rounds;
-    const hasMultiRound = roundsInfo && typeof roundsInfo === 'object' && Object.keys(roundsInfo).length > 1;
-    const progressStr = scoredHoles.length === 0 ? 'Not started' : roundComplete ? 'Round complete' : `Thru ${scoredHoles.length} of ${holesPerRound}`;
-    const summaryParts = [courseNameC1, totalPar ? 'Par ' + totalPar : '', progressStr].filter(Boolean);
-
-    html += `<div class="board-card" id="board-card-course">
-      <button class="board-card-header" onclick="document.getElementById('board-card-course').classList.toggle('open')">
-        <div class="board-card-title">Course</div>
-        <div class="board-card-summary">${escHtml(summaryParts.join(' \u00b7 '))}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    // Full 18-hole par row
-    if (pars.length === 18) {
-      const frontPars = pars.slice(0, 9);
-      const backPars = pars.slice(9, 18);
-      const frontOut = frontPars.reduce((s, p) => s + p, 0);
-      const backIn = backPars.reduce((s, p) => s + p, 0);
-      const frontHcp = hcpIndex.slice(0, 9);
-      const backHcp = hcpIndex.slice(9, 18);
-
-      html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px">
-        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'SF Mono',monospace;min-width:360px">
-          <tr style="color:var(--mg-text-muted);font-size:10px">
-            <td style="font-weight:700;padding:4px 3px">Hole</td>
-            ${frontPars.map((_, i) => `<td style="text-align:center;padding:4px 1px">${i + 1}</td>`).join('')}
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">Out</td>
-          </tr>
-          <tr style="font-weight:600">
-            <td style="padding:4px 3px;color:var(--mg-green);font-weight:700">Par</td>
-            ${frontPars.map(p => `<td style="text-align:center;padding:4px 1px">${p}</td>`).join('')}
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">${frontOut}</td>
-          </tr>
-          ${frontHcp.some(h => h) ? `<tr style="color:var(--mg-text-muted);font-size:9px">
-            <td style="padding:2px 3px">Hcp</td>
-            ${frontHcp.map(h => `<td style="text-align:center;padding:2px 1px">${h || ''}</td>`).join('')}
-            <td style="border-left:1px solid var(--mg-border)"></td>
-          </tr>` : ''}
-        </table>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'SF Mono',monospace;margin-top:2px;min-width:360px">
-          <tr style="color:var(--mg-text-muted);font-size:10px">
-            <td style="font-weight:700;padding:4px 3px">Hole</td>
-            ${backPars.map((_, i) => `<td style="text-align:center;padding:4px 1px">${i + 10}</td>`).join('')}
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">In</td>
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">Tot</td>
-          </tr>
-          <tr style="font-weight:600">
-            <td style="padding:4px 3px;color:var(--mg-green);font-weight:700">Par</td>
-            ${backPars.map(p => `<td style="text-align:center;padding:4px 1px">${p}</td>`).join('')}
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">${backIn}</td>
-            <td style="text-align:center;padding:4px 3px;font-weight:700;border-left:1px solid var(--mg-border)">${totalPar}</td>
-          </tr>
-          ${backHcp.some(h => h) ? `<tr style="color:var(--mg-text-muted);font-size:9px">
-            <td style="padding:2px 3px">Hcp</td>
-            ${backHcp.map(h => `<td style="text-align:center;padding:2px 1px">${h || ''}</td>`).join('')}
-            <td style="border-left:1px solid var(--mg-border)"></td>
-            <td style="border-left:1px solid var(--mg-border)"></td>
-          </tr>` : ''}
-        </table>
-      </div>`;
-    }
-
-    // Round selector (multi-round)
-    if (hasMultiRound) {
-      html += `<div style="margin-bottom:12px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--mg-text-muted);text-transform:uppercase;margin-bottom:6px">Rounds</div>
-        <div style="display:flex;gap:6px;overflow-x:auto">`;
-      Object.entries(roundsInfo).forEach(([num, rd]) => {
-        html += `<div style="flex-shrink:0;padding:8px 12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:6px;font-size:12px">
-          <div style="font-weight:700;color:var(--mg-green)">R${num}</div>
-          <div style="color:var(--mg-text-muted);font-size:11px">${escHtml(rd.course || '')}</div>
-        </div>`;
-      });
-      html += `</div></div>`;
-    }
-
-    // Game selector
-    const allGameOpts = [
-      {id:'nassau',name:'Nassau'},{id:'skins',name:'Skins'},{id:'wolf',name:'Wolf'},
-      {id:'vegas',name:'Vegas'},{id:'stableford',name:'Stableford'},{id:'match_play',name:'Match Play'},
-      {id:'stroke_play',name:'Stroke Play'},{id:'banker',name:'Banker'},{id:'bloodsome',name:'Bloodsome'},
-      {id:'bingo',name:'Bingo Bango Bongo'},{id:'nines',name:'3-Player 9s'},{id:'scramble',name:'Scramble'},
-    ];
-    const activeGamesOpt = allGameOpts.filter(g => games[g.id]);
-    const inactiveGames = allGameOpts.filter(g => !games[g.id]);
-
-    html += `<div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--mg-text-muted);text-transform:uppercase">Active Games</div>
-        ${state.adminAuthed ? `<button onclick="var el=document.getElementById('inactive-games');el.style.display=el.style.display==='none'?'flex':'none'" style="font-size:10px;color:var(--mg-gold-dim);background:none;border:none;cursor:pointer;font-weight:600">+ Add Game</button>` : ''}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px">`;
-    activeGamesOpt.forEach(g => {
-      html += state.adminAuthed
-        ? `<button onclick="window.MG.toggleGame('${g.id}')"
-            style="padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;
-            border:1.5px solid var(--mg-gold);background:rgba(212,175,55,.08);color:var(--mg-gold-dim);
-            -webkit-tap-highlight-color:transparent">${g.name}</button>`
-        : `<span style="padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;
-            border:1.5px solid var(--mg-gold);background:rgba(212,175,55,.08);color:var(--mg-gold-dim)">${g.name}</span>`;
-    });
-    if (activeGamesOpt.length === 0) {
-      html += `<span style="font-size:12px;color:var(--mg-text-muted);font-style:italic">No games selected</span>`;
-    }
-    html += `</div>`;
-    if (state.adminAuthed && inactiveGames.length > 0) {
-      html += `<div id="inactive-games" style="display:none;flex-wrap:wrap;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--mg-border)">`;
-      inactiveGames.forEach(g => {
-        html += `<button onclick="window.MG.toggleGame('${g.id}')"
-          style="padding:6px 12px;border-radius:16px;font-size:12px;font-weight:500;cursor:pointer;
-          border:1px dashed var(--mg-border);background:transparent;color:var(--mg-text-muted);
-          -webkit-tap-highlight-color:transparent">${g.name}</button>`;
-      });
-      html += `</div>`;
-    }
-    html += `</div>`;
-
-    html += `</div></div>`;
-  }
+  // (Course card removed — merged into Scorecard card above)
 
   // ============================================================
   // ROUND COMPLETE CTA
