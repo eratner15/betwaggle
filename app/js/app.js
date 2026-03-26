@@ -121,6 +121,11 @@ async function bootstrap() {
     state.adminAuthed = true;
   }
 
+  // Buddies trips: everyone is commissioner — no PIN needed
+  if (isRoundMode) {
+    state.adminAuthed = true;
+  }
+
   // Auto-detect magic link token in URL hash: #admin?token=UUID
   const hashStr = location.hash || '';
   const tokenMatch = hashStr.match(/[?&]token=([a-f0-9-]{36})/i);
@@ -681,6 +686,20 @@ window.MG = {
     } else {
       toast("Invalid PIN");
       input.value = "";
+    }
+  },
+
+  async inlineAuthQuick(pin) {
+    if (!pin || pin.length < 4) { toast("Enter your PIN"); return; }
+    const ok = await Sync.adminAuth(pin);
+    if (ok) {
+      state.adminAuthed = true;
+      persist();
+      if (navigator.vibrate) navigator.vibrate(30);
+      toast("Commissioner unlocked");
+      route();
+    } else {
+      toast("Invalid PIN");
     }
   },
 
@@ -2803,6 +2822,22 @@ window.MG = {
       route();
     } else {
       toast('Failed to update games');
+    }
+  },
+
+  async updateStakesQuick(type, amount) {
+    const structure = {};
+    if (type === 'nassau') structure.nassauBet = amount;
+    else if (type === 'skins') structure.skinsBet = amount;
+    const result = await Sync.apiFetch('event/update-games', 'POST', { structure });
+    if (result?.ok) {
+      if (state._config?.structure) {
+        if (type === 'nassau') state._config.structure.nassauBet = amount;
+        if (type === 'skins') state._config.structure.skinsBet = amount;
+      }
+      if (navigator.vibrate) navigator.vibrate(30);
+      toast(`${type.charAt(0).toUpperCase() + type.slice(1)} set to $${amount}`);
+      route();
     }
   },
 

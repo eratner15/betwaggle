@@ -809,20 +809,15 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // COMMISSIONER UNLOCK (inline — no admin tab needed)
+  // COMMISSIONER STATUS — in round mode everyone is commissioner by default
+  // Only show a lock if somehow not authed (shouldn't happen)
   // ============================================================
   if (!state.adminAuthed && !state._spectatorMode) {
-    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <input type="tel" id="inline-pin" maxlength="8" placeholder="PIN" inputmode="numeric"
-        style="width:80px;padding:10px 12px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;text-align:center;letter-spacing:4px;font-family:'SF Mono',monospace"
-        onkeydown="if(event.key==='Enter')window.MG.inlineAuth()">
-      <button onclick="window.MG.inlineAuth()"
-        style="flex:1;padding:10px 16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Unlock Commissioner</button>
-    </div>`;
-  } else if (state.adminAuthed && !state._spectatorMode) {
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:rgba(212,175,55,.06);border:1px solid var(--mg-gold);border-radius:8px">
-      <div style="font-size:12px;font-weight:700;color:var(--mg-gold-dim)">Commissioner Mode</div>
-      <button onclick="window.MG.adminLogout();location.reload()" style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">Lock</button>
+    html += `<div style="text-align:center;margin-bottom:8px">
+      <button onclick="var p=prompt('Enter PIN:');if(p)window.MG.inlineAuthQuick(p)"
+        style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">
+        Unlock commissioner features
+      </button>
     </div>`;
   }
 
@@ -857,7 +852,7 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // DATA FRESHNESS INDICATOR
+  // ROUND BAR — round selector + data freshness (always visible at top)
   // ============================================================
   {
     const lastSync = state._lastSyncAt;
@@ -868,10 +863,49 @@ export function renderRoundFeed(state) {
     if (staleness > 120) { freshnessColor = 'var(--mg-loss)'; freshnessLabel = 'Offline'; }
     else if (staleness > 30) { freshnessColor = '#F59E0B'; freshnessLabel = 'Delayed'; }
 
-    html += `<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:${freshnessColor};font-weight:600;margin-bottom:6px;padding:0 4px">
-      <div style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></div>
-      ${freshnessLabel}
-    </div>`;
+    const roundsConfig = config?.rounds;
+    const hasMultiRound = roundsConfig && typeof roundsConfig === 'object' && Object.keys(roundsConfig).length > 1;
+    const totalRounds = hasMultiRound ? Object.keys(roundsConfig).length : 1;
+    const activeRound = config?.event?.currentRound || currentRound || 1;
+    const activeRoundInfo = roundsConfig?.[activeRound] || roundsConfig?.['1'] || {};
+    const courseName = activeRoundInfo.course || config?.event?.course || config?.event?.venue || config?.course?.name || '';
+    const tees = activeRoundInfo.tees || config?.rounds?.['1']?.tees || '';
+
+    html += `<div style="background:var(--mg-green);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:6px">`;
+
+    // Round pills
+    for (let r = 1; r <= totalRounds; r++) {
+      const isActive = r === activeRound;
+      const rdComplete = r < activeRound;
+      const canStart = r === activeRound + 1 && roundComplete && state.adminAuthed;
+      const rdInfo = roundsConfig?.[r] || {};
+      if (isActive) {
+        html += `<div style="padding:4px 10px;background:var(--mg-gold);color:var(--mg-green);border-radius:12px;font-size:11px;font-weight:800;letter-spacing:.5px">R${r}</div>`;
+      } else if (rdComplete) {
+        html += `<div style="padding:4px 10px;border:1.5px solid rgba(255,255,255,.3);border-radius:12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.5)">R${r} &#10003;</div>`;
+      } else if (canStart) {
+        html += `<button onclick="window.MG.startNextRound(${r}${rdInfo.course ? ",'" + rdInfo.course.replace(/'/g, "\\'") + "'" : ''}${rdInfo.courseId ? ",'" + rdInfo.courseId.replace(/'/g, "\\'") + "'" : ''})"
+          style="padding:4px 10px;border:1.5px dashed var(--mg-gold);border-radius:12px;font-size:11px;font-weight:600;color:var(--mg-gold);background:none;cursor:pointer">R${r}</button>`;
+      } else {
+        html += `<div style="padding:4px 10px;border:1.5px solid rgba(255,255,255,.15);border-radius:12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.25)">R${r}</div>`;
+      }
+    }
+
+    html += `</div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:${freshnessColor};font-weight:600">
+          <div style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></div>
+          ${freshnessLabel}
+        </div>
+      </div>`;
+
+    // Course info line
+    if (courseName || tees) {
+      html += `<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:6px">${courseName ? escHtml(courseName) : ''}${tees ? ' &middot; ' + escHtml(tees) : ''} &middot; Par ${totalPar}</div>`;
+    }
+
+    html += `</div>`;
   }
 
   // ============================================================
@@ -979,9 +1013,13 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
-  // CARD 2: ACTIVE GAMES (open by default)
+  // CARD 2: GAMES — full control for everyone (no admin gate)
   // ============================================================
-  if (activeGamesList.length > 0) {
+  {
+    const allGameIds = ['nassau', 'skins', 'wolf', 'vegas', 'stableford', 'matchPlay', 'banker', 'bbb', 'nines', 'scramble'];
+    const allGameLabels = { nassau: 'Nassau', skins: 'Skins', wolf: 'Wolf', vegas: 'Vegas', stableford: 'Stableford', matchPlay: 'Match Play', banker: 'Banker', bbb: 'BBB', nines: '9s', scramble: 'Scramble' };
+    const inactiveGames = allGameIds.filter(g => !games[g]);
+
     const gamesPills = activeGamesList.map(g => {
       let detail = '';
       if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
@@ -992,90 +1030,162 @@ export function renderRoundFeed(state) {
     html += `<div class="board-card open" id="board-card-games">
       <button class="board-card-header" onclick="document.getElementById('board-card-games').classList.toggle('open')">
         <div class="board-card-title">Games</div>
-        <div class="board-card-summary">${gamesPills}</div>
+        <div class="board-card-summary">${gamesPills || '<span style="color:var(--mg-text-muted)">No games set</span>'}</div>
         <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="board-card-body">`;
 
-    // AI advisor — prominent at top when no scores entered and admin
-    if (state.adminAuthed && scoredHoles.length === 0) {
+    // AI advisor — prominent at top when no scores entered (no admin gate)
+    if (scoredHoles.length === 0) {
       html += `<div style="padding:12px;background:rgba(212,175,55,.04);border:1.5px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:600;color:var(--mg-gold-dim);margin-bottom:6px">Let AI pick your games</div>
-        <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Based on your group's handicaps and player count, AI will recommend the best format.</div>
-        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Recommend Games for This Group</button>
+        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Recommend Games for This Group
+        </button>
         <div id="ai-game-advice" style="margin-top:8px"></div>
       </div>`;
     }
 
-    // Nassau detail
-    if (games.nassau) {
-      const nassauL = gameState?.nassau || {};
-      let frontStatus = 'Not started';
-      let backStatus = 'Not started';
-      let overallStatus = '';
-      if (scoredHoles.length > 0 && scoredHoles.length <= 9) {
-        const frontLeader = [...standingsData].filter(p => p.nassauFront !== null && p.nassauFront !== undefined).sort((a, b) => (a.nassauFront ?? 0) - (b.nassauFront ?? 0))[0];
-        frontStatus = frontLeader ? `${escHtml(frontLeader.name)} leads` : 'In play';
-      }
-      if (nassauL.frontWinner) frontStatus = `${escHtml(nassauL.frontWinner)} wins`;
-      else if (scoredHoles.length >= 9) frontStatus = 'Tied';
-      if (scoredHoles.length > 9) {
-        const backLeader = [...standingsData].filter(p => p.nassauBack !== null && p.nassauBack !== undefined).sort((a, b) => (a.nassauBack ?? 0) - (b.nassauBack ?? 0))[0];
-        backStatus = backLeader ? `${escHtml(backLeader.name)} leads` : 'In play';
-      }
-      if (nassauL.backWinner) backStatus = `${escHtml(nassauL.backWinner)} wins`;
-      if (nassauL.totalWinner) overallStatus = `${escHtml(nassauL.totalWinner)} wins overall`;
-
-      html += `<div style="padding:10px 0;${games.skins || games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Nassau${nassauBetAmt ? ' \u00b7 $' + nassauBetAmt : ''}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Front:</span> ${frontStatus}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Back:</span> ${backStatus}</div>
-        ${overallStatus ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold);margin-top:2px">${overallStatus}</div>` : ''}
-      </div>`;
+    // Active games — gold pills, tappable to disable
+    if (activeGamesList.length > 0) {
+      html += `<div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:6px">Active</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">`;
+      activeGamesList.forEach(g => {
+        const gId = g.toLowerCase().replace(' ', '');
+        let detail = '';
+        if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
+        if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
+        html += `<button onclick="window.MG.toggleGame('${gId}')"
+          style="padding:8px 14px;background:rgba(212,175,55,0.15);color:var(--mg-gold-dim);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent">
+          ${escHtml(g)}${detail}
+          <span style="font-size:10px;opacity:.5">&times;</span>
+        </button>`;
+      });
+      html += `</div></div>`;
     }
 
-    // Skins detail
-    if (games.skins) {
-      const totalSkinsWon = Object.values(skinsCount).reduce((s, v) => s + v, 0);
-      const carries = Object.values(skinsHolesAll).filter(h => h.carried).length;
-      const topSkinPlayer = Object.entries(skinsCount).sort((a, b) => b[1] - a[1])[0];
-
-      html += `<div style="padding:10px 0;${games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Skins${skinsBetAmt ? ' \u00b7 $' + skinsBetAmt : ''}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Won:</span> ${totalSkinsWon} <span style="color:var(--mg-text-muted);margin-left:6px">Carried:</span> ${carries}</div>
-        <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Pot:</span> <span style="font-weight:700;color:var(--mg-gold)">${skinsPot}x</span></div>
-        ${topSkinPlayer && topSkinPlayer[1] > 0 ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold)">${escHtml(topSkinPlayer[0])}: ${topSkinPlayer[1]} skin${topSkinPlayer[1] !== 1 ? 's' : ''}</div>` : ''}
-      </div>`;
+    // + Add Game button — reveals inactive games
+    if (inactiveGames.length > 0 && !state._spectatorMode) {
+      html += `<div style="margin-bottom:10px">
+        <button onclick="document.getElementById('inactive-games-list').style.display=document.getElementById('inactive-games-list').style.display==='none'?'flex':'none'"
+          style="padding:8px 14px;background:none;color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">+ Add Game</button>
+        <div id="inactive-games-list" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px">`;
+      inactiveGames.forEach(gId => {
+        const label = allGameLabels[gId] || gId;
+        html += `<button onclick="window.MG.toggleGame('${gId}')"
+          style="padding:8px 14px;background:var(--mg-surface);color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">${escHtml(label)}</button>`;
+      });
+      html += `</div></div>`;
     }
 
-    // Wolf detail
-    if (games.wolf) {
-      const wolfPicks2 = gameState?.wolf?.picks || {};
-      const wolfResults = gameState?.wolf?.results || {};
-      const wolfHolesPlayed = Object.keys(wolfResults).length;
-      let wolfStatusText = '';
-      if (!currentHoleScored && expectedWolf && scoredHoles.length < holesPerRound) {
-        wolfStatusText = `${escHtml(expectedWolf)} picking Hole ${holeNum}`;
-        if (wolfPick) {
-          wolfStatusText = wolfPick.partner ? `${escHtml(expectedWolf)} + ${escHtml(wolfPick.partner)}` : `${escHtml(expectedWolf)} going lone wolf`;
+    // Stakes quick-pick — Nassau and Skins
+    if ((games.nassau || games.skins) && !state._spectatorMode) {
+      html += `<div style="padding:10px 0;border-top:1px solid var(--mg-border)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">Stakes</div>`;
+      if (games.nassau) {
+        const nassauOptions = [5, 10, 20, 50];
+        html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600;min-width:52px">Nassau</span>
+          <div style="display:flex;gap:4px;flex:1">`;
+        nassauOptions.forEach(amt => {
+          const isActive = nassauBetAmt === amt;
+          html += `<button onclick="window.MG.updateStakesQuick('nassau',${amt})"
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,175,55,.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+        });
+        html += `</div></div>`;
+      }
+      if (games.skins) {
+        const skinsOptions = [2, 5, 10, 25];
+        html += `<div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:600;min-width:52px">Skins</span>
+          <div style="display:flex;gap:4px;flex:1">`;
+        skinsOptions.forEach(amt => {
+          const isActive = skinsBetAmt === amt;
+          html += `<button onclick="window.MG.updateStakesQuick('skins',${amt})"
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,175,55,.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+        });
+        html += `</div></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Game detail sections (existing logic — Nassau/Skins/Wolf/Vegas status)
+    if (activeGamesList.length > 0 && scoredHoles.length > 0) {
+      html += `<div style="border-top:1px solid var(--mg-border);padding-top:10px">`;
+
+      // Nassau detail
+      if (games.nassau) {
+        const nassauL = gameState?.nassau || {};
+        let frontStatus = 'Not started';
+        let backStatus = 'Not started';
+        let overallStatus = '';
+        if (scoredHoles.length > 0 && scoredHoles.length <= 9) {
+          const frontLeader = [...standingsData].filter(p => p.nassauFront !== null && p.nassauFront !== undefined).sort((a, b) => (a.nassauFront ?? 0) - (b.nassauFront ?? 0))[0];
+          frontStatus = frontLeader ? `${escHtml(frontLeader.name)} leads` : 'In play';
         }
-      } else {
-        wolfStatusText = `${wolfHolesPlayed} hole${wolfHolesPlayed !== 1 ? 's' : ''} played`;
+        if (nassauL.frontWinner) frontStatus = `${escHtml(nassauL.frontWinner)} wins`;
+        else if (scoredHoles.length >= 9) frontStatus = 'Tied';
+        if (scoredHoles.length > 9) {
+          const backLeader = [...standingsData].filter(p => p.nassauBack !== null && p.nassauBack !== undefined).sort((a, b) => (a.nassauBack ?? 0) - (b.nassauBack ?? 0))[0];
+          backStatus = backLeader ? `${escHtml(backLeader.name)} leads` : 'In play';
+        }
+        if (nassauL.backWinner) backStatus = `${escHtml(nassauL.backWinner)} wins`;
+        if (nassauL.totalWinner) overallStatus = `${escHtml(nassauL.totalWinner)} wins overall`;
+
+        html += `<div style="padding:10px 0;${games.skins || games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Nassau${nassauBetAmt ? ' \u00b7 $' + nassauBetAmt : ''}</div>
+          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Front:</span> ${frontStatus}</div>
+          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Back:</span> ${backStatus}</div>
+          ${overallStatus ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold);margin-top:2px">${overallStatus}</div>` : ''}
+        </div>`;
       }
 
-      html += `<div style="padding:10px 0;${games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-        <div style="font-size:11px;font-weight:700;color:#9B6DFF;margin-bottom:6px">Wolf</div>
-        <div style="font-size:12px;line-height:1.4">${wolfStatusText}</div>
-        ${wolfOrder.length > 0 ? `<div style="font-size:10px;color:var(--mg-text-muted);margin-top:4px">Rotation: ${wolfOrder.map(n => escHtml(n.split(' ')[0])).join(' \u2192 ')}</div>` : ''}
-      </div>`;
-    }
+      // Skins detail
+      if (games.skins) {
+        const totalSkinsWon = Object.values(skinsCount).reduce((s, v) => s + v, 0);
+        const carries = Object.values(skinsHolesAll).filter(h => h.carried).length;
+        const topSkinPlayer = Object.entries(skinsCount).sort((a, b) => b[1] - a[1])[0];
 
-    // Vegas detail
-    if (games.vegas) {
-      html += `<div style="padding:10px 0">
-        <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Vegas</div>
-        <div style="font-size:12px;color:var(--mg-text-muted)">In play</div>
-      </div>`;
+        html += `<div style="padding:10px 0;${games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Skins${skinsBetAmt ? ' \u00b7 $' + skinsBetAmt : ''}</div>
+          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Won:</span> ${totalSkinsWon} <span style="color:var(--mg-text-muted);margin-left:6px">Carried:</span> ${carries}</div>
+          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Pot:</span> <span style="font-weight:700;color:var(--mg-gold)">${skinsPot}x</span></div>
+          ${topSkinPlayer && topSkinPlayer[1] > 0 ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold)">${escHtml(topSkinPlayer[0])}: ${topSkinPlayer[1]} skin${topSkinPlayer[1] !== 1 ? 's' : ''}</div>` : ''}
+        </div>`;
+      }
+
+      // Wolf detail
+      if (games.wolf) {
+        const wolfPicks2 = gameState?.wolf?.picks || {};
+        const wolfResults = gameState?.wolf?.results || {};
+        const wolfHolesPlayed = Object.keys(wolfResults).length;
+        let wolfStatusText = '';
+        if (!currentHoleScored && expectedWolf && scoredHoles.length < holesPerRound) {
+          wolfStatusText = `${escHtml(expectedWolf)} picking Hole ${holeNum}`;
+          if (wolfPick) {
+            wolfStatusText = wolfPick.partner ? `${escHtml(expectedWolf)} + ${escHtml(wolfPick.partner)}` : `${escHtml(expectedWolf)} going lone wolf`;
+          }
+        } else {
+          wolfStatusText = `${wolfHolesPlayed} hole${wolfHolesPlayed !== 1 ? 's' : ''} played`;
+        }
+
+        html += `<div style="padding:10px 0;${games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
+          <div style="font-size:11px;font-weight:700;color:#9B6DFF;margin-bottom:6px">Wolf</div>
+          <div style="font-size:12px;line-height:1.4">${wolfStatusText}</div>
+          ${wolfOrder.length > 0 ? `<div style="font-size:10px;color:var(--mg-text-muted);margin-top:4px">Rotation: ${wolfOrder.map(n => escHtml(n.split(' ')[0])).join(' \u2192 ')}</div>` : ''}
+        </div>`;
+      }
+
+      // Vegas detail
+      if (games.vegas) {
+        html += `<div style="padding:10px 0">
+          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Vegas</div>
+          <div style="font-size:12px;color:var(--mg-text-muted)">In play</div>
+        </div>`;
+      }
+
+      html += `</div>`;
     }
 
     html += `</div></div>`;
@@ -1092,18 +1202,16 @@ export function renderRoundFeed(state) {
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       Score Hole ${nextHole} <span style="font-weight:400;opacity:.7">\u00b7 Par ${nextPar}</span>
     </button>`;
-    // Scan scorecard button (camera + AI)
-    if (state.adminAuthed) {
-      html += `<div style="display:flex;gap:8px;margin-bottom:10px">
-        <button onclick="document.getElementById('scorecard-camera').click()"
-          style="flex:1;padding:12px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;font-size:13px;font-weight:600;color:var(--mg-gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Scan Scorecard
-        </button>
-        <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
-          onchange="window.MG.scanScorecard(this.files[0])">
-      </div>`;
-    }
+    // Scan scorecard button (camera + AI) — no admin gate in round mode
+    html += `<div style="display:flex;gap:8px;margin-bottom:10px">
+      <button onclick="document.getElementById('scorecard-camera').click()"
+        style="flex:1;padding:12px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;font-size:13px;font-weight:600;color:var(--mg-gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Scan Scorecard
+      </button>
+      <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
+        onchange="window.MG.scanScorecard(this.files[0])">
+    </div>`;
     html += `<div id="scan-results" style="display:none"></div>`;
   } else if (roundComplete && !state._spectatorMode) {
     html += `<a href="#settle" style="display:block;width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3)">View Settlement</a>`;
