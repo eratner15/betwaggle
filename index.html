@@ -251,16 +251,17 @@
     }
 
     .mockup-header {
-      background: var(--green);
+      background: #0F1F15;
       padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--gold);
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
     .mockup-event-name {
       font-family: 'Playfair Display', serif;
       font-size: 15px;
-      color: #fff;
-      font-weight: 600;
-      letter-spacing: .01em;
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: .02em;
     }
     .mockup-event-meta {
       font-size: 11px;
@@ -497,8 +498,9 @@
     /* ──────────────────────────────────────────
        FORMATS
     ────────────────────────────────────────── */
-    /* FAQ accordion */
-    .faq-item.open .faq-answer { max-height: 200px; }
+    /* FAQ accordion — !important needed to override inline max-height:0 */
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+    .faq-item.open .faq-answer { max-height: 300px !important; }
     .faq-item.open .faq-arrow { transform: rotate(45deg); }
 
     .formats-section {
@@ -1177,25 +1179,25 @@
 
   <!-- FEATURE STRIP — two differentiators (light bg for rhythm after dark proof strip) -->
   <div style="background:var(--ivory);padding:64px 20px;border-top:1px solid rgba(201,168,76,.2)" class="reveal">
-    <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:28px">
-      <div style="border-left:3px solid var(--gold);padding:24px 28px">
+    <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch">
+      <div style="border-left:3px solid var(--gold);padding:24px 28px;display:flex;flex-direction:column">
         <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:10px">Course Directory</div>
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:8px;line-height:1.2">30,000+ courses. Full scorecards.</div>
-        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:16px">Par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
+        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:16px;flex:1">Par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted)">
           <div style="font-weight:700;color:var(--forest);margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
           Par 72 &middot; Slope 155 &middot; Rating 76.4
         </div>
-        <a href="/courses/" style="display:inline-block;margin-top:14px;color:var(--gold-dk);font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
+        <a href="/courses/" style="display:inline-block;margin-top:14px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
       </div>
-      <div style="border-left:3px solid var(--gold);padding:24px 28px">
+      <div style="border-left:3px solid var(--gold);padding:24px 28px;display:flex;flex-direction:column">
         <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:10px">GHIN Integration</div>
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:8px;line-height:1.2">Handicaps auto-filled. No sandbaggers.</div>
-        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:16px">Enter a GHIN number, get their official handicap index instantly. Lines are set from real data.</p>
+        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:16px;flex:1">Enter a GHIN number, get the official handicap index instantly. Lines are set from real data.</p>
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted)">
           <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
         </div>
-        <a href="/create/" style="display:inline-block;margin-top:14px;color:var(--gold-dk);font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em">Open the Book &rarr;</a>
+        <a href="/create/" style="display:inline-block;margin-top:14px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Open the Book &rarr;</a>
       </div>
     </div>
   </div>
