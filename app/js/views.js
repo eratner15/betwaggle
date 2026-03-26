@@ -977,6 +977,21 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
+  // SCORE ENTRY BUTTON (prominent, inline — the main action)
+  // ============================================================
+  if (!roundComplete && !state._spectatorMode && players.length > 0) {
+    const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+    const nextPar = pars[nextHole - 1] || 4;
+    html += `<button onclick="window.MG.openScoreModal()"
+      style="width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3);-webkit-tap-highlight-color:transparent;letter-spacing:.02em">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Score Hole ${nextHole} <span style="font-weight:400;opacity:.7">\u00b7 Par ${nextPar}</span>
+    </button>`;
+  } else if (roundComplete && !state._spectatorMode) {
+    html += `<a href="#settle" style="display:block;width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3)">View Settlement</a>`;
+  }
+
+  // ============================================================
   // CARD 3: SCORECARD + COURSE (combined — one card for all scoring data)
   // ============================================================
   if (players.length > 0) {
@@ -1013,7 +1028,7 @@ export function renderRoundFeed(state) {
     html += `<div class="board-card" id="board-card-scorecard">
       <button class="board-card-header" onclick="document.getElementById('board-card-scorecard').classList.toggle('open')">
         <div class="board-card-title">Scorecard</div>
-        <div class="board-card-summary">${courseNameForCard ? escHtml(courseNameForCard) + ' \u00b7 ' : ''}Par ${totalPar} \u00b7 ${progressForCard}</div>
+        <div class="board-card-summary">${courseNameForCard ? escHtml(courseNameForCard) + ' \u00b7 ' : ''}Par ${totalPar}${config?.rounds?.['1']?.tees ? ' \u00b7 ' + escHtml(config.rounds['1'].tees) : ''} \u00b7 ${progressForCard}</div>
         <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="board-card-body">`;

@@ -2789,16 +2789,43 @@ window.MG = {
         players: (state._config?.players || []).map(p => ({ name: p.name, hi: p.handicapIndex })),
         type: state._config?.event?.eventType || 'trip',
       })}).then(r => r.json());
-      if (result?.recommendation) {
-        container.innerHTML = `<div style="padding:12px;background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);border-radius:8px">
-          <div style="font-size:14px;font-weight:600;color:var(--mg-text);line-height:1.5">${result.recommendation}</div>
-          ${result.suggestedGames ? `<div style="margin-top:8px;font-size:12px;color:var(--mg-text-muted)">Suggested: ${result.suggestedGames.join(', ')}</div>` : ''}
+      const advice = result?.advice;
+      if (advice) {
+        container.innerHTML = `<div style="padding:14px;background:rgba(212,175,55,.04);border:1.5px solid var(--mg-gold);border-radius:10px">
+          <div style="font-size:15px;font-weight:700;color:var(--mg-gold-dim);margin-bottom:6px">${advice.recommended_format || 'Nassau + Skins'}</div>
+          <div style="font-size:13px;color:var(--mg-text);line-height:1.6;margin-bottom:8px">${advice.reasoning || ''}</div>
+          ${advice.stakes ? `<div style="font-size:12px;color:var(--mg-text-muted)">Stakes: ${advice.stakes}</div>` : ''}
+          ${advice.handicap_advice ? `<div style="font-size:12px;color:var(--mg-text-muted);margin-top:4px">${advice.handicap_advice}</div>` : ''}
+          ${advice.fun_tip ? `<div style="font-size:12px;color:var(--mg-gold-dim);margin-top:6px;font-style:italic">${advice.fun_tip}</div>` : ''}
         </div>`;
       } else {
-        container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">Could not get recommendation. Try selecting games manually.</div>';
+        // Fallback: recommend based on handicaps
+        const players = state._config?.players || [];
+        const his = players.map(p => p.handicapIndex || 0);
+        const spread = Math.max(...his) - Math.min(...his);
+        const n = players.length;
+        let rec = 'Nassau + Skins';
+        let why = '';
+        if (n === 3) { rec = '3-Player 9s + Skins'; why = 'Perfect for a threesome. 9s keeps all three players competing every hole.'; }
+        else if (n === 4 && spread < 5) { rec = 'Nassau + Skins + Wolf'; why = 'Similar handicaps — Wolf adds strategy. Nassau gives structure. Skins for the hero shots.'; }
+        else if (n === 4 && spread >= 5) { rec = 'Nassau + Stableford'; why = 'Big handicap spread — Stableford prevents blowouts. Nassau keeps it structured.'; }
+        else if (n >= 5) { rec = 'Skins + Stableford'; why = 'Large group — Skins keeps everyone engaged. Stableford equalizes the field.'; }
+        else { rec = 'Nassau + Skins'; why = 'The classic combo. Front, back, overall, plus per-hole pots.'; }
+        container.innerHTML = `<div style="padding:14px;background:rgba(212,175,55,.04);border:1.5px solid var(--mg-gold);border-radius:10px">
+          <div style="font-size:15px;font-weight:700;color:var(--mg-gold-dim);margin-bottom:6px">${rec}</div>
+          <div style="font-size:13px;color:var(--mg-text);line-height:1.6">${why}</div>
+          <div style="font-size:11px;color:var(--mg-text-muted);margin-top:6px">Handicap spread: ${spread.toFixed(1)} strokes across ${n} players</div>
+        </div>`;
       }
     } catch {
-      container.innerHTML = '<div style="font-size:13px;color:var(--mg-text-muted)">AI advisor unavailable.</div>';
+      // Fallback when completely offline or API down
+      const players = state._config?.players || [];
+      const n = players.length;
+      const rec = n === 3 ? '3-Player 9s + Skins' : n >= 5 ? 'Skins + Stableford' : 'Nassau + Skins + Wolf';
+      container.innerHTML = `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px">
+        <div style="font-size:14px;font-weight:700;color:var(--mg-text)">${rec}</div>
+        <div style="font-size:12px;color:var(--mg-text-muted);margin-top:4px">Recommended for ${n} players</div>
+      </div>`;
     }
   },
 
