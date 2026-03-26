@@ -1283,7 +1283,7 @@
       <div style="max-width:640px;margin:40px auto 0">
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:20px">Common Questions</div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             What counts as one outing?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1292,7 +1292,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             Do all players need to pay?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1301,7 +1301,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             Can I try it free first?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1310,7 +1310,7 @@
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
-          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
             What if we lose cell service?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
@@ -1321,13 +1321,22 @@
       </div>
       <script>
         // FAQ accordion — toggle open/close on click
+        // Uses event delegation on document for reliability
         document.addEventListener('click', function(e) {
-          var btn = e.target.closest('.faq-item button');
-          if (!btn) return;
-          var item = btn.parentElement;
+          // Find the closest .faq-item ancestor from whatever was clicked
+          var item = e.target.closest('.faq-item');
+          if (!item) return;
+          // Only respond to clicks on the button area (not the answer text)
+          var btn = e.target.closest('button');
+          if (!btn && !e.target.closest('.faq-arrow')) {
+            // Check if click was on the faq-item directly (not the expanded answer)
+            if (e.target.closest('.faq-answer')) return;
+          }
+          e.preventDefault();
           var wasOpen = item.classList.contains('open');
           // Close all
-          document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+          var items = document.querySelectorAll('.faq-item.open');
+          for (var i = 0; i < items.length; i++) { items[i].classList.remove('open'); }
           // Toggle clicked
           if (!wasOpen) item.classList.add('open');
         });
