@@ -196,7 +196,7 @@
       scrambleTeamNameFormat: 'captain', // 'captain' or 'numbered'
       scrambleNumTeams: 20,
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
-      course: null, _courseQuery: '', _courseResults: [], _courseSearching: false,
+      course: null, _courseQuery: '', _courseResults: [], _courseSearching: false, _editingPlayer: -1,
       _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
     };
 
@@ -1258,14 +1258,46 @@
     // ── Quick Round helpers ──
     function quickPlayerListHtml() {
       if (!W.roster.length) return `<div style="font-size:13px;color:var(--muted);padding:6px 0">Add 2+ players to continue</div>`;
-      return W.roster.map((r,i)=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+      return W.roster.map((r,i)=>{
+        const editing = W._editingPlayer === i;
+        if (editing) {
+          return `<div style="padding:10px 12px;background:#fffdf5;border:2px solid var(--gold);border-radius:8px;margin-bottom:6px">
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+              <input type="text" id="edit-name-${i}" value="${esc(r.name)}" style="flex:2;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px">
+              <input type="number" id="edit-hcp-${i}" value="${r.handicap||0}" step="0.1" style="width:60px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;text-align:center">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="edit-venmo-${i}" value="${esc(r.venmo||'')}" placeholder="@venmo (optional)" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <button onclick="saveEditPlayer(${i})" style="padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Save</button>
+              <button onclick="W._editingPlayer=-1;render()" style="padding:8px 10px;background:none;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer">Cancel</button>
+            </div>
+          </div>`;
+        }
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
           <span style="flex:1;font-size:14px;font-weight:600">${esc(r.name)}</span>
+          ${r.venmo ? `<span style="font-size:11px;color:var(--muted)">${esc(r.venmo)}</span>` : ''}
           ${r.ghinVerified
             ? `<span style="font-size:11px;font-weight:700;color:#1a6b38;background:#e8f5ed;border:1px solid #b7dfc6;border-radius:4px;padding:2px 7px">GHIN ${r.hi_display}</span>`
             : `<span style="font-size:12px;color:var(--muted);font-family:'SF Mono',monospace">HCP ${r.handicap}</span>`}
-          <button onclick="removeQuickPlayer(${i})" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0 4px">×</button>
-        </div>`).join('');
+          <button onclick="W._editingPlayer=${i};render()" style="background:none;border:none;font-size:13px;color:var(--gold-dk);cursor:pointer;padding:2px 4px" title="Edit">Edit</button>
+          <button onclick="removeQuickPlayer(${i})" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0 4px" title="Remove">&times;</button>
+        </div>`;
+      }).join('');
+    }
+
+    function saveEditPlayer(i) {
+      var nameEl = document.getElementById('edit-name-'+i);
+      var hcpEl = document.getElementById('edit-hcp-'+i);
+      var venmoEl = document.getElementById('edit-venmo-'+i);
+      if (nameEl && nameEl.value.trim()) {
+        W.roster[i].name = nameEl.value.trim();
+        W.roster[i].handicap = parseFloat(hcpEl?.value) || 0;
+        W.roster[i].handicapIndex = parseFloat(hcpEl?.value) || 0;
+        W.roster[i].venmo = venmoEl?.value.trim() || '';
+      }
+      W._editingPlayer = -1;
+      var list = document.getElementById('qp-list');
+      if (list) list.innerHTML = quickPlayerListHtml();
     }
 
     function addQuickPlayer() {

@@ -25,6 +25,16 @@ export default {
         return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
       try {
+        // Hardcoded courses not in the Golf Course API (too new or missing)
+        const CUSTOM_COURSES = [
+          { id: 'pga-frisco-east', club_name: 'Fields Ranch East at PGA Frisco', course_name: 'Fields Ranch East', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 152, rating: 78.9, custom: true },
+          { id: 'pga-frisco-west', club_name: 'Fields Ranch West at PGA Frisco', course_name: 'Fields Ranch West', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 148, rating: 77.2, custom: true },
+        ];
+        const ql = q.toLowerCase();
+        const customMatches = CUSTOM_COURSES.filter(c =>
+          c.club_name.toLowerCase().includes(ql) || c.course_name.toLowerCase().includes(ql) || c.city.toLowerCase().includes(ql)
+        );
+
         const apiKey = env.GOLF_COURSE_API_KEY || '';
         const gcRes = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(q)}`, {
           headers: { 'Authorization': `Key ${apiKey}` }
@@ -51,11 +61,20 @@ export default {
             slope, rating,
           };
         });
-        return new Response(JSON.stringify(courses), {
+        // Merge custom courses first, then API results
+        const allCourses = [...customMatches, ...courses];
+        return new Response(JSON.stringify(allCourses), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       } catch {
-        return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        // If API fails, still return custom matches
+        const ql2 = q.toLowerCase();
+        const CUSTOM_COURSES_FALLBACK = [
+          { id: 'pga-frisco-east', club_name: 'Fields Ranch East at PGA Frisco', course_name: 'Fields Ranch East', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 152, rating: 78.9, custom: true },
+          { id: 'pga-frisco-west', club_name: 'Fields Ranch West at PGA Frisco', course_name: 'Fields Ranch West', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 148, rating: 77.2, custom: true },
+        ];
+        const fallbackMatches = CUSTOM_COURSES_FALLBACK.filter(c => c.club_name.toLowerCase().includes(ql2) || c.city.toLowerCase().includes(ql2));
+        return new Response(JSON.stringify(fallbackMatches), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       }
     }
 
@@ -79,6 +98,57 @@ export default {
         const data = await res.json();
         return new Response(JSON.stringify({ ok: true, assocId, searchStatus: res.status, count: data.golfers?.length, sample: data.golfers?.slice(0,2) }), { headers: h });
       } catch(e) { return new Response(JSON.stringify({ error: e.message }), { headers: h }); }
+    }
+
+    // GET /api/courses/:id — custom PGA Frisco courses
+    if (url.pathname === '/api/courses/pga-frisco-east') {
+      const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' };
+      return new Response(JSON.stringify({
+        id: 'pga-frisco-east', club_name: 'Fields Ranch East at PGA Frisco', course_name: 'Fields Ranch East',
+        city: 'Frisco', state: 'TX', address: '1 PGA Dr, Frisco, TX 75034',
+        tees: [
+          { name: 'PGA', gender: 'male', slope: 152, rating: 78.9, par: 72, yardage: 7860,
+            holes: [
+              {hole:1,par:5,handicap:9,yardage:633},{hole:2,par:4,handicap:5,yardage:463},{hole:3,par:5,handicap:17,yardage:609},
+              {hole:4,par:3,handicap:11,yardage:235},{hole:5,par:4,handicap:7,yardage:500},{hole:6,par:4,handicap:1,yardage:534},
+              {hole:7,par:4,handicap:13,yardage:345},{hole:8,par:3,handicap:15,yardage:179},{hole:9,par:4,handicap:3,yardage:482},
+              {hole:10,par:4,handicap:8,yardage:488},{hole:11,par:4,handicap:12,yardage:413},{hole:12,par:4,handicap:4,yardage:488},
+              {hole:13,par:3,handicap:10,yardage:269},{hole:14,par:5,handicap:2,yardage:600},{hole:15,par:4,handicap:14,yardage:358},
+              {hole:16,par:4,handicap:6,yardage:544},{hole:17,par:3,handicap:18,yardage:144},{hole:18,par:5,handicap:16,yardage:576},
+            ]},
+          { name: 'Three', gender: 'male', slope: 146, rating: 75.5, par: 72, yardage: 7066,
+            holes: [
+              {hole:1,par:5,handicap:9,yardage:580},{hole:2,par:4,handicap:5,yardage:406},{hole:3,par:5,handicap:17,yardage:560},
+              {hole:4,par:3,handicap:11,yardage:190},{hole:5,par:4,handicap:7,yardage:458},{hole:6,par:4,handicap:1,yardage:472},
+              {hole:7,par:4,handicap:13,yardage:312},{hole:8,par:3,handicap:15,yardage:157},{hole:9,par:4,handicap:3,yardage:440},
+              {hole:10,par:4,handicap:8,yardage:470},{hole:11,par:4,handicap:12,yardage:376},{hole:12,par:4,handicap:4,yardage:436},
+              {hole:13,par:3,handicap:10,yardage:210},{hole:14,par:5,handicap:2,yardage:539},{hole:15,par:4,handicap:14,yardage:300},
+              {hole:16,par:4,handicap:6,yardage:497},{hole:17,par:3,handicap:18,yardage:126},{hole:18,par:5,handicap:16,yardage:537},
+            ]},
+        ],
+        pars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
+        strokeIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
+      }), { headers: h });
+    }
+    if (url.pathname === '/api/courses/pga-frisco-west') {
+      const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=86400' };
+      return new Response(JSON.stringify({
+        id: 'pga-frisco-west', club_name: 'Fields Ranch West at PGA Frisco', course_name: 'Fields Ranch West',
+        city: 'Frisco', state: 'TX', address: '1 PGA Dr, Frisco, TX 75034',
+        tees: [
+          { name: 'Combo', gender: 'male', slope: 148, rating: 77.2, par: 72, yardage: 6800,
+            holes: [
+              {hole:1,par:5,handicap:7,yardage:571},{hole:2,par:4,handicap:3,yardage:424},{hole:3,par:3,handicap:9,yardage:207},
+              {hole:4,par:4,handicap:1,yardage:432},{hole:5,par:3,handicap:17,yardage:125},{hole:6,par:5,handicap:11,yardage:608},
+              {hole:7,par:4,handicap:5,yardage:379},{hole:8,par:4,handicap:15,yardage:295},{hole:9,par:5,handicap:13,yardage:537},
+              {hole:10,par:3,handicap:12,yardage:193},{hole:11,par:4,handicap:4,yardage:421},{hole:12,par:3,handicap:16,yardage:162},
+              {hole:13,par:4,handicap:2,yardage:465},{hole:14,par:4,handicap:8,yardage:387},{hole:15,par:4,handicap:18,yardage:310},
+              {hole:16,par:3,handicap:14,yardage:175},{hole:17,par:5,handicap:6,yardage:546},{hole:18,par:5,handicap:10,yardage:546},
+            ]},
+        ],
+        pars: [5,4,3,4,3,5,4,4,5,3,4,3,4,4,4,3,5,5],
+        strokeIndex: [7,3,9,1,17,11,5,15,13,12,4,16,2,8,18,14,6,10],
+      }), { headers: h });
     }
 
     // GET /api/courses/:id — fetch full scorecard (pars + stroke index) for a course
