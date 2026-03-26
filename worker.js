@@ -3017,6 +3017,148 @@ function wggRunVegas(holeNum, grossScores, prevState, players, vegasTeams, strok
   return state;
 }
 
+// ── 3-Player 9s (Nine-Point Game) ──────────────────────────────────
+// On every hole, 9 points distributed among 3 players based on GROSS score.
+// Clear 1st/2nd/3rd: 5-3-1
+// Two tie for 1st, one 3rd: 4-4-1
+// One 1st, two tie for 2nd/3rd: 5-2-2
+// Three-way tie: 3-3-3
+function wggRunNines(holeNum, grossScores, prevState, players) {
+  const state = { ...prevState };
+  if (!state.running) state.running = {};
+  if (!state.holes) state.holes = {};
+  if (!state.events) state.events = [];
+  const events = [];
+
+  // Get the 3 players' gross scores for this hole
+  const playerNames = Object.keys(grossScores);
+  if (playerNames.length < 3) {
+    // Need exactly 3 players for 9s
+    return { ...state, events };
+  }
+
+  // Sort by score (lowest = best in golf)
+  const sorted = playerNames
+    .map(name => ({ name, score: grossScores[name] }))
+    .sort((a, b) => a.score - b.score);
+
+  let points = {};
+
+  // Determine distribution
+  const s1 = sorted[0].score, s2 = sorted[1].score, s3 = sorted[2].score;
+
+  if (s1 === s2 && s2 === s3) {
+    // Three-way tie: 3-3-3
+    points[sorted[0].name] = 3;
+    points[sorted[1].name] = 3;
+    points[sorted[2].name] = 3;
+  } else if (s1 === s2) {
+    // Two tie for 1st, one 3rd: 4-4-1
+    points[sorted[0].name] = 4;
+    points[sorted[1].name] = 4;
+    points[sorted[2].name] = 1;
+  } else if (s2 === s3) {
+    // One 1st, two tie for 2nd/3rd: 5-2-2
+    points[sorted[0].name] = 5;
+    points[sorted[1].name] = 2;
+    points[sorted[2].name] = 2;
+  } else {
+    // Clear 1st, 2nd, 3rd: 5-3-1
+    points[sorted[0].name] = 5;
+    points[sorted[1].name] = 3;
+    points[sorted[2].name] = 1;
+  }
+
+  // Update running totals
+  for (const [name, pts] of Object.entries(points)) {
+    state.running[name] = (state.running[name] || 0) + pts;
+  }
+
+  // Store hole result
+  state.holes[holeNum] = { scores: grossScores, points, sorted: sorted.map(s => s.name) };
+
+  // Generate events
+  const winner = sorted[0];
+  if (s1 < s2) {
+    events.push({ type: 'nines_hole_winner', hole: holeNum, player: winner.name, points: points[winner.name], score: winner.score });
+  } else {
+    events.push({ type: 'nines_hole_tie', hole: holeNum, players: sorted.filter(s => s.score === s1).map(s => s.name) });
+  }
+
+  state.events = [...(prevState.events || []), ...events];
+  return { ...state, events };
+}
+
+// ── Team Scramble ──────────────────────────────────────────────────
+// Team event: one GROSS score per hole per team.
+// Tracks cumulative team scores and leaderboard.
+// Supports "What-If" via simulated scores overlay.
+function wggRunScramble(holeNum, teamScores, prevState, teams) {
+  // teamScores: { "Team Smith": 4, "Team Jones": 3, ... }
+  // teams: array of team names
+  const state = { ...prevState };
+  if (!state.running) state.running = {};
+  if (!state.holes) state.holes = {};
+  if (!state.events) state.events = [];
+  const events = [];
+
+  // Store this hole's scores
+  state.holes[holeNum] = { scores: teamScores, timestamp: Date.now() };
+
+  // Update running totals (cumulative gross)
+  for (const [team, score] of Object.entries(teamScores)) {
+    state.running[team] = (state.running[team] || 0) + score;
+  }
+
+  // Compute leaderboard (sorted by total, lowest first)
+  const leaderboard = Object.entries(state.running)
+    .sort((a, b) => a[1] - b[1])
+    .map(([team, total], i) => ({ team, total, position: i + 1 }));
+
+  state.leaderboard = leaderboard;
+
+  // Events
+  const holeWinner = Object.entries(teamScores).sort((a, b) => a[1] - b[1])[0];
+  if (holeWinner) {
+    events.push({ type: 'scramble_hole', hole: holeNum, team: holeWinner[0], score: holeWinner[1] });
+  }
+
+  // Check for lead changes
+  if (leaderboard.length >= 2) {
+    const leader = leaderboard[0];
+    const margin = leaderboard[1].total - leader.total;
+    events.push({ type: 'scramble_standings', hole: holeNum, leader: leader.team, margin });
+  }
+
+  state.events = [...(prevState.events || []), ...events];
+  return { ...state, events };
+}
+
+// ── Scramble What-If Calculator ────────────────────────────────────
+// Takes real state + simulated hole scores, returns projected leaderboard
+function scrambleWhatIf(realState, simHoles, pars) {
+  // simHoles: { 15: { "Team Smith": 3, "Team Jones": 4 }, 16: {...} }
+  const projected = { ...realState.running };
+
+  for (const [hole, scores] of Object.entries(simHoles)) {
+    for (const [team, score] of Object.entries(scores)) {
+      projected[team] = (projected[team] || 0) + score;
+    }
+  }
+
+  // Compute projected leaderboard
+  const leaderboard = Object.entries(projected)
+    .sort((a, b) => a[1] - b[1])
+    .map(([team, total], i) => ({
+      team,
+      total,
+      position: i + 1,
+      delta: total - (realState.running[team] || 0), // simulated holes contribution
+    }));
+
+  return { projected, leaderboard };
+}
+
 // ─── handleEventApi — the massive event API handler ─────────────────────
 // This is copied verbatim from cafecito-ai worker.js (lines 4551-5677)
 // The only change: EVENT_CORS Allow-Origin is now '*' instead of cafecito-ai.com
