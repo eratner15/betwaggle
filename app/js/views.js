@@ -1667,9 +1667,118 @@ function renderLineBoard(state, round, allBets) {
   return html;
 }
 
+// ─── SCRAMBLE HELPERS ───
+function deriveScrambleTeams(config) {
+  if (config?.scrambleTeams?.length > 0) return config.scrambleTeams;
+  const players = (config?.players || config?.roster || []).map(p => p.name || p.member).filter(Boolean);
+  if (players.length <= 1) return players.map(n => ({ name: n }));
+  const teams = [];
+  for (let i = 0; i < players.length; i += 2) {
+    if (i + 1 < players.length) {
+      teams.push({ name: `${players[i]} / ${players[i+1]}` });
+    } else {
+      teams.push({ name: players[i] });
+    }
+  }
+  return teams;
+}
+
+// ─── SCRAMBLE SCORE ENTRY (admin panel) ───
+function renderScrambleScoreEntry(state) {
+  const config = state._config;
+  const holes = state._holes || {};
+  const gameState = state._gameState;
+  const holesPerRound = config?.holesPerRound || 18;
+  const holeNum = state._scorecardHole || 1;
+  const teams = deriveScrambleTeams(config);
+  const pars = getCoursePars(config);
+  const par = pars[holeNum - 1] || 4;
+
+  // Get pending scramble scores from state
+  const pendingScores = state._scrambleScores || {};
+
+  let html = '';
+
+  // Hole selector
+  html += `<div class="mg-card" style="padding:12px">
+    <div class="mg-card-header" style="margin-bottom:8px">SCRAMBLE — HOLE ${holeNum}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+  for (let h = 1; h <= holesPerRound; h++) {
+    const hasScore = !!(holes[h]?.scores || holes[h]);
+    const isActive = h === holeNum;
+    html += `<button onclick="window.MG.setScorecardHole(${h})"
+      style="width:36px;height:36px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
+      border:2px solid ${isActive ? 'var(--mg-green)' : hasScore ? 'var(--mg-gold-dim)' : 'var(--mg-border)'};
+      background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(180,140,60,0.15)' : 'var(--mg-surface)'};
+      color:${isActive ? '#fff' : 'var(--mg-text)'}">${h}</button>`;
+  }
+  html += `</div></div>`;
+
+  // Score entry per team
+  html += `<div class="mg-card" style="padding:16px">
+    <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:12px">Par ${par} &middot; Enter gross score per team</div>`;
+
+  // Get existing scores for this hole (already saved to server)
+  const existingHole = holes[holeNum];
+  const existingScores = existingHole?.scores || existingHole || {};
+
+  teams.forEach(team => {
+    const teamName = team.name || team;
+    // Pending score overrides existing; show existing if no pending
+    const currentScore = pendingScores[teamName] ?? existingScores[teamName];
+    const scores = [par - 2, par - 1, par, par + 1, par + 2, par + 3];
+    const labels = ['Eagle', 'Birdie', 'Par', 'Bogey', 'Dbl', '+3'];
+
+    html += `<div style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--mg-text);margin-bottom:8px">${escHtml(teamName)}</div>
+      <div style="display:flex;gap:6px">`;
+
+    scores.forEach((s, i) => {
+      const selected = currentScore === s;
+      html += `<button onclick="window.MG.setScrambleScore('${escHtml(teamName).replace(/'/g, "\\'")}',${s})"
+        style="flex:1;min-height:48px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;
+        border:2px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};
+        background:${selected ? 'var(--mg-gold)' : 'var(--mg-surface)'};
+        color:${selected ? 'var(--mg-green)' : 'var(--mg-text)'};
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+        <span>${s}</span>
+        <span style="font-size:9px;font-weight:500;opacity:.6">${labels[i]}</span>
+      </button>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  // Submit button
+  html += `<button class="mg-btn mg-btn-gold" onclick="window.MG.submitScrambleHole(${holeNum})" style="width:100%">Save Hole ${holeNum}</button>`;
+  html += `</div>`;
+
+  // Live leaderboard
+  if (gameState?.scramble?.leaderboard?.length > 0) {
+    html += `<div class="mg-card" style="padding:16px">
+      <div class="mg-card-header" style="margin-bottom:10px">LIVE LEADERBOARD</div>`;
+    gameState.scramble.leaderboard.forEach((entry, i) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--mg-border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="scramble-position" style="color:${i === 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${entry.position}</span>
+          <span style="font-size:14px;font-weight:${i === 0 ? '700' : '500'}">${escHtml(entry.team)}</span>
+        </div>
+        <span class="scramble-total" style="color:${i === 0 ? 'var(--mg-gold)' : 'var(--mg-text)'}">${entry.total}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  return html;
+}
+
 // ─── SCORECARD TAB (admin score entry) ───
 function renderAdminScorecard(state) {
   const config = state._config;
+  // Scramble mode: enter one score per team, not per player
+  if (config?.games?.scramble) {
+    return renderScrambleScoreEntry(state);
+  }
   const players = getPlayersFromConfig(config);
   const playerNames = players.map(p => p.name);
   const holeNum = state._scorecardHole || 1;
@@ -3807,6 +3916,152 @@ function renderPlayerPicker(state) {
   return html;
 }
 
+// ─── Scramble What-If Simulator ─────────────────────────────────
+function renderScrambleWhatIf(state) {
+  const config = state._config;
+  const gameState = state._gameState;
+  const holes = state._holes || {};
+  const holesPerRound = config?.holesPerRound || 18;
+  const pars = getCoursePars(config);
+  const teams = deriveScrambleTeams(config);
+  const teamNames = teams.map(t => t.name || t);
+
+  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const holesPlayed = scoredHoles.length;
+  const remainingHoles = [];
+  for (let h = 1; h <= holesPerRound; h++) {
+    if (!scoredHoles.includes(h)) remainingHoles.push(h);
+  }
+
+  if (!state._scenario) state._scenario = {};
+  if (!state._scenario.simHoles) state._scenario.simHoles = {};
+  const simHoles = state._scenario.simHoles;
+
+  let html = '';
+
+  // Header
+  html += `<div style="margin-bottom:16px">
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-text)">Scramble What If...</div>
+    <div style="font-size:13px;color:var(--mg-text-muted);margin-top:2px">Project how remaining holes change the leaderboard</div>
+  </div>`;
+
+  // Current leaderboard
+  const leaderboard = gameState?.scramble?.leaderboard || [];
+  if (leaderboard.length > 0) {
+    html += `<div class="mg-card" style="padding:12px;margin-bottom:12px">
+      <div class="mg-card-header" style="margin-bottom:8px">CURRENT STANDINGS &middot; THRU ${holesPlayed}</div>`;
+    leaderboard.forEach((entry, i) => {
+      const totalColor = entry.total <= 0 ? '#22c55e' : entry.total > 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const totalStr = entry.total === 0 ? 'E' : entry.total > 0 ? `+${entry.total}` : `${entry.total}`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < leaderboard.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--mg-text-muted);width:16px">${entry.position}</span>
+          <span style="font-size:14px;font-weight:${i === 0 ? '700' : '500'}">${escHtml(entry.team)}</span>
+        </div>
+        <span style="font-size:16px;font-weight:700;color:${totalColor}">${totalStr}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (remainingHoles.length === 0) {
+    html += `<div class="mg-card" style="padding:20px;text-align:center;color:var(--mg-text-muted)">
+      All ${holesPerRound} holes have been scored. The scramble is complete!
+    </div>`;
+    return html;
+  }
+
+  // Simulated holes input
+  const simCount = Object.keys(simHoles).length;
+  html += `<div class="mg-card" style="padding:12px">
+    <div class="mg-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span>SIMULATE REMAINING HOLES</span>
+      <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 8px;border-radius:4px;font-weight:700">${remainingHoles.length} left</span>
+    </div>`;
+
+  remainingHoles.forEach(h => {
+    const par = pars[h - 1] || 4;
+    const hasSim = !!simHoles[h];
+    html += `<div style="padding:10px 0;${h !== remainingHoles[remainingHoles.length - 1] ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600">Hole ${h} <span style="font-size:11px;color:var(--mg-text-muted);font-weight:400">Par ${par}</span></span>
+        ${hasSim ? `<span style="font-size:10px;color:var(--mg-gold-dim);font-weight:700;cursor:pointer" onclick="window.MG.clearSimHole(${h})">Clear</span>` : ''}
+      </div>`;
+    teamNames.forEach(teamName => {
+      const simScore = simHoles[h]?.[teamName];
+      const scores = [par - 2, par - 1, par, par + 1, par + 2];
+      const escapedName = escHtml(teamName).replace(/'/g, "\\'");
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(teamName)}</span>
+        <div style="display:flex;gap:3px">`;
+      scores.forEach(s => {
+        const selected = simScore === s;
+        const label = s === par - 2 ? 'Eag' : s === par - 1 ? 'Bir' : s === par ? 'Par' : s === par + 1 ? 'Bog' : 'Dbl';
+        html += `<button style="min-width:32px;height:28px;border-radius:6px;border:1px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${selected ? 'rgba(212,175,55,0.15)' : 'transparent'};color:${selected ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};font-size:10px;font-weight:${selected ? '800' : '600'};cursor:pointer" onclick="window.MG.setSimHoleScore(${h},'${escapedName}',${s})">${s}</button>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  // Reset button
+  if (simCount > 0) {
+    html += `<div style="margin-top:8px">
+      <button class="mg-btn" style="width:100%;border:1px solid var(--mg-green);color:var(--mg-green);background:transparent;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px" onclick="window.MG.resetRoundScenarios()">Reset All Scenarios</button>
+    </div>`;
+  }
+
+  // Projected leaderboard — merge real scramble state with simulated holes
+  if (simCount > 0) {
+    // Replay scramble logic: compute running totals from real holes + simulated holes
+    const teamTotals = {};
+    teamNames.forEach(t => { teamTotals[t] = 0; });
+    for (let h = 1; h <= holesPerRound; h++) {
+      const realScores = holes[h]?.scores || holes[h] || {};
+      const simScoresForHole = simHoles[h] || {};
+      const holeScores = holes[h] ? realScores : simScoresForHole;
+      teamNames.forEach(t => {
+        const s = holeScores[t];
+        if (s != null) {
+          const par = pars[h - 1] || 4;
+          teamTotals[t] += (s - par);
+        }
+      });
+    }
+    const projLeaderboard = teamNames.map(t => ({ team: t, total: teamTotals[t] }))
+      .sort((a, b) => a.total - b.total);
+    projLeaderboard.forEach((entry, i) => { entry.position = i + 1; });
+
+    html += `<div class="mg-card" style="padding:12px;margin-top:12px;border:2px solid var(--mg-gold)">
+      <div class="mg-card-header" style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 6px;border-radius:3px;font-weight:800">SIM</span>
+        PROJECTED LEADERBOARD
+      </div>`;
+    projLeaderboard.forEach((entry, i) => {
+      const curEntry = leaderboard.find(e => e.team === entry.team);
+      const curTotal = curEntry?.total ?? 0;
+      const diff = entry.total - curTotal;
+      const totalColor = entry.total <= 0 ? '#22c55e' : entry.total > 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const totalStr = entry.total === 0 ? 'E' : entry.total > 0 ? `+${entry.total}` : `${entry.total}`;
+      const diffStr = diff === 0 ? '' : diff > 0 ? `(+${diff})` : `(${diff})`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < projLeaderboard.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:${i === 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};width:16px">${entry.position}</span>
+          <span style="font-size:14px;font-weight:${i === 0 ? '700' : '500'}">${escHtml(entry.team)}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-size:16px;font-weight:700;color:${totalColor}">${totalStr}</span>
+          ${diffStr ? `<span style="font-size:11px;color:var(--mg-text-muted);margin-left:4px">${diffStr}</span>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  return html;
+}
+
 // ─── Round-Mode Scenario / What-If ─────────────────────────────
 function renderRoundScenarios(state) {
   const config = state._config;
@@ -3816,6 +4071,11 @@ function renderRoundScenarios(state) {
   const holesPerRound = config?.holesPerRound || 18;
   const games = config?.games || {};
   const pars = getCoursePars(config);
+
+  // Scramble-specific What-If view
+  if (games.scramble) {
+    return renderScrambleWhatIf(state);
+  }
 
   const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
   const holesPlayed = scoredHoles.length;

@@ -107,6 +107,7 @@ async function bootstrap() {
   state._spectatorMode = isSpectator;  // spectator mode (view-only)
   state._disputes = [];       // open/resolved score disputes
   state._trophyMode = window.__WAGGLE_TROPHY_MODE__ === true;  // read-only trophy room for completed events
+  state._scrambleScores = {};  // temp storage for scramble hole entry
   // Scenario / What-If state (transient)
   state._scenario = {
     flightId: config.flightOrder?.[0] || null,
@@ -791,6 +792,53 @@ window.MG = {
 
   // Expose refresh for wolf edit mode button
   refresh() { refresh(); },
+
+  // ─── Scramble Score Entry ───
+  setScrambleScore(teamName, score) {
+    if (!state._scrambleScores) state._scrambleScores = {};
+    state._scrambleScores[teamName] = score;
+    refresh();
+  },
+
+  async submitScrambleHole(holeNum) {
+    const scores = state._scrambleScores;
+    if (!scores || Object.keys(scores).length === 0) { toast('Enter scores first'); return; }
+    if (navigator.vibrate) navigator.vibrate(30);
+    try {
+      const result = await Sync.submitHoleScores(holeNum, scores);
+      if (result && result.ok) {
+        toast('Hole ' + holeNum + ' saved');
+        state._scrambleScores = {};
+        const maxHole = state._config?.holesPerRound || 18;
+        if (holeNum < maxHole) {
+          state._scorecardHole = holeNum + 1;
+          // Pre-fill existing scores if already entered for next hole
+          const existing = state._holes?.[state._scorecardHole];
+          if (existing) {
+            state._scrambleScores = { ...(existing.scores || existing) };
+          }
+        }
+        await syncFromServer();
+        refresh();
+      } else {
+        throw new Error('submit returned null');
+      }
+    } catch (e) {
+      // Offline — queue mutation and update optimistically
+      await queueMutation({ type: 'scores', payload: { holeNum, scores: { ...scores } }, ts: Date.now() });
+      if (!state._holes) state._holes = {};
+      state._holes[holeNum] = { ...scores };
+      toast('Saved offline — will sync when connected');
+      state._scrambleScores = {};
+      const maxHole = state._config?.holesPerRound || 18;
+      if (holeNum < maxHole) {
+        state._scorecardHole = holeNum + 1;
+      }
+      persist();
+      updateConnectivityIndicator();
+      refresh();
+    }
+  },
 
   // ─── Push Notifications ───
   async subscribePush() {
