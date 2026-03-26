@@ -227,6 +227,14 @@ export default {
       return new Response(null, { headers: EVENT_CORS });
     }
 
+    // /api/validate-promo — validate a promo code
+    if (url.pathname === '/api/validate-promo' && request.method === 'POST') {
+      return handleValidatePromo(request, env);
+    }
+    if (url.pathname === '/api/validate-promo' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: EVENT_CORS });
+    }
+
     // /api/checkout-success — Stripe redirect after payment
     if (url.pathname === '/api/checkout-success' && request.method === 'GET') {
       return handleCheckoutSuccess(url, env);
@@ -995,6 +1003,10 @@ ${venue || dates ? `<div class="event-sub">${[venue, dates].filter(Boolean).join
       </div>
     </div>
   </div>
+  <div class="field">
+    <label>Email <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+    <input type="email" id="inp-email" placeholder="you@example.com" autocomplete="email">
+  </div>
   <div id="err" class="error-msg"></div>
   <button class="btn" id="btn-join" onclick="submitJoin()">Join the Event</button>
 </div>
@@ -1011,6 +1023,7 @@ const SLUG = '${slug}';
 async function submitJoin() {
   const name = document.getElementById('inp-name').value.trim();
   const hi = parseFloat(document.getElementById('inp-hi').value);
+  const email = (document.getElementById('inp-email').value || '').trim();
   const err = document.getElementById('err');
   const btn = document.getElementById('btn-join');
   err.style.display = 'none';
@@ -1018,10 +1031,12 @@ async function submitJoin() {
   if (isNaN(hi) || hi < -10 || hi > 54) { err.textContent = 'Please enter a valid handicap index.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Joining...';
   try {
+    const payload = { name, hi };
+    if (email) payload.email = email;
     const res = await fetch('/' + SLUG + '/api/join', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ name, hi })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (!res.ok) { err.textContent = data.error || 'Something went wrong.'; err.style.display = 'block'; btn.disabled = false; btn.textContent = 'Join the Event'; return; }
@@ -1034,7 +1049,8 @@ async function submitJoin() {
   } catch(e) { err.textContent = 'Connection error. Please try again.'; err.style.display = 'block'; btn.disabled = false; btn.textContent = 'Join the Event'; }
 }
 document.getElementById('inp-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-hi').focus(); });
-document.getElementById('inp-hi').addEventListener('keydown', e => { if (e.key === 'Enter') submitJoin(); });
+document.getElementById('inp-hi').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-email').focus(); });
+document.getElementById('inp-email').addEventListener('keydown', e => { if (e.key === 'Enter') submitJoin(); });
 </script>
 </body>
 </html>`;
@@ -1045,6 +1061,32 @@ document.getElementById('inp-hi').addEventListener('keydown', e => { if (e.key =
 
 const WAGGLE_PRICES = { member_guest: 14900, trip: 3200, outing: 3200 };
 const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
+
+// Built-in promo codes — can move to KV later
+const PROMO_CODES = {
+  'FIRSTTRIP': { discount: 50, label: '50% off your first outing', maxUses: 1000 },
+  'FREETRIAL': { discount: 100, label: 'Free trial outing', maxUses: 500 },
+  'GOLF2026': { discount: 25, label: '25% off', maxUses: 2000 },
+  'BUDDIES': { discount: 30, label: '30% off buddies trip', maxUses: 1000 },
+};
+
+async function handleValidatePromo(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ valid: false }), { headers: EVENT_CORS }); }
+  const code = (body.code || '').trim().toUpperCase();
+  if (!code || !PROMO_CODES[code]) {
+    return new Response(JSON.stringify({ valid: false }), { headers: EVENT_CORS });
+  }
+  // Check usage count
+  if (env.MG_BOOK) {
+    const usageKey = `promo:${code}:uses`;
+    const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
+    if (uses >= PROMO_CODES[code].maxUses) {
+      return new Response(JSON.stringify({ valid: false }), { headers: EVENT_CORS });
+    }
+  }
+  return new Response(JSON.stringify({ valid: true, discount: PROMO_CODES[code].discount, label: PROMO_CODES[code].label }), { headers: EVENT_CORS });
+}
 
 async function handleCreateCheckout(request, env) {
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EVENT_CORS });
@@ -1061,17 +1103,51 @@ async function handleCreateCheckout(request, env) {
     return handleCreateEventFromConfig(config, env);
   }
 
+  // Promo code validation
+  const promoCode = (config.promoCode || '').trim().toUpperCase();
+  let discount = 0;
+  let promoLabel = '';
+  if (promoCode && PROMO_CODES[promoCode]) {
+    const usageKey = `promo:${promoCode}:uses`;
+    const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
+    if (uses < PROMO_CODES[promoCode].maxUses) {
+      discount = PROMO_CODES[promoCode].discount;
+      promoLabel = PROMO_CODES[promoCode].label;
+    }
+  }
+
   const eventType = config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
-  const amount = WAGGLE_PRICES[eventType] ?? 3200;
+  const originalAmount = WAGGLE_PRICES[eventType] ?? 3200;
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
 
+  // If 100% discount, create event for free (skip Stripe)
+  if (discount === 100) {
+    // Increment promo usage
+    if (env.MG_BOOK) {
+      const usageKey = `promo:${promoCode}:uses`;
+      const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
+      await env.MG_BOOK.put(usageKey, String(uses + 1));
+    }
+    // Store promo info on config for success page
+    config.meta = { ...(config.meta || {}), promoCode, promoLabel, promoDiscount: discount, originalAmountCents: originalAmount, actualAmountCents: 0 };
+    return handleCreateEventFromConfig(config, env);
+  }
+
+  // Apply discount to amount
+  const amount = discount > 0 ? Math.round(originalAmount * (1 - discount / 100)) : originalAmount;
+  const discountedLabel = discount > 0 ? `${label} (${discount}% off — ${promoLabel})` : label;
+
   const tempId = crypto.randomUUID();
+  // Store promo info in pending config
+  if (discount > 0) {
+    config.meta = { ...(config.meta || {}), promoCode, promoLabel, promoDiscount: discount, originalAmountCents: originalAmount, actualAmountCents: amount };
+  }
   await env.MG_BOOK.put(`pending:${tempId}`, JSON.stringify(config), { expirationTtl: 7200 });
 
   const stripeBody = new URLSearchParams({
     'payment_method_types[]': 'card',
     'line_items[0][price_data][currency]': 'usd',
-    'line_items[0][price_data][product_data][name]': label,
+    'line_items[0][price_data][product_data][name]': discountedLabel,
     'line_items[0][price_data][product_data][description]': `${config.event?.name || 'Golf Event'} \u00b7 ${config.event?.venue || ''}`,
     'line_items[0][price_data][unit_amount]': String(amount),
     'line_items[0][quantity]': '1',
@@ -1082,6 +1158,7 @@ async function handleCreateCheckout(request, env) {
     'metadata[event_name]': config.event?.name || '',
     'metadata[event_type]': eventType,
     'metadata[ref_code]': config.meta?.source?.ref || config.meta?.ref_code || '',
+    'metadata[promo_code]': promoCode || '',
   });
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -1096,6 +1173,13 @@ async function handleCreateCheckout(request, env) {
   if (!stripeRes.ok) {
     const err = await stripeRes.json();
     return new Response(JSON.stringify({ error: err?.error?.message || 'Stripe error' }), { status: 500, headers: EVENT_CORS });
+  }
+
+  // Increment promo usage on successful checkout creation
+  if (discount > 0 && promoCode && env.MG_BOOK) {
+    const usageKey = `promo:${promoCode}:uses`;
+    const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
+    await env.MG_BOOK.put(usageKey, String(uses + 1));
   }
 
   const session = await stripeRes.json();
@@ -1207,6 +1291,10 @@ async function handleWaggleSuccess(url, env) {
   let eventName = 'Your Event';
   let adminPin = '';
   let eventUrl = slug ? `https://betwaggle.com/${slug}/` : 'https://betwaggle.com/';
+  let promoLabel = '';
+  let promoDiscount = 0;
+  let originalAmountCents = 0;
+  let actualAmountCents = 0;
 
   if (slug && env.MG_BOOK) {
     try {
@@ -1215,6 +1303,10 @@ async function handleWaggleSuccess(url, env) {
         const cfg = JSON.parse(raw);
         eventName = cfg.event?.name || eventName;
         adminPin = cfg.event?.adminPin || '';
+        promoLabel = cfg.meta?.promoLabel || '';
+        promoDiscount = cfg.meta?.promoDiscount || 0;
+        originalAmountCents = cfg.meta?.originalAmountCents || 0;
+        actualAmountCents = cfg.meta?.actualAmountCents || 0;
       }
     } catch (_) {}
   }
@@ -1435,25 +1527,56 @@ async function handleCourseDetailPage(courseId, env) {
 // ─── Stripe Webhook ───────────────────────────────────────────────────────
 
 async function handleStripeWebhook(request, env) {
-  if (env.STRIPE_WEBHOOK_SECRET) {
-    const sig = request.headers.get('Stripe-Signature');
-    if (!sig) return new Response('Missing signature', { status: 400 });
-    const body = await request.text();
-    const parts = Object.fromEntries(sig.split(',').map(p => { const [k,v] = p.split('='); return [k,v]; }));
-    const timestamp = parts.t;
-    const sigV1 = parts.v1;
-    if (!timestamp || !sigV1) return new Response('Invalid signature format', { status: 400 });
-    const payload = `${timestamp}.${body}`;
-    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload)));
-    const expected = Array.from(mac).map(b => b.toString(16).padStart(2, '0')).join('');
-    if (expected !== sigV1) return new Response('Invalid signature', { status: 400 });
-    if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return new Response('Stale webhook', { status: 400 });
-    var event = JSON.parse(body);
-  } else {
-    var event;
-    try { event = await request.json(); } catch { return new Response('Bad request', { status: 400 }); }
+  if (!env.STRIPE_WEBHOOK_SECRET) {
+    // No secret configured — reject all webhooks for security
+    return new Response(JSON.stringify({ error: 'Webhook not configured' }), { status: 500 });
   }
+
+  const sig = request.headers.get('stripe-signature');
+  if (!sig) {
+    return new Response(JSON.stringify({ error: 'Missing signature' }), { status: 400 });
+  }
+
+  const body = await request.text();
+
+  // Verify Stripe signature using Web Crypto API
+  const parts = sig.split(',').reduce((acc, part) => {
+    const [key, value] = part.split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  const timestamp = parts.t;
+  const signature = parts.v1;
+
+  if (!timestamp || !signature) {
+    return new Response(JSON.stringify({ error: 'Invalid signature format' }), { status: 400 });
+  }
+
+  // Check timestamp is within 5 minutes (prevent replay attacks)
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(timestamp)) > 300) {
+    return new Response(JSON.stringify({ error: 'Timestamp too old' }), { status: 400 });
+  }
+
+  // Compute expected signature
+  const signedPayload = `${timestamp}.${body}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const expectedSig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
+  const expectedHex = Array.from(new Uint8Array(expectedSig)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  if (expectedHex !== signature) {
+    return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400 });
+  }
+
+  // Signature valid — process the event
+  const event = JSON.parse(body);
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data?.object;
@@ -2535,13 +2658,16 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const body = await request.json();
     const name = (body.name || '').trim();
     const hi = parseFloat(body.hi);
+    const email = (body.email || '').trim().toLowerCase();
     if (!name || name.length < 2 || name.length > 100) return new Response(JSON.stringify({ error: 'Name required (2-100 characters)' }), { status: 400, headers: EVENT_CORS });
     if (isNaN(hi) || hi < -10 || hi > 54) return new Response(JSON.stringify({ error: 'Valid handicap index required' }), { status: 400, headers: EVENT_CORS });
     const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
     const pending = requests.filter(r => r.status === 'pending');
     if (pending.length >= 100) return new Response(JSON.stringify({ error: 'Registration is full' }), { status: 400, headers: EVENT_CORS });
     const id = crypto.randomUUID().slice(0, 8);
-    requests.push({ id, name, hi, ts: Date.now(), status: 'pending' });
+    const joinEntry = { id, name, hi, ts: Date.now(), status: 'pending' };
+    if (email) joinEntry.email = email;
+    requests.push(joinEntry);
     await env.MG_BOOK.put(`${K}:join-requests`, JSON.stringify(requests));
     return new Response(JSON.stringify({ ok: true, id }), { headers: EVENT_CORS });
   }
@@ -2567,6 +2693,33 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (!players[key]) { players[key] = { name: req.name.trim(), hi: req.hi, credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
     else { players[key].hi = req.hi; }
     await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+    // Send approval notification email (fire-and-forget)
+    if (env.RESEND_API_KEY && req.email) {
+      const config = eventConfig;
+      ctx.waitUntil((async () => {
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'tips@betwaggle.com',
+              to: req.email,
+              subject: `You're in! Join ${config?.event?.name || 'the event'}`,
+              html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
+                <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+                  <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
+                </div>
+                <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
+                  <p style="font-size:16px;font-weight:600;color:#0D2818">You've been approved!</p>
+                  <p style="font-size:14px;color:#3D3D3D;line-height:1.6">Open the sportsbook to see live odds, place bets, and follow the action:</p>
+                  <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
+                </div>
+              </div>`
+            })
+          });
+        } catch {}
+      })());
+    }
     return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
   }
 
@@ -3020,6 +3173,84 @@ async function handleEventApi(slug, path, request, env, ctx) {
     while (feed.length > 200) feed.shift();
     await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
     return new Response(JSON.stringify({ ok: true, item }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/update-details — admin can update event name, dates, venue
+  if (path === 'event/update-details' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json();
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw);
+    if (body.name) config.event.name = body.name.trim();
+    if (body.venue) config.event.venue = body.venue.trim();
+    if (body.dates) config.event.dates = { ...config.event.dates, ...body.dates };
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/update-games — admin can toggle games on/off and update stakes
+  if (path === 'event/update-games' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json();
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw);
+    if (body.games) config.games = body.games;
+    if (body.structure) config.structure = { ...config.structure, ...body.structure };
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/add-player — admin can add a player to the roster
+  if (path === 'event/add-player' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json();
+    const { name, handicapIndex, venmo } = body;
+    if (!name) return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: EVENT_CORS });
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw);
+    if (!config.players) config.players = [];
+    if (!config.roster) config.roster = [];
+    const exists = config.players.some(p => p.name.toLowerCase() === name.trim().toLowerCase());
+    if (exists) return new Response(JSON.stringify({ error: 'Player already exists' }), { status: 400, headers: EVENT_CORS });
+    const player = { name: name.trim(), handicapIndex: parseFloat(handicapIndex) || 0, venmo: venmo || '' };
+    config.players.push(player);
+    config.roster.push(player);
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+    return new Response(JSON.stringify({ ok: true, player }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/remove-player — admin can remove a player
+  if (path === 'event/remove-player' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json();
+    const { name } = body;
+    if (!name) return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: EVENT_CORS });
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw);
+    const lower = name.trim().toLowerCase();
+    config.players = (config.players || []).filter(p => p.name.toLowerCase() !== lower);
+    config.roster = (config.roster || []).filter(p => (p.name || p.member || '').toLowerCase() !== lower);
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/complete — mark event as complete (archive)
+  if (path === 'event/complete' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const config = JSON.parse(cfgRaw);
+    config.event.status = 'complete';
+    config.event.completedAt = new Date().toISOString();
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+    const settings = (await env.MG_BOOK.get(`${K}:settings`, 'json')) || {};
+    settings.bettingClosed = true;
+    await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(settings));
+    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
   }
 
   return null;
