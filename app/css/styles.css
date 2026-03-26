@@ -1624,3 +1624,15 @@ hr.mg-divider {
   border-left: 3px solid var(--mg-gold);
   background: rgba(212,175,55,.04);
 }
+
+/* Red Zone pulse for close finishes */
+@keyframes redZonePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+  50% { box-shadow: 0 0 20px 4px rgba(212,175,55,.3); }
+}
+
+/* Data freshness pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

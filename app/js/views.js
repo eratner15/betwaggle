@@ -575,6 +575,34 @@ export function renderScrambleLeaderboard(state) {
  *   5. Event feed (skin won/carried, Nassau events, wolf results)
  *   6. Round complete CTA → #settle
  */
+function computeTotalPot(games, structure, playerCount, holesPlayed) {
+  let pot = 0;
+  const n = playerCount;
+  if (games.nassau) {
+    const bet = parseInt(structure?.nassauBet) || 10;
+    pot += bet * 3 * (n - 1); // front + back + overall per player
+  }
+  if (games.skins) {
+    const bet = parseInt(structure?.skinsBet) || 5;
+    pot += bet * holesPlayed * (n - 1);
+  }
+  return pot;
+}
+
+function narrativize(item, gameState, structure) {
+  if (item.type === 'score') {
+    let narrative = item.text;
+    if (gameState?.skins?.pot > 1) {
+      narrative += ` Skins pot: \u00d7${gameState.skins.pot}.`;
+    }
+    return narrative;
+  }
+  if (item.type === 'press') {
+    return item.text;
+  }
+  return item.text;
+}
+
 export function renderRoundFeed(state) {
   const config = state._config;
   const gameState = state._gameState;
@@ -799,6 +827,54 @@ export function renderRoundFeed(state) {
   }
 
   // ============================================================
+  // ACTION BAR — the sweat meter
+  // ============================================================
+  if (scoredHoles.length > 0) {
+    const totalPot = computeTotalPot(games, config?.structure, players.length, scoredHoles.length);
+    const leader = standingsData[0];
+    const trailer = standingsData[standingsData.length - 1];
+    const spread = leader && trailer ? Math.abs((leader.money || 0) - (trailer.money || 0)) : 0;
+    const holesRemaining = holesPerRound - scoredHoles.length;
+    const isRedZone = holesRemaining <= 3 && standingsData.length >= 2 &&
+      Math.abs((standingsData[0].toPar || 0) - (standingsData[1]?.toPar || 0)) <= 1;
+
+    html += `<div style="background:var(--mg-green);color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px;${isRedZone ? 'border:2px solid var(--mg-gold);animation:redZonePulse 2s ease-in-out infinite;' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${isRedZone ? 'var(--mg-gold)' : 'rgba(255,255,255,.5)'}">${isRedZone ? 'RED ZONE' : 'THE ACTION'}</div>
+          <div style="font-size:20px;font-weight:800;margin-top:2px;font-family:'SF Mono',monospace">${leader ? escHtml(leader.name.split(' ')[0]) + ' leads' : 'Even'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px">Spread</div>
+          <div style="font-size:22px;font-weight:800;color:var(--mg-gold);font-family:'SF Mono',monospace">$${spread}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:rgba(255,255,255,.5)">
+        <span>${holesRemaining} holes remaining</span>
+        <span>Thru ${scoredHoles.length} of ${holesPerRound}</span>
+      </div>
+    </div>`;
+  }
+
+  // ============================================================
+  // DATA FRESHNESS INDICATOR
+  // ============================================================
+  {
+    const lastSync = state._lastSyncAt;
+    const now = Date.now();
+    const staleness = lastSync ? (now - lastSync) / 1000 : 999;
+    let freshnessColor = 'var(--mg-win)'; // green
+    let freshnessLabel = 'Live';
+    if (staleness > 120) { freshnessColor = 'var(--mg-loss)'; freshnessLabel = 'Offline'; }
+    else if (staleness > 30) { freshnessColor = '#F59E0B'; freshnessLabel = 'Delayed'; }
+
+    html += `<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:${freshnessColor};font-weight:600;margin-bottom:6px;padding:0 4px">
+      <div style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></div>
+      ${freshnessLabel}
+    </div>`;
+  }
+
+  // ============================================================
   // CARD 1: STANDINGS (most important — what everyone wants first)
   // ============================================================
   {
@@ -858,6 +934,24 @@ export function renderRoundFeed(state) {
           ${games.skins ? `<span style="min-width:28px;text-align:center;font-family:'SF Mono',monospace;font-size:12px;font-weight:600;color:${p.skins > 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${p.skins}</span>` : ''}
           ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:15px;font-weight:800;color:${moneyColor}">${moneyStr}</span>` : ''}
         </div>`;
+        // Auto-press badge
+        const autoPress = config?.structure?.autoPress;
+        if (autoPress?.enabled && games.nassau && scoredHoles.length > 0) {
+          const nassauState = gameState?.nassau?.running;
+          if (nassauState) {
+            const playerNassau = nassauState[p.name];
+            const leaderNassau = Object.values(nassauState).sort((a, b) => {
+              const aT = typeof a === 'object' ? a.total : a;
+              const bT = typeof b === 'object' ? b.total : b;
+              return (aT || 0) - (bT || 0);
+            })[0];
+            const leaderTotal = typeof leaderNassau === 'object' ? leaderNassau.total : leaderNassau;
+            const playerTotal = typeof playerNassau === 'object' ? playerNassau.total : playerNassau;
+            if (playerTotal && leaderTotal && (playerTotal - leaderTotal) >= autoPress.threshold) {
+              html += `<div style="font-size:9px;font-weight:700;color:var(--mg-loss);background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;margin-left:20px">PRESS</div>`;
+            }
+          }
+        }
       });
     } else {
       // No scores yet — show player roster
@@ -1200,9 +1294,10 @@ export function renderRoundFeed(state) {
         shown.forEach(item => {
           const badgeColor = item.type === 'game' ? 'var(--mg-gold)' : item.type === 'score' ? 'var(--mg-gold-dim)' : 'var(--mg-green)';
           const initial = item.player ? item.player[0].toUpperCase() : (item.type === 'game' ? '\u26F3' : '?');
+          const displayText = narrativize(item, gameState, config?.structure);
           html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:3px;border-radius:6px;background:var(--mg-surface);border:1px solid var(--mg-border)">
             <div style="width:24px;height:24px;min-width:24px;border-radius:50%;background:${badgeColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml(String(initial))}</div>
-            <div style="flex:1;font-size:12px;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.text)}</div>
+            <div style="flex:1;font-size:12px;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayText)}</div>
             <div style="font-size:10px;color:var(--mg-text-muted);flex-shrink:0">${feedTimeAgo(item.ts)}</div>
           </div>`;
         });
