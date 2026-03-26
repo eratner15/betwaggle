@@ -1408,6 +1408,8 @@ const PROMO_CODES = {
   'FREETRIAL': { discount: 100, label: 'Free trial outing', maxUses: 500 },
   'GOLF2026': { discount: 25, label: '25% off', maxUses: 2000 },
   'BUDDIES': { discount: 30, label: '30% off buddies trip', maxUses: 1000 },
+  'FRISCOBOYS': { discount: 100, label: 'Frisco Ranch crew — on the house', maxUses: 5 },
+  'BETA': { discount: 100, label: 'Beta tester — free outing', maxUses: 50 },
 };
 
 async function handleValidatePromo(request, env) {

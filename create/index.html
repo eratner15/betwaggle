@@ -1070,6 +1070,7 @@
         games:W.games,
         holesPerRound: W.holesPerRound || 18,
         ...(W.games.scramble && W.scrambleTeams.length > 0 ? { scrambleTeams: W.scrambleTeams } : {}),
+        ...(W.type === 'scramble' ? { scrambleFormat: W.scrambleFormat, scrambleSideGames: W.scrambleSideGames, scrambleEntryFee: W.scrambleEntryFee } : {}),
         wolfOrder: W.roster.map(r => r.name || r.member).filter(Boolean),
         players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0, venmo: r.venmo || '' })).filter(p => p.name),
         roster: W.roster.map(r => isTeam
@@ -1488,6 +1489,281 @@
           <strong>$32 total</strong> — shared across your group.
           ${W.roster.length >= 2 ? `<strong>${(29/W.roster.length).toFixed(2)}/person</strong> for ${W.roster.length} players.` : ''}
           Share one link with everyone. Live odds, live scores, automatic settlement.
+        </div>`;
+    }
+
+    // ── Scramble Wizard Renderers ──
+
+    function renderScrambleDetails() {
+      if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+      if (!W.adminPin) W.adminPin = String(1000 + Math.floor(Math.random() * 9000));
+      return `
+        <div class="step-label">Step 2 of 5</div>
+        <h2>Event Details</h2>
+        <p class="desc">Set up the basics for your scramble.</p>
+
+        <label>Event Name</label>
+        <input type="text" value="${esc(W.name)}" placeholder="e.g. Annual Charity Scramble 2026"
+          oninput="W.name=this.value;upNav()" style="font-size:16px">
+
+        <label style="margin-top:20px">Venue / Course <span style="font-weight:400;color:var(--muted);font-size:11px">type to search</span></label>
+        <div style="position:relative">
+          <input type="text" id="sc-course" placeholder="Start typing course name..." value="${esc(W._courseQuery||W.venue||'')}"
+            oninput="W._courseQuery=this.value;W.venue=this.value;searchCourses(this.value)"
+            style="width:100%;padding:13px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit">
+          ${W._courseSearching ? '<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>' : ''}
+        </div>
+        ${W._courseResults.length > 0 ? `
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto">
+          ${W._courseResults.map(c => `
+          <button onclick="selectCourse(${JSON.stringify(c).replace(/"/g,'&quot;')})"
+            style="display:block;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit">
+            <div style="font-size:14px;font-weight:600">${esc(c.club_name)}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(c.course_name||'')} ${c.location?'· '+esc(c.location):''}</div>
+          </button>`).join('')}
+        </div>` : ''}
+        ${W.course ? '<div style="margin-top:6px;font-size:12px;color:var(--green);font-weight:600">&#10003; ' + esc(W.course.club_name) + ' selected</div>' : ''}
+
+        <label style="margin-top:20px">Date</label>
+        <input type="date" value="${W.date1}" oninput="W.date1=this.value;render()" style="font-size:16px">
+
+        <label style="margin-top:20px">Commissioner PIN</label>
+        <input type="text" inputmode="numeric" maxlength="8" value="${W.adminPin}" placeholder="4+ digits"
+          oninput="W.adminPin=this.value;upNav()" style="font-size:16px">
+        <div class="hint">You will use this to enter scores on game day.</div>
+
+        <label style="margin-top:12px">Commissioner Email or Phone <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+        <input type="text" value="${esc(W.adminContact)}" placeholder="you@email.com or (555) 123-4567"
+          oninput="W.adminContact=this.value" style="font-size:16px">
+        <div class="hint">For magic link login on game day.</div>`;
+    }
+
+    function scrambleTeamListHtml() {
+      if (!W.scrambleTeams.length) return '<div style="font-size:13px;color:var(--muted);padding:8px 0">No teams added yet. Add teams below or paste from CSV.</div>';
+      return W.scrambleTeams.map((t,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <span style="font-family:'SF Mono',monospace;font-size:12px;font-weight:700;color:var(--muted);min-width:20px">${i+1}</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700">${esc(t.name)}</div>
+            ${t.players && t.players.length ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + t.players.map(p=>esc(p)).join(', ') + '</div>' : ''}
+          </div>
+          <button onclick="W.scrambleTeams.splice(${i},1);render()" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1;padding:0 4px">&times;</button>
+        </div>`).join('');
+    }
+
+    function renderScrambleTeams() {
+      return `
+        <div class="step-label">Step 3 of 5</div>
+        <h2>Team Setup</h2>
+        <p class="desc">${W.scrambleTeams.length} team${W.scrambleTeams.length!==1?'s':''} added. Need at least 2 to continue.</p>
+
+        <div style="margin-bottom:20px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Quick Add</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="text" id="sc-team-name" placeholder="Team name (e.g. Team Johnson)"
+              style="flex:1;padding:12px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addScrambleTeam();}">
+            <button onclick="addScrambleTeam()"
+              style="padding:12px 20px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+          </div>
+          <input type="text" id="sc-team-players" placeholder="Player names (comma separated, optional)"
+            style="width:100%;padding:12px 14px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();addScrambleTeam();}">
+        </div>
+
+        <div id="sc-team-list">${scrambleTeamListHtml()}</div>
+
+        <div style="margin-top:20px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Bulk Add (CSV Paste)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">One team per line: <code>Team Name, Player1, Player2, Player3, Player4</code></div>
+          <textarea id="sc-csv" placeholder="Team Johnson, Mike J, Dave K, Sarah L, Tom M&#10;Team Smith, Amy S, Rob T, Lisa U, Phil V" rows="5"
+            style="width:100%;padding:12px;font-size:13px;font-family:'SF Mono',monospace;border:1.5px solid var(--border);border-radius:10px;line-height:1.6;resize:vertical;min-height:100px"></textarea>
+          <button onclick="parseScrambleCSV()"
+            style="margin-top:8px;width:100%;padding:12px;background:var(--dark);color:var(--gold);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Import Teams from CSV</button>
+        </div>
+
+        <div style="margin-top:20px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Auto-Generate Teams</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:14px;font-weight:600;white-space:nowrap">Generate</span>
+            <input type="number" id="sc-num-teams" min="4" max="40" value="${W.scrambleNumTeams}"
+              oninput="W.scrambleNumTeams=parseInt(this.value)||20"
+              style="width:70px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;text-align:center">
+            <span style="font-size:14px;color:var(--muted)">numbered teams</span>
+            <button onclick="autoGenerateScrambleTeams()"
+              style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Go</button>
+          </div>
+        </div>`;
+    }
+
+    function addScrambleTeam() {
+      const nameEl = document.getElementById('sc-team-name');
+      const playersEl = document.getElementById('sc-team-players');
+      if (!nameEl || !nameEl.value.trim()) { if(nameEl) nameEl.focus(); return; }
+      const team = { name: nameEl.value.trim(), players: [] };
+      if (playersEl && playersEl.value.trim()) {
+        team.players = playersEl.value.split(',').map(s=>s.trim()).filter(Boolean);
+      }
+      W.scrambleTeams.push(team);
+      nameEl.value = '';
+      if (playersEl) playersEl.value = '';
+      nameEl.focus();
+      render();
+    }
+
+    function parseScrambleCSV() {
+      const ta = document.getElementById('sc-csv');
+      if (!ta || !ta.value.trim()) return;
+      const lines = ta.value.trim().split('\n').filter(l=>l.trim());
+      let added = 0;
+      lines.forEach(line => {
+        const parts = line.split(',').map(s=>s.trim()).filter(Boolean);
+        if (parts.length === 0) return;
+        const teamName = parts[0];
+        const players = parts.slice(1);
+        // Avoid duplicates
+        if (!W.scrambleTeams.find(t=>t.name===teamName)) {
+          W.scrambleTeams.push({ name: teamName, players });
+          added++;
+        }
+      });
+      ta.value = '';
+      render();
+    }
+
+    function autoGenerateScrambleTeams() {
+      const n = W.scrambleNumTeams || 20;
+      W.scrambleTeams = [];
+      for (let i = 1; i <= n; i++) {
+        W.scrambleTeams.push({ name: 'Team ' + i, players: [] });
+      }
+      render();
+    }
+
+    function renderScrambleScoring() {
+      const formats = [
+        {id:'best_ball', name:'Best Ball', desc:'Each player plays their own ball, take the best score per hole'},
+        {id:'scramble',  name:'Scramble (Traditional)', desc:'All players hit, pick the best, repeat from there'},
+        {id:'shamble',   name:'Shamble', desc:'Best drive, then each player plays their own ball in'},
+      ];
+      return `
+        <div class="step-label">Step 4 of 5</div>
+        <h2>Scoring & Side Games</h2>
+        <p class="desc">Configure the format, side competitions, and prize structure.</p>
+
+        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Format</div>
+        <div style="display:grid;gap:8px;margin-bottom:24px">
+          ${formats.map(f => `
+          <div onclick="W.scrambleFormat='${f.id}';render()"
+            style="border:2px solid ${W.scrambleFormat===f.id?'var(--green)':'var(--border)'};border-radius:12px;padding:14px 16px;cursor:pointer;background:${W.scrambleFormat===f.id?'#f0f7f2':'var(--white)'};position:relative">
+            ${W.scrambleFormat===f.id?'<div style="position:absolute;top:10px;right:10px;width:18px;height:18px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">&#10003;</div>':''}
+            <div style="font-size:15px;font-weight:700">${f.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${f.desc}</div>
+          </div>`).join('')}
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Side Games</div>
+        <div style="padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px">
+          <div style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div style="font-size:14px;font-weight:700">Closest to Pin</div>
+                <div style="font-size:11px;color:var(--muted)">Select par-3 holes for CTP contests</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${[...Array(18)].map((_,i) => {
+                const h = i+1;
+                const sel = W.scrambleSideGames.closestToPin.includes(h);
+                return '<button onclick="toggleScrambleSideGame(\'closestToPin\','+h+')" style="width:36px;height:36px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid '+(sel?'var(--gold)':'var(--border)')+';background:'+(sel?'var(--gold)':'var(--white)')+';color:'+(sel?'var(--dark)':'var(--text)')+'">'+h+'</button>';
+              }).join('')}
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div style="font-size:14px;font-weight:700">Longest Drive</div>
+                <div style="font-size:11px;color:var(--muted)">Select holes for longest drive contests</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${[...Array(18)].map((_,i) => {
+                const h = i+1;
+                const sel = W.scrambleSideGames.longestDrive.includes(h);
+                return '<button onclick="toggleScrambleSideGame(\'longestDrive\','+h+')" style="width:36px;height:36px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid '+(sel?'var(--gold)':'var(--border)')+';background:'+(sel?'var(--gold)':'var(--white)')+';color:'+(sel?'var(--dark)':'var(--text)')+'">'+h+'</button>';
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Entry Fee <span style="font-weight:400;color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(for display only)</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:20px;font-weight:700;color:var(--muted)">$</span>
+          <input type="number" min="0" max="5000" value="${W.scrambleEntryFee||''}" placeholder="0"
+            oninput="W.scrambleEntryFee=parseInt(this.value)||0"
+            style="width:100px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+          <span style="font-size:14px;color:var(--muted)">per team</span>
+        </div>`;
+    }
+
+    function toggleScrambleSideGame(type, hole) {
+      const arr = W.scrambleSideGames[type];
+      const idx = arr.indexOf(hole);
+      if (idx >= 0) arr.splice(idx, 1);
+      else arr.push(hole);
+      arr.sort((a,b)=>a-b);
+      render();
+    }
+
+    function renderScrambleReview() {
+      const ctpStr = W.scrambleSideGames.closestToPin.length > 0 ? 'Holes ' + W.scrambleSideGames.closestToPin.join(', ') : 'None';
+      const ldStr = W.scrambleSideGames.longestDrive.length > 0 ? 'Holes ' + W.scrambleSideGames.longestDrive.join(', ') : 'None';
+      const formatLabel = {best_ball:'Best Ball',scramble:'Scramble (Traditional)',shamble:'Shamble'}[W.scrambleFormat]||W.scrambleFormat;
+      return `
+        <div class="step-label">Step 5 of 5</div>
+        <h2>Review & Launch</h2>
+        <p class="desc">Confirm everything looks right. You can always edit after launch.</p>
+
+        <div style="padding:20px;background:var(--white);border:1.5px solid var(--border);border-radius:16px">
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:4px">${esc(W.name||'Scramble Event')}</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px">${esc(W.venue||W._courseQuery||'TBD')} &middot; ${W.date1 ? fmtDate(W.date1) : 'TBD'}</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div style="padding:12px;background:var(--ivory);border-radius:10px;text-align:center">
+              <div style="font-size:24px;font-weight:800;color:var(--green)">${W.scrambleTeams.length}</div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Teams</div>
+            </div>
+            <div style="padding:12px;background:var(--ivory);border-radius:10px;text-align:center">
+              <div style="font-size:24px;font-weight:800;color:var(--green)">18</div>
+              <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Holes</div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="display:flex;justify-content:space-between;padding:6px 0">
+              <span style="font-size:13px;color:var(--muted)">Format</span>
+              <span style="font-size:13px;font-weight:600">${formatLabel}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0">
+              <span style="font-size:13px;color:var(--muted)">Closest to Pin</span>
+              <span style="font-size:13px;font-weight:600">${ctpStr}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0">
+              <span style="font-size:13px;color:var(--muted)">Longest Drive</span>
+              <span style="font-size:13px;font-weight:600">${ldStr}</span>
+            </div>
+            ${W.scrambleEntryFee ? `<div style="display:flex;justify-content:space-between;padding:6px 0">
+              <span style="font-size:13px;color:var(--muted)">Entry Fee</span>
+              <span style="font-size:13px;font-weight:600">$${W.scrambleEntryFee}/team</span>
+            </div>` : ''}
+          </div>
+        </div>
+
+        ${W._launchError ? `<div style="margin-top:16px;padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:var(--lose);font-size:13px">${esc(W._launchError)}</div>` : ''}
+
+        <div style="margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:12px;color:#fff;text-align:center">
+          <div style="font-size:28px;font-weight:800;font-family:'Playfair Display',serif">$149</div>
+          <div style="font-size:13px;opacity:.8;margin-top:2px">Unlimited teams, live leaderboard, side games, What-If simulator</div>
         </div>`;
     }
 
