@@ -206,6 +206,21 @@
     }
     .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 6px 28px rgba(201,168,76,.5); }
 
+    .btn-secondary {
+      display: inline-block;
+      background: transparent;
+      color: rgba(255,255,255,.8);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      padding: 14px 32px;
+      border-radius: 6px;
+      text-decoration: none;
+      border: 1.5px solid rgba(255,255,255,.3);
+      transition: all .2s;
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,.6); color: #fff; background: rgba(255,255,255,.05); }
+
     .hero-fine {
       font-size: 13px;
       color: rgba(255,255,255,.5);
@@ -794,6 +809,11 @@
         grid-template-columns: 1fr !important;
         gap: 10px !important;
       }
+      /* Feature strip 2-col → 1-col */
+      div[style*="grid-template-columns:1fr 1fr;gap:32px"] {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
     }
 
     /* Pricing: stack on mobile, featured card on top */
@@ -858,7 +878,7 @@
     </a>
     <div class="nav-links">
       <a class="nav-demo" href="/courses/">Find a Course</a>
-      <a class="nav-demo" href="/demo/">See a live event</a>
+      <a class="nav-demo" href="/create/">Get Started</a>
     </div>
   </nav>
 
@@ -869,9 +889,10 @@
       <div class="hero-copy">
         <span class="hero-kicker">Nassau &middot; Skins &middot; Wolf &middot; Vegas &middot; 8 Games</span>
         <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
-        <p class="hero-sub">$32 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic. Try the demo &rarr;</p>
+        <p class="hero-sub">$32 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic.</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary" style="text-align:center">Create Your Tournament</a>
+          <a href="/demo/" class="btn-primary" style="text-align:center">See It Live</a>
+          <a href="/create/" class="btn-secondary" style="text-align:center">Create Your Outing</a>
           <span class="hero-fine" style="text-align:center">No app download &middot; Every phone &middot; Free for casual rounds</span>
         </div>
       </div>
@@ -1016,21 +1037,11 @@
           if (el) { el.style.background = 'rgba(201,168,76,.4)'; setTimeout(function() { el.style.background = ''; }, 300); }
         };
 
-        // Place a bet → animate confirmation
+        // Place a bet → return to live view with new bet in list
         window.demoPlaceBet = function(amount) {
           demoState.bets.push({ player: 'You', team: 'Thomas/Walsh', stake: amount, toWin: Math.round(amount * 0.625), status: 'active' });
           demoState.view = 'live';
           renderDemo();
-          // Flash bet confirmation
-          var body = document.getElementById('demo-body');
-          if (body) {
-            var flash = document.createElement('div');
-            flash.style.cssText = 'position:absolute;inset:0;background:rgba(82,183,136,.15);z-index:10;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--sage);animation:fadeIn .3s ease;pointer-events:none';
-            flash.textContent = 'Bet placed! $' + amount + ' on Thomas/Walsh';
-            body.style.position = 'relative';
-            body.appendChild(flash);
-            setTimeout(function() { flash.remove(); }, 1500);
-          }
         };
 
         // Static demo — no auto-cycling. Users click to explore.
@@ -1060,6 +1071,31 @@
     <div class="proof-item">
       <div class="proof-num">Auto</div>
       <div class="proof-label">settlement</div>
+    </div>
+  </div>
+
+  <!-- FEATURE STRIP — two differentiators -->
+  <div style="background:var(--forest);padding:56px 20px" class="reveal">
+    <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:32px">
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:28px 24px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">Course Directory</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.2">30,000+ courses preloaded.</div>
+        <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:16px">Full scorecards with par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.5)">
+          <div style="font-weight:700;color:#fff;margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
+          Par 72 &middot; Slope 155 &middot; Rating 76.4
+        </div>
+        <a href="/courses/" style="display:inline-block;margin-top:16px;color:var(--gold);font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:28px 24px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:12px">GHIN Integration</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.2">Handicaps auto-filled.</div>
+        <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:16px">Enter a GHIN number, get their official handicap index instantly. No typing, no guessing, no sandbaggers.</p>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.5)">
+          <span style="color:rgba(255,255,255,.4)">GHIN #1234567</span> <span style="color:var(--sage);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
+        </div>
+        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold);font-size:13px;font-weight:700;text-decoration:none;letter-spacing:.03em">Create Your Outing &rarr;</a>
+      </div>
     </div>
   </div>
 
@@ -1118,7 +1154,7 @@
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
           <div class="price-amount">$32</div>
-          <span class="price-period">per event, under $4/person for groups of 8+</span>
+          <span class="price-period">per outing &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
           <div class="price-details">
             <span class="price-detail">All 8 formats with live scoring + betting</span>
             <span class="price-detail">GHIN lookup, handicaps auto-filled, no typing</span>
@@ -1127,7 +1163,7 @@
             <span class="price-detail">Shareable settlement card at round end</span>
             <span class="price-detail">Any phone, no app required</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Trip</a>
+          <a href="/create/" class="price-cta">Create Your Outing</a>
         </div>
         <div class="price-card">
           <span class="price-type">Member-Guest</span>
@@ -1139,13 +1175,58 @@
             <span class="price-detail">Futures market before the event</span>
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Tournament</a>
+          <a href="/create/" class="price-cta">Create Your Outing</a>
         </div>
       </div>
+
+      <!-- FAQ Accordion -->
+      <div style="max-width:640px;margin:40px auto 0">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:20px">Common Questions</div>
+        <div class="faq-item" style="border-top:1px solid var(--rule)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+            What counts as one outing?
+            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
+          </button>
+          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">One outing covers your entire weekend — unlimited rounds, all game formats, all players. Set it up once, play all trip.</p>
+          </div>
+        </div>
+        <div class="faq-item" style="border-top:1px solid var(--rule)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+            Do all players need to pay?
+            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
+          </button>
+          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32 and sets up the outing. Everyone else joins free via a shared link.</p>
+          </div>
+        </div>
+        <div class="faq-item" style="border-top:1px solid var(--rule)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+            Can I try it free first?
+            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
+          </button>
+          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Free rounds include all 8 game formats with live scoring. The paid tier adds GHIN auto-lookup, AI pairings, live betting odds, and the settlement card.</p>
+          </div>
+        </div>
+        <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
+          <button onclick="this.parentElement.classList.toggle('open')" style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
+            What if we lose cell service?
+            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
+          </button>
+          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">The app caches everything offline. Scores, bets, and standings are saved locally and sync when signal returns.</p>
+          </div>
+        </div>
+      </div>
+      <style>
+        .faq-item.open .faq-answer { max-height: 200px; }
+        .faq-item.open .faq-arrow { transform: rotate(45deg); }
+      </style>
+
     </div>
   </div>
 
-  <!-- HOW IT WORKS -->
   <!-- HOW IT WORKS — dark green band for visual rhythm -->
   <div style="background:var(--forest);padding:64px 20px">
     <div style="max-width:720px;margin:0 auto">
@@ -1230,7 +1311,7 @@
       <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:700;margin:12px 0 8px;line-height:1.15">30,000+ courses.<br><em style="color:var(--gold)">Full scorecards.</em></h2>
       <p style="font-size:15px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:28px">Search any course in the U.S. View par, stroke index, slope, and rating for every tee — then set up your match right there.</p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;transition:background 0.2s">Set Up Your Event</a>
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;transition:background 0.2s">Create Your Outing</a>
         <a href="/courses/" style="display:inline-block;background:rgba(255,255,255,0.1);color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid rgba(255,255,255,0.2);transition:background 0.2s">Find Your Course</a>
       </div>
     </div>
@@ -1241,7 +1322,7 @@
     <div class="final-cta-inner">
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
-      <a href="/create/" class="btn-primary">Create Your Event</a>
+      <a href="/create/" class="btn-primary">Create Your Outing</a>
       <div class="final-links">
         <a href="/demo/">See a live demo first</a>
         <a href="/overview/">GM setup guide</a>
