@@ -11,7 +11,7 @@
   <meta property="og:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://betwaggle.com/">
-  <meta property="og:image" content="https://cafecito-ai.com/og-card.jpg">
+  <meta property="og:image" content="https://betwaggle.com/og-card.svg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Waggle">
@@ -20,7 +20,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Waggle — The Sportsbook for Your Golf Group">
   <meta name="twitter:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
-  <meta name="twitter:image" content="https://cafecito-ai.com/og-card.jpg">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.svg">
 
   <!-- PWA / Mobile -->
   <meta name="theme-color" content="#0D2818">
@@ -728,6 +728,20 @@
     .reveal.visible { opacity: 1; transform: translateY(0); }
     @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
+    /* Mobile responsive for inline grids */
+    @media (max-width: 640px) {
+      /* 4-column how-it-works becomes 2x2 */
+      div[style*="grid-template-columns:repeat(4"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20px !important;
+      }
+      /* 3-column value props become stacked */
+      div[style*="grid-template-columns:repeat(3"] {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -751,7 +765,7 @@
       <div class="hero-copy">
         <span class="hero-kicker">Nassau &middot; Skins &middot; Wolf &middot; Vegas &middot; 8 Games</span>
         <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
-        <p class="hero-sub">$29 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic. Try the demo &rarr;</p>
+        <p class="hero-sub">$32 to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic. Try the demo &rarr;</p>
         <div class="hero-actions">
           <a href="/create/" class="btn-primary">Create Your Tournament</a>
           <span class="hero-fine">No app download &middot; Every phone &middot; Free for casual rounds</span>
@@ -959,11 +973,30 @@
     </div>
   </div>
 
-  <!-- BODY COPY -->
-  <div class="section reveal">
+  <!-- BODY COPY — problem/solution block -->
+  <div class="section reveal" style="padding-top:72px;padding-bottom:48px">
+    <span class="section-label">The Problem</span>
     <h2>The Nassau has always<br>been this serious.</h2>
     <div class="section-rule"></div>
-    <p>The group chat isn't a scoreboard. The folded card in someone's back pocket isn't a settlement. Waggle is the live sportsbook your group has been running manually for years &mdash; finally on every phone, automatically.</p>
+    <p>The group chat isn't a scoreboard. The folded card in someone's back pocket isn't a settlement.</p>
+    <p style="font-weight:600;color:var(--forest);font-size:19px;line-height:1.6;margin-top:12px">Waggle is the live sportsbook your group has been running manually for years &mdash; finally on every phone, automatically.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px">
+      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="font-size:28px;margin-bottom:8px">&#128241;</div>
+        <div style="font-size:13px;font-weight:700;color:var(--forest)">Every Phone</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">No app. No download. Works instantly.</div>
+      </div>
+      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="font-size:28px;margin-bottom:8px">&#9971;</div>
+        <div style="font-size:13px;font-weight:700;color:var(--forest)">Live Scoring</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Odds update hole by hole on every device.</div>
+      </div>
+      <div style="text-align:center;padding:20px 12px;background:#fff;border-radius:8px;border:1px solid var(--rule)">
+        <div style="font-size:28px;margin-bottom:8px">&#128176;</div>
+        <div style="font-size:13px;font-weight:700;color:var(--forest)">Auto Settlement</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Venmo links. No arguments. No math.</div>
+      </div>
+    </div>
   </div>
 
   <!-- PRICING -->
@@ -988,7 +1021,7 @@
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
-          <div class="price-amount">$29</div>
+          <div class="price-amount">$32</div>
           <span class="price-period">per event, under $4/person for groups of 8+</span>
           <div class="price-details">
             <span class="price-detail">All 8 formats with live scoring + betting</span>
@@ -1017,31 +1050,32 @@
   </div>
 
   <!-- HOW IT WORKS -->
-  <div class="section reveal" style="padding-top:0">
-    <span class="section-label">How It Works</span>
-    <h2>Four steps.<br>One link to your group.</h2>
-    <div class="section-rule"></div>
-
-    <div class="steps-grid">
-      <div class="step">
-        <span class="step-numeral">I.</span>
-        <h3>Set up your event</h3>
-        <p>Pick your games, set handicaps, add players. Five minutes. No account required.</p>
-      </div>
-      <div class="step">
-        <span class="step-numeral">II.</span>
-        <h3>Share one link</h3>
-        <p>Everyone opens the live sportsbook on their phone. Place bets before or during the round.</p>
-      </div>
-      <div class="step">
-        <span class="step-numeral">III.</span>
-        <h3>Score hole by hole</h3>
-        <p>One person enters gross scores. Odds, standings, and pots update on every phone instantly.</p>
-      </div>
-      <div class="step">
-        <span class="step-numeral">IV.</span>
-        <h3>Share the settlement card</h3>
-        <p>Who won. What they're owed. Drop it in the group chat. No arguments.</p>
+  <!-- HOW IT WORKS — dark green band for visual rhythm -->
+  <div style="background:var(--forest);padding:64px 20px">
+    <div style="max-width:720px;margin:0 auto">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px">How It Works</span>
+      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,40px);color:#fff;line-height:1.15;margin-bottom:48px">Four steps.<br>One link to your group.</h2>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
+        <div style="text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">1</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Set up your event</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Pick games, set handicaps, add players. Five minutes.</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">2</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Share one link</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Everyone opens the sportsbook on their phone. Bet anytime.</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">3</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Score hole by hole</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">One person enters scores. Odds update on every phone instantly.</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">4</div>
+          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Drop the settlement</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Who won. What they owe. Venmo links. Group chat. Done.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1120,8 +1154,18 @@
   </div>
 
   <!-- FOOTER -->
-  <footer>
-    <p>Waggle by <a href="/">Waggle</a> &nbsp;&middot;&nbsp; <a href="/courses/">Find a Course</a> &nbsp;&middot;&nbsp; <a href="/demo/">See a live demo</a> &nbsp;&middot;&nbsp; <a href="/overview/">GM guide</a></p>
+  <footer style="background:var(--forest);padding:48px 20px 32px;text-align:center">
+    <div style="max-width:640px;margin:0 auto">
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
+      <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+        <a href="/create/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Create Event</a>
+        <a href="/courses/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
+        <a href="/overview/" style="color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
+      </div>
+      <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
+      <p style="font-size:11px;color:rgba(255,255,255,.3);margin:0">betwaggle.com</p>
+    </div>
   </footer>
 
   <script>
