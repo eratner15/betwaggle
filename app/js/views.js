@@ -3680,6 +3680,253 @@ function renderPlayerPicker(state) {
   return html;
 }
 
+// ─── Round-Mode Scenario / What-If ─────────────────────────────
+function renderRoundScenarios(state) {
+  const config = state._config;
+  const gameState = state._gameState;
+  const holes = state._holes || {};
+  const players = getPlayersFromConfig(config);
+  const holesPerRound = config?.holesPerRound || 18;
+  const games = config?.games || {};
+  const pars = getCoursePars(config);
+
+  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const holesPlayed = scoredHoles.length;
+  const remainingHoles = [];
+  for (let h = 1; h <= holesPerRound; h++) {
+    if (!scoredHoles.includes(h)) remainingHoles.push(h);
+  }
+
+  // Simulated scores stored in state._scenario.simHoles = { holeNum: { playerName: score } }
+  if (!state._scenario) state._scenario = {};
+  if (!state._scenario.simHoles) state._scenario.simHoles = {};
+  const simHoles = state._scenario.simHoles;
+
+  let html = '';
+
+  // Header
+  html += `<div style="margin-bottom:16px">
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-text)">What If...</div>
+    <div style="font-size:13px;color:var(--mg-text-muted);margin-top:2px">See how remaining holes change the outcome</div>
+  </div>`;
+
+  // Current standings
+  const currentPnl = computeRoundPnL(gameState, players, games, config?.structure);
+  const hasPnl = Object.values(currentPnl).some(v => v !== 0);
+  const nassau = gameState?.nassau || {};
+
+  if (hasPnl || holesPlayed > 0) {
+    const sorted = [...players].sort((a, b) => (currentPnl[b.name] || 0) - (currentPnl[a.name] || 0));
+    html += `<div class="mg-card" style="padding:12px;margin-bottom:12px">
+      <div class="mg-card-header" style="margin-bottom:8px">CURRENT STANDINGS · THRU ${holesPlayed}</div>`;
+    sorted.forEach((p, i) => {
+      const money = currentPnl[p.name] || 0;
+      const moneyStr = money === 0 ? 'E' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+      const moneyColor = money > 0 ? '#22c55e' : money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <span style="font-size:14px;font-weight:${i === 0 && money > 0 ? '700' : '500'}">${escHtml(p.name)}</span>
+        <span style="font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</span>
+      </div>`;
+    });
+    // Nassau status
+    const nassauParts = [];
+    if (nassau.frontWinner) nassauParts.push(`Front: ${escHtml(nassau.frontWinner)}`);
+    if (nassau.backWinner) nassauParts.push(`Back: ${escHtml(nassau.backWinner)}`);
+    if (nassau.totalWinner) nassauParts.push(`Total: ${escHtml(nassau.totalWinner)}`);
+    if (nassauParts.length > 0) {
+      html += `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--mg-border)">Nassau: ${nassauParts.join(' · ')}</div>`;
+    }
+    // Skins leader
+    const skinsHoles = gameState?.skins?.holes || {};
+    const skinsCount = {};
+    players.forEach(p => { skinsCount[p.name] = 0; });
+    Object.values(skinsHoles).forEach(h => { if (h.winner && skinsCount.hasOwnProperty(h.winner)) skinsCount[h.winner]++; });
+    const skinsEntries = Object.entries(skinsCount).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+    if (skinsEntries.length > 0) {
+      html += `<div style="font-size:11px;color:var(--mg-text-muted);margin-top:4px">Skins: ${skinsEntries.map(([n, c]) => `${escHtml(n)} (${c})`).join(', ')}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (remainingHoles.length === 0) {
+    html += `<div class="mg-card" style="padding:20px;text-align:center;color:var(--mg-text-muted)">
+      All ${holesPerRound} holes have been scored. View <a href="#settle" style="color:var(--mg-gold)">settlement</a> for final results.
+    </div>`;
+    return html;
+  }
+
+  // Simulated holes input
+  const simCount = Object.keys(simHoles).length;
+  html += `<div class="mg-card" style="padding:12px">
+    <div class="mg-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span>SIMULATE REMAINING HOLES</span>
+      <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 8px;border-radius:4px;font-weight:700">${remainingHoles.length} left</span>
+    </div>`;
+
+  remainingHoles.forEach(h => {
+    const par = pars[h - 1] || 4;
+    const hasSim = !!simHoles[h];
+    html += `<div style="padding:10px 0;${h !== remainingHoles[remainingHoles.length - 1] ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600">Hole ${h} <span style="font-size:11px;color:var(--mg-text-muted);font-weight:400">Par ${par}</span></span>
+        ${hasSim ? `<span style="font-size:10px;color:var(--mg-gold-dim);font-weight:700;cursor:pointer" onclick="window.MG.clearSimHole(${h})">Clear</span>` : ''}
+      </div>`;
+    players.forEach(p => {
+      const simScore = simHoles[h]?.[p.name];
+      // Score buttons: range based on par
+      const scores = [par - 2, par - 1, par, par + 1, par + 2];
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.name)}</span>
+        <div style="display:flex;gap:3px">`;
+      scores.forEach(s => {
+        const selected = simScore === s;
+        const label = s === par - 2 ? 'Eag' : s === par - 1 ? 'Bir' : s === par ? 'Par' : s === par + 1 ? 'Bog' : 'Dbl';
+        html += `<button style="min-width:32px;height:28px;border-radius:6px;border:1px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${selected ? 'rgba(212,175,55,0.15)' : 'transparent'};color:${selected ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};font-size:10px;font-weight:${selected ? '800' : '600'};cursor:pointer" onclick="window.MG.setSimHoleScore(${h},'${escHtml(p.name)}',${s})">${s}</button>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  // Reset button
+  if (simCount > 0) {
+    html += `<div style="margin-top:8px">
+      <button class="mg-btn" style="width:100%;border:1px solid var(--mg-green);color:var(--mg-green);background:transparent;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px" onclick="window.MG.resetRoundScenarios()">Reset All Scenarios</button>
+    </div>`;
+  }
+
+  // Projected P&L — merge real game state with simulated holes
+  if (simCount > 0) {
+    // Build a merged gameState by replaying skins/nassau with sim scores
+    const mergedPnl = computeSimulatedPnL(gameState, simHoles, players, games, config?.structure, holesPerRound, pars, holes);
+    const projSorted = [...players].sort((a, b) => (mergedPnl[b.name] || 0) - (mergedPnl[a.name] || 0));
+
+    html += `<div class="mg-card" style="padding:12px;margin-top:12px;border:2px solid var(--mg-gold)">
+      <div class="mg-card-header" style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;background:var(--mg-gold);color:var(--mg-green);padding:2px 6px;border-radius:3px;font-weight:800">SIM</span>
+        PROJECTED P&L
+      </div>`;
+    projSorted.forEach((p, i) => {
+      const money = mergedPnl[p.name] || 0;
+      const cur = currentPnl[p.name] || 0;
+      const diff = money - cur;
+      const moneyStr = money === 0 ? 'E' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+      const moneyColor = money > 0 ? '#22c55e' : money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const diffStr = diff === 0 ? '' : diff > 0 ? `(+$${diff})` : `(-$${Math.abs(diff)})`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < projSorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <span style="font-size:14px;font-weight:${i === 0 && money > 0 ? '700' : '500'}">${escHtml(p.name)}</span>
+        <div style="text-align:right">
+          <span style="font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</span>
+          ${diffStr ? `<span style="font-size:11px;color:var(--mg-text-muted);margin-left:4px">${diffStr}</span>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  return html;
+}
+
+/**
+ * Compute projected P&L by replaying skins/nassau logic over real + simulated holes.
+ * This is a simplified simulation — it re-runs the skins pot and nassau logic from scratch
+ * using actual scored holes plus the hypothetical scores from simHoles.
+ */
+function computeSimulatedPnL(gameState, simHoles, players, games, structure, holesPerRound, pars, realHoles) {
+  const skinsBet = parseInt(structure?.skinsBet) || 5;
+  const nassauBet = parseInt(structure?.nassauBet) || 10;
+  const n = players.length;
+  const pnl = {};
+  players.forEach(p => { pnl[p.name] = 0; });
+
+  // Merge real hole scores with simulated ones
+  // Real scores come from realHoles: { holeNum: { playerName: score } }
+  // Sim scores come from simHoles: { holeNum: { playerName: score } }
+  const allScores = {};
+  for (let h = 1; h <= holesPerRound; h++) {
+    if (realHoles[h]) allScores[h] = { ...realHoles[h] };
+    else if (simHoles[h]) allScores[h] = { ...simHoles[h] };
+  }
+
+  // Replay skins
+  if (games.skins) {
+    let pot = 1;
+    for (let h = 1; h <= holesPerRound; h++) {
+      const hScores = allScores[h];
+      if (!hScores) continue;
+      const entries = players.map(p => ({ name: p.name, score: hScores[p.name] })).filter(e => e.score != null);
+      if (entries.length < 2) continue;
+      const minScore = Math.min(...entries.map(e => e.score));
+      const winners = entries.filter(e => e.score === minScore);
+      if (winners.length === 1) {
+        // Skin won
+        pnl[winners[0].name] += pot * (n - 1) * skinsBet;
+        players.forEach(p => { if (p.name !== winners[0].name) pnl[p.name] -= pot * skinsBet; });
+        pot = 1;
+      } else {
+        // Carry
+        pot++;
+      }
+    }
+  }
+
+  // Replay nassau (simplified: best net total for front/back/total)
+  if (games.nassau) {
+    const frontTotals = {};
+    const backTotals = {};
+    players.forEach(p => { frontTotals[p.name] = 0; backTotals[p.name] = 0; });
+    for (let h = 1; h <= holesPerRound; h++) {
+      const hScores = allScores[h];
+      if (!hScores) continue;
+      const par = pars[h - 1] || 4;
+      players.forEach(p => {
+        const score = hScores[p.name];
+        if (score != null) {
+          const rel = score - par;
+          if (h <= 9) frontTotals[p.name] += rel;
+          else backTotals[p.name] += rel;
+        }
+      });
+    }
+    // Determine front/back/total winners (lowest relative to par)
+    const findWinner = (totals) => {
+      const entries = Object.entries(totals).sort((a, b) => a[1] - b[1]);
+      if (entries.length < 2) return null;
+      if (entries[0][1] < entries[1][1]) return entries[0][0];
+      return null; // tie = no winner
+    };
+    // Check if all front 9 scored
+    const frontScored = Array.from({ length: 9 }, (_, i) => i + 1).every(h => allScores[h]);
+    const backScored = Array.from({ length: 9 }, (_, i) => i + 10).every(h => allScores[h]);
+    if (frontScored) {
+      const fw = findWinner(frontTotals);
+      if (fw) {
+        pnl[fw] += nassauBet * (n - 1);
+        players.forEach(p => { if (p.name !== fw) pnl[p.name] -= nassauBet; });
+      }
+    }
+    if (backScored) {
+      const bw = findWinner(backTotals);
+      if (bw) {
+        pnl[bw] += nassauBet * (n - 1);
+        players.forEach(p => { if (p.name !== bw) pnl[p.name] -= nassauBet; });
+      }
+    }
+    if (frontScored && backScored) {
+      const totalTotals = {};
+      players.forEach(p => { totalTotals[p.name] = frontTotals[p.name] + backTotals[p.name]; });
+      const tw = findWinner(totalTotals);
+      if (tw) {
+        pnl[tw] += nassauBet * (n - 1);
+        players.forEach(p => { if (p.name !== tw) pnl[p.name] -= nassauBet; });
+      }
+    }
+  }
+
+  return pnl;
+}
+
 // ─── Scenario / What-If View ───────────────────────────────────
 export function renderScenarios(state) {
   const scenario = state._scenario || {};
@@ -3687,11 +3934,10 @@ export function renderScenarios(state) {
   const simResults = scenario.simResults || {};
   const flight = F(flightId);
 
-  if (!flight || !flight.teamIds?.length) {
-    return `<div class="mg-section-title">Scenario Analysis</div>
-      <div class="mg-card" style="padding:24px;text-align:center;color:var(--mg-text-secondary)">
-        No flights configured for this event.
-      </div>`;
+  // Round mode what-if: simulate remaining holes
+  const isRound = !flight || !flight.teamIds?.length;
+  if (isRound) {
+    return renderRoundScenarios(state);
   }
 
   // Compute scenario data

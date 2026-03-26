@@ -176,8 +176,21 @@ async function bootstrap() {
   // Initial sync — pull scores/bets from server
   syncFromServer();
 
-  // Auto-sync every 30s
+  // Auto-sync every 30s — use Page Visibility API to pause when backgrounded
   syncTimer = setInterval(syncFromServer, 30000);
+
+  // Pause/resume sync when page visibility changes (prevents stacked intervals on iOS Safari)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // Page backgrounded — stop syncing to prevent stacked requests
+      if (syncTimer) { clearInterval(syncTimer); syncTimer = null; }
+    } else {
+      // Page foregrounded — sync immediately then restart interval
+      syncFromServer();
+      if (!syncTimer) syncTimer = setInterval(syncFromServer, 30000);
+      updateConnectivityIndicator();
+    }
+  });
 
   // Update connectivity indicator every 5s
   setInterval(updateConnectivityIndicator, 5000);
@@ -938,12 +951,22 @@ window.MG = {
       }
     }
 
-    // Payments
+    // Payments with Venmo deep links
     if (pairs.length > 0) {
+      // Build venmo handle lookup from config
+      const venmoHandles = {};
+      (config.players || config.roster || []).forEach(p => {
+        if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
+      });
+
       lines.push('\u{1F4B8} SETTLE UP');
       lines.push('\u2500'.repeat(24));
+      const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
       pairs.forEach(({ from, to, amount }) => {
+        const toHandle = venmoHandles[to] || to;
+        const venmoLink = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toHandle)}&amount=${amount}&note=${noteText}`;
         lines.push(`   ${from} \u2192 ${to}:  $${amount}`);
+        lines.push(`   Pay now: ${venmoLink}`);
       });
       lines.push('');
     }
@@ -951,7 +974,7 @@ window.MG = {
     // Footer
     lines.push('\u2500'.repeat(24));
     lines.push(`Powered by Waggle \u26F3`);
-    lines.push(url);
+    lines.push(`https://betwaggle.com`);
 
     const text = lines.join('\n');
 
