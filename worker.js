@@ -5,6 +5,10 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Auto-seed events on first request (fire-and-forget, idempotent)
+    ctx.waitUntil(seedDemoEvent(env).catch(()=>{}));
+    ctx.waitUntil(seedFriscoV2(env).catch(()=>{}));
+
     // www redirect
     if (url.hostname === 'www.betwaggle.com') {
       return Response.redirect(`https://betwaggle.com${url.pathname}${url.search}`, 301);
