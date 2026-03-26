@@ -659,18 +659,18 @@ export default {
           games: { nassau: true, skins: true, wolf: true, vegas: false, stableford: false, match_play: false, stroke_play: false, banker: false, bloodsome: false, bingo: false, nines: false, scramble: false },
           holesPerRound: 18,
           players: [
-            { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
-            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
-            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
-            { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+            { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+            { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+            { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+            { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
           ],
           roster: [
-            { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
-            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
-            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
-            { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+            { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+            { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+            { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+            { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
           ],
-          wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+          wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
           theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
           course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
@@ -697,7 +697,7 @@ export default {
           adminUrl: `https://betwaggle.com/${slug}/#admin`,
           adminPin: '1234',
           commissioner: 'joe@joeweill.com',
-          players: ['Joe Weill (15)', 'Andrew Morrison (12)', 'Rob Edgerton (18)', 'Ben Samuels (10)'],
+          players: ['Joseph Weill (7.8)', 'Andrew Morrison (12.4)', 'Robert Edgerton (11.2)', 'Benjamin Samuels (5.2)'],
           games: 'Nassau $10, Skins $5, Wolf (auto-press at 2-down)',
           course: 'Fields Ranch East at PGA Frisco — Par 72',
           instructions: 'Joe: open the admin URL, enter PIN 1234, go to Settings to toggle games or change stakes. Go to Scorecard tab to enter scores on game day.',
@@ -743,18 +743,18 @@ export default {
           games: { skins: true, nassau: true, wolf: true, vegas: true, stableford: true, match_play: true, nines: false, scramble: false },
           holesPerRound: 18,
           players: [
-            { name: 'Joe Weill', handicapIndex: 15, venmo: '@joe-weill' },
-            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '@andrew-morrison' },
-            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '@rob-edgerton' },
-            { name: 'Ben Samuels', handicapIndex: 10, venmo: '@ben-samuels' },
+            { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+            { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+            { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+            { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
           ],
           roster: [
-            { name: 'Joe Weill', handicapIndex: 15, venmo: '@joe-weill' },
-            { name: 'Andrew Morrison', handicapIndex: 12, venmo: '@andrew-morrison' },
-            { name: 'Rob Edgerton', handicapIndex: 18, venmo: '@rob-edgerton' },
-            { name: 'Ben Samuels', handicapIndex: 10, venmo: '@ben-samuels' },
+            { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+            { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+            { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+            { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
           ],
-          wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+          wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
           theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
           // 3 rounds at PGA Frisco
@@ -4509,8 +4509,16 @@ async function handleGhinSearch(q, env) {
 // ─── Seed: PGA Frisco 2026 (Joe's trip) ──────────────────────────────────
 async function seedFriscoV2(env) {
   const slug = 'pga-frisco-2026';
-  const existing = await env.MG_BOOK.get(`config:${slug}`);
-  if (existing) return { seeded: false, reason: 'already exists' };
+  const existing = await env.MG_BOOK.get(`config:${slug}`, 'json');
+  // Check if existing event has the correct player names — if not, force re-seed
+  const needsUpdate = existing && (!existing.players?.some(p => p.name === 'Joseph Weill'));
+  if (existing && !needsUpdate) return { seeded: false, reason: 'already exists' };
+  // Delete old data if re-seeding
+  if (needsUpdate) {
+    for (const k of ['holes','game-state','bets','feed','settings','scores','players']) {
+      await env.MG_BOOK.delete(`${slug}:${k}`).catch(()=>{});
+    }
+  }
   const config = {
     event: { name: 'PGA Frisco 2026', shortName: 'PGA Frisco', venue: 'Fields Ranch at PGA Frisco', url: `https://betwaggle.com/${slug}/`, dates: { day1: '2026-03-28', day2: '2026-03-29' }, format: 'nassau', adminPin: '1234', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
     scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
@@ -4519,18 +4527,18 @@ async function seedFriscoV2(env) {
     games: { nassau: true, skins: true, wolf: true, vegas: false, stableford: false, match_play: false, stroke_play: false, banker: false, bloodsome: false, bingo: false, nines: false, scramble: false },
     holesPerRound: 18,
     players: [
-      { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
-      { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
-      { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
-      { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+      { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+      { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+      { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+      { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
     ],
     roster: [
-      { name: 'Joe Weill', handicapIndex: 15, venmo: '' },
-      { name: 'Andrew Morrison', handicapIndex: 12, venmo: '' },
-      { name: 'Rob Edgerton', handicapIndex: 18, venmo: '' },
-      { name: 'Ben Samuels', handicapIndex: 10, venmo: '' },
+      { name: 'Joseph Weill', handicapIndex: 7.8, venmo: '', club: 'Tavistock' },
+      { name: 'Andrew Morrison', handicapIndex: 12.4, venmo: '', club: 'Eligo' },
+      { name: 'Robert Edgerton', handicapIndex: 11.2, venmo: '', club: 'Woodland' },
+      { name: 'Benjamin Samuels', handicapIndex: 5.2, venmo: '', club: 'CC of Maryland' },
     ],
-    wolfOrder: ['Joe Weill', 'Andrew Morrison', 'Rob Edgerton', 'Ben Samuels'],
+    wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
     teams: {}, flights: {}, flightOrder: [], pairings: {},
     theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
     course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
