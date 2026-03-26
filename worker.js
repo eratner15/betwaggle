@@ -4106,6 +4106,12 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify(feed.slice(-50).reverse()), { headers: EVENT_CORS });
   }
 
+  // GET /disputes
+  if (path === 'disputes' && request.method === 'GET') {
+    const disputes = (await env.MG_BOOK.get(`${K}:disputes`, 'json')) || [];
+    return new Response(JSON.stringify(disputes), { headers: EVENT_CORS });
+  }
+
   // POST /feed
   if (path === 'feed' && request.method === 'POST') {
     const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
