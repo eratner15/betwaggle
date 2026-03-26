@@ -1011,21 +1011,15 @@ window.MG = {
     const text = lines.join('\n');
 
     if (navigator.share) {
-      // Try sharing with the canvas image if available
-      const tryShareWithImage = async () => {
-        try {
-          // Quick check if exportSettlementCard can give us a blob
-          if (typeof window.MG.exportSettlementCard === 'function') {
-            // Share text only for now — image export is a separate button
-          }
-        } catch {}
-        return navigator.share({ title: `${eventName} \u2014 Settlement`, text });
-      };
-      tryShareWithImage().catch(() => {
+      navigator.share({
+        title: `${eventName} \u2014 Settlement`,
+        text: text,
+        url: 'https://betwaggle.com'
+      }).catch(() => {
         navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
       });
     } else {
-      navigator.clipboard?.writeText(text).then(() => toast('Results copied to clipboard!')).catch(() => toast(url));
+      navigator.clipboard?.writeText(text).then(() => toast('Results copied to clipboard!')).catch(() => {});
     }
   },
 
@@ -1449,10 +1443,17 @@ window.MG = {
       if (!blob) { toast('Export failed'); return; }
       const file = new File([blob], 'waggle-settlement.png', { type: 'image/png' });
 
-      // Try native share (mobile)
+      // Try native share (mobile) — include image + text + URL
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], title: eventName + ' — Waggle' });
+          const eventName = state._config?.event?.name || 'Golf Event';
+          const shareUrl = 'https://betwaggle.com';
+          await navigator.share({
+            files: [file],
+            title: eventName + ' \u2014 Settlement',
+            text: eventName + ' \u2014 Final standings and settlement. Powered by Waggle.',
+            url: shareUrl
+          });
           return;
         } catch (e) {
           // User cancelled or share failed, fall through to download
@@ -2434,7 +2435,7 @@ window.MG = {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${d.name} — ${headline}`, text });
+        await navigator.share({ title: `${d.name} \u2014 ${headline}`, text, url: 'https://betwaggle.com' });
         if (overlay) overlay.remove();
         return;
       } catch {}
