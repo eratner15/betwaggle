@@ -4394,7 +4394,7 @@ async function handleWaggleAdvisor(request, env) {
 
   const prompt = `You are a seasoned golf trip organizer. Recommend the ideal Waggle game setup. Be specific and concise (under 200 words).
 
-Players (${players.length}): ${players.map(p => `${p.name || 'Player'} HI ${p.handicap || 0}`).join(', ')}
+Players (${players.length}): ${players.map(p => `${p.name || 'Player'} HI ${p.handicap || p.hi || 0}`).join(', ')}
 Handicap spread: ${spread.toFixed(1)} | Avg: ${avg.toFixed(1)}
 
 Return JSON: {"recommended_format":"Nassau|Skins|Wolf|Vegas|Banker","stakes":"...","press_rules":"...","handicap_advice":"...","fun_tip":"...","reasoning":"..."}`;
