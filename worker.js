@@ -5834,9 +5834,9 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ ok: true, config: cloneConfig }), { headers: EVENT_CORS });
   }
 
-  // POST /scan-scorecard — AI-powered scorecard OCR
+  // POST /scan-scorecard — AI-powered scorecard OCR (Workers AI primary, Claude fallback)
   if (path === 'scan-scorecard' && request.method === 'POST') {
-    if (!env.ANTHROPIC_API_KEY) {
+    if (!env.AI && !env.ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: EVENT_CORS });
     }
 
@@ -5844,60 +5844,68 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const image = formData.get('image');
     if (!image) return new Response(JSON.stringify({ error: 'No image provided' }), { status: 400, headers: EVENT_CORS });
 
-    // Convert image to base64
     const imageBytes = await image.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
     const mediaType = image.type || 'image/jpeg';
 
-    // Get player names and course pars from config
     const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     const cfg = cfgRaw ? JSON.parse(cfgRaw) : {};
-    const playerNames = (cfg.players || []).map(p => p.name);
-    const coursePars = cfg.coursePars || [];
+    const playerNames = (cfg.roster || cfg.players || []).map(p => p.name);
+    const coursePars = cfg.course?.pars || cfg.coursePars || [];
 
-    // Call Claude Vision to extract scores
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64Image },
-            },
-            {
-              type: 'text',
-              text: `Extract golf scores from this scorecard image. The players are: ${playerNames.join(', ')}. The course has ${coursePars.length} holes with pars: ${coursePars.join(', ')}.
+    const ocrPrompt = `Extract golf scores from this scorecard image. Players: ${playerNames.join(', ')}. Course pars: ${coursePars.join(', ')}.
+Return ONLY JSON: {"scores":{"1":{"PlayerName":5},"2":{"PlayerName":4}},"confidence":"high","notes":""}
+Match player names to rows. Only include holes with scores written.`;
 
-Return ONLY a JSON object with this exact format (no markdown, no explanation):
-{
-  "scores": {
-    "1": {"${playerNames[0]}": 5, "${playerNames[1] || 'Player2'}": 4},
-    "2": {"${playerNames[0]}": 4, "${playerNames[1] || 'Player2'}": 3}
-  },
-  "confidence": "high" or "medium" or "low",
-  "notes": "any issues or unclear numbers"
-}
+    let text = '';
 
-Match player names to rows on the scorecard. If a score is unclear, use your best guess and note it. Only include holes that have scores written.`
-            }
-          ]
-        }]
-      })
-    });
+    // Try Workers AI first (free, edge)
+    if (env.AI) {
+      try {
+        const result = await env.AI.run('@cf/llava-hf/llava-1.5-7b-hf', {
+          image: [...new Uint8Array(imageBytes)],
+          prompt: ocrPrompt,
+          max_tokens: 1024,
+        });
+        text = result?.description || result?.response || '';
+      } catch (e) {
+        console.error('Workers AI vision error, falling back to Claude:', e.message);
+      }
+    }
 
-    const aiResult = await aiRes.json();
-    const text = aiResult.content?.[0]?.text || '';
+    // Fall back to Claude Vision if Workers AI failed or returned empty
+    if (!text && env.ANTHROPIC_API_KEY) {
+      try {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } },
+                { type: 'text', text: ocrPrompt }
+              ]
+            }]
+          })
+        });
+        const aiResult = await aiRes.json();
+        text = aiResult.content?.[0]?.text || '';
+      } catch (e) {
+        console.error('Claude Vision error:', e.message);
+      }
+    }
 
-    // Parse the JSON from Claude's response
+    if (!text) {
+      return new Response(JSON.stringify({ error: 'OCR failed — could not extract scores' }), { status: 500, headers: EVENT_CORS });
+    }
+
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found in response');
