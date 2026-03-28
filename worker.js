@@ -400,6 +400,7 @@ export default {
         }
         try {
           const cfg = JSON.parse(configRaw);
+          delete cfg.adminPin;
           if (cfg.event) delete cfg.event.adminPin;
           return new Response(JSON.stringify(cfg), {
             headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
