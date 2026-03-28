@@ -3216,7 +3216,7 @@ async function handleAdsPainPoints(url, env) {
     { text: 'Setting up the Wolf pairings takes 20 minutes of group chat arguments', theme: 'group_chat', relevance: 7 },
   ];
 
-  if (posts.length === 0 || !env.ANTHROPIC_API_KEY) {
+  if (posts.length === 0 || (!env.AI && !env.ANTHROPIC_API_KEY)) {
     const result = JSON.stringify({ painPoints: fallback, posts: [], source: 'fallback' });
     if (env.MG_BOOK) await env.MG_BOOK.put(cacheKey, result, { expirationTtl: 21600 });
     return new Response(result, { headers: ADS_JSON });
@@ -3231,13 +3231,8 @@ Return JSON array only: [{"text":"...", "theme":"scoring|betting|settlement|grou
 Include source_index pointing to which post the pain point came from.`;
 
   try {
-    const cr = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] }),
-    });
-    const cd = await cr.json();
-    const raw = cd.content?.[0]?.text || '';
+    const aiResult = await callAI(env, 'Extract golf pain points from Reddit posts. Return JSON array only.', prompt, 1024);
+    const raw = aiResult.content?.[0]?.text || '';
     const match = raw.match(/\[[\s\S]*\]/);
     const painPoints = match ? JSON.parse(match[0]) : fallback;
     const topPosts = posts.slice(0, 20).map(p => ({ id: p.id, title: p.title, score: p.score, sub: p.sub, url: `https://www.reddit.com/r/${p.sub}/comments/${p.id}/` }));
@@ -3250,7 +3245,7 @@ Include source_index pointing to which post the pain point came from.`;
 }
 
 async function handleAdsGenerate(request, env) {
-  if (!env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set' }), { status: 500, headers: ADS_JSON });
+  if (!env.AI && !env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: ADS_JSON });
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: ADS_JSON }); }
   if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
@@ -3281,13 +3276,8 @@ Rules: no em dashes, no exclamation marks, no "free", count characters carefully
 Return JSON array only: [{"headline1":"...","headline2":"...","headline3":"...","description":"...","angle":"..."}]`;
 
   try {
-    const cr = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] }),
-    });
-    const cd = await cr.json();
-    const raw = cd.content?.[0]?.text || '';
+    const aiResult = await callAI(env, 'You write Google Search ads. Return JSON array only.', prompt, 1024);
+    const raw = aiResult.content?.[0]?.text || '';
     const match = raw.match(/\[[\s\S]*\]/);
     const variations = match ? JSON.parse(match[0]) : [];
     return new Response(JSON.stringify({ variations }), { headers: ADS_JSON });
