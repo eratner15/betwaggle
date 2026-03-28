@@ -493,7 +493,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   html += `<div style="padding:14px 16px 10px;border-bottom:1px solid #E8E5DE">`;
   html += `<div style="display:flex;align-items:flex-start;justify-content:space-between">`;
   html += `<div>`;
-  html += `<div style="font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">${escHtml(courseName || 'Course')}</div>`;
+  html += `<div style="font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">${escHtml(courseName || 'Course')}</div>`;
   html += `<div style="font-size:12px;color:#6B7280;margin-top:3px">Hole ${currentHole} &middot; Par ${inlPar}${inlYds ? ' &middot; ' + inlYds + ' yds' : ''}${inlHcpRank !== null ? ' &middot; HCP ' + inlHcpRank : ''}</div>`;
   html += `</div>`;
   // Front/Back toggle
@@ -607,8 +607,11 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
         html += `<td style="padding:4px 2px;text-align:center;color:#D1D5DB;${currentHighlight}">&middot;</td>`;
       }
     }
-    // Row total
-    html += `<td style="padding:6px 6px;text-align:center;font-size:12px;font-weight:700;color:#374151;border-left:1px solid #E5E7EB;background:#F5F0E8">${hasAnyScore ? rowTotal : ''}</td>`;
+    // Row total with to-par
+    const rowParSum = (() => { let s = 0; for (let h = startHole; h <= endHole; h++) { const sc = holes[h]?.scores?.[entityName] ?? ((h === currentHole) ? (inlScores[entityName] ?? null) : null); if (sc) s += (pars[h - 1] || 4); } return s; })();
+    const rowToPar = hasAnyScore && rowParSum > 0 ? rowTotal - rowParSum : null;
+    const rowToParStr = rowToPar === null ? '' : rowToPar === 0 ? ' E' : rowToPar > 0 ? ' +' + rowToPar : ' ' + rowToPar;
+    html += `<td style="padding:6px 6px;text-align:center;font-size:12px;font-weight:700;color:#374151;border-left:1px solid #E5E7EB;background:#F5F0E8">${hasAnyScore ? rowTotal : ''}${rowToParStr ? '<span style="font-size:10px;color:' + (rowToPar < 0 ? '#B8962E' : rowToPar > 0 ? '#DC2626' : '#6B7280') + '">' + rowToParStr + '</span>' : ''}</td>`;
     html += `</tr>`;
   });
 
@@ -1569,6 +1572,148 @@ export function renderRoundFeed(state) {
     const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
     const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
 
+    // ── 1. RUNNING P&L SUMMARY (digital yardage book) ──
+    if (scoredHoles.length > 0 && standingsData.length > 0) {
+      const thruLabel = scoredHoles.length;
+      // Find the leader for gold highlight
+      const leaderToPar = standingsData.reduce((best, p) => (p.toPar !== null && (best === null || p.toPar < best)) ? p.toPar : best, null);
+
+      html += `<div style="background:#FAFAF7;border-radius:12px;padding:14px 16px 12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB">`;
+
+      // Header
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">Running Standings</span>
+        <span style="font-size:11px;color:#6B7280;font-weight:600">Thru ${thruLabel}</span>
+      </div>`;
+
+      // Player rows — compact 2-line per player
+      standingsData.forEach((p, i) => {
+        const firstName = p.name.split(' ')[0];
+        const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+        const isLeaderScore = p.toPar !== null && p.toPar === leaderToPar;
+        const toParColor = p.toPar === null ? '#9CA3AF' : p.toPar < 0 ? '#B8962E' : p.toPar > 0 ? '#DC2626' : '#374151';
+        const moneyStr = p.money === 0 ? '$0' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
+        const moneyColor = p.money > 0 ? '#16A34A' : p.money < 0 ? '#DC2626' : '#6B7280';
+
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;${i < standingsData.length - 1 ? 'border-bottom:1px solid #F0EDE6;' : ''}">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="font-size:12px;font-weight:700;color:#9CA3AF;width:16px;text-align:right;flex-shrink:0">${i + 1}.</span>
+            <span style="font-size:13px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(firstName)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;font-family:'SF Mono','Menlo','Courier New',monospace">
+            <span style="font-size:14px;font-weight:800;color:${toParColor};${isLeaderScore ? 'text-shadow:0 0 6px rgba(184,150,46,0.3)' : ''}">${toParStr}</span>
+            <span style="font-size:13px;font-weight:700;color:${moneyColor};min-width:50px;text-align:right">${moneyStr}</span>
+            <span style="font-size:11px;color:${p.skins > 0 ? '#B8962E' : '#D1D5DB'};min-width:42px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+          </div>
+        </div>`;
+      });
+
+      // ── 2. P&L BREAKDOWN BY GAME (collapsible) ──
+      const hasNassau = games.nassau;
+      const hasSkins = games.skins;
+      const nassauBet = parseInt(config?.structure?.nassauBet) || 0;
+      const skinsBet = parseInt(config?.structure?.skinsBet) || 0;
+
+      if (hasNassau || hasSkins) {
+        html += `<details style="margin-top:10px;border-top:1px solid #E8E5DE;padding-top:8px">
+          <summary style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#6B7280;cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent">
+            <span style="font-size:9px;transition:transform .2s">&#9654;</span> P&L Breakdown
+          </summary>
+          <div style="margin-top:8px;font-size:12px;color:#374151;font-family:'SF Mono','Menlo','Courier New',monospace">`;
+
+        // Nassau breakdown
+        if (hasNassau && nassauBet > 0) {
+          html += `<div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:700;color:#0D2818;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Nassau ($${nassauBet}/side)</div>`;
+
+          // Front 9 standings
+          const frontHolesScored = scoredHoles.filter(h => h <= 9);
+          if (frontHolesScored.length > 0) {
+            const frontData = standingsData.map(p => ({
+              name: p.name.split(' ')[0],
+              toPar: p.nassauFront
+            })).sort((a, b) => (a.toPar ?? 999) - (b.toPar ?? 999));
+            const frontLeader = frontData[0];
+            const frontLeaderStr = frontLeader.toPar !== null ? (frontLeader.toPar === 0 ? 'E' : frontLeader.toPar > 0 ? '+' + frontLeader.toPar : String(frontLeader.toPar)) : '--';
+            const nassauNassauResult = gameState?.nassau;
+            const frontWinner = nassauNassauResult?.frontWinner;
+            html += `<div style="padding:2px 0;color:#374151">Front 9: ${frontData.map(p => {
+              const str = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+              const isFrontWinner = frontWinner && p.name === frontWinner.split(' ')[0];
+              return `<span style="${isFrontWinner ? 'color:#16A34A;font-weight:700' : ''}">${escHtml(p.name)} ${str}</span>`;
+            }).join(', ')}</div>`;
+          }
+
+          // Back 9 standings
+          const backHolesScored = scoredHoles.filter(h => h > 9);
+          if (backHolesScored.length > 0) {
+            const backData = standingsData.map(p => ({
+              name: p.name.split(' ')[0],
+              toPar: p.nassauBack
+            })).sort((a, b) => (a.toPar ?? 999) - (b.toPar ?? 999));
+            const nassauResult = gameState?.nassau;
+            const backWinner = nassauResult?.backWinner;
+            html += `<div style="padding:2px 0;color:#374151">Back 9: ${backData.map(p => {
+              const str = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+              const isBackWinner = backWinner && p.name === backWinner.split(' ')[0];
+              return `<span style="${isBackWinner ? 'color:#16A34A;font-weight:700' : ''}">${escHtml(p.name)} ${str}</span>`;
+            }).join(', ')}</div>`;
+          }
+
+          // Overall
+          const overallData = standingsData.map(p => ({
+            name: p.name.split(' ')[0],
+            toPar: p.toPar
+          })).sort((a, b) => (a.toPar ?? 999) - (b.toPar ?? 999));
+          const nassauOverallResult = gameState?.nassau;
+          const totalWinner = nassauOverallResult?.totalWinner;
+          html += `<div style="padding:2px 0;color:#374151">Overall: ${overallData.map(p => {
+            const str = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+            const isTotalWinner = totalWinner && p.name === totalWinner.split(' ')[0];
+            return `<span style="${isTotalWinner ? 'color:#16A34A;font-weight:700' : ''}">${escHtml(p.name)} ${str}</span>`;
+          }).join(', ')}</div>`;
+
+          html += `</div>`;
+        }
+
+        // Skins breakdown
+        if (hasSkins && skinsBet > 0) {
+          const skinsHoles = getSkinsHoles(gameState, holes, players);
+          const skinsEntries = Object.entries(skinsHoles).map(([h, data]) => ({ hole: Number(h), ...data })).sort((a, b) => a.hole - b.hole);
+          const totalSkinsWon = skinsEntries.filter(e => e.winner).length;
+          const carries = skinsEntries.filter(e => !e.winner || e.carried).length;
+
+          html += `<div style="margin-bottom:4px">
+            <div style="font-size:11px;font-weight:700;color:#0D2818;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Skins ($${skinsBet}/skin)</div>
+            <div style="padding:2px 0;color:#6B7280;font-size:11px">${totalSkinsWon} skin${totalSkinsWon !== 1 ? 's' : ''} won of ${scoredHoles.length} holes${carries > 0 ? ' (' + carries + ' carries)' : ''}</div>`;
+
+          // Per-player skins detail
+          standingsData.forEach(p => {
+            const firstName = p.name.split(' ')[0];
+            const wonHoles = skinsEntries.filter(e => e.winner === p.name).map(e => '#' + e.hole);
+            const skinsMoney = p.skins > 0 ? p.skins * skinsBet * (players.length - 1) : 0;
+            const skinsLoss = skinsEntries.filter(e => e.winner && e.winner !== p.name).reduce((sum, e) => sum + (e.potWon || 1) * skinsBet, 0);
+            const skinsNet = skinsMoney - skinsLoss;
+            const skinsNetStr = skinsNet === 0 ? '$0' : skinsNet > 0 ? '+$' + skinsNet : '-$' + Math.abs(skinsNet);
+            const skinsNetColor = skinsNet > 0 ? '#16A34A' : skinsNet < 0 ? '#DC2626' : '#6B7280';
+            html += `<div style="padding:2px 0;display:flex;justify-content:space-between">
+              <span style="color:#374151">${escHtml(firstName)}: ${p.skins} skin${p.skins !== 1 ? 's' : ''}${wonHoles.length > 0 ? ' -- ' + wonHoles.join(', ') : ''}</span>
+              <span style="color:${skinsNetColor};font-weight:600">${skinsNetStr}</span>
+            </div>`;
+          });
+
+          html += `</div>`;
+        }
+
+        html += `</div></details>`;
+      }
+
+      html += `</div>`;
+
+      // Gold divider between standings and scorecard
+      html += `<div style="height:2px;background:linear-gradient(90deg,transparent,#B8962E,transparent);margin:4px 0 8px;border-radius:1px"></div>`;
+    }
+
     html += renderPremiumScorecard({
       currentHole,
       pars,
@@ -1581,6 +1726,66 @@ export function renderRoundFeed(state) {
       courseName,
       isScramble: false
     });
+
+    // ── 4. ROUND STATS (estimated, collapsible) ──
+    if (scoredHoles.length > 0 && players.length > 0) {
+      const statsData = players.map(p => {
+        let girCount = 0, firCount = 0, puttsEst = 0, holesWithScore = 0;
+        let firEligible = 0; // par 4s and 5s only
+        scoredHoles.forEach(h => {
+          const sc = holes[h]?.scores?.[p.name];
+          if (sc == null) return;
+          holesWithScore++;
+          const par = pars[h - 1] || 4;
+          // GIR estimate: score <= par assumes GIR
+          if (sc <= par) girCount++;
+          // FIR estimate: score <= par on par 4/5 assumes FIR
+          if (par >= 4) {
+            firEligible++;
+            if (sc <= par) firCount++;
+          }
+          // Putts estimate: baseline 2, -1 for birdie or better, +1 for double+
+          const diff = sc - par;
+          if (diff <= -1) puttsEst += 1;
+          else if (diff === 0) puttsEst += 2;
+          else if (diff === 1) puttsEst += 2;
+          else puttsEst += 3; // double bogey+
+        });
+        const firPct = firEligible > 0 ? Math.round((firCount / firEligible) * 100) : 0;
+        const girPct = holesWithScore > 0 ? Math.round((girCount / holesWithScore) * 100) : 0;
+        const avgPutts = holesWithScore > 0 ? (puttsEst / holesWithScore).toFixed(1) : '--';
+        return { name: p.name, firstName: p.name.split(' ')[0], firPct, girPct, avgPutts, holesWithScore };
+      }).filter(s => s.holesWithScore > 0).sort((a, b) => b.girPct - a.girPct);
+
+      if (statsData.length > 0) {
+        html += `<div style="background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB;overflow:hidden">
+          <details>
+            <summary style="padding:12px 16px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent">
+              <span style="font-size:9px">&#9654;</span> Round Stats <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:none;letter-spacing:0">(est.) Thru ${scoredHoles.length}</span>
+            </summary>
+            <div style="padding:0 16px 14px">
+              <table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px">
+                <tr style="border-bottom:2px solid #E8E5DE">
+                  <td style="padding:6px 0;font-weight:700;color:#6B7280;font-size:11px"></td>
+                  <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">FIR%</td>
+                  <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">GIR%</td>
+                  <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Putts</td>
+                </tr>`;
+        statsData.forEach((s, i) => {
+          html += `<tr style="${i < statsData.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
+                  <td style="padding:6px 0;font-weight:600;color:#1A1A1A;font-size:12px">${escHtml(s.firstName)}</td>
+                  <td style="padding:6px 4px;text-align:center;color:#374151">${s.firPct}%</td>
+                  <td style="padding:6px 4px;text-align:center;color:#374151">${s.girPct}%</td>
+                  <td style="padding:6px 4px;text-align:center;color:#374151">${s.avgPutts}</td>
+                </tr>`;
+        });
+        html += `</table>
+              <div style="font-size:10px;color:#9CA3AF;margin-top:6px;font-style:italic">Stats estimated from scores. Actual FIR/GIR/putts tracking coming soon.</div>
+            </div>
+          </details>
+        </div>`;
+      }
+    }
 
     // Scan scorecard (below the premium card)
     html += `<div style="display:flex;gap:8px;margin-top:0;margin-bottom:8px">
