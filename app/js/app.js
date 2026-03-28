@@ -501,7 +501,7 @@ function route() {
   }
 
   // Overlay name picker for round mode — only shows once, never again after dismissed
-  if (isRoundMode && state._showIdentityPicker && !state._spectatorMode) {
+  if (isRoundMode && state._showIdentityPicker && !state._spectatorMode && !state._trophyMode) {
     html += renderNamePickerModal(state);
   }
   // Overlay score entry modal if open (persists across tab switches, skip for spectators)

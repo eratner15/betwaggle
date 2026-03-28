@@ -1016,7 +1016,7 @@ export function renderScrambleLeaderboard(state) {
     </div>`;
 
     html += `</div>`;
-  } else {
+  } else if (scoredHoles.length === 0) {
     // No scores yet — waiting state
     html += `<div style="background:var(--bg-secondary);border-radius:10px;overflow:hidden;margin-bottom:8px;text-align:center;padding:40px 20px">
       <div style="font-size:18px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Waiting for Scores</div>
@@ -6545,12 +6545,15 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   </div>`;
 
   // All H2H matchups — each as a card
+  const MAX_H2H_VISIBLE = 6;
+  let h2hIdx = 0;
+  let h2hOverflow = '';
   for (let i = 0; i < sorted.length; i++) {
     for (let j = i + 1; j < sorted.length; j++) {
       const fav = sorted[i];
       const dog = sorted[j];
       const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
-      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
+      const card = `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
           <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
@@ -6559,7 +6562,16 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
         </div>
       </div>`;
+      if (h2hIdx < MAX_H2H_VISIBLE) {
+        html += card;
+      } else {
+        h2hOverflow += card;
+      }
+      h2hIdx++;
     }
+  }
+  if (h2hOverflow) {
+    html += `<details style="margin-top:4px"><summary style="font-size:12px;color:var(--text-secondary);cursor:pointer;padding:8px 0;list-style:none;-webkit-appearance:none">+ ${h2hIdx - MAX_H2H_VISIBLE} more matchups</summary>${h2hOverflow}</details>`;
   }
   html += `</div>`;
 
