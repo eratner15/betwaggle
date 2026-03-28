@@ -9,6 +9,16 @@ function sanitizeName(raw) {
   return String(raw || '').replace(/<[^>]*>/g, '').replace(/[^\w\s'.,-]/g, '').trim().slice(0, 50);
 }
 
+// Simple HTML tag stripper for server-side sanitization
+function stripHtml(str) {
+  return String(str || '').replace(/<[^>]*>/g, '').trim();
+}
+
+// Generate random 4-digit admin PIN (1000-9999)
+function randomPin() {
+  return String(1000 + Math.floor(Math.random() * 9000));
+}
+
 // Server-side ML table for odds validation (source: app/js/betting.js)
 const ML_TABLE = [
   [   0,  -138,  -190,  -262,  -363,  -507,  -715, -1020, -1477, -2169, -3238, -4915, -7589,-11921,-19048,-30952],
@@ -853,7 +863,7 @@ export default {
             url: `https://betwaggle.com/${slug}/`,
             dates: { day1: '2026-03-28', day2: '2026-03-29' },
             format: 'nassau',
-            adminPin: '1234',
+            adminPin: randomPin(),
             adminContact: 'joe@joeweill.com',
             eventType: 'buddies_trip',
             slug: slug,
@@ -900,7 +910,7 @@ export default {
           slug,
           url: `https://betwaggle.com/${slug}/`,
           adminUrl: `https://betwaggle.com/${slug}/#admin`,
-          adminPin: '1234',
+          adminPin: config.event.adminPin,
           commissioner: 'joe@joeweill.com',
           players: ['Joseph Weill (7.8)', 'Andrew Morrison (12.4)', 'Robert Edgerton (11.2)', 'Benjamin Samuels (5.2)'],
           games: 'Nassau $10, Skins $5, Wolf (auto-press at 2-down)',
@@ -941,7 +951,7 @@ export default {
           return new Response(JSON.stringify({ ok: true, slug, status: 'patched', commissioner: 'joe@joeweill.com', games: Object.keys(cfg.games).filter(g => cfg.games[g]), rounds: cfg.rounds, url: `https://betwaggle.com/${slug}/` }), { headers: { 'Content-Type': 'application/json' } });
         }
         const config = {
-          event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: '2026', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
+          event: { name: 'Frisco Ranch Buddies Trip', shortName: 'Frisco Ranch', venue: 'PGA Frisco — Fields Ranch East', url: `https://betwaggle.com/${slug}/`, dates: { day1: new Date().toISOString().slice(0, 10) }, format: 'skins', adminPin: randomPin(), adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
           scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
           structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
           features: { betting: true },
@@ -980,7 +990,7 @@ export default {
         const commEmail = 'evan.ratner@gmail.com';
         const existingSlugs = (await env.MG_BOOK.get(`commissioner:${commEmail}`, 'json')) || [];
         if (!existingSlugs.includes(slug)) { existingSlugs.push(slug); await env.MG_BOOK.put(`commissioner:${commEmail}`, JSON.stringify(existingSlugs)); }
-        return new Response(JSON.stringify({ ok: true, slug, url: `https://betwaggle.com/${slug}/`, adminPin: '2026', players: config.players.map(p => `${p.name} (${p.venmo})`), games: 'Nassau $10 + Skins $5 + Wolf' }), { headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ ok: true, slug, url: `https://betwaggle.com/${slug}/`, adminPin: config.event.adminPin, players: config.players.map(p => `${p.name} (${p.venmo})`), games: 'Nassau $10 + Skins $5 + Wolf' }), { headers: { 'Content-Type': 'application/json' } });
       } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
     }
 
@@ -1123,7 +1133,7 @@ async function seedDemoBuddies(env) {
     holesPerRound: 18,
     course: { name: 'Streamsong Black', pars: pars, tees: 'Blue' },
     rounds: { '1': { course: 'Streamsong Black', tees: 'Blue' } },
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
@@ -1202,7 +1212,7 @@ async function seedDemoScramble(env) {
     rounds: { '1': { course: 'TPC Sawgrass', tees: 'Blue' } },
     scrambleEntryFee: 200,
     scrambleTeams: teams,
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
@@ -1281,7 +1291,7 @@ async function seedDemoEvent(env) {
       url: 'https://betwaggle.com/cabot-citrus-invitational/',
       dates: { day1: '2026-04-15' },
       format: 'skins',
-      adminPin: '1234',
+      adminPin: randomPin(),
       adminContact: '',
       eventType: 'buddies_trip',
       status: 'active',
@@ -3282,7 +3292,8 @@ Return JSON array only: [{"headline1":"...","headline2":"...","headline3":"...",
     const variations = match ? JSON.parse(match[0]) : [];
     return new Response(JSON.stringify({ variations }), { headers: ADS_JSON });
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'generation failed', detail: String(e) }), { status: 500, headers: ADS_JSON });
+    console.error('ad-generation-failed', { error: String(e) });
+    return new Response(JSON.stringify({ error: 'generation failed' }), { status: 500, headers: ADS_JSON });
   }
 }
 
@@ -3927,7 +3938,7 @@ async function serveEventHtml(slug, request, env) {
 <p>No event exists at <span class="slug">/${slug}</span></p>
 <p>It may have ended or the link might be wrong.</p>
 <a href="/" class="btn">Go to Waggle</a>
-</body></html>`, { status: 404, headers: { 'Content-Type': 'text/html' } });
+</body></html>`, { status: 404, headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
   let config;
@@ -3944,7 +3955,7 @@ async function serveEventHtml(slug, request, env) {
   <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has ended</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The sportsbook for this outing has been archived.</p>
   <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
-</body></html>`, { headers: { 'Content-Type': 'text/html' } });
+</body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
   // Refunded event page
@@ -3956,7 +3967,7 @@ async function serveEventHtml(slug, request, env) {
   <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has been cancelled</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The organizer cancelled this event and a refund was issued.</p>
   <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
-</body></html>`, { headers: { 'Content-Type': 'text/html' } });
+</body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
   const reqUrl = new URL(request.url);
@@ -4138,6 +4149,10 @@ async function serveEventHtml(slug, request, env) {
     headers: {
       'Content-Type': 'text/html;charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     }
   });
 }
@@ -4888,7 +4903,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
     }
   } catch (betErr) {
     console.error('Bet handler error:', betErr.message, betErr.stack);
-    return new Response(JSON.stringify({ error: 'Internal error placing bet', detail: betErr.message }), { status: 500, headers: EVENT_CORS });
+    console.error('bet-handler-error', { error: betErr.message, stack: betErr.stack });
+    return new Response(JSON.stringify({ error: 'Internal error placing bet' }), { status: 500, headers: EVENT_CORS });
   } }
 
   // GET /bets
@@ -5171,7 +5187,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       for (let attempt = 0; attempt < 3; attempt++) {
         const existingLock = await env.MG_BOOK.get(mutexKey, 'text');
         if (!existingLock) {
-          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 5 });
+          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 60 });
           lockAcquired = true;
           break;
         }
@@ -5296,7 +5312,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
       return new Response(JSON.stringify({ ok: true, holeNum, events: allEvents, warnings }), { headers: EVENT_CORS });
     } catch (outerErr) {
       console.error('hole-handler-crash', { slug, error: outerErr.message });
-      return new Response(JSON.stringify({ error: 'Internal error', detail: outerErr.message }), { status: 500, headers: EVENT_CORS });
+      console.error('hole-handler-crash', { slug, holeNum, error: outerErr.message });
+      return new Response(JSON.stringify({ error: 'Internal error' }), { status: 500, headers: EVENT_CORS });
     }
   }
 
@@ -5310,16 +5327,22 @@ async function handleEventApi(slug, path, request, env, ctx) {
 
   // POST /props — create a new proposition
   if (path === 'props' && request.method === 'POST') {
+    // Rate limit: 10 props per hour per IP
+    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const propsRlKey = `${K}:props-rl:${clientIP}`;
+    const propsRlCount = parseInt(await env.MG_BOOK.get(propsRlKey, 'text') || '0', 10);
+    if (propsRlCount >= 10) return new Response(JSON.stringify({ error: 'Slow down' }), { status: 429, headers: EVENT_CORS });
+    await env.MG_BOOK.put(propsRlKey, String(propsRlCount + 1), { expirationTtl: 3600 });
     const body = await request.json().catch(() => ({}));
     const { type, description, amount, creator, parties, roundNumber } = body;
-    if (!description || !creator) return new Response(JSON.stringify({ error: 'description and creator required' }), { status: 400, headers: EVENT_CORS });
+    if (!description || !creator || creator === 'Anonymous') return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: EVENT_CORS });
     const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
     const prop = {
       id: 'prop_' + crypto.randomUUID().slice(0, 8),
       type: type || 'side_bet',
-      description,
+      description: stripHtml(description),
       amount: parseFloat(amount) || 0,
-      creator,
+      creator: stripHtml(creator),
       parties: parties || [],
       accepted: false,
       acceptedBy: [],
@@ -5393,14 +5416,23 @@ async function handleEventApi(slug, path, request, env, ctx) {
 
   // POST /props — create a new proposition
   if (path === 'props' && request.method === 'POST') {
+    // Rate limit: 10 props per hour per IP
+    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const propsRlKey2 = `${K}:props-rl:${clientIP}`;
+    const propsRlCount2 = parseInt(await env.MG_BOOK.get(propsRlKey2, 'text') || '0', 10);
+    if (propsRlCount2 >= 10) return new Response(JSON.stringify({ error: 'Slow down' }), { status: 429, headers: EVENT_CORS });
+    await env.MG_BOOK.put(propsRlKey2, String(propsRlCount2 + 1), { expirationTtl: 3600 });
     const body = await request.json().catch(() => ({}));
+    if (!body.description || !body.creator || body.creator === 'Anonymous') {
+      return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: EVENT_CORS });
+    }
     const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
     const prop = {
       id: 'prop_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: body.type || 'side_bet',
-      description: (body.description || '').slice(0, 200),
+      description: stripHtml((body.description || '').slice(0, 200)),
       amount: parseInt(body.amount) || 0,
-      creator: (body.creator || 'Anonymous').slice(0, 50),
+      creator: stripHtml((body.creator || '').slice(0, 50)),
       parties: body.parties || [],
       accepted: false,
       acceptedBy: [],
@@ -5975,10 +6007,10 @@ Match player names to rows on the scorecard. If a score is unclear, use your bes
 
       const team = {
         id: 'team_' + Date.now().toString(36),
-        name: teamName.trim(),
-        captain: captain.trim(),
+        name: stripHtml(teamName.trim()),
+        captain: stripHtml(captain.trim()),
         captainEmail: (captainEmail || '').trim(),
-        players: (players || []).map(p => typeof p === 'string' ? p.trim() : p).filter(Boolean),
+        players: (players || []).map(p => typeof p === 'string' ? stripHtml(p.trim()) : p).filter(Boolean),
         handicap: parseFloat(handicap) || 0,
         registeredAt: new Date().toISOString(),
         paid: false
@@ -6535,7 +6567,7 @@ async function seedFriscoV2(env) {
     }
   }
   const config = {
-    event: { name: 'PGA Frisco 2026', shortName: 'PGA Frisco', venue: 'Fields Ranch at PGA Frisco', url: `https://betwaggle.com/${slug}/`, dates: { day1: '2026-03-28', day2: '2026-03-29' }, format: 'nassau', adminPin: '1234', adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
+    event: { name: 'PGA Frisco 2026', shortName: 'PGA Frisco', venue: 'Fields Ranch at PGA Frisco', url: `https://betwaggle.com/${slug}/`, dates: { day1: '2026-03-28', day2: '2026-03-29' }, format: 'nassau', adminPin: randomPin(), adminContact: 'joe@joeweill.com', eventType: 'buddies_trip', slug },
     scoring: { holesPerMatch: 18, handicapAllowance: 0.85 },
     structure: { nassauBet: 10, skinsBet: 5, autoPress: { enabled: true, threshold: 2 } },
     features: { betting: true },
@@ -6596,7 +6628,7 @@ async function seedLegendsTrip(env) {
     course: { name: 'Pebble Beach Golf Links', pars: pars, tees: 'Championship' },
     rounds: { '1': { course: 'Pebble Beach Golf Links', tees: 'Championship' } },
     wolfOrder: ['Tiger Woods', 'Phil Mickelson', 'Jordan Spieth', 'Rickie Fowler'],
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
@@ -6682,7 +6714,7 @@ async function seedStagNight(env) {
     holesPerRound: 18,
     course: { name: 'Bethpage Black', pars: pars, tees: 'Blue' },
     rounds: { '1': { course: 'Bethpage Black', tees: 'Blue' } },
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
@@ -6785,7 +6817,7 @@ async function seedAugustaScramble(env) {
       12: { name: 'JP Morgan', hole: 12 },
       16: { name: 'Blackstone', hole: 16 }
     },
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
@@ -6887,7 +6919,7 @@ async function seedMastersMG(env) {
     holesPerRound: 18,
     course: { name: 'Augusta National Golf Club', pars: pars, tees: 'Tournament' },
     rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
-    adminPin: '1234'
+    adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
