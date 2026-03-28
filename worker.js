@@ -4462,6 +4462,194 @@ function scrambleWhatIf(realState, simHoles, pars) {
   return { projected, leaderboard };
 }
 
+// ── Stableford ─────────────────────────────────────────────────────
+// Points-based scoring per hole relative to par.
+// Double Eagle: 8, Eagle: 5, Birdie: 3, Par: 1, Bogey: 0, Double+: -1
+// Highest total points wins. Bet is per-point difference.
+function wggRunStableford(holeNum, grossScores, prevState, players, strokeIndex, pars) {
+  const prev = prevState || { running: {}, holes: {} };
+  const events = [];
+  const par = (pars && pars[holeNum - 1]) || 4;
+
+  if (!prev.holes) prev.holes = {};
+  if (!prev.running) prev.running = {};
+  const holePoints = {};
+
+  for (const [name, gross] of Object.entries(grossScores)) {
+    const diff = gross - par;
+    let points = 0;
+    if (diff <= -3) points = 8;       // double eagle or better
+    else if (diff === -2) points = 5;  // eagle
+    else if (diff === -1) points = 3;  // birdie
+    else if (diff === 0) points = 1;   // par
+    else if (diff === 1) points = 0;   // bogey
+    else points = -1;                  // double bogey or worse
+
+    prev.running[name] = (prev.running[name] || 0) + points;
+    holePoints[name] = points;
+  }
+
+  prev.holes[holeNum] = { scores: grossScores, points: holePoints, par };
+
+  // Events
+  const best = Object.entries(holePoints).sort((a, b) => b[1] - a[1]);
+  if (best.length > 0 && best[0][1] >= 3) {
+    events.push({ type: 'stableford_big_score', hole: holeNum, player: best[0][0], points: best[0][1] });
+  }
+
+  return { ...prev, events };
+}
+
+// ── Match Play (vs field) ──────────────────────────────────────────
+// Each hole: every player earns 1 point per opponent beaten, 0.5 per tie.
+// Highest total points wins. Bet is per-point difference.
+function wggRunMatchPlay(holeNum, grossScores, prevState, players) {
+  const prev = prevState || { running: {}, holes: {} };
+  const events = [];
+  const entries = Object.entries(grossScores);
+
+  if (!prev.holes) prev.holes = {};
+  if (!prev.running) prev.running = {};
+
+  const holePoints = {};
+  for (const [nameA, scoreA] of entries) {
+    holePoints[nameA] = 0;
+    for (const [nameB, scoreB] of entries) {
+      if (nameA === nameB) continue;
+      if (scoreA < scoreB) holePoints[nameA] += 1;
+      else if (scoreA === scoreB) holePoints[nameA] += 0.5;
+    }
+    prev.running[nameA] = (prev.running[nameA] || 0) + holePoints[nameA];
+  }
+
+  prev.holes[holeNum] = { scores: grossScores, points: holePoints };
+
+  // Events — report hole winner(s)
+  const maxPts = Math.max(...Object.values(holePoints));
+  const holeWinners = Object.entries(holePoints).filter(([, p]) => p === maxPts).map(([n]) => n);
+  if (holeWinners.length === 1) {
+    events.push({ type: 'match_play_hole_won', hole: holeNum, winner: holeWinners[0], points: maxPts });
+  }
+
+  return { ...prev, events };
+}
+
+// ── Banker ──────────────────────────────────────────────────────────
+// Rotating banker plays against the field each hole.
+// Banker beats opponent: collects 1 unit. Opponent beats banker: banker pays 1 unit.
+// Birdie by banker doubles stakes. Rotation: player index = (holeNum-1) % n.
+function wggRunBanker(holeNum, grossScores, prevState, players, pars) {
+  const prev = prevState || { running: {}, holes: {}, bankerIdx: 0 };
+  const events = [];
+  const playerNames = Object.keys(grossScores);
+  const n = playerNames.length;
+  if (n < 2) return { ...prev, events };
+
+  if (!prev.holes) prev.holes = {};
+  if (!prev.running) prev.running = {};
+
+  const bankerIdx = (holeNum - 1) % n;
+  const banker = playerNames[bankerIdx];
+  const bankerScore = grossScores[banker];
+  const par = (pars && pars[holeNum - 1]) || 4;
+  const multiplier = (bankerScore <= par - 1) ? 2 : 1; // birdie or better doubles
+
+  for (const name of playerNames) {
+    if (prev.running[name] === undefined) prev.running[name] = 0;
+  }
+
+  for (const [name, score] of Object.entries(grossScores)) {
+    if (name === banker) continue;
+    if (bankerScore < score) {
+      prev.running[banker] += multiplier;
+      prev.running[name] -= multiplier;
+    } else if (bankerScore > score) {
+      prev.running[banker] -= multiplier;
+      prev.running[name] += multiplier;
+    }
+    // ties: no exchange
+  }
+
+  prev.holes[holeNum] = { banker, scores: grossScores, multiplier, bankerScore, par };
+  prev.bankerIdx = bankerIdx;
+  events.push({ type: 'banker_result', hole: holeNum, banker, multiplier, bankerScore });
+
+  return { ...prev, events };
+}
+
+// ── Bingo Bango Bongo ──────────────────────────────────────────────
+// 3 points per hole. Without shot-by-shot data, award by score:
+// Sole lowest: 2 pts. Second lowest: 1 pt. Ties at top split 3 pts.
+function wggRunBBB(holeNum, grossScores, prevState) {
+  const prev = prevState || { running: {}, holes: {} };
+  const events = [];
+  const entries = Object.entries(grossScores).sort((a, b) => a[1] - b[1]);
+
+  if (!prev.holes) prev.holes = {};
+  if (!prev.running) prev.running = {};
+
+  for (const [name] of entries) {
+    if (prev.running[name] === undefined) prev.running[name] = 0;
+  }
+
+  if (entries.length >= 2) {
+    const best = entries[0][1];
+    const bestPlayers = entries.filter(e => e[1] === best);
+    if (bestPlayers.length === 1) {
+      // Sole winner: 2 pts
+      prev.running[bestPlayers[0][0]] += 2;
+      // Second best: 1 pt
+      const secondBest = entries[1][1];
+      const secondPlayers = entries.filter(e => e[1] === secondBest && e[0] !== bestPlayers[0][0]);
+      if (secondPlayers.length === 1) {
+        prev.running[secondPlayers[0][0]] += 1;
+      } else if (secondPlayers.length > 1) {
+        // Split 1 pt among tied second-place
+        const share = 1 / secondPlayers.length;
+        secondPlayers.forEach(([name]) => { prev.running[name] += share; });
+      }
+      events.push({ type: 'bbb_hole_winner', hole: holeNum, winner: bestPlayers[0][0] });
+    } else {
+      // Tie at top: split 3 points
+      const share = 3 / bestPlayers.length;
+      bestPlayers.forEach(([name]) => { prev.running[name] += share; });
+      events.push({ type: 'bbb_hole_tie', hole: holeNum, players: bestPlayers.map(([n]) => n) });
+    }
+  }
+
+  prev.holes[holeNum] = Object.fromEntries(entries.map(([n, s]) => [n, s]));
+  return { ...prev, events };
+}
+
+// ── Bloodsome ──────────────────────────────────────────────────────
+// True Bloodsome requires team/alternate-shot data we don't capture.
+// Approximation: lowest gross score wins the hole (1 pt). Ties: no point.
+function wggRunBloodsome(holeNum, grossScores, prevState) {
+  const prev = prevState || { running: {}, holes: {} };
+  const events = [];
+  const entries = Object.entries(grossScores).sort((a, b) => a[1] - b[1]);
+
+  if (!prev.holes) prev.holes = {};
+  if (!prev.running) prev.running = {};
+
+  for (const [name] of entries) {
+    if (prev.running[name] === undefined) prev.running[name] = 0;
+  }
+
+  if (entries.length >= 2) {
+    const bestScore = entries[0][1];
+    const winners = entries.filter(e => e[1] === bestScore);
+    if (winners.length === 1) {
+      prev.running[winners[0][0]] += 1;
+      events.push({ type: 'bloodsome_hole_won', hole: holeNum, winner: winners[0][0] });
+    }
+    // Ties: no point awarded
+  }
+
+  prev.holes[holeNum] = Object.fromEntries(entries);
+  return { ...prev, events };
+}
+
 // ─── handleEventApi — the massive event API handler ─────────────────────
 // This is copied verbatim from cafecito-ai worker.js (lines 4551-5677)
 // The only change: EVENT_CORS Allow-Origin is now '*' instead of cafecito-ai.com
@@ -5246,6 +5434,38 @@ async function handleEventApi(slug, path, request, env, ctx) {
           for (const [name, net] of Object.entries(netScores2)) {
             gameState.stroke.running[name] = (gameState.stroke.running[name] || 0) + net;
           }
+        }
+        // ── New game engines ──
+        const holePars = cfg?.course?.pars || cfg?.coursePars || [];
+        if (games.stableford) {
+          const prev = gameState.stableford || { running: {}, holes: {} };
+          const result = wggRunStableford(holeNum, scores, prev, players, strokeIndex, holePars);
+          gameState.stableford = result;
+          allEvents.push(...(result.events || []));
+        }
+        if (games.match_play) {
+          const prev = gameState.match_play || { running: {}, holes: {} };
+          const result = wggRunMatchPlay(holeNum, scores, prev, players);
+          gameState.match_play = result;
+          allEvents.push(...(result.events || []));
+        }
+        if (games.banker) {
+          const prev = gameState.banker || { running: {}, holes: {}, bankerIdx: 0 };
+          const result = wggRunBanker(holeNum, scores, prev, players, holePars);
+          gameState.banker = result;
+          allEvents.push(...(result.events || []));
+        }
+        if (games.bingo) {
+          const prev = gameState.bingo || { running: {}, holes: {} };
+          const result = wggRunBBB(holeNum, scores, prev);
+          gameState.bingo = result;
+          allEvents.push(...(result.events || []));
+        }
+        if (games.bloodsome) {
+          const prev = gameState.bloodsome || { running: {}, holes: {} };
+          const result = wggRunBloodsome(holeNum, scores, prev);
+          gameState.bloodsome = result;
+          allEvents.push(...(result.events || []));
         }
         await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
       } catch (e) {

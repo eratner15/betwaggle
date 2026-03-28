@@ -723,7 +723,56 @@ export function computeRoundPnL(gameState, players, games, structure) {
   }
 
   if (games.wolf && gameState?.wolf?.running) {
-    // Wolf P&L is complex — show points only, skip dollar calc for now
+    const wolfBet = parseInt(structure?.wolfBet) || 5;
+    players.forEach(p => {
+      pnl[p.name] += (gameState.wolf.running[p.name] || 0) * wolfBet;
+    });
+  }
+
+  if (games.stableford && gameState?.stableford?.running) {
+    const stblBet = parseInt(structure?.stablefordBet) || 5;
+    const running = gameState.stableford.running;
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
+    players.forEach(p => {
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * stblBet);
+    });
+  }
+
+  if (games.match_play && gameState?.match_play?.running) {
+    const mpBet = parseInt(structure?.matchPlayBet) || 10;
+    const running = gameState.match_play.running;
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
+    players.forEach(p => {
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * mpBet);
+    });
+  }
+
+  if (games.banker && gameState?.banker?.running) {
+    const bankerBet = parseInt(structure?.bankerBet) || 5;
+    players.forEach(p => {
+      pnl[p.name] += (gameState.banker.running[p.name] || 0) * bankerBet;
+    });
+  }
+
+  if (games.bingo && gameState?.bingo?.running) {
+    const bbbBet = parseInt(structure?.bbbBet) || 5;
+    const running = gameState.bingo.running;
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
+    players.forEach(p => {
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * bbbBet);
+    });
+  }
+
+  if (games.bloodsome && gameState?.bloodsome?.running) {
+    const bloodBet = parseInt(structure?.bloodsomeBet) || 5;
+    const running = gameState.bloodsome.running;
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
+    players.forEach(p => {
+      pnl[p.name] += Math.round(((running[p.name] || 0) - avg) * bloodBet);
+    });
   }
 
   return pnl;
