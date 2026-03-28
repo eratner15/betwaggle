@@ -98,7 +98,7 @@
     "primary": "#1A472A",
     "accent": "#D4AF37",
     "bg": "#F5F0E8",
-    "headerFont": "Playfair Display",
+    "headerFont": "Inter",
     "bodyFont": "Inter"
   },
   "features": {

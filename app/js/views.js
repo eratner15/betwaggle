@@ -562,11 +562,13 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   // ── Player/Team score rows ──
   entities.forEach((entity, idx) => {
     const entityName = entity.name || entity;
-    const shortName = entityName.split(' ')[0];
-    const displayName = shortName.length > 5 ? shortName.substring(0, 5) : shortName;
+    // Abbreviate team names for scorecard: "Team Amen Corner" -> "Amen Cnr"
+    const displayName = isScramble
+      ? entityName.replace(/^Team\s+/i, '').substring(0, 8)
+      : (entityName.split(' ')[0].length > 5 ? entityName.split(' ')[0].substring(0, 5) : entityName.split(' ')[0]);
 
     html += `<tr style="border-bottom:1px solid #E5E7EB;background:#fff">`;
-    html += `<td style="padding:6px 10px;font-weight:600;font-size:11px;color:#1A1A1A;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:#fff;z-index:2;border-right:1px solid #E5E7EB">${escHtml(displayName)}</td>`;
+    html += `<td style="padding:6px 10px;font-weight:600;font-size:10px;color:#1A1A1A;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:#fff;z-index:2;border-right:1px solid #E5E7EB">${escHtml(displayName)}</td>`;
 
     let rowTotal = 0;
     let hasAnyScore = false;

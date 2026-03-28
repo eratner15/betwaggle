@@ -877,7 +877,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
           coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
           courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
@@ -961,7 +961,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           // 3 rounds at PGA Frisco
           rounds: {
             1: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
@@ -1316,7 +1316,7 @@ async function seedDemoEvent(env) {
     flights: {},
     flightOrder: [],
     pairings: {},
-    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
   };
 
   // Hole scores (holes 1-14)
@@ -1915,12 +1915,12 @@ async function handleWaggleJoinPage(slug, env) {
 <meta property="og:description" content="Register for ${eventName}${venue ? ' at ' + venue : ''}. Enter your name and handicap index.">
 <meta name="theme-color" content="#0D2818">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0D2818;color:#F5F0E8;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
 .logo{width:48px;height:48px;border-radius:12px;margin-bottom:16px}
-.event-name{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#D4AF37;text-align:center;line-height:1.2}
+.event-name{font-family:'Inter',sans-serif;font-size:26px;font-weight:700;color:#D4AF37;text-align:center;line-height:1.2}
 .event-sub{font-size:14px;color:#9BAF88;text-align:center;margin-top:6px}
 .card{background:#1A472A;border:1px solid rgba(212,175,55,0.25);border-radius:16px;padding:24px;width:100%;max-width:420px;margin-top:24px}
 label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#9BAF88;margin-bottom:6px}
@@ -1933,7 +1933,7 @@ input:focus{border-color:#D4AF37}
 .btn:disabled{opacity:0.4;cursor:default}
 .success{text-align:center;padding:32px 0}
 .success-icon{font-size:48px;margin-bottom:16px}
-.success-title{font-family:'Playfair Display',serif;font-size:24px;color:#D4AF37;margin-bottom:8px}
+.success-title{font-family:'Inter',sans-serif;font-size:24px;color:#D4AF37;margin-bottom:8px}
 .success-msg{color:#9BAF88;font-size:14px;line-height:1.6}
 .error-msg{color:#ff6b6b;font-size:13px;margin-top:8px;display:none}
 .powered{font-size:11px;color:rgba(155,175,136,0.5);margin-top:32px;text-align:center}
@@ -2497,7 +2497,7 @@ async function handleWaggleSuccess(url, env) {
   <link rel="icon" type="image/png" href="/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   ${gadsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${gadsId}"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -2523,7 +2523,7 @@ async function handleWaggleSuccess(url, env) {
     .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 24px rgba(0,0,0,.08); padding: 48px 40px; width: 100%; max-width: 520px; text-align: center; }
     .check { width: 56px; height: 56px; background: var(--green-mid); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 28px; }
     .check svg { width: 26px; height: 26px; }
-    h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--forest); margin-bottom: 10px; }
+    h1 { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 700; color: var(--forest); margin-bottom: 10px; }
     .event-name { font-size: 15px; color: var(--muted); margin-bottom: 16px; }
     .share-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--green-mid); margin-bottom: 10px; }
     .link-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -2621,7 +2621,7 @@ async function handleWaggleSuccess(url, env) {
     ${adminPin ? `<div class="pin-box"><strong>Your admin PIN -- keep this safe</strong><div class="pin-code">${adminPin}</div><div style="font-size:12px;color:#6B7280;margin-top:6px">You'll need this to manage bets and settle the round.</div></div>` : ''}
 
     <div style="max-width:400px;margin:0 auto 32px;text-align:left">
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#0D2818;margin-bottom:16px">Get Started</div>
+      <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#0D2818;margin-bottom:16px">Get Started</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="onboard-step">
           <div class="onboard-num">1</div>
@@ -2748,8 +2748,8 @@ async function handleCourseDetailPage(courseId, env) {
   <title>${clubName} \u2014 Waggle</title>
   <meta name="description" content="View the full scorecard for ${clubName}${location ? ' in ' + location : ''}.">
   <link rel="icon" type="image/png" href="/logo.png">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0D2818;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Playfair Display',serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0D2818;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0D2818;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Inter',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0D2818;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
 </head><body>
   <header class="header">
     <a href="/" class="header-logo"><img src="/logo.png" alt="Waggle"><span>Waggle</span></a>
@@ -2758,7 +2758,7 @@ async function handleCourseDetailPage(courseId, env) {
   <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#2D6A4F;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#2D6A4F;font-weight:600">Courses</a> / ${clubName}</div>
   <div style="max-width:960px;margin:16px auto 0;padding:0 20px">
     <div style="background:linear-gradient(135deg,#00261b,#0b3d2e);border-radius:16px;padding:40px 36px;color:#fff">
-      <h1 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.15;margin-bottom:12px">${clubName}</h1>
+      <h1 style="font-family:'Inter',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.15;margin-bottom:12px">${clubName}</h1>
       ${location ? `<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px">${location}</div>` : ''}
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <a href="/create/?course=${courseId}" style="background:#C9A84C;color:#00261b;padding:14px 28px;border-radius:6px;font-weight:700;font-size:15px">Play Here \u2192</a>
@@ -2767,7 +2767,7 @@ async function handleCourseDetailPage(courseId, env) {
     </div>
   </div>
   <div style="max-width:960px;margin:32px auto 0;padding:0 20px">
-    <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:20px">Scorecard</h2>
+    <h2 style="font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:20px">Scorecard</h2>
     ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : `<p style="color:#7A7A7A;font-size:13px">Par ${refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0)} \u00b7 ${validTees.length} tee${validTees.length !== 1 ? 's' : ''} available</p>`}
   </div>
   <footer style="text-align:center;padding:48px 20px 32px;color:#7A7A7A;font-size:13px">
@@ -3857,7 +3857,7 @@ async function serveOgImage(slug, env) {
   <!-- Top accent line -->
   <rect x="0" y="0" width="1200" height="4" fill="#D4AF37"/>
   <!-- Event name -->
-  <text x="60" y="80" font-family="Georgia,'Playfair Display',serif" font-size="40" fill="#D4AF37" font-weight="700">${eventName}</text>
+  <text x="60" y="80" font-family="Georgia,serif" font-size="40" fill="#D4AF37" font-weight="700">${eventName}</text>
   ${venue ? `<text x="60" y="118" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.5)">${venue}</text>` : ''}
   <!-- Status badge -->
   <rect x="60" y="145" width="${statusLine.length * 12 + 32}" height="34" rx="17" fill="rgba(255,255,255,0.1)"/>
@@ -3919,8 +3919,8 @@ async function serveEventHtml(slug, request, env) {
   if (!configRaw) {
     return new Response(`<!DOCTYPE html><html><head><title>Event Not Found</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Playfair Display',serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-block;margin-top:20px;background:#1A472A;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-block;margin-top:20px;background:#1A472A;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
 <body>
 <img src="/logo.png" alt="Waggle" class="logo">
 <h1>Event not found</h1>
@@ -3938,10 +3938,10 @@ async function serveEventHtml(slug, request, env) {
   // Expired event page
   if (config.event?.status === 'expired') {
     return new Response(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Expired</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Playfair Display',serif;font-size:28px;color:#0D2818">This event has ended</h1>
+  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has ended</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The sportsbook for this outing has been archived.</p>
   <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html' } });
@@ -3950,10 +3950,10 @@ async function serveEventHtml(slug, request, env) {
   // Refunded event page
   if (config.event?.status === 'refunded') {
     return new Response(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Cancelled</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Playfair Display',serif;font-size:28px;color:#0D2818">This event has been cancelled</h1>
+  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has been cancelled</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The organizer cancelled this event and a refund was issued.</p>
   <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html' } });
@@ -4058,7 +4058,7 @@ async function serveEventHtml(slug, request, env) {
   <link rel="manifest" href="/${slug}/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/${slug}/css/styles.css">
   ${isPaid && gadsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${gadsId}"></script>
   <script>
@@ -6555,7 +6555,7 @@ async function seedFriscoV2(env) {
     ],
     wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
     teams: {}, flights: {}, flightOrder: [], pairings: {},
-    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+    theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
     course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
     coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
     courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],

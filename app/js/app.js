@@ -1517,7 +1517,7 @@ window.MG = {
     ctx.fillText(eventDate, W / 2, 18);
 
     // Event name
-    ctx.font = '700 24px Georgia, "Playfair Display", serif';
+    ctx.font = '700 24px Georgia, serif';
     ctx.fillStyle = '#D4AF37';
     ctx.fillText(eventName, W / 2, 38);
 
@@ -1715,7 +1715,7 @@ window.MG = {
     ctx.fillStyle = '#8B8680';
     ctx.fillText('Powered by', W / 2, footY + 18);
 
-    ctx.font = 'bold 20px Georgia, "Playfair Display", serif';
+    ctx.font = 'bold 20px Georgia, serif';
     ctx.fillStyle = '#1A472A';
     ctx.fillText('Waggle', W / 2, footY + 40);
 
@@ -2789,8 +2789,8 @@ window.MG = {
         <div onclick="event.stopPropagation()" style="width:100%;max-width:360px">
           <div id="share-card" style="background:linear-gradient(135deg, #1A472A 0%, #2D6A3E 100%);border-radius:16px;padding:24px 20px;color:#fff;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
             <div style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:4px">${state._config.event.name}</div>
-            <div style="font-family:'Playfair Display',serif;font-size:13px;letter-spacing:3px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin:8px 0">${isWin ? 'Winner' : 'Active Bet'}</div>
-            <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;letter-spacing:2px;color:#D4AF37">${headline}</div>
+            <div style="font-family:'Inter',sans-serif;font-size:13px;letter-spacing:3px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin:8px 0">${isWin ? 'Winner' : 'Active Bet'}</div>
+            <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:700;letter-spacing:2px;color:#D4AF37">${headline}</div>
             <div style="font-size:18px;font-weight:700;margin:12px 0 4px">${name}</div>
             <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:16px">${desc}</div>
             <div style="display:flex;justify-content:center;gap:24px;margin:16px 0;padding:16px 0;border-top:1px solid rgba(255,255,255,0.15);border-bottom:1px solid rgba(255,255,255,0.15)">
