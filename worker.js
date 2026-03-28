@@ -405,8 +405,8 @@ export default {
             headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
           });
         } catch {
-          return new Response(configRaw, {
-            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
+          return new Response(JSON.stringify({ error: 'Config parse error' }), {
+            status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
         }
       }
@@ -489,6 +489,11 @@ export default {
 
     // POST /api/admin/refund — refund a Stripe payment
     if (url.pathname === '/api/admin/refund' && request.method === 'POST') {
+      const pin = request.headers.get('X-Marketing-Pin') || '';
+      const validPin = env.WAGGLE_MARKETING_PIN || '';
+      if (!validPin || pin !== validPin) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
       return handleAdminRefund(request, env);
     }
     if (url.pathname === '/api/admin/refund' && request.method === 'OPTIONS') {
@@ -576,13 +581,36 @@ export default {
     if (url.pathname === '/api/referral-credit' && request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
       const { referrerEmail, referredSlug } = body;
-      if (!referrerEmail) return new Response(JSON.stringify({ error: 'referrerEmail required' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-      const key = `referral-credits:${referrerEmail.trim().toLowerCase()}`;
+      const JSON_CORS_HDR = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+      if (!referrerEmail) return new Response(JSON.stringify({ error: 'referrerEmail required' }), { status: 400, headers: JSON_CORS_HDR });
+      if (!referredSlug) return new Response(JSON.stringify({ error: 'referredSlug required' }), { status: 400, headers: JSON_CORS_HDR });
+
+      const email = referrerEmail.trim().toLowerCase();
+
+      // Rate limit: max 1 credit per email per day
+      const rlKey = `referral-rl:${email}`;
+      const lastCredit = await env.MG_BOOK.get(rlKey, 'text');
+      if (lastCredit) {
+        return new Response(JSON.stringify({ error: 'Credit already issued today' }), { status: 429, headers: JSON_CORS_HDR });
+      }
+
+      // Verify referred event actually exists
+      const eventConfig = await env.MG_BOOK.get(`config:${referredSlug}`, 'text');
+      if (!eventConfig) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: JSON_CORS_HDR });
+
+      // Prevent duplicate referrer+referee pair
+      const key = `referral-credits:${email}`;
       const existing = (await env.MG_BOOK.get(key, 'json')) || { credits: 0, referrals: [] };
+      const alreadyCredited = existing.referrals.some(r => r.slug === referredSlug);
+      if (alreadyCredited) return new Response(JSON.stringify({ error: 'Already credited for this referral' }), { status: 409, headers: JSON_CORS_HDR });
+
+      // Set rate limit (24h TTL)
+      await env.MG_BOOK.put(rlKey, String(Date.now()), { expirationTtl: 86400 });
+
       existing.credits += 800; // $8.00 in cents
       existing.referrals.push({ slug: referredSlug, ts: Date.now() });
       await env.MG_BOOK.put(key, JSON.stringify(existing));
-      return new Response(JSON.stringify({ ok: true, totalCredits: existing.credits, referralCount: existing.referrals.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return new Response(JSON.stringify({ ok: true, totalCredits: existing.credits, referralCount: existing.referrals.length }), { headers: JSON_CORS_HDR });
     }
     if (url.pathname === '/api/referral-credit' && request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
@@ -3012,8 +3040,8 @@ async function handleCreateEvent(request, env) {
 async function handleMarketingStats(url, env) {
   const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
   const pin = url.searchParams.get('pin');
-  const validPin = env.WAGGLE_MARKETING_PIN || 'waggle2026';
-  if (pin !== validPin) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
+  const validPin = env.WAGGLE_MARKETING_PIN || '';
+  if (!validPin || pin !== validPin) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
 
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'storage not configured' }), { status: 500, headers });
 
@@ -3135,7 +3163,7 @@ async function sendWeeklyMarketingDigest(env) {
 
 const ADS_JSON = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 
-function mktgAuth(pin, env) { return pin === (env.WAGGLE_MARKETING_PIN || 'waggle2026'); }
+function mktgAuth(pin, env) { const v = env.WAGGLE_MARKETING_PIN || ''; return v && pin === v; }
 
 async function handleAdsPainPoints(url, env) {
   if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
@@ -3704,7 +3732,7 @@ async function handleAffiliatePayoutRequest(request, env) {
 async function handleAffiliateAdmin(url, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: AFFILIATE_CORS });
   const pin = url.searchParams.get('pin');
-  if (!pin || pin !== (env.ADMIN_PIN || 'waggle2026')) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: AFFILIATE_CORS });
+  if (!pin || pin !== (env.ADMIN_PIN || '')) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: AFFILIATE_CORS });
   const affiliates = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates ORDER BY total_payout_cents DESC`).all();
   const referrals = await env.WAGGLE_DB.prepare(`SELECT * FROM referrals ORDER BY created_at DESC LIMIT 100`).all();
   return new Response(JSON.stringify({ ok: true, affiliates: affiliates.results, referrals: referrals.results }), { headers: AFFILIATE_CORS });
@@ -3715,7 +3743,7 @@ async function handleAffiliateMarkPaid(request, env) {
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: AFFILIATE_CORS }); }
   const { code, amount_cents, pin } = body;
-  if (!pin || pin !== (env.ADMIN_PIN || 'waggle2026')) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: AFFILIATE_CORS });
+  if (!pin || pin !== (env.ADMIN_PIN || '')) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: AFFILIATE_CORS });
   if (!code || !amount_cents) return new Response(JSON.stringify({ error: 'code and amount_cents required' }), { status: 400, headers: AFFILIATE_CORS });
   await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paid_out_cents = paid_out_cents + ? WHERE code = ?`).bind(amount_cents, code).run();
   await env.WAGGLE_DB.prepare(`UPDATE referrals SET status = 'paid' WHERE affiliate_code = ? AND status = 'pending'`).bind(code).run();
@@ -4498,7 +4526,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
     for (let i = 0; i < 6; i++) code += chars[rng[i] % chars.length];
 
     await env.MG_BOOK.put(`${K}:magic-auth`, JSON.stringify({ magicToken, code, expires: Date.now() + 600000, contact }), { expirationTtl: 600 });
-    return new Response(JSON.stringify({ ok: true, sent: true, code }), { headers: EVENT_CORS });
+    return new Response(JSON.stringify({ ok: true, sent: true }), { headers: EVENT_CORS });
   }
 
   // POST /admin/magic-verify
@@ -5142,7 +5170,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       for (let attempt = 0; attempt < 3; attempt++) {
         const existingLock = await env.MG_BOOK.get(mutexKey, 'text');
         if (!existingLock) {
-          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 60 });
+          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 5 });
           lockAcquired = true;
           break;
         }
