@@ -1,6 +1,44 @@
 // betwaggle.com — Standalone Waggle Worker
 // Extracted from cafecito-ai monolith. All routes rewritten from /waggle/ to /
 
+// ===== SHARED UTILITIES =====
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function sanitizeName(raw) {
+  return String(raw || '').replace(/<[^>]*>/g, '').replace(/[^\w\s'.,-]/g, '').trim().slice(0, 50);
+}
+
+// Server-side ML table for odds validation (source: app/js/betting.js)
+const ML_TABLE = [
+  [   0,  -138,  -190,  -262,  -363,  -507,  -715, -1020, -1477, -2169, -3238, -4915, -7589,-11921,-19048,-30952],
+  [ 138,     0,  -137,  -188,  -258,  -356,  -495,  -694,  -985, -1415, -2064, -3058, -4602, -7043,-10961,-17343],
+  [ 190,   137,     0,  -137,  -186,  -255,  -350,  -483,  -674,  -951, -1359, -1968, -2892, -4319, -6553,-10107],
+  [ 262,   188,   137,     0,  -136,  -185,  -251,  -344,  -473,  -656,  -920, -1306, -1878, -2741, -4062, -6113],
+  [ 363,   258,   186,   136,     0,  -135,  -183,  -248,  -338,  -462,  -638,  -890, -1256, -1796, -2602, -3827],
+  [ 507,   356,   255,   185,   135,     0,  -135,  -182,  -245,  -332,  -453,  -622,  -863, -1210, -1719, -2475],
+  [ 715,   495,   350,   251,   183,   135,     0,  -134,  -180,  -242,  -327,  -444,  -606,  -837, -1167, -1648],
+  [1020,   694,   483,   344,   248,   182,   134,     0,  -134,  -179,  -240,  -322,  -435,  -592,  -812, -1127],
+  [1477,   985,   674,   473,   338,   245,   180,   134,     0,  -133,  -178,  -237,  -317,  -426,  -578,  -789],
+  [2169,  1415,   951,   656,   462,   332,   242,   179,   133,     0,  -133,  -176,  -234,  -312,  -418,  -564],
+  [3238,  2064,  1359,   920,   638,   453,   327,   240,   178,   133,     0,  -132,  -175,  -232,  -308,  -411],
+  [4915,  3058,  1968,  1306,   890,   622,   444,   322,   237,   176,   132,     0,  -132,  -174,  -229,  -304],
+  [7589,  4602,  2892,  1878,  1256,   863,   606,   435,   317,   234,   175,   132,     0,  -132,  -173,  -227],
+  [11921, 7043,  4319,  2741,  1796,  1210,   837,   592,   426,   312,   232,   174,   132,     0,  -131,  -172],
+  [19048,10961,  6553,  4062,  2602,  1719,  1167,   812,   578,   418,   308,   229,   173,   131,     0,  -131],
+  [30952,17343, 10107,  6113,  3827,  2475,  1648,  1127,   789,   564,   411,   304,   227,   172,   131,     0],
+];
+function serverMlToDecimal(ml) {
+  if (ml === 0) return 2.00;
+  if (ml < 0) return +(1 + 100 / Math.abs(ml)).toFixed(2);
+  return +(1 + ml / 100).toFixed(2);
+}
+function serverExpectedOdds(hcpA, hcpB) {
+  const a = Math.max(0, Math.min(15, Math.round(hcpA)));
+  const b = Math.max(0, Math.min(15, Math.round(hcpB)));
+  return serverMlToDecimal(ML_TABLE[a][b]);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -266,7 +304,7 @@ export default {
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -281,10 +319,52 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
+      // /:slug/register — team self-registration page
+      if (subPath === '/register' || subPath === '/register/') {
+        return env.ASSETS.fetch(new Request(new URL('/register/index.html', request.url), request));
+      }
+      // Dynamic OG image: /:slug/og-image.svg
+      if (subPath === '/og-image.svg') {
+        return await serveOgImage(slug, env);
+      }
+      // Dynamic manifest.json — PWA manifest for this event
+      if (subPath === '/manifest.json') {
+        let eventName = 'Waggle';
+        let shortName = 'Waggle';
+        let themeColor = '#1A472A';
+        try {
+          const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+          if (cfgRaw) {
+            const cfg = JSON.parse(cfgRaw);
+            eventName = cfg.event?.name || 'Waggle';
+            shortName = cfg.event?.shortName || eventName;
+            themeColor = cfg.theme?.primary || '#1A472A';
+          }
+        } catch {}
+        const manifest = {
+          name: eventName,
+          short_name: shortName.slice(0, 12),
+          start_url: `/${slug}/#dashboard`,
+          display: 'standalone',
+          background_color: '#F5F0E8',
+          theme_color: themeColor,
+          icons: [{ src: `/${slug}/icon-180.svg`, sizes: '180x180', type: 'image/svg+xml' }]
+        };
+        return new Response(JSON.stringify(manifest), {
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+        });
+      }
+      // Dynamic icon SVG for this event
+      if (subPath === '/icon-180.svg') {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="32" fill="#1A472A"/><text x="90" y="108" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="700" fill="#D4AF37">W</text></svg>`;
+        return new Response(svg, {
+          headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' }
+        });
+      }
       if (subPath.match(/\.(js|css|svg|png|json|woff2?)$/) && subPath !== '/config.json') {
         // Rewrite to shared asset path: /foo/js/app.js -> /app/js/app.js
         const assetPath = '/app' + subPath;
@@ -296,7 +376,23 @@ export default {
       }
       // Serve config.json from KV (strip adminPin — never expose to client)
       if (subPath === '/config.json') {
-        const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+        let configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+        // Seed known demo events if config not found (mirrors serveEventHtml seeding)
+        if (!configRaw) {
+          const seedMap = {
+            'pga-frisco-2026': () => seedFriscoV2(env),
+            'cabot-citrus-invitational': () => seedDemoEvent(env),
+            'demo-buddies': () => seedDemoBuddies(env),
+            'demo-scramble': () => seedDemoScramble(env),
+            'legends-trip': () => seedLegendsTrip(env),
+            'stag-night': () => seedStagNight(env),
+            'augusta-scramble': () => seedAugustaScramble(env),
+            'masters-member-guest': () => seedMastersMG(env),
+          };
+          if (seedMap[slug]) {
+            try { await seedMap[slug](); configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text'); } catch {}
+          }
+        }
         if (!configRaw) {
           return new Response(JSON.stringify({ error: 'Event not found' }), {
             status: 404, headers: { 'Content-Type': 'application/json' }
@@ -324,6 +420,30 @@ export default {
     }
     if (url.pathname === '/api/create-event' && request.method === 'OPTIONS') {
       return new Response(null, { headers: EVENT_CORS });
+    }
+
+    // ===== SUBSCRIPTION ROUTES =====
+    // POST /api/subscribe — create Stripe subscription checkout
+    if (url.pathname === '/api/subscribe' && request.method === 'POST') {
+      return handleSubscribe(request, env);
+    }
+    if (url.pathname === '/api/subscribe' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: EVENT_CORS });
+    }
+    // POST /api/billing-portal — Stripe customer portal for manage/cancel
+    if (url.pathname === '/api/billing-portal' && request.method === 'POST') {
+      return handleBillingPortal(request, env);
+    }
+    if (url.pathname === '/api/billing-portal' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: EVENT_CORS });
+    }
+    // GET /api/subscription-status?email= — check subscription status
+    if (url.pathname === '/api/subscription-status' && request.method === 'GET') {
+      const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+      if (!email) return new Response(JSON.stringify({ active: false }), { headers: EVENT_CORS });
+      const sub = await env.MG_BOOK.get(`subscriber:${email}`, 'json');
+      const active = sub && sub.status === 'active' && (sub.currentPeriodEnd || 0) > Date.now();
+      return new Response(JSON.stringify({ active: !!active, plan: sub?.plan || null }), { headers: EVENT_CORS });
     }
 
     // /api/create-checkout — initiate Stripe payment before event creation
@@ -511,15 +631,52 @@ export default {
       return Response.redirect('https://betwaggle.com' + dest, 302);
     }
 
+    // /affiliate/dashboard — affiliate dashboard page (static)
+    if (url.pathname === '/affiliate/dashboard' || url.pathname === '/affiliate/dashboard/') {
+      const req = new Request(new URL('/affiliate/dashboard.html', request.url), request);
+      return env.ASSETS.fetch(req);
+    }
+
     // /affiliate/ — affiliate link generator page (static)
     if (url.pathname === '/affiliate' || url.pathname === '/affiliate/') {
-      const req = new Request(new URL('/affiliate/index.html', request.url), request);
+      const req = new Request(new URL('/affiliates/index.html', request.url), request);
       return env.ASSETS.fetch(req);
     }
 
     // /affiliate/generate — generate a referral link
     if (url.pathname === '/affiliate/generate' && request.method === 'GET') {
       return handleAffiliateGenerate(url);
+    }
+
+    // /partner/ — partner dashboard page (static)
+    if (url.pathname === '/partner' || url.pathname === '/partner/') {
+      const req = new Request(new URL('/partner/index.html', request.url), request);
+      return env.ASSETS.fetch(req);
+    }
+
+    // /api/partner/:code — partner dashboard data
+    const partnerMatch = url.pathname.match(/^\/api\/partner\/([a-z0-9_-]+)$/);
+    if (partnerMatch && request.method === 'GET') {
+      return handlePartnerDashboard(partnerMatch[1], env);
+    }
+    // /api/partner/:code/events — partner events list
+    const partnerEventsMatch = url.pathname.match(/^\/api\/partner\/([a-z0-9_-]+)\/events$/);
+    if (partnerEventsMatch && request.method === 'GET') {
+      return handlePartnerEvents(partnerEventsMatch[1], env);
+    }
+    // /api/partner/:code/teams — export all teams
+    const partnerTeamsMatch = url.pathname.match(/^\/api\/partner\/([a-z0-9_-]+)\/teams$/);
+    if (partnerTeamsMatch && request.method === 'GET') {
+      return handlePartnerTeams(partnerTeamsMatch[1], env);
+    }
+    // /api/partner/:code/payout-request — request payout
+    const partnerPayoutMatch = url.pathname.match(/^\/api\/partner\/([a-z0-9_-]+)\/payout-request$/);
+    if (partnerPayoutMatch && request.method === 'POST') {
+      return handlePartnerPayoutRequest(partnerPayoutMatch[1], request, env);
+    }
+    // CORS preflight for partner APIs
+    if (url.pathname.startsWith('/api/partner/') && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
     // /success/ — post-purchase confirmation page
@@ -601,10 +758,25 @@ export default {
       return env.ASSETS.fetch(tourReq);
     }
 
-    // / — landing page (static)
+    // /pricing/ — pricing page (static)
+    if (url.pathname === '/pricing' || url.pathname === '/pricing/') {
+      const pricingReq = new Request(new URL('/pricing/index.html', request.url), request);
+      return env.ASSETS.fetch(pricingReq);
+    }
+
+    // / — landing page (A/B test: 50/50 split, sticky via cookie)
     if (url.pathname === '/' || url.pathname === '') {
-      const landingReq = new Request(new URL('/index.html', request.url), request);
-      return env.ASSETS.fetch(landingReq);
+      const cookies = request.headers.get('Cookie') || '';
+      const abMatch = cookies.match(/waggle_ab=([AB])/);
+      let variant = abMatch ? abMatch[1] : (Math.random() < 0.5 ? 'A' : 'B');
+      const assetPath = variant === 'B' ? '/b/index.html' : '/index.html';
+      const response = await env.ASSETS.fetch(new Request(new URL(assetPath, request.url), request));
+      if (!abMatch) {
+        const r = new Response(response.body, response);
+        r.headers.set('Set-Cookie', `waggle_ab=${variant}; Path=/; Max-Age=2592000; SameSite=Lax`);
+        return r;
+      }
+      return response;
     }
 
     // ===== LEGACY: backward compat for /waggle/ URLs during migration =====
@@ -815,33 +987,253 @@ export default {
 // ─── Expired Event Cleanup ────────────────────────────────────────────────
 
 async function cleanupExpiredEvents(env) {
-  if (!env.WAGGLE_DB) return;
-  try {
-    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-    const result = await env.WAGGLE_DB.prepare(
-      'SELECT slug FROM events WHERE created_at < ? AND status != ?'
-    ).bind(cutoff, 'archived').all();
+  if (!env.MG_BOOK) return;
+  const now = new Date();
+  const cutoff90d = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  let cleaned = 0;
 
-    for (const row of (result.results || [])) {
-      const slug = row.slug;
-      const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-      if (configRaw) {
-        const config = JSON.parse(configRaw);
-        // Don't expire completed/trophy events — those are permanent
-        if (config.event?.status === 'complete') continue;
-        // Don't re-expire already expired or refunded events
-        if (config.event?.status === 'expired' || config.event?.status === 'refunded') continue;
-        // Mark as expired
+  try {
+    // List all event configs from KV
+    let cursor = undefined;
+    const allKeys = [];
+    do {
+      const listOpts = { prefix: 'config:' };
+      if (cursor) listOpts.cursor = cursor;
+      const list = await env.MG_BOOK.list(listOpts);
+      allKeys.push(...list.keys);
+      cursor = list.list_complete ? undefined : list.cursor;
+    } while (cursor);
+
+    for (const key of allKeys) {
+      const slug = key.name.replace('config:', '');
+      // Skip demo/seed events
+      if (slug.startsWith('demo-') || slug === 'mg') continue;
+
+      const configRaw = await env.MG_BOOK.get(key.name, 'text');
+      if (!configRaw) continue;
+
+      let config;
+      try { config = JSON.parse(configRaw); } catch { continue; }
+
+      // Don't expire completed/trophy events — those are permanent
+      if (config.event?.status === 'complete') continue;
+      // Don't re-process already archived events
+      if (config.event?.status === 'archived') continue;
+
+      // Check if expired: explicit expiresAt field OR createdAt older than 90 days
+      const expiresAt = config.event?.expiresAt;
+      const createdAt = config.event?.createdAt;
+      const isExpired = (expiresAt && new Date(expiresAt) < now) ||
+                        (createdAt && createdAt < cutoff90d) ||
+                        (!expiresAt && !createdAt);
+
+      if (!isExpired) continue;
+
+      // Already marked expired or refunded — archive and clean up KV
+      // For active events, first mark as expired
+      if (config.event?.status !== 'expired' && config.event?.status !== 'refunded') {
         config.event.status = 'expired';
-        config.event.expiredAt = new Date().toISOString();
-        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
-        // Update D1
-        await env.WAGGLE_DB.prepare('UPDATE events SET status = ? WHERE slug = ?').bind('expired', slug).run();
+        config.event.expiredAt = now.toISOString();
       }
+
+      // Archive to D1
+      if (env.WAGGLE_DB) {
+        try {
+          await env.WAGGLE_DB.prepare(
+            'INSERT INTO archived_events (slug, config, archived_at) VALUES (?, ?, ?)'
+          ).bind(slug, configRaw, now.toISOString()).run();
+        } catch (e) {
+          // Table may not exist yet — that's OK, just log
+          console.error('archive-insert', slug, e.message);
+        }
+        // Update events table status
+        try {
+          await env.WAGGLE_DB.prepare('UPDATE events SET status = ? WHERE slug = ?').bind('archived', slug).run();
+        } catch {}
+      }
+
+      // Delete KV keys for this event
+      const kvKeysToDelete = [
+        `${slug}:holes`, `${slug}:game-state`, `${slug}:feed`,
+        `${slug}:bets`, `config:${slug}`
+      ];
+      for (const k of kvKeysToDelete) {
+        await env.MG_BOOK.delete(k).catch(() => {});
+      }
+
+      cleaned++;
     }
+
+    if (cleaned > 0) console.log(`cleanup-expired-events: archived and cleaned ${cleaned} events`);
   } catch (e) {
     console.error('cleanup-expired-events', e.message);
   }
+}
+
+// ─── Demo Buddies Trip Seeder ────────────────────────────────────────────────
+
+async function seedDemoBuddies(env) {
+  const KEY = 'config:demo-buddies';
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const players = [
+    { name: 'Jake Sullivan', handicapIndex: 8.2 },
+    { name: 'Ryan Costa', handicapIndex: 14.6 },
+    { name: 'Mike Torres', handicapIndex: 5.1 },
+    { name: 'Dan Keller', handicapIndex: 11.8 }
+  ];
+  const pars = [4,4,3,5,4,4,3,4,5, 4,3,5,4,4,4,3,4,5]; // par 72
+
+  const config = {
+    event: { name: 'The Dunes Trip 2026', shortName: 'Dunes Trip', eventType: 'buddies_trip', course: 'Streamsong Black', currentRound: 1, venue: 'Streamsong Resort' },
+    players: players,
+    roster: players,
+    games: { nassau: true, skins: true, wolf: true },
+    structure: { nassauBet: '10', skinsBet: '5', autoPress: { enabled: true, threshold: 2 } },
+    holesPerRound: 18,
+    course: { name: 'Streamsong Black', pars: pars, tees: 'Blue' },
+    rounds: { '1': { course: 'Streamsong Black', tees: 'Blue' } },
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // Pre-seed 12 holes of scores — Jake is hot, Ryan is bleeding
+  const scores = {
+    1: { 'Jake Sullivan': 4, 'Ryan Costa': 5, 'Mike Torres': 4, 'Dan Keller': 5 },
+    2: { 'Jake Sullivan': 3, 'Ryan Costa': 5, 'Mike Torres': 4, 'Dan Keller': 4 },
+    3: { 'Jake Sullivan': 3, 'Ryan Costa': 4, 'Mike Torres': 3, 'Dan Keller': 3 },
+    4: { 'Jake Sullivan': 5, 'Ryan Costa': 6, 'Mike Torres': 5, 'Dan Keller': 5 },
+    5: { 'Jake Sullivan': 4, 'Ryan Costa': 5, 'Mike Torres': 3, 'Dan Keller': 4 },
+    6: { 'Jake Sullivan': 4, 'Ryan Costa': 5, 'Mike Torres': 4, 'Dan Keller': 5 },
+    7: { 'Jake Sullivan': 2, 'Ryan Costa': 4, 'Mike Torres': 3, 'Dan Keller': 3 },
+    8: { 'Jake Sullivan': 4, 'Ryan Costa': 5, 'Mike Torres': 4, 'Dan Keller': 4 },
+    9: { 'Jake Sullivan': 5, 'Ryan Costa': 6, 'Mike Torres': 4, 'Dan Keller': 5 },
+    10: { 'Jake Sullivan': 4, 'Ryan Costa': 5, 'Mike Torres': 4, 'Dan Keller': 3 },
+    11: { 'Jake Sullivan': 3, 'Ryan Costa': 4, 'Mike Torres': 2, 'Dan Keller': 3 },
+    12: { 'Jake Sullivan': 4, 'Ryan Costa': 6, 'Mike Torres': 5, 'Dan Keller': 5 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (12 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`demo-buddies:holes`, JSON.stringify(holes));
+
+  // Compute basic game state for skins
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 12; h++) {
+    const hScores = scores[h];
+    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
+    const minScore = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === minScore);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * 3 * 5 });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`demo-buddies:game-state`, JSON.stringify(gameState));
+
+  // Seed feed with narrative
+  const feed = [
+    { ts: Date.now() - 100000, type: 'score', text: 'Jake birdies #7! Takes the skin ($15). Pushing to +$30.', player: 'Jake Sullivan' },
+    { ts: Date.now() - 200000, type: 'score', text: 'Ryan double-bogeys #12. The bleeding continues.', player: 'Ryan Costa' },
+    { ts: Date.now() - 300000, type: 'score', text: 'Mike drains a 20-footer on #11 for birdie. Skin won!', player: 'Mike Torres' },
+    { ts: Date.now() - 400000, type: 'chirp', text: 'Ryan hasn\'t won a skin since the parking lot. Someone buy him a beer.', player: 'System' },
+    { ts: Date.now() - 500000, type: 'score', text: 'Skin carries on #4. Pot growing to $10.', player: 'System' },
+  ];
+  await env.MG_BOOK.put(`demo-buddies:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
+}
+
+// ─── Demo Scramble Seeder ───────────────────────────────────────────────────
+
+async function seedDemoScramble(env) {
+  const KEY = 'config:demo-scramble';
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const teamNames = ['Team Alpha', 'Team Bravo', 'Team Charlie', 'Team Delta', 'Team Eagle', 'Team Falcon', 'Team Grizzly', 'Team Hawk'];
+  const teams = teamNames.map((name, i) => ({ name, handicapIndex: [5.2, 4.8, 6.1, 5.5, 7.0, 4.2, 6.8, 5.9][i] }));
+  const pars = [4,5,3,4,4,4,3,5,4, 4,3,4,5,4,3,4,5,4]; // par 72
+
+  const config = {
+    event: { name: 'Spring Scramble 2026', shortName: 'Spring Scramble', eventType: 'scramble', course: 'TPC Sawgrass', currentRound: 1, venue: 'TPC Sawgrass' },
+    players: teams.map(t => ({ name: t.name, handicapIndex: t.handicapIndex })),
+    roster: teams.map(t => ({ name: t.name, handicapIndex: t.handicapIndex })),
+    teams: teams,
+    games: { scramble: true },
+    structure: {},
+    holesPerRound: 18,
+    course: { name: 'TPC Sawgrass', pars: pars, tees: 'Blue' },
+    rounds: { '1': { course: 'TPC Sawgrass', tees: 'Blue' } },
+    scrambleEntryFee: 200,
+    scrambleTeams: teams,
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // Pre-seed 9 holes — tight leaderboard with fun team names
+  //                     Alpha Bravo Charlie Delta Eagle Falcon Grizzly Hawk
+  const holeScores = [
+    /*1 p4*/ [3, 4, 4, 3, 4, 3, 4, 4],
+    /*2 p5*/ [4, 4, 5, 4, 5, 4, 4, 5],
+    /*3 p3*/ [3, 2, 3, 3, 3, 2, 3, 3],
+    /*4 p4*/ [3, 4, 4, 4, 4, 3, 3, 4],
+    /*5 p4*/ [4, 3, 4, 4, 3, 4, 4, 3],
+    /*6 p4*/ [3, 4, 3, 4, 4, 3, 4, 4],
+    /*7 p3*/ [3, 3, 3, 2, 3, 3, 2, 3],
+    /*8 p5*/ [4, 5, 4, 4, 5, 4, 5, 4],
+    /*9 p4*/ [3, 4, 4, 3, 4, 4, 3, 4],
+  ];
+
+  const holes = {};
+  const totals = {};
+  teamNames.forEach(t => { totals[t] = 0; });
+
+  for (let h = 1; h <= 9; h++) {
+    const s = {};
+    teamNames.forEach((t, i) => {
+      s[t] = holeScores[h - 1][i];
+      totals[t] += holeScores[h - 1][i];
+    });
+    holes[h] = { scores: s, timestamp: Date.now() - (9 - h) * 600000 };
+  }
+  await env.MG_BOOK.put('demo-scramble:holes', JSON.stringify(holes));
+
+  // Build scramble leaderboard from totals
+  const leaderboard = teamNames.map(t => ({ team: t, total: totals[t] }))
+    .sort((a, b) => a.total - b.total)
+    .map((entry, i) => ({ ...entry, position: i + 1 }));
+
+  // Build per-hole results for the scramble engine state
+  const scrambleHoles = {};
+  for (let h = 1; h <= 9; h++) {
+    scrambleHoles[h] = {};
+    teamNames.forEach((t, i) => { scrambleHoles[h][t] = holeScores[h - 1][i]; });
+  }
+
+  const gameState = {
+    scramble: {
+      running: totals,
+      holes: scrambleHoles,
+      leaderboard: leaderboard
+    }
+  };
+  await env.MG_BOOK.put('demo-scramble:game-state', JSON.stringify(gameState));
+
+  const feed = [
+    { ts: Date.now() - 100000, type: 'score', text: 'Team Delta aces the par 3 7th. Best shot of the day.', player: 'Team Delta' },
+    { ts: Date.now() - 200000, type: 'score', text: 'Team Falcon birdies #6. Tied for the lead at -5.', player: 'Team Falcon' },
+    { ts: Date.now() - 300000, type: 'chirp', text: 'Front 9 complete. Three teams within a shot. Back 9 is going to be a war.', player: 'System' },
+  ];
+  await env.MG_BOOK.put('demo-scramble:feed', JSON.stringify(feed));
+
+  return { seeded: true };
 }
 
 // ─── Demo Event Seeder ──────────────────────────────────────────────────────
@@ -995,6 +1387,30 @@ async function seedDemoEvent(env) {
 
 // ─── Shared helpers ────────────────────────────────────────────────────────
 
+// ── Unified AI helper: Workers AI (free, edge) → Anthropic (fallback) ──────
+async function callAI(env, system, userMessage, maxTokens = 400) {
+  // Try Workers AI first (free, runs at the edge)
+  if (env.AI) {
+    try {
+      const result = await env.AI.run('@cf/meta/llama-3.1-70b-instruct', {
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: typeof userMessage === 'string' ? userMessage : JSON.stringify(userMessage) }
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      });
+      if (result?.response) {
+        return { content: [{ type: 'text', text: result.response }] };
+      }
+    } catch (e) {
+      console.error('Workers AI error, falling back to Anthropic:', e.message);
+    }
+  }
+  // Fallback to Anthropic Claude
+  return callClaude(env, system, [{ role: 'user', content: typeof userMessage === 'string' ? userMessage : JSON.stringify(userMessage) }], maxTokens);
+}
+
 async function callClaude(env, system, messages, maxTokens = 400, extra = {}) {
   const body = {
     model: 'claude-sonnet-4-5-20250929',
@@ -1038,6 +1454,15 @@ async function handleGhinLookup(url, env) {
     return new Response(JSON.stringify({ error: 'Enter a valid GHIN number (5-10 digits)' }), { headers: EVENT_CORS });
   }
 
+  // Check KV cache first (24h TTL)
+  const cacheKey = 'ghin:cache:' + encodeURIComponent(ghinNum + (lastName ? ':' + lastName.toLowerCase() : ''));
+  if (env.MG_BOOK) {
+    try {
+      const cached = await env.MG_BOOK.get(cacheKey, 'json');
+      if (cached) return new Response(JSON.stringify(cached), { headers: EVENT_CORS });
+    } catch {}
+  }
+
   // Try GHIN official API if token configured
   if (env.GHIN_TOKEN) {
     try {
@@ -1053,12 +1478,14 @@ async function handleGhinLookup(url, env) {
           if (lastName && !g.last_name.toLowerCase().startsWith(lastName.toLowerCase())) {
             return new Response(JSON.stringify({ error: 'Last name does not match GHIN record' }), { headers: EVENT_CORS });
           }
-          return new Response(JSON.stringify({
+          const result = {
             name: `${g.first_name} ${g.last_name}`,
             handicapIndex: parseFloat(g.handicap_index) || 0,
             ghinNumber: g.ghin_number,
             club: g.club_name,
-          }), { headers: EVENT_CORS });
+          };
+          if (env.MG_BOOK) await env.MG_BOOK.put(cacheKey, JSON.stringify(result), { expirationTtl: 86400 }).catch(() => {});
+          return new Response(JSON.stringify(result), { headers: EVENT_CORS });
         }
         return new Response(JSON.stringify({ error: `No active golfer found for GHIN #${ghinNum}` }), { headers: EVENT_CORS });
       }
@@ -1080,12 +1507,14 @@ async function handleGhinLookup(url, env) {
         const loginData = await loginRes.json();
         const golfer = loginData?.golfer_user?.golfers?.[0];
         if (golfer) {
-          return new Response(JSON.stringify({
+          const result = {
             name: (`${golfer.first_name || ''} ${golfer.last_name || ''}`).trim() || golfer.player_name || ghinNum,
             handicapIndex: parseFloat(golfer.handicap_index) || parseFloat(golfer.low_hi_display) || 0,
             ghinNumber: golfer.ghin_number || ghinNum,
             club: golfer.club_name || '',
-          }), { headers: EVENT_CORS });
+          };
+          if (env.MG_BOOK) await env.MG_BOOK.put(cacheKey, JSON.stringify(result), { expirationTtl: 86400 }).catch(() => {});
+          return new Response(JSON.stringify(result), { headers: EVENT_CORS });
         }
       }
     } catch (e) { /* fall through */ }
@@ -1268,24 +1697,24 @@ async function handleSeasonSave(request, env) {
 // ─── Course Database ──────────────────────────────────────────────────────
 
 const SEED_COURSES = [
-  { id: 'pebble-beach', name: 'Pebble Beach Golf Links', city: 'Pebble Beach', state: 'CA', slope: 145, rating: 74.7,
+  { id: 'pebble-beach', name: 'Pebble Beach Golf Links', city: 'Pebble Beach', state: 'CA', slope: 144, rating: 74.9,
     par: [4,5,4,4,3,5,3,4,4,4,4,3,4,5,4,4,3,5],
-    strokeIndex: [11,5,1,13,17,3,15,7,9,4,2,16,8,6,10,14,18,12] },
+    strokeIndex: [6,10,12,16,14,2,18,4,8,3,9,17,7,1,13,11,15,5] },
   { id: 'augusta-national', name: 'Augusta National Golf Club', city: 'Augusta', state: 'GA', slope: 137, rating: 76.2,
     par: [4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4],
     strokeIndex: [11,7,1,15,5,17,3,9,13,6,8,16,2,10,4,18,12,14] },
-  { id: 'bethpage-black', name: 'Bethpage State Park (Black)', city: 'Farmingdale', state: 'NY', slope: 148, rating: 75.4,
-    par: [4,4,3,5,4,4,3,5,4,4,3,4,5,3,4,4,3,4],
-    strokeIndex: [7,1,15,5,9,11,17,3,13,4,16,2,6,18,8,10,14,12] },
+  { id: 'bethpage-black', name: 'Bethpage State Park (Black)', city: 'Farmingdale', state: 'NY', slope: 155, rating: 78.0,
+    par: [4,4,3,5,4,4,5,3,4,4,4,4,5,3,4,4,3,4],
+    strokeIndex: [8,16,18,2,4,10,6,14,12,9,11,7,3,17,1,5,13,15] },
   { id: 'torrey-pines-south', name: 'Torrey Pines Golf Course (South)', city: 'La Jolla', state: 'CA', slope: 144, rating: 76.1,
     par: [4,4,3,4,5,3,5,3,4,4,4,4,3,4,5,4,3,5],
     strokeIndex: [9,3,15,7,1,17,5,13,11,6,4,8,16,10,2,12,18,14] },
-  { id: 'tpc-sawgrass', name: 'TPC Sawgrass (Stadium)', city: 'Ponte Vedra Beach', state: 'FL', slope: 147, rating: 76.8,
-    par: [4,5,3,4,4,4,5,3,4,4,4,3,5,4,4,4,3,4],
-    strokeIndex: [7,3,17,9,1,11,5,15,13,6,2,16,4,8,12,14,18,10] },
-  { id: 'pinehurst-no2', name: 'Pinehurst Resort & Country Club (No. 2)', city: 'Pinehurst', state: 'NC', slope: 139, rating: 76.4,
-    par: [4,4,4,4,4,3,4,3,4,4,4,3,4,4,5,4,3,4],
-    strokeIndex: [5,1,9,13,3,17,7,15,11,4,2,16,8,10,6,12,18,14] },
+  { id: 'tpc-sawgrass', name: 'TPC Sawgrass (Stadium)', city: 'Ponte Vedra Beach', state: 'FL', slope: 155, rating: 76.8,
+    par: [4,5,3,4,4,4,4,3,5,4,5,4,3,4,4,5,3,4],
+    strokeIndex: [11,15,17,9,3,13,1,7,5,12,8,16,18,4,6,10,14,2] },
+  { id: 'pinehurst-no2', name: 'Pinehurst Resort & Country Club (No. 2)', city: 'Pinehurst', state: 'NC', slope: 143, rating: 75.4,
+    par: [4,4,4,4,5,3,4,5,3,5,4,4,4,4,3,5,3,4],
+    strokeIndex: [11,3,9,1,15,5,7,17,13,18,8,10,6,2,16,14,4,12] },
   { id: 'merion-east', name: 'Merion Golf Club (East)', city: 'Ardmore', state: 'PA', slope: 148, rating: 76.1,
     par: [4,4,3,4,4,4,3,4,5,4,4,4,3,4,4,3,4,4],
     strokeIndex: [3,7,15,1,11,5,17,9,13,4,6,12,18,2,8,16,10,14] },
@@ -1298,6 +1727,9 @@ const SEED_COURSES = [
   { id: 'oakmont', name: 'Oakmont Country Club', city: 'Oakmont', state: 'PA', slope: 155, rating: 78.5,
     par: [4,4,4,3,4,3,5,3,4,4,4,5,3,4,4,4,4,4],
     strokeIndex: [1,5,11,17,7,15,3,13,9,4,6,2,18,10,8,12,14,16] },
+  { id: 'streamsong-black', name: 'Streamsong Resort (Black)', city: 'Streamsong', state: 'FL', slope: 135, rating: 74.7,
+    par: [5,4,4,5,3,4,3,4,4,5,4,5,4,4,3,4,3,5],
+    strokeIndex: [12,16,4,2,6,18,14,8,10,11,3,7,9,15,17,1,13,5] },
 ];
 
 async function handleCourseSearch(url, env) {
@@ -1378,7 +1810,7 @@ async function handleSeasonPage(seasonId, env) {
   const rows = leaderboard.map((p, i) => `
     <tr style="border-bottom:1px solid #2D2D2D">
       <td style="padding:10px 12px;color:#9CA3AF">${i + 1}</td>
-      <td style="padding:10px 12px;font-weight:${i===0?700:500};color:#F9FAFB">${p.name}</td>
+      <td style="padding:10px 12px;font-weight:${i===0?700:500};color:#F9FAFB">${escHtml(p.name)}</td>
       <td style="padding:10px 12px;text-align:center;color:#9CA3AF">${p.eventCount}</td>
       <td style="padding:10px 12px;text-align:center;color:${i===0?'#34D399':'#F9FAFB'};font-weight:700">${p.totalNet}</td>
       <td style="padding:10px 12px;text-align:center;color:#9CA3AF">${p.avgNet}</td>
@@ -1589,6 +2021,85 @@ async function handleValidatePromo(request, env) {
   return new Response(JSON.stringify({ valid: true, discount: PROMO_CODES[code].discount, label: PROMO_CODES[code].label }), { headers: EVENT_CORS });
 }
 
+// ─── Subscription Handlers ────────────────────────────────────────────────
+
+async function handleSubscribe(request, env) {
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+  const email = (body.email || '').trim().toLowerCase();
+  const plan = body.plan || 'monthly'; // 'monthly' or 'annual'
+  if (!email) return new Response(JSON.stringify({ error: 'Email required' }), { status: 400, headers: EVENT_CORS });
+
+  const priceId = plan === 'annual' ? (env.STRIPE_PRICE_ANNUAL || '') : (env.STRIPE_PRICE_MONTHLY || '');
+  if (!priceId) return new Response(JSON.stringify({ error: 'Subscription pricing not configured. Contact support.' }), { status: 500, headers: EVENT_CORS });
+
+  // Check if already subscribed
+  const existing = await env.MG_BOOK.get(`subscriber:${email}`, 'json');
+  if (existing && existing.status === 'active' && (existing.currentPeriodEnd || 0) > Date.now()) {
+    return new Response(JSON.stringify({ error: 'Already subscribed', plan: existing.plan }), { status: 400, headers: EVENT_CORS });
+  }
+
+  const stripeBody = new URLSearchParams({
+    'payment_method_types[]': 'card',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+    'mode': 'subscription',
+    'success_url': `https://betwaggle.com/pricing?subscribed=true&email=${encodeURIComponent(email)}`,
+    'cancel_url': 'https://betwaggle.com/pricing',
+    'customer_email': email,
+    'metadata[waggle_subscription]': 'true',
+    'metadata[plan]': plan,
+    'metadata[email]': email,
+  });
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: stripeBody.toString(),
+  });
+
+  if (!stripeRes.ok) {
+    const err = await stripeRes.json();
+    return new Response(JSON.stringify({ error: err?.error?.message || 'Stripe error' }), { status: 500, headers: EVENT_CORS });
+  }
+
+  const session = await stripeRes.json();
+  return new Response(JSON.stringify({ checkoutUrl: session.url }), { headers: EVENT_CORS });
+}
+
+async function handleBillingPortal(request, env) {
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+  const email = (body.email || '').trim().toLowerCase();
+  if (!email) return new Response(JSON.stringify({ error: 'Email required' }), { status: 400, headers: EVENT_CORS });
+
+  const sub = await env.MG_BOOK.get(`subscriber:${email}`, 'json');
+  if (!sub || !sub.stripeCustomerId) return new Response(JSON.stringify({ error: 'No subscription found for this email' }), { status: 404, headers: EVENT_CORS });
+
+  const portalBody = new URLSearchParams({
+    'customer': sub.stripeCustomerId,
+    'return_url': 'https://betwaggle.com/pricing',
+  });
+
+  const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: portalBody.toString(),
+  });
+
+  if (!portalRes.ok) {
+    const err = await portalRes.json();
+    return new Response(JSON.stringify({ error: err?.error?.message || 'Portal error' }), { status: 500, headers: EVENT_CORS });
+  }
+
+  const portal = await portalRes.json();
+  return new Response(JSON.stringify({ portalUrl: portal.url }), { headers: EVENT_CORS });
+}
+
+// ─── One-Time Checkout ────────────────────────────────────────────────────
+
 async function handleCreateCheckout(request, env) {
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EVENT_CORS });
 
@@ -1621,8 +2132,17 @@ async function handleCreateCheckout(request, env) {
   const originalAmount = WAGGLE_PRICES[eventType] ?? 3200;
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
 
-  // Check referral credits — if commissioner has enough, create free event
+  // Check Season Pass subscription — subscribers create events for free
   const adminEmail = (config.event?.adminContact || '').trim().toLowerCase();
+  if (adminEmail && env.MG_BOOK) {
+    const sub = await env.MG_BOOK.get(`subscriber:${adminEmail}`, 'json');
+    if (sub && sub.status === 'active' && (sub.currentPeriodEnd || 0) > Date.now()) {
+      config.meta = { ...(config.meta || {}), paidVia: 'subscription', plan: sub.plan };
+      return handleCreateEventFromConfig(config, env);
+    }
+  }
+
+  // Check referral credits — if commissioner has enough, create free event
   if (adminEmail && env.MG_BOOK) {
     const credKey = `referral-credits:${adminEmail}`;
     const credits = await env.MG_BOOK.get(credKey, 'json');
@@ -1842,7 +2362,7 @@ async function handleCheckoutSuccess(url, env) {
 
     if (organizerEmail) {
       promises.push(resendPost({
-        from: 'Waggle <events@betwaggle.com>',
+        from: 'Waggle <waggle@cafecito-ai.com>',
         to: organizerEmail,
         subject: `Your Waggle event is live: ${eventName}`,
         html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;padding:32px 24px">
@@ -1862,7 +2382,7 @@ async function handleCheckoutSuccess(url, env) {
     }
 
     promises.push(resendPost({
-      from: 'Waggle <events@betwaggle.com>',
+      from: 'Waggle <waggle@cafecito-ai.com>',
       to: 'evan@cafecito-ai.com',
       subject: `New Waggle event: ${result.slug}${organizerEmail ? ' by ' + organizerEmail : ''}`,
       html: `<p><strong>Event:</strong> ${eventName}</p><p><strong>Slug:</strong> ${result.slug}</p><p><strong>Organizer:</strong> ${organizerEmail || 'unknown'}</p><p><strong>URL:</strong> <a href="${eventUrl}">${eventUrl}</a></p><p><strong>Source:</strong> ${JSON.stringify(config.meta?.source || {})}</p>`,
@@ -1962,11 +2482,11 @@ async function handleWaggleSuccess(url, env) {
       transaction_id: '${slug}'
     });
   </script>` : ''}
-  <script>
+  ${env.META_PIXEL_ID ? `<script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init','PIXEL_PLACEHOLDER');
+    fbq('init','${env.META_PIXEL_ID}');
     fbq('track','PageView');
-  </script>
+  </script>` : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root { --forest: #0D2818; --green: #1B4332; --green-mid: #2D6A4F; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
@@ -2016,7 +2536,7 @@ async function handleWaggleSuccess(url, env) {
     </div>
 
     <div class="share-actions">
-      <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${escEventName}',url:'${escEventUrl}'}).catch(function(){});}else{navigator.clipboard.writeText('${escEventUrl}');}">Share with Group</button>
+      <button class="share-btn" onclick="shareInvitation()">Share with Group</button>
       <button class="copy-link-btn" onclick="navigator.clipboard.writeText('${escEventUrl}').then(function(){this.textContent='Copied!';}.bind(this))">Copy Link</button>
     </div>
 
@@ -2028,7 +2548,7 @@ async function handleWaggleSuccess(url, env) {
     </button>
     <div style="font-size:11px;color:#7A7A7A;margin-top:4px;text-align:center">For friends watching from home -- view-only, no betting access</div>
     <script>
-    function copyInvitation(btn) {
+    function buildInvitationText() {
       var parts = [];
       parts.push('You have been invited to ${jsEventName}.');
       parts.push('');
@@ -2038,11 +2558,25 @@ async function handleWaggleSuccess(url, env) {
       ${jsDateStr ? `parts.push('${jsDateStr}');` : ''}
       ${jsStakesLine || jsDateStr ? `parts.push('');` : ''}
       parts.push('Open the sportsbook: ${jsEventUrl}');
-      var text = parts.join('\\n');
+      return parts.join('\\n');
+    }
+    function copyInvitation(btn) {
+      var text = buildInvitationText();
       navigator.clipboard.writeText(text).then(function() {
         btn.textContent = 'Copied to clipboard';
         setTimeout(function() { btn.textContent = 'Copy Formal Invitation'; }, 2000);
       });
+    }
+    function shareInvitation() {
+      var text = buildInvitationText();
+      if (navigator.share) {
+        navigator.share({title:'${jsEventName}',text:text,url:'${jsEventUrl}'}).catch(function(){});
+      } else {
+        navigator.clipboard.writeText(text).then(function(){
+          var btn = document.querySelector('.share-btn');
+          if (btn) { btn.textContent = 'Invitation copied!'; setTimeout(function(){ btn.textContent = 'Share with Group'; }, 2000); }
+        });
+      }
     }
     </script>
 
@@ -2322,6 +2856,26 @@ async function handleStripeWebhook(request, env) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data?.object;
+    // Handle subscription checkout
+    if (session?.metadata?.waggle_subscription === 'true' && session.subscription) {
+      const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
+      if (email && env.MG_BOOK) {
+        // Fetch subscription details from Stripe
+        const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${session.subscription}`, {
+          headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
+        });
+        const sub = subRes.ok ? await subRes.json() : null;
+        await env.MG_BOOK.put(`subscriber:${email}`, JSON.stringify({
+          plan: session.metadata?.plan || 'monthly',
+          status: 'active',
+          stripeSubId: session.subscription,
+          stripeCustomerId: session.customer,
+          currentPeriodEnd: sub ? sub.current_period_end * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
+          createdAt: Date.now(),
+        }));
+      }
+    }
+    // Handle one-time event checkout
     const tempId = session?.metadata?.waggle_temp_id;
     if (tempId) {
       const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
@@ -2330,7 +2884,42 @@ async function handleStripeWebhook(request, env) {
         await env.MG_BOOK.delete(`pending:${tempId}`);
       }
     }
+
+    // Handle team entry fee checkout
+    if (session?.metadata?.type === 'team_entry_fee') {
+      const teamSlug = session.metadata.waggle_slug;
+      const teamId = session.metadata.team_id;
+      if (teamSlug && teamId && env.MG_BOOK) {
+        const teams = (await env.MG_BOOK.get(`${teamSlug}:registered-teams`, 'json')) || [];
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          team.paid = true;
+          team.paidAt = new Date().toISOString();
+          team.stripeSessionId = session.id;
+          await env.MG_BOOK.put(`${teamSlug}:registered-teams`, JSON.stringify(teams));
+        }
+      }
+    }
   }
+
+  // Handle subscription lifecycle events
+  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+    const sub = event.data?.object;
+    if (sub && env.MG_BOOK) {
+      // Find subscriber by Stripe subscription ID
+      // We need to look up by customer email since we key by email
+      const customerEmail = sub.metadata?.email || '';
+      if (customerEmail) {
+        const existing = await env.MG_BOOK.get(`subscriber:${customerEmail}`, 'json');
+        if (existing && existing.stripeSubId === sub.id) {
+          existing.status = sub.status === 'active' ? 'active' : 'canceled';
+          existing.currentPeriodEnd = sub.current_period_end * 1000;
+          await env.MG_BOOK.put(`subscriber:${customerEmail}`, JSON.stringify(existing));
+        }
+      }
+    }
+  }
+
   return new Response('ok');
 }
 
@@ -2343,6 +2932,8 @@ async function activateEvent(config, env) {
   if (existing) slug = slug + '-' + crypto.randomUUID().slice(0, 6);
 
   config.event.url = `https://betwaggle.com/${slug}/`;
+  if (!config.event.createdAt) config.event.createdAt = new Date().toISOString();
+  if (!config.event.expiresAt) config.event.expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
   if (!Array.isArray(config.flightOrder)) config.flightOrder = Object.keys(config.flights || {});
   if (!config.flights) config.flights = {};
   if (!config.pairings) config.pairings = {};
@@ -2369,6 +2960,19 @@ async function activateEvent(config, env) {
     env.WAGGLE_DB.prepare(
       'INSERT OR IGNORE INTO events (id, slug, event_type, name, config, created_at) VALUES (?, ?, ?, ?, ?, datetime("now"))'
     ).bind(id, slug, eventType, name, JSON.stringify(config)).run().catch(() => {});
+  }
+
+  // Index event by affiliate code for partner dashboard
+  const affiliateCode = config.meta?.source?.ref || config.meta?.ref_code || '';
+  if (affiliateCode && env.MG_BOOK) {
+    try {
+      const eventsKey = `affiliate-events:${affiliateCode}`;
+      const affEvents = (await env.MG_BOOK.get(eventsKey, 'json')) || [];
+      if (!affEvents.includes(slug)) {
+        affEvents.push(slug);
+        await env.MG_BOOK.put(eventsKey, JSON.stringify(affEvents));
+      }
+    } catch (err) { console.error('AFFILIATE_EVENT_INDEX_ERROR', { error: String(err) }); }
   }
 
   return { slug, url: config.event.url };
@@ -2516,7 +3120,7 @@ async function sendWeeklyMarketingDigest(env) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Waggle <noreply@betwaggle.com>',
+        from: 'Waggle <waggle@cafecito-ai.com>',
         to: ['evan@cafecito-ai.com'],
         subject: `Waggle Weekly \u2014 ${recentEvents.length} new events \u00b7 $${recentRevenue} this week`,
         html,
@@ -2758,6 +3362,221 @@ async function handleCampaignsDelete(url, env) {
 
 // ─── Affiliate link generator ──────────────────────────────────────────
 
+// ─── Partner Dashboard API ─────────────────────────────────────────────
+
+const PARTNER_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+
+async function handlePartnerDashboard(code, env) {
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
+
+  // Look up affiliate in D1
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found. Check your affiliate code.' }), { status: 404, headers: PARTNER_CORS });
+
+  // Fetch referrals
+  const referrals = await env.WAGGLE_DB.prepare(
+    `SELECT * FROM referrals WHERE affiliate_code = ? ORDER BY created_at DESC LIMIT 200`
+  ).bind(code).all();
+  const refs = referrals.results || [];
+
+  // Revenue calculations
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const thisYearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+  let thisMonth = 0, thisYear = 0, allTime = 0;
+  for (const r of refs) {
+    const c = r.commission_cents || 0;
+    allTime += c;
+    const rd = r.created_at || '';
+    if (rd >= thisYearStart) thisYear += c;
+    if (rd >= thisMonthStart) thisMonth += c;
+  }
+
+  // Fetch event configs for this affiliate from KV index
+  const eventsKey = `affiliate-events:${code}`;
+  const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
+
+  // Also check referrals for event slugs not in the KV index
+  const refSlugs = refs.map(r => r.event_slug).filter(Boolean);
+  const allSlugs = [...new Set([...eventSlugs, ...refSlugs])];
+
+  const events = [];
+  const allTeams = [];
+  let totalTeams = 0;
+
+  for (const slug of allSlugs) {
+    if (!slug || !env.MG_BOOK) continue;
+    try {
+      const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!configRaw) continue;
+      const cfg = JSON.parse(configRaw);
+      const teams = cfg.teams || {};
+      const teamCount = Object.keys(teams).length;
+      totalTeams += teamCount;
+
+      const createdAt = cfg.event?.createdAt || '';
+      const expiresAt = cfg.event?.expiresAt || '';
+      const isExpired = expiresAt && new Date(expiresAt) < now;
+      const eventType = cfg.event?.eventType || 'trip';
+      const priceCents = (eventType === 'scramble' || eventType === 'member_guest') ? 14900 : 3200;
+
+      let status = 'active';
+      if (isExpired) status = 'complete';
+      else if (createdAt && new Date(createdAt) > now) status = 'upcoming';
+
+      events.push({
+        slug,
+        name: cfg.event?.name || slug,
+        date: createdAt,
+        teamCount,
+        priceCents,
+        eventType,
+        status,
+        venue: cfg.event?.venue || ''
+      });
+
+      // Collect teams for CRM export
+      for (const [tid, t] of Object.entries(teams)) {
+        allTeams.push({
+          event: cfg.event?.name || slug,
+          eventSlug: slug,
+          name: t.captain || t.member || `Team ${tid}`,
+          members: [t.captain, t.member, t.member2, t.member3, t.member4].filter(Boolean).join(', '),
+          handicap: t.captainHI || t.memberHI || ''
+        });
+      }
+    } catch (err) { /* skip broken configs */ }
+  }
+
+  // Sort events by date descending
+  events.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const owed = (affiliate.total_payout_cents || 0) - (affiliate.paid_out_cents || 0);
+
+  return new Response(JSON.stringify({
+    ok: true,
+    affiliate: {
+      code: affiliate.code,
+      name: affiliate.name,
+      email: affiliate.email || '',
+      joinedAt: affiliate.created_at || ''
+    },
+    revenue: { thisMonth, thisYear, allTime },
+    events,
+    teams: allTeams,
+    referrals: refs,
+    stats: {
+      totalEvents: events.length,
+      totalTeams,
+      avgTeamsPerEvent: events.length > 0 ? (totalTeams / events.length).toFixed(1) : '0'
+    },
+    owed_cents: owed,
+    link: `https://betwaggle.com/create/?ref=${encodeURIComponent(code)}`
+  }), { headers: PARTNER_CORS });
+}
+
+async function handlePartnerEvents(code, env) {
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+
+  const eventsKey = `affiliate-events:${code}`;
+  const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
+
+  // Also pull from referrals
+  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(code).all();
+  const refSlugs = (referrals.results || []).map(r => r.event_slug).filter(Boolean);
+  const allSlugs = [...new Set([...eventSlugs, ...refSlugs])];
+
+  const events = [];
+  const now = new Date();
+  for (const slug of allSlugs) {
+    if (!slug || !env.MG_BOOK) continue;
+    try {
+      const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!configRaw) continue;
+      const cfg = JSON.parse(configRaw);
+      const teams = cfg.teams || {};
+      const teamCount = Object.keys(teams).length;
+      const expiresAt = cfg.event?.expiresAt || '';
+      const isExpired = expiresAt && new Date(expiresAt) < now;
+      events.push({
+        slug,
+        name: cfg.event?.name || slug,
+        date: cfg.event?.createdAt || '',
+        teamCount,
+        eventType: cfg.event?.eventType || 'trip',
+        status: isExpired ? 'complete' : 'active',
+        venue: cfg.event?.venue || ''
+      });
+    } catch {}
+  }
+  events.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return new Response(JSON.stringify({ ok: true, events }), { headers: PARTNER_CORS });
+}
+
+async function handlePartnerTeams(code, env) {
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+
+  const eventsKey = `affiliate-events:${code}`;
+  const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
+  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(code).all();
+  const refSlugs = (referrals.results || []).map(r => r.event_slug).filter(Boolean);
+  const allSlugs = [...new Set([...eventSlugs, ...refSlugs])];
+
+  const allTeams = [];
+  for (const slug of allSlugs) {
+    if (!slug || !env.MG_BOOK) continue;
+    try {
+      const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!configRaw) continue;
+      const cfg = JSON.parse(configRaw);
+      const teams = cfg.teams || {};
+      for (const [tid, t] of Object.entries(teams)) {
+        allTeams.push({
+          event: cfg.event?.name || slug,
+          eventSlug: slug,
+          name: t.captain || t.member || `Team ${tid}`,
+          members: [t.captain, t.member, t.member2, t.member3, t.member4].filter(Boolean).join(', '),
+          handicap: t.captainHI || t.memberHI || ''
+        });
+      }
+    } catch {}
+  }
+  return new Response(JSON.stringify({ ok: true, teams: allTeams }), { headers: PARTNER_CORS });
+}
+
+async function handlePartnerPayoutRequest(code, request, env) {
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+  const owed = (affiliate.total_payout_cents || 0) - (affiliate.paid_out_cents || 0);
+  if (owed < 2000) return new Response(JSON.stringify({ error: 'Minimum $20 required to request payout', owed_cents: owed }), { status: 400, headers: PARTNER_CORS });
+
+  let paypal_email = '';
+  try { const body = await request.json(); paypal_email = body.paypal_email || ''; } catch {}
+  if (paypal_email) {
+    await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paypal_email = ? WHERE code = ?`).bind(paypal_email, code).run();
+  }
+
+  if (env.RESEND_API_KEY) {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Waggle Partners <waggle@cafecito-ai.com>',
+        to: 'evan@cafecito-ai.com',
+        subject: `Waggle Partner Payout: ${affiliate.name} \u2014 $${(owed / 100).toFixed(2)}`,
+        html: `<p><strong>${escHtml(affiliate.name)}</strong> (partner code: ${escHtml(code)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
+      }),
+    }).catch(() => {});
+  }
+  return new Response(JSON.stringify({ ok: true, owed_cents: owed, message: 'Payout request submitted. Expect payment within 3-5 business days.' }), { headers: PARTNER_CORS });
+}
+
 // ─── Affiliate Signup (public /affiliates/ page) ──────────────────────
 async function handleAffiliateSignup(request, env) {
   const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
@@ -2872,10 +3691,10 @@ async function handleAffiliatePayoutRequest(request, env) {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Waggle Affiliates <events@betwaggle.com>',
+        from: 'Waggle Affiliates <waggle@cafecito-ai.com>',
         to: 'evan@cafecito-ai.com',
         subject: `Waggle Affiliate Payout Request: ${affiliate.name} \u2014 $${(owed / 100).toFixed(2)}`,
-        html: `<p><strong>${affiliate.name}</strong> (code: ${code}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${paypal_email || affiliate.paypal_email || '(not provided)'}</p>`
+        html: `<p><strong>${escHtml(affiliate.name)}</strong> (code: ${escHtml(code)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
       }),
     }).catch(() => {});
   }
@@ -2907,11 +3726,134 @@ async function handleAffiliatePage(url, env) {
   const code = url.searchParams.get('code') || '';
   // Simplified — the full affiliate page HTML is served from static assets
   // The API calls within the page use relative URLs which now point to betwaggle.com
-  const req = new Request(new URL('/affiliate/index.html', url), { method: 'GET' });
+  const req = new Request(new URL('/affiliates/index.html', url), { method: 'GET' });
   return env.ASSETS.fetch(req);
 }
 
 // ─── Serve dynamic event HTML ──────────────────────────────────────────
+
+// ─── Dynamic OG Image (SVG) ────────────────────────────────────────────────
+async function serveOgImage(slug, env) {
+  const escSvg = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  let config = {};
+  try {
+    const raw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (raw) config = JSON.parse(raw);
+  } catch {}
+
+  const eventName = escSvg(config.event?.name || 'Golf Event');
+  const venue = escSvg(config.event?.venue || '');
+  const players = config.players || config.roster || [];
+  const isComplete = config.event?.status === 'complete';
+
+  // Try to read game state for live/completed data
+  let holes = {};
+  let gameState = {};
+  try {
+    const holesRaw = await env.MG_BOOK.get(`${slug}:holes`, 'json');
+    if (holesRaw) holes = holesRaw;
+    const gsRaw = await env.MG_BOOK.get(`${slug}:game-state`, 'json');
+    if (gsRaw) gameState = gsRaw;
+  } catch {}
+
+  // Calculate simple scores from holes data
+  const playerScores = [];
+  const coursePars = config.coursePars || Array(18).fill(4);
+  for (const p of players.slice(0, 6)) {
+    const name = p.name || p.member || '';
+    const hcp = p.handicapIndex ?? p.handicap ?? p.memberHI ?? 0;
+    let totalStrokes = 0;
+    let holesPlayed = 0;
+    let totalPar = 0;
+    for (let h = 1; h <= 18; h++) {
+      const score = holes[name]?.[h] ?? holes[h]?.[name];
+      if (score && typeof score === 'number' && score > 0) {
+        totalStrokes += score;
+        totalPar += (coursePars[h - 1] || 4);
+        holesPlayed++;
+      }
+    }
+    const toPar = holesPlayed > 0 ? totalStrokes - totalPar : 0;
+    playerScores.push({ name: escSvg(name), hcp, holesPlayed, toPar, strokes: totalStrokes });
+  }
+
+  // Determine state
+  const maxHoles = Math.max(0, ...playerScores.map(p => p.holesPlayed));
+  let statusLine = `${players.length} player${players.length !== 1 ? 's' : ''} registered`;
+  let statusColor = '#D4AF37';
+  if (isComplete || maxHoles >= 18) {
+    statusLine = 'FINAL RESULTS';
+    statusColor = '#D4AF37';
+  } else if (maxHoles > 0) {
+    statusLine = `LIVE \u2014 Hole ${maxHoles} of 18`;
+    statusColor = '#4ade80';
+  }
+
+  // Sort by to-par if any scores exist
+  if (maxHoles > 0) playerScores.sort((a, b) => a.toPar - b.toPar);
+
+  const displayPlayers = playerScores.slice(0, 4);
+  const rowHeight = 60;
+  const startY = 260;
+
+  const playerRows = displayPlayers.map((p, i) => {
+    const y = startY + i * rowHeight;
+    const toParStr = p.holesPlayed > 0 ? (p.toPar > 0 ? '+' + p.toPar : p.toPar === 0 ? 'E' : String(p.toPar)) : '--';
+    const rankColors = ['#D4AF37', '#C0C0C0', '#CD7F32', '#FFFFFF'];
+    const rankColor = maxHoles > 0 ? (rankColors[i] || '#FFFFFF') : '#FFFFFF';
+    return `
+      <rect x="60" y="${y - 20}" width="1080" height="50" rx="8" fill="rgba(255,255,255,0.05)"/>
+      <text x="90" y="${y + 8}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="24" fill="${rankColor}" font-weight="700">${i + 1}</text>
+      <text x="130" y="${y + 8}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="24" fill="#FFFFFF" font-weight="600">${p.name}</text>
+      <text x="700" y="${y + 8}" font-family="monospace" font-size="22" fill="rgba(255,255,255,0.5)">${p.hcp > 0 ? p.hcp.toFixed(1) + ' HCP' : ''}</text>
+      <text x="1000" y="${y + 8}" font-family="monospace" font-size="28" fill="${p.toPar < 0 ? '#4ade80' : p.toPar > 0 ? '#f87171' : '#FFFFFF'}" font-weight="700" text-anchor="end">${toParStr}</text>
+      ${p.holesPlayed > 0 ? `<text x="1080" y="${y + 8}" font-family="monospace" font-size="18" fill="rgba(255,255,255,0.4)" text-anchor="end">${p.strokes}</text>` : ''}
+    `;
+  }).join('');
+
+  const morePlayersText = players.length > 4 ? `<text x="600" y="${startY + displayPlayers.length * rowHeight + 10}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.4)" text-anchor="middle">+ ${players.length - 4} more player${players.length - 4 !== 1 ? 's' : ''}</text>` : '';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D3B1A"/>
+      <stop offset="100%" stop-color="#071F0E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Subtle pattern overlay -->
+  <rect width="1200" height="630" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="4s" repeatCount="indefinite"/>
+  </rect>
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="4" fill="#D4AF37"/>
+  <!-- Event name -->
+  <text x="60" y="80" font-family="Georgia,'Playfair Display',serif" font-size="40" fill="#D4AF37" font-weight="700">${eventName}</text>
+  ${venue ? `<text x="60" y="118" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.5)">${venue}</text>` : ''}
+  <!-- Status badge -->
+  <rect x="60" y="145" width="${statusLine.length * 12 + 32}" height="34" rx="17" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="82" cy="162" r="5" fill="${statusColor}"/>
+  <text x="96" y="168" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="${statusColor}" font-weight="700" letter-spacing="1">${statusLine}</text>
+  <!-- Divider -->
+  <line x1="60" y1="210" x2="1140" y2="210" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <!-- Leaderboard header -->
+  <text x="90" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">#</text>
+  <text x="130" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">PLAYER</text>
+  <text x="700" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">HCP</text>
+  <text x="1000" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2" text-anchor="end">${maxHoles > 0 ? 'TO PAR' : ''}</text>
+  ${playerRows}
+  ${morePlayersText}
+  <!-- Branding -->
+  <text x="600" y="600" font-family="Inter,Helvetica,Arial,sans-serif" font-size="16" fill="rgba(212,175,55,0.6)" text-anchor="middle" font-weight="600" letter-spacing="2">betwaggle.com</text>
+</svg>`;
+
+  return new Response(svg, {
+    headers: {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=300',
+    }
+  });
+}
 
 async function serveEventHtml(slug, request, env) {
   let configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
@@ -2923,6 +3865,24 @@ async function serveEventHtml(slug, request, env) {
       configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     } else if (slug === 'cabot-citrus-invitational') {
       await seedDemoEvent(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-buddies') {
+      await seedDemoBuddies(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-scramble') {
+      await seedDemoScramble(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'legends-trip') {
+      await seedLegendsTrip(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'stag-night') {
+      await seedStagNight(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'augusta-scramble') {
+      await seedAugustaScramble(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'masters-member-guest') {
+      await seedMastersMG(env);
       configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     }
   }
@@ -2980,8 +3940,67 @@ async function serveEventHtml(slug, request, env) {
   const shortName = esc(config.event?.shortName || config.event?.name || 'Golf Event');
   const venue = esc(config.event?.venue || '');
   const eventUrl = `https://betwaggle.com/${slug}/`;
-  const ogDesc = `Live scores, betting odds & side action for ${eventName}. ${venue}.`;
   const themeColor = esc(config.theme?.primary || '#1A472A');
+
+  // ── Dynamic OG tags based on event state ──
+  const players = config.players || config.roster || [];
+  const playerCount = players.length;
+  const gameNames = [];
+  const gamesObj = config.games || {};
+  if (gamesObj.nassau) gameNames.push('Nassau');
+  if (gamesObj.skins) gameNames.push('Skins');
+  if (gamesObj.match_play) gameNames.push('Match Play');
+  if (gamesObj.wolf) gameNames.push('Wolf');
+  if (gamesObj.vegas) gameNames.push('Vegas');
+  if (gamesObj.stroke_play) gameNames.push('Stroke Play');
+  if (gamesObj.stableford) gameNames.push('Stableford');
+  if (gamesObj.scramble) gameNames.push('Scramble');
+  const gamesStr = gameNames.slice(0, 3).join(', ') + (gameNames.length > 3 ? ' + more' : '');
+  const nassauBet = config.structure?.nassauBet;
+  const skinsBet = config.structure?.skinsBet;
+  const stakesStr = [nassauBet ? `Nassau $${nassauBet}` : '', skinsBet ? `Skins $${skinsBet}` : ''].filter(Boolean).join(', ');
+
+  let ogTitle, ogDesc;
+  // Try to read live scores for dynamic state
+  let ogHoles = {};
+  try {
+    const holesRaw = await env.MG_BOOK.get(`${slug}:holes`, 'json');
+    if (holesRaw) ogHoles = holesRaw;
+  } catch {}
+
+  // Determine event phase
+  const coursePars = config.coursePars || Array(18).fill(4);
+  let maxHolesPlayed = 0;
+  let leaderName = '';
+  let leaderToPar = 0;
+  for (const p of players.slice(0, 20)) {
+    const pName = p.name || p.member || '';
+    let strokes = 0, par = 0, hPlayed = 0;
+    for (let h = 1; h <= 18; h++) {
+      const sc = ogHoles[pName]?.[h] ?? ogHoles[h]?.[pName];
+      if (sc && typeof sc === 'number' && sc > 0) { strokes += sc; par += (coursePars[h - 1] || 4); hPlayed++; }
+    }
+    if (hPlayed > maxHolesPlayed) maxHolesPlayed = hPlayed;
+    const tp = hPlayed > 0 ? strokes - par : 999;
+    if (tp < leaderToPar || !leaderName) { leaderToPar = tp; leaderName = pName; }
+  }
+
+  const isComplete = config.event?.status === 'complete' || maxHolesPlayed >= 18;
+  const isLive = maxHolesPlayed > 0 && !isComplete;
+  const leaderToParStr = leaderToPar > 0 ? '+' + leaderToPar : leaderToPar === 0 ? 'E' : String(leaderToPar);
+
+  if (isComplete && leaderName) {
+    ogTitle = `${eventName} \u2014 Final Results`;
+    ogDesc = `${esc(leaderName)} wins at ${leaderToParStr}. ${playerCount} players. See the full breakdown.`;
+  } else if (isLive && leaderName) {
+    const remaining = 18 - maxHolesPlayed;
+    ogTitle = `${eventName} \u2014 LIVE`;
+    ogDesc = `${esc(leaderName)} leads at ${leaderToParStr}. ${remaining} hole${remaining !== 1 ? 's' : ''} remaining. ${gamesStr}.`;
+  } else {
+    ogTitle = `${eventName}${stakesStr ? ' \u2014 Lines Are Set' : ''}`;
+    ogDesc = `${playerCount} player${playerCount !== 1 ? 's' : ''}. ${stakesStr || gamesStr || 'Live scores & side action'}. ${venue ? venue + '. ' : ''}Join the action.`;
+  }
+  const ogImageUrl = `https://betwaggle.com/${slug}/og-image.svg`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -2992,14 +4011,18 @@ async function serveEventHtml(slug, request, env) {
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="${themeColor}">
   <title>${eventName}</title>
-  <meta property="og:title" content="${eventName}">
+  <meta property="og:title" content="${ogTitle}">
   <meta property="og:description" content="${ogDesc}">
+  <meta property="og:image" content="${ogImageUrl}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${eventUrl}">
   <meta property="og:site_name" content="Waggle">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${eventName}">
+  <meta name="twitter:title" content="${ogTitle}">
   <meta name="twitter:description" content="${ogDesc}">
+  <meta name="twitter:image" content="${ogImageUrl}">
   <meta name="description" content="${ogDesc}">
   <meta name="apple-mobile-web-app-title" content="${shortName}">
   <link rel="icon" type="image/svg+xml" href="/${slug}/icon-180.svg">
@@ -3029,7 +4052,8 @@ async function serveEventHtml(slug, request, env) {
 </div>
 <script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
 ` : ''}
-  ${(slug === 'demo' || slug === 'cabot-citrus-invitational') ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>` : ''}
+  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || slug.startsWith('demo-')) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
+<script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
       <img src="/logo.png" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
@@ -3535,6 +4559,66 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ error: 'Invalid PIN' }), { status: 401, headers: EVENT_CORS });
   }
 
+  // POST /admin/refund — refund a Stripe payment for this event
+  if (path === 'admin/refund' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    if (!eventConfig) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    const reason = body.reason || '';
+
+    const stripeSessionId = eventConfig.meta?.stripe_session_id;
+    const paymentIntentId = eventConfig.meta?.stripe_payment_intent;
+
+    if (!stripeSessionId && !paymentIntentId) {
+      return new Response(JSON.stringify({ error: 'No payment found for this event' }), { status: 400, headers: EVENT_CORS });
+    }
+    if (!env.STRIPE_SECRET_KEY) {
+      return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500, headers: EVENT_CORS });
+    }
+
+    try {
+      let piId = paymentIntentId;
+      // If we only have a session ID, look up the payment intent
+      if (!piId && stripeSessionId) {
+        const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${stripeSessionId}`, {
+          headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` }
+        });
+        const session = await sessionRes.json();
+        piId = session.payment_intent;
+      }
+      if (!piId) return new Response(JSON.stringify({ error: 'No payment found for this event' }), { status: 400, headers: EVENT_CORS });
+
+      const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `payment_intent=${piId}&reason=requested_by_customer`
+      });
+      const refund = await refundRes.json();
+
+      if (refund.id) {
+        eventConfig.event.status = 'refunded';
+        eventConfig.event.refundedAt = new Date().toISOString();
+        eventConfig.event.refundReason = reason;
+        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(eventConfig));
+        await env.MG_BOOK.put(`${slug}:refund`, JSON.stringify({ refundId: refund.id, amount: refund.amount, reason, at: new Date().toISOString() }));
+        return new Response(JSON.stringify({ ok: true, refundId: refund.id }), { headers: EVENT_CORS });
+      }
+      return new Response(JSON.stringify({ error: 'Refund failed', details: refund }), { status: 400, headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: EVENT_CORS });
+    }
+  }
+
+  // POST /event/freeze — freeze event as complete (Trophy Room)
+  if (path === 'event/freeze' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    if (!eventConfig) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    eventConfig.event.status = 'complete';
+    eventConfig.event.frozenAt = new Date().toISOString();
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(eventConfig));
+    return new Response(JSON.stringify({ ok: true, status: 'complete' }), { headers: EVENT_CORS });
+  }
+
   // GET /state
   if (path === 'state' && request.method === 'GET') {
     const [bets, scores, settings] = await Promise.all([env.MG_BOOK.get(`${K}:bets`, 'json'), env.MG_BOOK.get(`${K}:scores`, 'json'), env.MG_BOOK.get(`${K}:settings`, 'json')]);
@@ -3562,12 +4646,16 @@ async function handleEventApi(slug, path, request, env, ctx) {
   if (path === 'player' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
     const body = await request.json();
-    const { name, credits } = body;
-    if (!name) return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: EVENT_CORS });
-    const key = name.trim().toLowerCase();
+    const { credits } = body;
+    const cleanName = sanitizeName(body.name);
+    if (!cleanName || cleanName.length < 2) return new Response(JSON.stringify({ error: 'Name required (2+ characters)' }), { status: 400, headers: EVENT_CORS });
+    const key = cleanName.toLowerCase();
     const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+    if (players[key] && players[key].name !== cleanName) {
+      return new Response(JSON.stringify({ error: `A player with a similar name already exists ("${players[key].name}"). Use a unique name (e.g., add last initial).` }), { status: 409, headers: EVENT_CORS });
+    }
     if (players[key]) { players[key].credits = Math.floor(Number(credits) || 0); }
-    else { players[key] = { name: name.trim(), credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
+    else { players[key] = { name: cleanName, credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
     await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
     return new Response(JSON.stringify({ ok: true, player: players[key] }), { headers: EVENT_CORS });
   }
@@ -3594,12 +4682,17 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (rlCount >= 5) return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: EVENT_CORS });
     await env.MG_BOOK.put(rlKey, String(rlCount + 1), { expirationTtl: 600 });
     const body = await request.json();
-    const name = (body.name || '').trim();
+    const name = sanitizeName(body.name);
     const hi = parseFloat(body.hi);
     const email = (body.email || '').trim().toLowerCase();
-    if (!name || name.length < 2 || name.length > 100) return new Response(JSON.stringify({ error: 'Name required (2-100 characters)' }), { status: 400, headers: EVENT_CORS });
+    if (!name || name.length < 2) return new Response(JSON.stringify({ error: 'Name required (2+ characters)' }), { status: 400, headers: EVENT_CORS });
     if (isNaN(hi) || hi < -10 || hi > 54) return new Response(JSON.stringify({ error: 'Valid handicap index required' }), { status: 400, headers: EVENT_CORS });
+    // Check for duplicate name in existing roster
+    const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+    if (players[name.toLowerCase()]) return new Response(JSON.stringify({ error: `A player named "${players[name.toLowerCase()].name}" already exists. Use a unique name (e.g., add last initial).` }), { status: 409, headers: EVENT_CORS });
     const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
+    // Check for duplicate in pending requests too
+    if (requests.some(r => r.status === 'pending' && r.name.toLowerCase() === name.toLowerCase())) return new Response(JSON.stringify({ error: 'A join request with that name is already pending.' }), { status: 409, headers: EVENT_CORS });
     const pending = requests.filter(r => r.status === 'pending');
     if (pending.length >= 100) return new Response(JSON.stringify({ error: 'Registration is full' }), { status: 400, headers: EVENT_CORS });
     const id = crypto.randomUUID().slice(0, 8);
@@ -3640,7 +4733,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: 'tips@betwaggle.com',
+              from: 'waggle@cafecito-ai.com',
               to: req.email,
               subject: `You're in! Join ${config?.event?.name || 'the event'}`,
               html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
@@ -3673,7 +4766,16 @@ async function handleEventApi(slug, path, request, env, ctx) {
   }
 
   // POST /bet
-  if (path === 'bet' && request.method === 'POST') {
+  if (path === 'bet' && request.method === 'POST') { try {
+    // Rate limit: 30 bets per hour per IP
+    const betIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const betRlKey = `bet-rl:${slug}:${betIp}`;
+    const betRlCount = parseInt(await env.MG_BOOK.get(betRlKey, 'text') || '0', 10);
+    if (betRlCount >= 30) {
+      return new Response(JSON.stringify({ error: 'Too many bets. Try again later.' }), { status: 429, headers: EVENT_CORS });
+    }
+    await env.MG_BOOK.put(betRlKey, String(betRlCount + 1), { expirationTtl: 3600 });
+
     const body = await request.json();
     const { bettor, type, selection, matchId, flightId, stake, odds, americanOdds, description } = body;
     if (!bettor || !type || !stake || stake <= 0) return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: EVENT_CORS });
@@ -3685,7 +4787,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const lockId = crypto.randomUUID();
     const existingLock = await env.MG_BOOK.get(lockKey, 'text');
     if (existingLock) return new Response(JSON.stringify({ error: 'Sportsbook busy \u2014 tap again' }), { status: 409, headers: EVENT_CORS });
-    await env.MG_BOOK.put(lockKey, lockId, { expirationTtl: 5 });
+    await env.MG_BOOK.put(lockKey, lockId, { expirationTtl: 60 });
 
     try {
       if (matchId && configRaw) {
@@ -3702,6 +4804,24 @@ async function handleEventApi(slug, path, request, env, ctx) {
           }
           if (validMatchIds.size > 0 && !validMatchIds.has(matchId)) return new Response(JSON.stringify({ error: 'Invalid match' }), { status: 400, headers: EVENT_CORS });
         } catch {}
+      }
+
+      // 1C: Block bets on finished matches
+      if (matchId) {
+        const scores = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
+        if (scores[matchId] && scores[matchId].status === 'final') {
+          return new Response(JSON.stringify({ error: 'Match already completed' }), { status: 400, headers: EVENT_CORS });
+        }
+      }
+      // Block bets if event is complete
+      if (configRaw) {
+        try { const cfg = JSON.parse(configRaw); if (cfg.event && cfg.event.status === 'complete') return new Response(JSON.stringify({ error: 'Event is complete \u2014 no new bets' }), { status: 400, headers: EVENT_CORS }); } catch {}
+      }
+
+      // 1D: Odds validation — reject absurd odds and validate against ML table
+      const submittedOdds = Number(odds);
+      if (isNaN(submittedOdds) || submittedOdds > 50 || submittedOdds < 1.01) {
+        return new Response(JSON.stringify({ error: 'Invalid odds \u2014 refresh and try again' }), { status: 400, headers: EVENT_CORS });
       }
 
       const bets = (await env.MG_BOOK.get(`${K}:bets`, 'json')) || [];
@@ -3737,7 +4857,10 @@ async function handleEventApi(slug, path, request, env, ctx) {
     } finally {
       await env.MG_BOOK.delete(lockKey);
     }
-  }
+  } catch (betErr) {
+    console.error('Bet handler error:', betErr.message, betErr.stack);
+    return new Response(JSON.stringify({ error: 'Internal error placing bet', detail: betErr.message }), { status: 500, headers: EVENT_CORS });
+  } }
 
   // GET /bets
   if (path === 'bets' && request.method === 'GET') {
@@ -3785,6 +4908,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
   if (path === 'scores' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
     const body = await request.json();
+    // 1E: Validate score values
+    for (const [matchId, matchData] of Object.entries(body)) {
+      if (typeof matchData === 'object' && matchData !== null) {
+        if (matchData.scoreA !== undefined && (matchData.scoreA < 0 || matchData.scoreA > 50)) return new Response(JSON.stringify({ error: `Invalid score for match ${matchId}` }), { status: 400, headers: EVENT_CORS });
+        if (matchData.scoreB !== undefined && (matchData.scoreB < 0 || matchData.scoreB > 50)) return new Response(JSON.stringify({ error: `Invalid score for match ${matchId}` }), { status: 400, headers: EVENT_CORS });
+      }
+    }
     const existing = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
     const merged = { ...existing, ...body };
     await env.MG_BOOK.put(`${K}:scores`, JSON.stringify(merged));
@@ -4002,9 +5132,32 @@ async function handleEventApi(slug, path, request, env, ctx) {
       } else if (cfg?.course?.strokeIndex) { strokeIndex = cfg.course.strokeIndex; }
       if (!strokeIndex && cfg?.courseHcpIndex?.length === 18) strokeIndex = cfg.courseHcpIndex;
 
+      // ── Concurrency-safe score merge ──────────────────────────
+      // KV is eventually consistent. Two carts submitting different holes
+      // simultaneously can race: both read State A, both write back, second
+      // write stomps the first. Fix: acquire a short-lived mutex key, then
+      // re-read + merge + write. If mutex is held, wait and retry.
+      const mutexKey = `${K}:write-lock`;
+      let lockAcquired = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const existingLock = await env.MG_BOOK.get(mutexKey, 'text');
+        if (!existingLock) {
+          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 60 });
+          lockAcquired = true;
+          break;
+        }
+        // Lock held — wait 300ms and retry
+        await new Promise(r => setTimeout(r, 300));
+      }
+      // Even if lock wasn't acquired (timeout), proceed with merge — better than failing
       const holes = (await env.MG_BOOK.get(`${K}:holes`, 'json')) || {};
-      holes[holeNum] = { scores, timestamp: Date.now(), enteredBy: 'admin' };
+      // MERGE: only update THIS hole, preserve all other holes untouched
+      const existingHole = holes[holeNum];
+      const mergedScores = existingHole?.scores ? { ...existingHole.scores, ...scores } : scores;
+      holes[holeNum] = { scores: mergedScores, timestamp: Date.now(), enteredBy: 'admin' };
       await env.MG_BOOK.put(`${K}:holes`, JSON.stringify(holes));
+      // Release mutex
+      if (lockAcquired) { await env.MG_BOOK.delete(mutexKey).catch(() => {}); }
 
       let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
       const allEvents = [];
@@ -4072,22 +5225,40 @@ async function handleEventApi(slug, path, request, env, ctx) {
         ctx.waitUntil(sendHolePushNotifications(slug, holeNum, allEvents, gameState, env));
       }
 
-      // Auto-generate activity feed
+      // Auto-generate narrative activity feed (sportsbook style)
       try {
         const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
         const pars = cfg?.course?.pars || cfg?.coursePars || [];
         const par = pars[holeNum - 1] || 4;
+        const skinsBet = parseInt(cfg?.structure?.skinsBet) || 5;
+        const playerCount = Object.keys(players).length;
+        const skinValue = skinsBet * (playerCount - 1);
+        // Check if a skin was won on this hole
+        const skinEvent = allEvents.find(e => e.type === 'skin_won' || e.type === 'skins_won');
+        const skinCarry = allEvents.find(e => e.type === 'skin_carry' || e.type === 'skins_carry');
+        const skinPot = gameState?.skins?.pot || 1;
+
         for (const [pName, gross] of Object.entries(scores)) {
-          let scoreText = `${pName} scored ${gross} on Hole ${holeNum}`;
-          let scoreEmoji = '';
+          const firstName = pName.split(' ')[0];
           const diff = gross - par;
-          if (diff <= -2) { scoreText = `${pName} eagled Hole ${holeNum}!`; scoreEmoji = '\uD83E\uDD85'; }
-          else if (diff === -1) { scoreText = `${pName} birdied Hole ${holeNum}`; scoreEmoji = '\uD83D\uDC26'; }
-          else if (diff === 0) { scoreText = `${pName} parred Hole ${holeNum}`; scoreEmoji = '\u2705'; }
-          else if (diff === 1) { scoreText = `${pName} bogeyed Hole ${holeNum}`; scoreEmoji = '\uD83D\uDE1E'; }
-          else if (diff === 2) { scoreText = `${pName} double bogeyed Hole ${holeNum}`; scoreEmoji = '\uD83D\uDCA5'; }
-          else if (diff >= 3) { scoreText = `${pName} took a ${gross} on Hole ${holeNum}`; scoreEmoji = '\uD83D\uDC80'; }
-          feed.push({ id: `score_${holeNum}_${pName}_${Date.now()}`, type: 'score', player: pName, text: scoreText, emoji: scoreEmoji, ts: Date.now() });
+          let scoreText = '';
+          if (diff <= -2) scoreText = `${firstName} eagles #${holeNum}!`;
+          else if (diff === -1) scoreText = `${firstName} birdies #${holeNum}.`;
+          else if (diff === 0) scoreText = `${firstName} pars #${holeNum}.`;
+          else if (diff === 1) scoreText = `${firstName} bogeys #${holeNum}.`;
+          else if (diff === 2) scoreText = `${firstName} double bogeys #${holeNum}.`;
+          else if (diff >= 3) scoreText = `${firstName} takes ${gross} on #${holeNum}.`;
+
+          // Append skin context if this player won
+          if (skinEvent && skinEvent.winner === pName) {
+            const potMultiplier = skinEvent.pot || 1;
+            scoreText += ` Takes the skin ($${skinValue * potMultiplier}).`;
+          }
+          feed.push({ id: `score_${holeNum}_${pName}_${Date.now()}`, type: 'score', player: pName, text: scoreText, ts: Date.now() });
+        }
+        // Skin carry narrative
+        if (skinCarry) {
+          feed.push({ id: `carry_${holeNum}_${Date.now()}`, type: 'score', player: 'System', text: `Skin carries to #${holeNum + 1}. Pot: $${skinValue * skinPot}.`, ts: Date.now() });
         }
         while (feed.length > 200) feed.shift();
         await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
@@ -4100,6 +5271,77 @@ async function handleEventApi(slug, path, request, env, ctx) {
     }
   }
 
+  // ─── Props (propositions / side bets / double-or-nothing) ───
+
+  // GET /props
+  if (path === 'props' && request.method === 'GET') {
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    return new Response(JSON.stringify(props), { headers: EVENT_CORS });
+  }
+
+  // POST /props — create a new proposition
+  if (path === 'props' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const { type, description, amount, creator, parties, roundNumber } = body;
+    if (!description || !creator) return new Response(JSON.stringify({ error: 'description and creator required' }), { status: 400, headers: EVENT_CORS });
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = {
+      id: 'prop_' + crypto.randomUUID().slice(0, 8),
+      type: type || 'side_bet',
+      description,
+      amount: parseFloat(amount) || 0,
+      creator,
+      parties: parties || [],
+      accepted: false,
+      acceptedBy: [],
+      result: null,
+      status: 'open',
+      roundNumber: roundNumber || null,
+      createdAt: new Date().toISOString(),
+    };
+    props.push(prop);
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    // Add to feed
+    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+    feed.push({ id: prop.id, type: 'prop', player: creator, text: description + (amount ? ' — $' + amount : ''), ts: Date.now() });
+    while (feed.length > 200) feed.shift();
+    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
+    return new Response(JSON.stringify({ ok: true, prop }), { headers: EVENT_CORS });
+  }
+
+  // POST /props/:id/accept
+  if (path.match(/^props\/[a-z0-9_]+\/accept$/) && request.method === 'POST') {
+    const propId = path.split('/')[1];
+    const body = await request.json().catch(() => ({}));
+    const { player } = body;
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = props.find(p => p.id === propId);
+    if (!prop) return new Response(JSON.stringify({ error: 'Prop not found' }), { status: 404, headers: EVENT_CORS });
+    if (prop.status !== 'open') return new Response(JSON.stringify({ error: 'Prop already ' + prop.status }), { status: 400, headers: EVENT_CORS });
+    if (!prop.acceptedBy.includes(player)) prop.acceptedBy.push(player);
+    // Auto-accept when enough parties accept (2 for head-to-head, all for group)
+    if (prop.type === 'double_or_nothing' && prop.acceptedBy.length >= 2) { prop.accepted = true; prop.status = 'accepted'; }
+    else if (prop.acceptedBy.length >= (prop.parties.length / 2)) { prop.accepted = true; prop.status = 'accepted'; }
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    return new Response(JSON.stringify({ ok: true, prop }), { headers: EVENT_CORS });
+  }
+
+  // POST /props/:id/settle
+  if (path.match(/^props\/[a-z0-9_]+\/settle$/) && request.method === 'POST') {
+    const propId = path.split('/')[1];
+    const body = await request.json().catch(() => ({}));
+    const { result, winners } = body;
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = props.find(p => p.id === propId);
+    if (!prop) return new Response(JSON.stringify({ error: 'Prop not found' }), { status: 404, headers: EVENT_CORS });
+    prop.result = result;
+    prop.status = 'settled';
+    prop.winners = winners || [];
+    prop.settledAt = new Date().toISOString();
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    return new Response(JSON.stringify({ ok: true, prop }), { headers: EVENT_CORS });
+  }
+
   // GET /feed
   if (path === 'feed' && request.method === 'GET') {
     const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
@@ -4110,6 +5352,123 @@ async function handleEventApi(slug, path, request, env, ctx) {
   if (path === 'disputes' && request.method === 'GET') {
     const disputes = (await env.MG_BOOK.get(`${K}:disputes`, 'json')) || [];
     return new Response(JSON.stringify(disputes), { headers: EVENT_CORS });
+  }
+
+  // ── Props CRUD (double-or-nothing, side bets) ──────────────────
+
+  // GET /props
+  if (path === 'props' && request.method === 'GET') {
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    return new Response(JSON.stringify(props), { headers: EVENT_CORS });
+  }
+
+  // POST /props — create a new proposition
+  if (path === 'props' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = {
+      id: 'prop_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      type: body.type || 'side_bet',
+      description: (body.description || '').slice(0, 200),
+      amount: parseInt(body.amount) || 0,
+      creator: (body.creator || 'Anonymous').slice(0, 50),
+      parties: body.parties || [],
+      accepted: false,
+      acceptedBy: [],
+      result: null,
+      status: 'open',
+      roundNumber: body.roundNumber || 1,
+      createdAt: new Date().toISOString(),
+    };
+    props.push(prop);
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    // Add to feed
+    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+    feed.unshift({ ts: Date.now(), type: 'prop', text: `New prop: ${prop.description} ($${prop.amount})`, player: prop.creator });
+    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 100)));
+    return new Response(JSON.stringify(prop), { headers: EVENT_CORS });
+  }
+
+  // POST /props/:id/accept
+  if (path.startsWith('props/') && path.endsWith('/accept') && request.method === 'POST') {
+    const propId = path.split('/')[1];
+    const body = await request.json().catch(() => ({}));
+    const player = (body.player || 'Anonymous').slice(0, 50);
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = props.find(p => p.id === propId);
+    if (!prop) return new Response(JSON.stringify({ error: 'Prop not found' }), { status: 404, headers: EVENT_CORS });
+    if (prop.status !== 'open') return new Response(JSON.stringify({ error: 'Prop not open' }), { status: 400, headers: EVENT_CORS });
+    if (!prop.acceptedBy.includes(player)) prop.acceptedBy.push(player);
+    // Auto-lock when enough parties accept (2 for head-to-head)
+    const needed = prop.type === 'double_or_nothing' ? 1 : 1;
+    if (prop.acceptedBy.length >= needed) {
+      prop.accepted = true;
+      prop.status = 'accepted';
+    }
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    // Add to feed
+    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+    feed.unshift({ ts: Date.now(), type: 'prop_accepted', text: `${player} accepted: ${prop.description}`, player });
+    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 100)));
+    return new Response(JSON.stringify(prop), { headers: EVENT_CORS });
+  }
+
+  // POST /props/:id/settle
+  if (path.startsWith('props/') && path.endsWith('/settle') && request.method === 'POST') {
+    const propId = path.split('/')[1];
+    const body = await request.json().catch(() => ({}));
+    const props = (await env.MG_BOOK.get(`${K}:props`, 'json')) || [];
+    const prop = props.find(p => p.id === propId);
+    if (!prop) return new Response(JSON.stringify({ error: 'Prop not found' }), { status: 404, headers: EVENT_CORS });
+    prop.status = 'settled';
+    prop.result = (body.result || '').slice(0, 200);
+    prop.winners = body.winners || [];
+    prop.settledAt = new Date().toISOString();
+    await env.MG_BOOK.put(`${K}:props`, JSON.stringify(props));
+    return new Response(JSON.stringify(prop), { headers: EVENT_CORS });
+  }
+
+  // GET /ai/chirp — AI-generated trash talk from game state (Workers AI, free)
+  if (path === 'ai/chirp' && request.method === 'GET') {
+    if (!env.AI && !env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ chirp: 'Talk trash in person.' }), { headers: EVENT_CORS });
+    try {
+      const [gsRaw, holesRaw] = await Promise.all([
+        env.MG_BOOK.get(`${K}:game-state`, 'json'),
+        env.MG_BOOK.get(`${K}:holes`, 'json'),
+      ]);
+      let cfg2; try { cfg2 = JSON.parse(configRaw); } catch { cfg2 = {}; }
+      const roster = cfg2.roster || cfg2.players || [];
+      const holesPlayed = Object.keys(holesRaw || {}).filter(k => k !== 'timestamp').length;
+
+      const system = 'You are a sarcastic golf caddie writing one-liner trash talk for a buddies trip sportsbook. Be funny, specific, and use player names. One sentence only. No hashtags.';
+      const context = `Players: ${roster.map(p => p.name + ' (HI ' + (p.handicapIndex || 0) + ')').join(', ')}. Holes played: ${holesPlayed}. Game state: ${JSON.stringify(gsRaw || {}).slice(0, 500)}`;
+
+      const aiJson = await callAI(env, system, context, 100);
+      const chirp = aiJson.content?.[0]?.text || 'No chirp available.';
+      return new Response(JSON.stringify({ ok: true, chirp }), { headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ chirp: 'AI is taking a mulligan. Talk trash yourself.' }), { headers: EVENT_CORS });
+    }
+  }
+
+  // GET /ai/lines — AI-generated betting narrative (Workers AI, free)
+  if (path === 'ai/lines' && request.method === 'GET') {
+    if (!env.AI && !env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ lines: '' }), { headers: EVENT_CORS });
+    try {
+      let cfg2; try { cfg2 = JSON.parse(configRaw); } catch { cfg2 = {}; }
+      const roster = cfg2.roster || cfg2.players || [];
+      const games = cfg2.games || {};
+      const structure = cfg2.structure || {};
+
+      const system = 'You are a golf sportsbook analyst. Write a 2-3 sentence opening lines preview for a buddies trip. Mention specific matchups, handicap spreads, and which games favor which players. Be authoritative and engaging.';
+      const context = `Players: ${roster.map(p => p.name + ' (HI ' + (p.handicapIndex || 0) + ')').join(', ')}. Games: ${Object.keys(games).filter(g => games[g]).join(', ')}. Stakes: Nassau $${structure.nassauBet || 0}, Skins $${structure.skinsBet || 0}.`;
+
+      const aiJson = await callAI(env, system, context, 200);
+      const lines = aiJson.content?.[0]?.text || '';
+      return new Response(JSON.stringify({ ok: true, lines }), { headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ lines: '' }), { headers: EVENT_CORS });
+    }
   }
 
   // POST /feed
@@ -4213,7 +5572,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'tips@betwaggle.com',
+            from: 'waggle@cafecito-ai.com',
             to: normalizedEmail,
             subject: `You've been added as co-organizer: ${config2.event?.name || 'Event'}`,
             html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
@@ -4263,7 +5622,65 @@ async function handleEventApi(slug, path, request, env, ctx) {
     }
 
     await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg2));
-    return new Response(JSON.stringify({ ok: true, added: added.length, skipped: skipped.length, details: { added, skipped } }), { headers: EVENT_CORS });
+    return new Response(JSON.stringify({ ok: true, added: added.length, total: cfg2.players.length, skipped: skipped.length, details: { added, skipped } }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/bulk-import-players — add multiple players (JSON array or CSV string)
+  if (path === 'event/bulk-import-players' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    let importPlayers = body.players; // array of { name, handicapIndex, venmo }
+    // If CSV string provided, parse it into players array
+    if (!importPlayers && body.csv && typeof body.csv === 'string') {
+      const csvLines = body.csv.split('\n').map(l => l.trim()).filter(Boolean);
+      importPlayers = [];
+      for (const line of csvLines) {
+        // Skip header row if present
+        if (/^name/i.test(line)) continue;
+        const parts = line.split(/[,\t]+/).map(s => s.trim());
+        if (!parts[0]) continue;
+        let venmo = '';
+        let hiIdx = 1;
+        if (parts.length >= 3 && parts[parts.length - 1].startsWith('@')) {
+          venmo = parts[parts.length - 1];
+          hiIdx = parts.length - 2;
+        } else if (parts.length >= 2) {
+          hiIdx = parts.length - 1;
+        }
+        // If the HCP field looks like a venmo handle, treat it as venmo
+        if (parts[hiIdx] && parts[hiIdx].startsWith('@')) {
+          venmo = parts[hiIdx];
+          hiIdx = -1;
+        }
+        // If only one column (just a name), handicap defaults to 0
+        importPlayers.push({ name: parts[0], handicapIndex: hiIdx >= 1 ? (parseFloat(parts[hiIdx]) || 0) : 0, venmo });
+      }
+    }
+    if (!Array.isArray(importPlayers) || importPlayers.length === 0) {
+      return new Response(JSON.stringify({ error: 'players array or csv string required' }), { status: 400, headers: EVENT_CORS });
+    }
+
+    const cfgImport = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cfgImport) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const cfgI = JSON.parse(cfgImport);
+    if (!cfgI.players) cfgI.players = [];
+    if (!cfgI.roster) cfgI.roster = [];
+
+    const addedI = [];
+    const skippedI = [];
+    for (const p of importPlayers) {
+      if (!p.name) { skippedI.push({ ...p, reason: 'No name' }); continue; }
+      const nm = p.name.trim();
+      const dup = cfgI.players.some(existing => existing.name.toLowerCase() === nm.toLowerCase());
+      if (dup) { skippedI.push({ ...p, reason: 'Duplicate' }); continue; }
+      const pl = { name: nm, handicapIndex: parseFloat(p.handicapIndex) || 0, venmo: p.venmo || '' };
+      cfgI.players.push(pl);
+      cfgI.roster.push(pl);
+      addedI.push(pl);
+    }
+
+    await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfgI));
+    return new Response(JSON.stringify({ ok: true, added: addedI.length, total: cfgI.players.length, skipped: skippedI.length, details: { added: addedI, skipped: skippedI } }), { headers: EVENT_CORS });
   }
 
   // POST /event/remove-player — admin can remove a player
@@ -4295,6 +5712,34 @@ async function handleEventApi(slug, path, request, env, ctx) {
     settings.bettingClosed = true;
     await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(settings));
     return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+  // GET /event/clone-config — public endpoint to get cloneable config (strips sensitive fields)
+  if (path === 'event/clone-config' && request.method === 'GET') {
+    const cloneCfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    if (!cloneCfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    const cloneCfg = JSON.parse(cloneCfgRaw);
+    // Strip sensitive/unique fields — no adminPin, no createdAt, no slug, no payment info
+    const cloneOut = {
+      event: {
+        name: cloneCfg.event?.name || '',
+        venue: cloneCfg.event?.venue || '',
+        eventType: cloneCfg.event?.eventType || '',
+        holesPerRound: cloneCfg.event?.holesPerRound || 18,
+      },
+      scoring: cloneCfg.scoring,
+      structure: cloneCfg.structure,
+      features: cloneCfg.features,
+      games: cloneCfg.games,
+      holesPerRound: cloneCfg.holesPerRound,
+      players: (cloneCfg.players || []).map(p => ({ name: p.name, handicapIndex: p.handicapIndex || 0, venmo: p.venmo || '' })),
+      roster: (cloneCfg.roster || []).map(p => ({ name: p.name || p.member || '', handicapIndex: p.handicapIndex || 0, venmo: p.venmo || '' })),
+      course: cloneCfg.course,
+      coursePars: cloneCfg.coursePars,
+      courseHcpIndex: cloneCfg.courseHcpIndex,
+      theme: cloneCfg.theme,
+    };
+    return new Response(JSON.stringify({ ok: true, config: cloneOut }), { headers: EVENT_CORS });
   }
 
   // POST /event/clone — create a new event based on this one's config
@@ -4474,6 +5919,387 @@ Match player names to rows on the scorecard. If a score is unclear, use your bes
     return new Response(JSON.stringify({ ok: true, round: config.event.currentRound }), { headers: EVENT_CORS });
   }
 
+  // ─── Team Registration Endpoints ─────────────────────────────────────────
+
+  // GET /teams — list registered teams
+  if (path === 'teams' && request.method === 'GET') {
+    const teams = (await env.MG_BOOK.get(`${K}:registered-teams`, 'json')) || [];
+    return new Response(JSON.stringify(teams), { headers: EVENT_CORS });
+  }
+
+  // POST /teams/register — register a new team
+  if (path === 'teams/register' && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      const { teamName, captain, captainEmail, players, handicap } = body;
+      if (!teamName || !captain) {
+        return new Response(JSON.stringify({ error: 'Team name and captain are required' }), { status: 400, headers: EVENT_CORS });
+      }
+
+      const teams = (await env.MG_BOOK.get(`${K}:registered-teams`, 'json')) || [];
+
+      // Check for duplicate team name
+      const normalizedName = teamName.trim().toLowerCase();
+      if (teams.some(t => t.name.toLowerCase() === normalizedName)) {
+        return new Response(JSON.stringify({ error: 'A team with this name is already registered' }), { status: 409, headers: EVENT_CORS });
+      }
+
+      const team = {
+        id: 'team_' + Date.now().toString(36),
+        name: teamName.trim(),
+        captain: captain.trim(),
+        captainEmail: (captainEmail || '').trim(),
+        players: (players || []).map(p => typeof p === 'string' ? p.trim() : p).filter(Boolean),
+        handicap: parseFloat(handicap) || 0,
+        registeredAt: new Date().toISOString(),
+        paid: false
+      };
+      teams.push(team);
+      await env.MG_BOOK.put(`${K}:registered-teams`, JSON.stringify(teams));
+
+      // Also add to config roster so team shows up in the scramble leaderboard
+      const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (cfgRaw) {
+        try {
+          const config = JSON.parse(cfgRaw);
+          if (!config.roster) config.roster = [];
+          if (!config.players) config.players = [];
+          const rosterEntry = { name: teamName.trim(), handicapIndex: parseFloat(handicap) || 0 };
+          if (!config.roster.some(r => r.name === rosterEntry.name)) {
+            config.roster.push(rosterEntry);
+            config.players.push(rosterEntry);
+            // Also add to scrambleTeams if it exists
+            if (Array.isArray(config.scrambleTeams)) {
+              config.scrambleTeams.push(rosterEntry);
+            }
+            await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+          }
+        } catch {}
+      }
+
+      return new Response(JSON.stringify({ ok: true, team }), { headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400, headers: EVENT_CORS });
+    }
+  }
+
+  // POST /teams/checkout — create Stripe checkout for team entry fee
+  if (path === 'teams/checkout' && request.method === 'POST') {
+    if (!env.STRIPE_SECRET_KEY) {
+      return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
+    }
+
+    try {
+      const body = await request.json();
+      const { teamId } = body;
+      if (!teamId) {
+        return new Response(JSON.stringify({ error: 'teamId is required' }), { status: 400, headers: EVENT_CORS });
+      }
+
+      // Read config to get entry fee
+      const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+      const config = JSON.parse(cfgRaw);
+      const fee = config.scrambleEntryFee || config.entryFee || 0;
+      if (fee <= 0) {
+        // Mark team as paid directly
+        const teams = (await env.MG_BOOK.get(`${K}:registered-teams`, 'json')) || [];
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          team.paid = true;
+          await env.MG_BOOK.put(`${K}:registered-teams`, JSON.stringify(teams));
+        }
+        return new Response(JSON.stringify({ ok: true, free: true }), { headers: EVENT_CORS });
+      }
+
+      const amountCents = Math.round(fee * 100);
+      const eventName = config.event?.name || 'Scramble';
+
+      const stripeBody = new URLSearchParams({
+        'payment_method_types[]': 'card',
+        'line_items[0][price_data][currency]': 'usd',
+        'line_items[0][price_data][product_data][name]': `${eventName} — Team Entry Fee`,
+        'line_items[0][price_data][product_data][description]': `Entry fee for ${eventName} at ${config.event?.venue || config.event?.course || ''}`,
+        'line_items[0][price_data][unit_amount]': String(amountCents),
+        'line_items[0][quantity]': '1',
+        'mode': 'payment',
+        'success_url': `https://betwaggle.com/${slug}/register?paid=true&team=${teamId}`,
+        'cancel_url': `https://betwaggle.com/${slug}/register`,
+        'metadata[waggle_slug]': slug,
+        'metadata[team_id]': teamId,
+        'metadata[type]': 'team_entry_fee',
+      });
+
+      const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: stripeBody.toString(),
+      });
+
+      if (!stripeRes.ok) {
+        const err = await stripeRes.json();
+        return new Response(JSON.stringify({ error: err?.error?.message || 'Stripe error' }), { status: 500, headers: EVENT_CORS });
+      }
+
+      const session = await stripeRes.json();
+
+      // Store checkout session reference for webhook reconciliation
+      await env.MG_BOOK.put(`${K}:team-checkout:${session.id}`, JSON.stringify({ teamId, slug, created: Date.now() }), { expirationTtl: 7200 });
+
+      return new Response(JSON.stringify({ checkoutUrl: session.url }), { headers: EVENT_CORS });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'Checkout creation failed' }), { status: 500, headers: EVENT_CORS });
+    }
+  }
+
+  // POST /teams/mark-paid — mark a team as paid (admin only, or after Stripe success)
+  if (path === 'teams/mark-paid' && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      const { teamId } = body;
+      if (!teamId) return new Response(JSON.stringify({ error: 'teamId required' }), { status: 400, headers: EVENT_CORS });
+
+      const teams = (await env.MG_BOOK.get(`${K}:registered-teams`, 'json')) || [];
+      const team = teams.find(t => t.id === teamId);
+      if (!team) return new Response(JSON.stringify({ error: 'Team not found' }), { status: 404, headers: EVENT_CORS });
+
+      team.paid = true;
+      team.paidAt = new Date().toISOString();
+      await env.MG_BOOK.put(`${K}:registered-teams`, JSON.stringify(teams));
+
+      return new Response(JSON.stringify({ ok: true, team }), { headers: EVENT_CORS });
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400, headers: EVENT_CORS });
+    }
+  }
+
+  // ─── Hole Sponsor Endpoints ──────────────────────────────────────────────
+
+  // GET /sponsors — list hole sponsors
+  if (path === 'sponsors' && request.method === 'GET') {
+    const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    let sponsors = {};
+    if (cfgRaw) {
+      try {
+        const config = JSON.parse(cfgRaw);
+        sponsors = config.sponsors || {};
+      } catch {}
+    }
+    return new Response(JSON.stringify(sponsors), { headers: EVENT_CORS });
+  }
+
+  // POST /sponsors — add/update a hole sponsor (admin only)
+  if (path === 'sponsors' && request.method === 'POST') {
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 401, headers: EVENT_CORS });
+    }
+
+    try {
+      const body = await request.json();
+      const { hole, sponsorName, sponsorLogo } = body;
+      if (!hole || !sponsorName) {
+        return new Response(JSON.stringify({ error: 'hole and sponsorName are required' }), { status: 400, headers: EVENT_CORS });
+      }
+
+  // ── Calcutta Auction Endpoints ──────────────────────────────────────────
+
+  // GET /calcutta — get auction state
+  if (path === 'calcutta' && request.method === 'GET') {
+    const calcutta = (await env.MG_BOOK.get(`${K}:calcutta`, 'json')) || {
+      status: 'pending', currentTeam: null, teams: {}, pool: 0,
+      payoutSplit: [50, 25, 15, 10], teamOrder: []
+    };
+    return new Response(JSON.stringify(calcutta), { headers: EVENT_CORS });
+  }
+
+  // POST /calcutta/bid — place a bid on the current team
+  if (path === 'calcutta/bid' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const { teamId, bidder, amount } = body;
+    if (!teamId || !bidder || !amount || amount <= 0) {
+      return new Response(JSON.stringify({ error: 'teamId, bidder, and amount required' }), { status: 400, headers: EVENT_CORS });
+    }
+    const bidderName = String(bidder).replace(/<[^>]*>/g, '').trim().slice(0, 50);
+    const bidAmount = Math.floor(Number(amount));
+    if (bidAmount <= 0 || bidAmount > 100000) {
+      return new Response(JSON.stringify({ error: 'Invalid bid amount' }), { status: 400, headers: EVENT_CORS });
+    }
+    const calcutta = (await env.MG_BOOK.get(`${K}:calcutta`, 'json')) || {
+      status: 'pending', currentTeam: null, teams: {}, pool: 0, payoutSplit: [50, 25, 15, 10], teamOrder: []
+    };
+    if (calcutta.status !== 'active') {
+      return new Response(JSON.stringify({ error: 'Auction is not active' }), { status: 400, headers: EVENT_CORS });
+    }
+    if (calcutta.currentTeam !== teamId) {
+      return new Response(JSON.stringify({ error: 'Not currently bidding on this team' }), { status: 400, headers: EVENT_CORS });
+    }
+    if (!calcutta.teams[teamId]) calcutta.teams[teamId] = { bids: [], sold: false };
+    const cBidTeam = calcutta.teams[teamId];
+    if (cBidTeam.sold) {
+      return new Response(JSON.stringify({ error: 'Team already sold' }), { status: 400, headers: EVENT_CORS });
+    }
+    const currentHighBid = cBidTeam.bids.length > 0 ? Math.max(...cBidTeam.bids.map(b => b.amount)) : 0;
+    if (bidAmount <= currentHighBid) {
+      return new Response(JSON.stringify({ error: 'Bid must be higher than $' + currentHighBid }), { status: 400, headers: EVENT_CORS });
+    }
+    cBidTeam.bids.push({ bidder: bidderName, amount: bidAmount, ts: Date.now() });
+    await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+    return new Response(JSON.stringify({ ok: true, currentBid: bidAmount, bidder: bidderName }), { headers: EVENT_CORS });
+  }
+
+  // POST /calcutta/sold — mark current team as sold (admin only)
+  if (path === 'calcutta/sold' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const body = await request.json().catch(() => ({}));
+    const { teamId } = body;
+    const calcutta = (await env.MG_BOOK.get(`${K}:calcutta`, 'json')) || {
+      status: 'pending', currentTeam: null, teams: {}, pool: 0, payoutSplit: [50, 25, 15, 10], teamOrder: []
+    };
+    if (!teamId || !calcutta.teams[teamId]) {
+      return new Response(JSON.stringify({ error: 'Team not found in auction' }), { status: 400, headers: EVENT_CORS });
+    }
+    const cSoldTeam = calcutta.teams[teamId];
+    if (cSoldTeam.bids.length === 0) {
+      return new Response(JSON.stringify({ error: 'No bids on this team' }), { status: 400, headers: EVENT_CORS });
+    }
+    const winBid = cSoldTeam.bids.reduce((max, b) => b.amount > max.amount ? b : max, cSoldTeam.bids[0]);
+    cSoldTeam.sold = true;
+    cSoldTeam.winner = winBid.bidder;
+    cSoldTeam.amount = winBid.amount;
+    let pool = 0;
+    for (const ct of Object.values(calcutta.teams)) { if (ct.sold) pool += ct.amount; }
+    calcutta.pool = pool;
+    await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+    return new Response(JSON.stringify({ ok: true, team: teamId, winner: winBid.bidder, amount: winBid.amount, pool }), { headers: EVENT_CORS });
+  }
+
+  // POST /calcutta/next — advance to next team (admin only)
+  if (path === 'calcutta/next' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const calcutta = (await env.MG_BOOK.get(`${K}:calcutta`, 'json')) || {
+      status: 'pending', currentTeam: null, teams: {}, pool: 0, payoutSplit: [50, 25, 15, 10], teamOrder: []
+    };
+    if (calcutta.status === 'pending') {
+      let cfgCalc = null;
+      try { cfgCalc = JSON.parse(configRaw); } catch {}
+      const scTeams = cfgCalc?.scrambleTeams || [];
+      const tmNames = scTeams.map(t => t.name || t);
+      if (tmNames.length === 0) {
+        const plsCalc = cfgCalc?.players || cfgCalc?.roster || [];
+        const pNCalc = plsCalc.map(p => p.name || p.member).filter(Boolean);
+        for (let i = 0; i < pNCalc.length; i += 2) {
+          if (i + 1 < pNCalc.length) tmNames.push(pNCalc[i] + ' / ' + pNCalc[i+1]);
+          else tmNames.push(pNCalc[i]);
+        }
+      }
+      calcutta.status = 'active';
+      calcutta.teamOrder = tmNames;
+      for (const nm of tmNames) { if (!calcutta.teams[nm]) calcutta.teams[nm] = { bids: [], sold: false }; }
+      calcutta.currentTeam = tmNames[0] || null;
+      await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+      return new Response(JSON.stringify({ ok: true, status: 'active', currentTeam: calcutta.currentTeam }), { headers: EVENT_CORS });
+    }
+    const order = calcutta.teamOrder || Object.keys(calcutta.teams);
+    const curIdx = order.indexOf(calcutta.currentTeam);
+    let nextTeam = null;
+    for (let i = curIdx + 1; i < order.length; i++) {
+      const ct = calcutta.teams[order[i]];
+      if (!ct || !ct.sold) { nextTeam = order[i]; break; }
+    }
+    if (!nextTeam) {
+      calcutta.status = 'complete';
+      calcutta.currentTeam = null;
+      await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+      return new Response(JSON.stringify({ ok: true, status: 'complete' }), { headers: EVENT_CORS });
+    }
+    calcutta.currentTeam = nextTeam;
+    if (!calcutta.teams[nextTeam]) calcutta.teams[nextTeam] = { bids: [], sold: false };
+    await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+    return new Response(JSON.stringify({ ok: true, currentTeam: nextTeam }), { headers: EVENT_CORS });
+  }
+
+  // POST /calcutta/start — start auction (admin only)
+  if (path === 'calcutta/start' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const calcutta = (await env.MG_BOOK.get(`${K}:calcutta`, 'json')) || {
+      status: 'pending', currentTeam: null, teams: {}, pool: 0, payoutSplit: [50, 25, 15, 10], teamOrder: []
+    };
+    if (calcutta.status !== 'pending') {
+      return new Response(JSON.stringify({ error: 'Auction already started' }), { status: 400, headers: EVENT_CORS });
+    }
+    let cfgStart = null;
+    try { cfgStart = JSON.parse(configRaw); } catch {}
+    const stTeams = cfgStart?.scrambleTeams || [];
+    const stNames = stTeams.map(t => t.name || t);
+    if (stNames.length === 0) {
+      const plsSt = cfgStart?.players || cfgStart?.roster || [];
+      const pNSt = plsSt.map(p => p.name || p.member).filter(Boolean);
+      for (let i = 0; i < pNSt.length; i += 2) {
+        if (i + 1 < pNSt.length) stNames.push(pNSt[i] + ' / ' + pNSt[i+1]);
+        else stNames.push(pNSt[i]);
+      }
+    }
+    calcutta.status = 'active';
+    calcutta.teamOrder = stNames;
+    for (const nm of stNames) { if (!calcutta.teams[nm]) calcutta.teams[nm] = { bids: [], sold: false }; }
+    calcutta.currentTeam = stNames[0] || null;
+    await env.MG_BOOK.put(`${K}:calcutta`, JSON.stringify(calcutta));
+    return new Response(JSON.stringify({ ok: true, status: 'active', currentTeam: calcutta.currentTeam, teamOrder: stNames }), { headers: EVENT_CORS });
+  }
+
+  // POST /calcutta/reset — reset auction (admin only)
+  if (path === 'calcutta/reset' && request.method === 'POST') {
+    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    await env.MG_BOOK.delete(`${K}:calcutta`);
+    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+  }
+
+      const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+
+      const config = JSON.parse(cfgRaw);
+      if (!config.sponsors) config.sponsors = {};
+      config.sponsors[String(hole)] = {
+        name: sponsorName.trim(),
+        logo: (sponsorLogo || '').trim() || null,
+      };
+      await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+
+      return new Response(JSON.stringify({ ok: true, sponsors: config.sponsors }), { headers: EVENT_CORS });
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400, headers: EVENT_CORS });
+    }
+  }
+
+  // DELETE /sponsors — remove a hole sponsor (admin only)
+  if (path === 'sponsors' && request.method === 'DELETE') {
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 401, headers: EVENT_CORS });
+    }
+
+    try {
+      const body = await request.json();
+      const { hole } = body;
+      if (!hole) return new Response(JSON.stringify({ error: 'hole is required' }), { status: 400, headers: EVENT_CORS });
+
+      const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+      if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+
+      const config = JSON.parse(cfgRaw);
+      if (config.sponsors) {
+        delete config.sponsors[String(hole)];
+        await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
+      }
+
+      return new Response(JSON.stringify({ ok: true, sponsors: config.sponsors || {} }), { headers: EVENT_CORS });
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400, headers: EVENT_CORS });
+    }
+  }
+
   return null;
 }
 
@@ -4483,7 +6309,7 @@ async function handleWaggleRecap(url, env) {
   const slug = url.searchParams.get('slug');
   if (!slug) return new Response(JSON.stringify({ error: 'slug required' }), { status: 400, headers: EVENT_CORS });
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'storage not configured' }), { status: 500, headers: EVENT_CORS });
-  if (!env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: EVENT_CORS });
+  if (!env.AI && !env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: EVENT_CORS });
 
   const [gameState, holes, configRaw] = await Promise.all([
     env.MG_BOOK.get(`${slug}:game-state`, 'json'),
@@ -4494,27 +6320,23 @@ async function handleWaggleRecap(url, env) {
 
   const config = JSON.parse(configRaw);
   const eventName = config.event?.name || slug;
-  const players = Object.values(config.teams || {}).map(t => ({ name: t.member, hi: t.memberHI || 0 }));
-  const bets = config.bets || {};
+  const rosterPlayers = config.roster || config.players || [];
+  const players = rosterPlayers.length > 0
+    ? rosterPlayers.map(p => ({ name: p.name, hi: p.handicapIndex || 0 }))
+    : Object.values(config.teams || {}).map(t => ({ name: t.member, hi: t.memberHI || 0 }));
   const holesPlayed = Object.keys(holes || {}).length;
 
-  const prompt = `You are a witty golf writer. Write a compelling, shareable 3-5 paragraph round recap for a group of golfers. Use their real names, actual scores, and the drama of the betting formats. Keep it under 250 words.
+  const system = 'You are a witty golf writer for a private sportsbook app. Write compelling, shareable recaps. Use real names and actual scores. Keep it under 250 words.';
+  const prompt = `Write a 3-5 paragraph round recap for this group. Lead with the most dramatic moment.
 
 Event: ${eventName}
 Players: ${players.map(p => `${p.name} (HI: ${p.hi})`).join(', ')}
 Format: ${config.event?.eventType || 'Nassau'}
 Holes played: ${holesPlayed}/18
-Game state summary: ${JSON.stringify(gameState || {}).slice(0, 1000)}
-Hole scores: ${JSON.stringify(holes || {}).slice(0, 1500)}
+Game state: ${JSON.stringify(gameState || {}).slice(0, 1000)}
+Scores: ${JSON.stringify(holes || {}).slice(0, 1500)}`;
 
-Write the recap now. Lead with the most dramatic moment.`;
-
-  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
-  });
-  const aiJson = await aiRes.json();
+  const aiJson = await callAI(env, system, prompt, 600);
   const recap = aiJson.content?.[0]?.text || 'Could not generate recap.';
 
   if (env.WAGGLE_DB) {
@@ -4545,12 +6367,8 @@ Handicap spread: ${spread.toFixed(1)} | Avg: ${avg.toFixed(1)}
 
 Return JSON: {"recommended_format":"Nassau|Skins|Wolf|Vegas|Banker","stakes":"...","press_rules":"...","handicap_advice":"...","fun_tip":"...","reasoning":"..."}`;
 
-  const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] }),
-  });
-  const aiJson = await aiRes.json();
+  const system = 'You are a seasoned golf trip organizer for a sportsbook app. Return valid JSON only.';
+  const aiJson = await callAI(env, system, prompt, 400);
   const text = aiJson.content?.[0]?.text || '{}';
   let advice = {};
   try { advice = JSON.parse(text.match(/\{[\s\S]+\}/)?.[0] || '{}'); } catch { advice = { error: 'Could not parse', raw: text }; }
@@ -4721,6 +6539,342 @@ async function seedFriscoV2(env) {
     if (!slugs.includes(slug)) { slugs.push(slug); await env.MG_BOOK.put(`commissioner:${email}`, JSON.stringify(slugs)); }
   }
   return { seeded: true, slug, url: `https://betwaggle.com/${slug}/` };
+}
+
+// ─── The Legends Trip — MID-ROUND Buddies Trip (slug: legends-trip) ──────────
+
+async function seedLegendsTrip(env) {
+  const slug = 'legends-trip';
+  const KEY = `config:${slug}`;
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const players = [
+    { name: 'Tiger Woods', handicapIndex: 2.1, venmo: '@tigerwoods' },
+    { name: 'Phil Mickelson', handicapIndex: 3.8, venmo: '@philmickelson' },
+    { name: 'Jordan Spieth', handicapIndex: 1.5, venmo: '@jordanspieth' },
+    { name: 'Rickie Fowler', handicapIndex: 4.2, venmo: '@rickiefowler' }
+  ];
+  const pars = [4,5,4,4,3,5,3,4,4, 4,4,3,4,5,4,3,4,5]; // Pebble Beach par 72
+
+  const config = {
+    event: { name: 'The Legends Trip', shortName: 'Legends Trip', eventType: 'buddies_trip', course: 'Pebble Beach Golf Links', currentRound: 1, venue: 'Pebble Beach Golf Links', slug },
+    players: players,
+    roster: players,
+    games: { nassau: true, skins: true, wolf: true },
+    structure: { nassauBet: '25', skinsBet: '10', autoPress: { enabled: true, threshold: 2 } },
+    holesPerRound: 18,
+    course: { name: 'Pebble Beach Golf Links', pars: pars, tees: 'Championship' },
+    rounds: { '1': { course: 'Pebble Beach Golf Links', tees: 'Championship' } },
+    wolfOrder: ['Tiger Woods', 'Phil Mickelson', 'Jordan Spieth', 'Rickie Fowler'],
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // Scores through 14 holes — Tiger and Jordan battling, Phil pressing
+  const scoreData = {
+    1:  { 'Tiger Woods': 4, 'Phil Mickelson': 4, 'Jordan Spieth': 3, 'Rickie Fowler': 4 },
+    2:  { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 4, 'Rickie Fowler': 5 },
+    3:  { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 4, 'Rickie Fowler': 4 },
+    4:  { 'Tiger Woods': 4, 'Phil Mickelson': 4, 'Jordan Spieth': 4, 'Rickie Fowler': 5 },
+    5:  { 'Tiger Woods': 3, 'Phil Mickelson': 3, 'Jordan Spieth': 2, 'Rickie Fowler': 3 },
+    6:  { 'Tiger Woods': 5, 'Phil Mickelson': 4, 'Jordan Spieth': 5, 'Rickie Fowler': 5 },
+    7:  { 'Tiger Woods': 2, 'Phil Mickelson': 3, 'Jordan Spieth': 3, 'Rickie Fowler': 3 },
+    8:  { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 3, 'Rickie Fowler': 4 },
+    9:  { 'Tiger Woods': 4, 'Phil Mickelson': 4, 'Jordan Spieth': 4, 'Rickie Fowler': 5 },
+    10: { 'Tiger Woods': 3, 'Phil Mickelson': 4, 'Jordan Spieth': 4, 'Rickie Fowler': 4 },
+    11: { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 4, 'Rickie Fowler': 4 },
+    12: { 'Tiger Woods': 3, 'Phil Mickelson': 3, 'Jordan Spieth': 3, 'Rickie Fowler': 4 },
+    13: { 'Tiger Woods': 4, 'Phil Mickelson': 4, 'Jordan Spieth': 3, 'Rickie Fowler': 4 },
+    14: { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 4, 'Rickie Fowler': 5 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scoreData)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (14 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Compute skins — lowest unique score wins, carry on ties
+  const skinsBet = 10;
+  const numPlayers = 4;
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 14; h++) {
+    const hScores = scoreData[h];
+    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
+    const minScore = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === minScore);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * (numPlayers - 1) * skinsBet });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  // Feed with narrative entries
+  const feed = [
+    { ts: Date.now() - 80000, type: 'score', text: 'Tiger eagles the par-3 7th. Skin won ($30).', player: 'Tiger Woods' },
+    { ts: Date.now() - 160000, type: 'score', text: 'Jordan birdies #1 to take early lead.', player: 'Jordan Spieth' },
+    { ts: Date.now() - 240000, type: 'score', text: 'Phil bogeys #11. Pressing on the back 9.', player: 'Phil Mickelson' },
+    { ts: Date.now() - 320000, type: 'chirp', text: "Rickie can't buy a skin. 0 for 14.", player: 'System' },
+    { ts: Date.now() - 400000, type: 'score', text: 'Jordan birdies the par-3 5th. Two-shot lead over Tiger.', player: 'Jordan Spieth' },
+    { ts: Date.now() - 480000, type: 'score', text: 'Tiger birdies #10 to close the gap on Jordan.', player: 'Tiger Woods' },
+  ];
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
+}
+
+// ─── The Stag Night Classic — POST-ROUND/COMPLETE (slug: stag-night) ────────
+
+async function seedStagNight(env) {
+  const slug = 'stag-night';
+  const KEY = `config:${slug}`;
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const players = [
+    { name: 'Warren Buffett', handicapIndex: 18.0, venmo: '@warrenbuffett' },
+    { name: 'Jamie Dimon', handicapIndex: 12.5, venmo: '@jamiedimon' },
+    { name: 'Ray Dalio', handicapIndex: 9.3, venmo: '@raydalio' },
+    { name: 'Bill Ackman', handicapIndex: 15.7, venmo: '@billackman' }
+  ];
+  const pars = [4,4,4,4,5,4,5,3,4, 4,4,4,3,4,5,4,3,4]; // Bethpage Black par 71
+
+  const config = {
+    event: { name: 'The Stag Night Classic', shortName: 'Stag Night', eventType: 'buddies_trip', course: 'Bethpage Black', currentRound: 1, venue: 'Bethpage State Park', slug, status: 'complete', frozenAt: new Date().toISOString() },
+    players: players,
+    roster: players,
+    games: { nassau: true, skins: true },
+    structure: { nassauBet: '50', skinsBet: '20', autoPress: { enabled: true, threshold: 2 } },
+    holesPerRound: 18,
+    course: { name: 'Bethpage Black', pars: pars, tees: 'Blue' },
+    rounds: { '1': { course: 'Bethpage Black', tees: 'Blue' } },
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // All 18 holes — Ray dominates, Warren gets destroyed
+  const scoreData = {
+    1:  { 'Warren Buffett': 6, 'Jamie Dimon': 5, 'Ray Dalio': 4, 'Bill Ackman': 6 },
+    2:  { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 4, 'Bill Ackman': 5 },
+    3:  { 'Warren Buffett': 6, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 5 },
+    4:  { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 6 },
+    5:  { 'Warren Buffett': 6, 'Jamie Dimon': 6, 'Ray Dalio': 5, 'Bill Ackman': 6 },
+    6:  { 'Warren Buffett': 5, 'Jamie Dimon': 4, 'Ray Dalio': 4, 'Bill Ackman': 5 },
+    7:  { 'Warren Buffett': 7, 'Jamie Dimon': 6, 'Ray Dalio': 6, 'Bill Ackman': 6 },
+    8:  { 'Warren Buffett': 4, 'Jamie Dimon': 3, 'Ray Dalio': 3, 'Bill Ackman': 4 },
+    9:  { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 5 },
+    10: { 'Warren Buffett': 6, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 5 },
+    11: { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 4, 'Bill Ackman': 5 },
+    12: { 'Warren Buffett': 6, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 6 },
+    13: { 'Warren Buffett': 4, 'Jamie Dimon': 4, 'Ray Dalio': 3, 'Bill Ackman': 4 },
+    14: { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 5 },
+    15: { 'Warren Buffett': 7, 'Jamie Dimon': 6, 'Ray Dalio': 5, 'Bill Ackman': 6 },
+    16: { 'Warren Buffett': 5, 'Jamie Dimon': 5, 'Ray Dalio': 4, 'Bill Ackman': 5 },
+    17: { 'Warren Buffett': 4, 'Jamie Dimon': 3, 'Ray Dalio': 3, 'Bill Ackman': 4 },
+    18: { 'Warren Buffett': 6, 'Jamie Dimon': 5, 'Ray Dalio': 5, 'Bill Ackman': 5 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scoreData)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (18 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Compute skins for all 18 holes
+  const skinsBet = 20;
+  const numPlayers = 4;
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 18; h++) {
+    const hScores = scoreData[h];
+    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
+    const minScore = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === minScore);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * (numPlayers - 1) * skinsBet });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  // Feed with narrative
+  const feed = [
+    { ts: Date.now() - 50000, type: 'score', text: 'Ray shoots 80 on Bethpage Black. Dominant performance.', player: 'Ray Dalio' },
+    { ts: Date.now() - 100000, type: 'score', text: "Warren takes a 7 on the par-5 7th. That's $60 in skins.", player: 'Warren Buffett' },
+    { ts: Date.now() - 150000, type: 'score', text: "Jamie presses on the back 9. It doesn't help.", player: 'Jamie Dimon' },
+    { ts: Date.now() - 200000, type: 'chirp', text: 'Ray Dalio wins every Nassau leg. Total domination.', player: 'System' },
+    { ts: Date.now() - 250000, type: 'score', text: 'Bill Ackman cards a 93. "I had a position in every hole."', player: 'Bill Ackman' },
+    { ts: Date.now() - 300000, type: 'chirp', text: 'Warren owes everyone. As usual, he says he will pay in Berkshire stock.', player: 'System' },
+  ];
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
+}
+
+// ─── Augusta Charity Scramble — MID-ROUND Scramble (slug: augusta-scramble) ──
+
+async function seedAugustaScramble(env) {
+  const slug = 'augusta-scramble';
+  const KEY = `config:${slug}`;
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const teamNames = [
+    'Team Amen Corner', 'Team Magnolia Lane', 'Team Azalea', 'Team Juniper',
+    'Team Dogwood', 'Team Redbud', 'Team Yellow Jasmine', 'Team Camellia',
+    'Team Flowering Peach', 'Team Chinese Fir', 'Team Firethorn', 'Team Golden Bell'
+  ];
+  const teams = teamNames.map((name, i) => ({
+    name,
+    handicapIndex: [4.5, 5.2, 4.8, 6.0, 5.5, 4.1, 5.8, 6.3, 5.0, 6.5, 4.3, 5.7][i]
+  }));
+  const pars = [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4]; // Augusta National (approx) par 72
+
+  const config = {
+    event: { name: 'Augusta Charity Scramble', shortName: 'Augusta Scramble', eventType: 'scramble', course: 'Augusta National Golf Club', currentRound: 1, venue: 'Augusta National Golf Club', slug },
+    players: teams.map(t => ({ name: t.name, handicapIndex: t.handicapIndex })),
+    roster: teams.map(t => ({ name: t.name, handicapIndex: t.handicapIndex })),
+    teams: teams,
+    games: { scramble: true },
+    structure: {},
+    features: { calcutta: true },
+    holesPerRound: 18,
+    course: { name: 'Augusta National Golf Club', pars: pars, tees: 'Tournament' },
+    rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
+    scrambleEntryFee: 250,
+    scrambleTeams: teams,
+    sponsors: {
+      3: { name: 'Goldman Sachs', hole: 3 },
+      7: { name: 'Morgan Stanley', hole: 7 },
+      12: { name: 'JP Morgan', hole: 12 },
+      16: { name: 'Blackstone', hole: 16 }
+    },
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // 12 holes scored — tight leaderboard, 3 teams within 1 stroke
+  //                           AmenC MagnL Azale Junip Dogwd Redbd YellJ Camel FlwPc ChnFr Firth GldBl
+  const holeScores = [
+    /* 1 p4*/ [ 3,  4,  3,  4,  4,  3,  4,  4,  3,  4,  3,  4 ],
+    /* 2 p5*/ [ 4,  4,  4,  5,  4,  4,  5,  4,  4,  5,  4,  4 ],
+    /* 3 p4*/ [ 3,  4,  3,  4,  3,  4,  4,  3,  4,  4,  3,  3 ],
+    /* 4 p3*/ [ 3,  3,  2,  3,  3,  2,  3,  3,  2,  3,  3,  3 ],
+    /* 5 p4*/ [ 3,  4,  4,  4,  3,  3,  4,  4,  4,  3,  4,  3 ],
+    /* 6 p3*/ [ 3,  2,  3,  3,  3,  3,  3,  2,  3,  3,  2,  3 ],
+    /* 7 p4*/ [ 3,  4,  3,  4,  4,  3,  4,  4,  3,  4,  4,  3 ],
+    /* 8 p5*/ [ 4,  4,  4,  5,  4,  4,  5,  5,  4,  4,  4,  4 ],
+    /* 9 p4*/ [ 3,  4,  3,  4,  4,  3,  4,  4,  3,  4,  3,  4 ],
+    /*10 p4*/ [ 3,  4,  4,  4,  3,  3,  4,  4,  4,  3,  4,  3 ],
+    /*11 p4*/ [ 3,  4,  3,  4,  4,  4,  4,  3,  4,  4,  3,  4 ],
+    /*12 p3*/ [ 2,  3,  3,  3,  2,  3,  3,  3,  3,  2,  3,  2 ],
+  ];
+
+  const holes = {};
+  const totals = {};
+  teamNames.forEach(t => { totals[t] = 0; });
+
+  for (let h = 1; h <= 12; h++) {
+    const s = {};
+    teamNames.forEach((t, i) => {
+      s[t] = holeScores[h - 1][i];
+      totals[t] += holeScores[h - 1][i];
+    });
+    holes[h] = { scores: s, timestamp: Date.now() - (12 - h) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Build scramble leaderboard
+  const leaderboard = teamNames.map(t => ({ team: t, total: totals[t] }))
+    .sort((a, b) => a.total - b.total)
+    .map((entry, i) => ({ ...entry, position: i + 1 }));
+
+  const scrambleHoles = {};
+  for (let h = 1; h <= 12; h++) {
+    scrambleHoles[h] = {};
+    teamNames.forEach((t, i) => { scrambleHoles[h][t] = holeScores[h - 1][i]; });
+  }
+
+  const gameState = {
+    scramble: {
+      running: totals,
+      holes: scrambleHoles,
+      leaderboard: leaderboard
+    }
+  };
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  const feed = [
+    { ts: Date.now() - 60000, type: 'score', text: 'Team Amen Corner aces the par-3 12th over Rae\'s Creek. Golden Bell sponsor JP Morgan pays $500 bonus.', player: 'Team Amen Corner' },
+    { ts: Date.now() - 120000, type: 'score', text: 'Team Azalea birdies #4 — the ace hole. Three teams now tied at -9.', player: 'Team Azalea' },
+    { ts: Date.now() - 180000, type: 'chirp', text: 'Through 12 holes: Amen Corner, Redbud, and Firethorn all at -9. This is going to the wire.', player: 'System' },
+    { ts: Date.now() - 240000, type: 'score', text: 'Team Redbud eagles the par-5 8th. Jumps into the lead.', player: 'Team Redbud' },
+    { ts: Date.now() - 300000, type: 'score', text: 'Team Magnolia Lane bogeys #5. Dropping out of contention.', player: 'Team Magnolia Lane' },
+    { ts: Date.now() - 360000, type: 'chirp', text: 'Calcutta pool at $3,000. The Goldman Sachs hole (#3) still unclaimed for closest-to-the-pin.', player: 'System' },
+  ];
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
+}
+
+// ─── The Masters Member-Guest — PRE-TRIP (slug: masters-member-guest) ────────
+
+async function seedMastersMG(env) {
+  const slug = 'masters-member-guest';
+  const KEY = `config:${slug}`;
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const players = [
+    { name: 'Rory McIlroy', handicapIndex: 0.5 },
+    { name: 'Brooks Koepka', handicapIndex: 1.2 },
+    { name: 'Dustin Johnson', handicapIndex: 0.8 },
+    { name: 'Bryson DeChambeau', handicapIndex: 1.0 },
+    { name: 'Justin Thomas', handicapIndex: 0.7 },
+    { name: 'Xander Schauffele', handicapIndex: 0.4 },
+    { name: 'Scottie Scheffler', handicapIndex: 0.2 },
+    { name: 'Jon Rahm', handicapIndex: 0.6 }
+  ];
+  const pars = [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4]; // Augusta National par 72
+
+  // Event date is tomorrow so the countdown shows "1 day"
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const eventDate = tomorrow.toISOString().split('T')[0];
+
+  const config = {
+    event: { name: 'The Masters Member-Guest', shortName: 'Masters M-G', eventType: 'buddies_trip', course: 'Augusta National Golf Club', currentRound: 0, venue: 'Augusta National Golf Club', slug, dates: { day1: eventDate } },
+    players: players,
+    roster: players,
+    games: { nassau: true, skins: true, match_play: true },
+    structure: { nassauBet: '100', skinsBet: '50', autoPress: { enabled: true, threshold: 2 } },
+    holesPerRound: 18,
+    course: { name: 'Augusta National Golf Club', pars: pars, tees: 'Tournament' },
+    rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
+    adminPin: '1234'
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // No holes — pre-trip. Seed a hype feed instead.
+  const feed = [
+    { ts: Date.now() - 30000, type: 'chirp', text: 'Scottie Scheffler is the 2/1 favorite. 0.2 index. Good luck, everyone.', player: 'System' },
+    { ts: Date.now() - 60000, type: 'chirp', text: 'Bryson says he is going to drive the 1st green. Par 4, 445 yards. Sure, Bryson.', player: 'System' },
+    { ts: Date.now() - 90000, type: 'chirp', text: 'Rory vs. Brooks. $100 Nassau. The grudge match is ON.', player: 'System' },
+    { ts: Date.now() - 120000, type: 'chirp', text: 'Jon Rahm flying in from Spain. Says jet lag is his only weakness.', player: 'System' },
+    { ts: Date.now() - 150000, type: 'chirp', text: 'Xander has been quietly grinding at Augusta all week. Dark horse alert.', player: 'System' },
+    { ts: Date.now() - 180000, type: 'chirp', text: 'JT: "If we are playing $50 skins at Augusta, someone is losing a car."', player: 'System' },
+    { ts: Date.now() - 210000, type: 'chirp', text: 'DJ just texted the group: "See you on the range at 7am. Bring cash."', player: 'System' },
+  ];
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
 }
 
 // ─── Email Capture & Drip Pipeline ─────────────────────────────────────────
@@ -4907,7 +7061,7 @@ async function sendDripEmail(env, email, stepIndex, source) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'tips@betwaggle.com',
+      from: 'waggle@cafecito-ai.com',
       to: [email],
       subject: step.subject,
       html,

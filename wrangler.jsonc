@@ -29,6 +29,9 @@
   "triggers": {
     "crons": ["0 13 * * 1"]
   },
+  "ai": {
+    "binding": "AI"
+  },
   "vars": {
     "GOLF_COURSE_API_KEY": "COBW6GTT7745YL3L5E7DBZRLTQ"
   }

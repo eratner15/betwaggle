@@ -1,7 +1,60 @@
 // All views for the Golf Event SPA — config-driven, no hardcoded tournament data
 import { applyCapRule } from './data.js';
-import { flightWinnerOdds, matchOdds, marginOdds, probToAmerican, probToDecimal, mlToDecimal, placeBet, settleBets, getMatchMoneyline, isMatchLocked } from './betting.js';
+import { flightWinnerOdds, matchOdds, marginOdds, probToAmerican, probToDecimal, mlToDecimal, placeBet, settleBets, getMatchMoneyline, getLiveMatchMoneyline, isMatchLocked, interpolateProb, mlToProb, fmtML } from './betting.js';
 import { getFlightScenarioData, getRemainingMatches } from './scenarios.js';
+
+// ─── SKINS FORMAT NORMALIZER ───
+// Seed data may store skins as either:
+//   A) gameState.skins.holes  — {holeNum: {winner, potWon, ...}}  (game-engine format)
+//   B) gameState.skins.history — [{hole, winner, pot, value, carry?}]  (seed format)
+// This helper returns a unified holes-style object from whichever format exists.
+// If neither exists but hole scores are provided, computes skins on-the-fly.
+function getSkinsHoles(gameState, holes, players) {
+  const skins = gameState?.skins;
+  if (!skins) return {};
+
+  // Format A — already in holes format
+  if (skins.holes && Object.keys(skins.holes).length > 0) return skins.holes;
+
+  // Format B — convert history array to holes object
+  if (skins.history && skins.history.length > 0) {
+    const result = {};
+    skins.history.forEach(entry => {
+      result[entry.hole] = {
+        winner: entry.winner || null,
+        potWon: entry.pot || 1,
+        carried: !!entry.carry,
+        potBefore: entry.carry ? entry.pot : undefined
+      };
+    });
+    return result;
+  }
+
+  // Neither format — compute on-the-fly from hole scores (lowest unique score wins)
+  if (holes && players && players.length > 0) {
+    const result = {};
+    let pot = 1;
+    const holeNums = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+    for (const h of holeNums) {
+      const scores = holes[h]?.scores;
+      if (!scores) { pot++; continue; }
+      const entries = players.map(p => ({ name: p.name, score: scores[p.name] })).filter(e => e.score != null);
+      if (entries.length === 0) { pot++; continue; }
+      const minScore = Math.min(...entries.map(e => e.score));
+      const winners = entries.filter(e => e.score === minScore);
+      if (winners.length === 1) {
+        result[h] = { winner: winners[0].name, potWon: pot };
+        pot = 1;
+      } else {
+        result[h] = { winner: null, carried: true, potBefore: pot };
+        pot++;
+      }
+    }
+    return result;
+  }
+
+  return {};
+}
 
 // Module-level config ref — set by initViews(config) at bootstrap
 let _C = null;
@@ -32,7 +85,7 @@ function flightOrder() { return _C?.flightOrder ?? []; }
  * Extract flat player list from config.teams (member-guest) or config.roster (quick/buddies).
  * Returns [{name, handicapIndex}] sorted by team insertion order.
  */
-function getPlayersFromConfig(config) {
+export function getPlayersFromConfig(config) {
   // Prefer explicit roster (Weekend Warrior / quick events)
   if (config?.roster && config.roster.length > 0) {
     return config.roster.map(r => ({
@@ -78,7 +131,7 @@ export function renderDashboard(state) {
 
   // Spectator mode banner
   if (state._spectatorMode) {
-    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
+    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:var(--text-primary);padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
       <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
       <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
     </div>`;
@@ -94,7 +147,7 @@ export function renderDashboard(state) {
   if (!state.bettorName && !state._spectatorMode) {
     html += `<div class="mg-card" style="text-align:center;padding:20px">
       <div style="font-size:32px;margin-bottom:8px">&#9971;</div>
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
       <p class="text-sm text-muted mb-4">Tap your name below to start betting</p>
       ${renderPlayerPicker(state)}
     </div>`;
@@ -179,28 +232,28 @@ export function renderActivityFeed(state) {
   let html = `
   <style>
     .wg-feed-section { margin-top: 16px; }
-    .wg-feed-title { display:flex; align-items:center; gap:8px; font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--mg-green); padding:0 4px 8px; }
-    .wg-feed-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; animation:wg-pulse 2s infinite; }
+    .wg-feed-title { display:flex; align-items:center; gap:8px;  font-size:16px; font-weight:700; color:var(--mg-green); padding:0 4px 8px; }
+    .wg-feed-dot { width:8px; height:8px; border-radius:50%; background:var(--win); animation:wg-pulse 2s infinite; }
     @keyframes wg-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
     .wg-feed-list { max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding:0 2px; }
-    .wg-feed-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:10px; background:var(--mg-card-bg,#1a1a2e); }
-    .wg-feed-item.score { background:rgba(255,215,0,0.06); border-left:3px solid var(--mg-gold-dim,#b8860b); }
-    .wg-feed-item.press { background:rgba(255,100,0,0.08); border-left:3px solid #f97316; }
+    .wg-feed-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:10px; background:var(--bg-secondary); }
+    .wg-feed-item.score { background:rgba(212,160,23,0.06); border-left:3px solid var(--gold-muted); }
+    .wg-feed-item.press { background:rgba(255,100,0,0.08); border-left:3px solid var(--gold-bright); }
     .wg-feed-item.chirp { position:relative; }
-    .wg-feed-avatar { width:32px; height:32px; min-width:32px; border-radius:50%; background:var(--mg-green); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; text-transform:uppercase; }
+    .wg-feed-avatar { width:32px; height:32px; min-width:32px; border-radius:50%; background:var(--mg-green); color:var(--text-primary); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; text-transform:uppercase; }
     .wg-feed-body { flex:1; min-width:0; }
     .wg-feed-player { font-size:12px; font-weight:700; color:var(--mg-green); }
-    .wg-feed-text { font-size:13px; color:var(--mg-text,#e0e0e0); margin-top:2px; word-break:break-word; }
+    .wg-feed-text { font-size:13px; color:var(--text-secondary); margin-top:2px; word-break:break-word; }
     .wg-feed-emoji { font-size:24px; line-height:1; }
-    .wg-feed-ts { font-size:10px; color:#888; margin-top:3px; }
-    .wg-feed-input-bar { display:flex; align-items:center; gap:8px; margin-top:10px; padding:8px 12px; background:var(--mg-card-bg,#1a1a2e); border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
-    .wg-feed-input { flex:1; background:transparent; border:none; outline:none; color:var(--mg-text,#e0e0e0); font-size:14px; padding:6px 0; }
-    .wg-feed-input::placeholder { color:#666; }
-    .wg-feed-send { background:var(--mg-green); color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .wg-feed-ts { font-size:10px; color:var(--text-secondary); margin-top:3px; }
+    .wg-feed-input-bar { display:flex; align-items:center; gap:8px; margin-top:10px; padding:8px 12px; background:var(--bg-secondary); border-radius:12px; border:1px solid var(--bg-tertiary); }
+    .wg-feed-input { flex:1; background:transparent; border:none; outline:none; color:var(--text-secondary); font-size:14px; padding:6px 0; }
+    .wg-feed-input::placeholder { color:var(--text-tertiary); }
+    .wg-feed-send { background:var(--mg-green); color:var(--text-primary); border:none; border-radius:8px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .wg-feed-emoji-bar { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
-    .wg-feed-emoji-btn { background:rgba(255,255,255,0.06); border:none; border-radius:8px; padding:6px 10px; font-size:20px; cursor:pointer; transition:transform 0.15s; }
+    .wg-feed-emoji-btn { background:var(--border); border:none; border-radius:8px; padding:6px 10px; font-size:20px; cursor:pointer; transition:transform 0.15s; }
     .wg-feed-emoji-btn:active { transform:scale(1.3); }
-    .wg-feed-empty { text-align:center; color:#666; font-size:13px; padding:20px 0; }
+    .wg-feed-empty { text-align:center; color:var(--text-tertiary); font-size:13px; padding:20px 0; }
   </style>
   <div class="wg-feed-section">
     <div class="wg-feed-title"><span class="wg-feed-dot"></span> Live Feed</div>
@@ -212,7 +265,7 @@ export function renderActivityFeed(state) {
     feed.slice(0, 50).forEach(item => {
       const typeClass = item.type === 'score' ? 'score' : item.type === 'press' ? 'press' : 'chirp';
       const initial = (item.player || '?')[0].toUpperCase();
-      const avatarBg = item.type === 'score' ? 'var(--mg-gold-dim,#b8860b)' : item.type === 'press' ? '#f97316' : 'var(--mg-green)';
+      const avatarBg = item.type === 'score' ? 'var(--gold-muted)' : item.type === 'press' ? 'var(--gold-bright)' : 'var(--mg-green)';
       html += `<div class="wg-feed-item ${typeClass}">
         <div class="wg-feed-avatar" style="background:${avatarBg}">${escHtml(initial)}</div>
         <div class="wg-feed-body">
@@ -259,8 +312,8 @@ function deriveLiveFeed(gameState, holes, players) {
     if (!gameState) return { events: [], skinsPot: 1, nassau: {} };
     const events = [];
 
-    // Skins events from skins.holes per-hole records
-    const skinsHoles = gameState.skins?.holes || {};
+    // Skins events from skins.holes or skins.history per-hole records
+    const skinsHoles = getSkinsHoles(gameState, null, null);
     for (const [h, data] of Object.entries(skinsHoles)) {
       const holeNum = parseInt(h);
       if (data.winner) {
@@ -361,6 +414,241 @@ function getCoursePars(config) {
   return [4,4,5,3,4,4,4,3,5, 4,3,4,5,4,3,4,4,5];
 }
 
+// ─── COURSE YARDAGE DATABASE ───
+const COURSE_YARDAGE_DB = {
+  'pebble beach': [381,502,390,331,188,513,106,428,466, 495,380,202,399,580,397,403,178,543],
+  'turnberry isle': [390,414,537,195,442,425,395,180,530, 425,175,405,555,375,205,395,430,535],
+  'turnberry isle soffer': [390,414,537,195,442,425,395,180,530, 425,175,405,555,375,205,395,430,535],
+  'augusta national': [445,575,350,240,455,180,450,570,460, 495,520,155,510,440,530,170,440,465],
+};
+function getCourseYardage(config) {
+  if (config?.courseYardage?.length >= 9) return config.courseYardage;
+  // Check tees data
+  if (config?.course?.tees && Array.isArray(config.course.tees)) {
+    const tee = config.course.tees.find(t => t.holes?.length > 0);
+    if (tee) return tee.holes.map(h => h.yardage || h.yards || 0);
+  }
+  if (config?.course?.holes?.length > 0) return config.course.holes.map(h => h.yardage || h.yards || 0);
+  const name = (config?.event?.course || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  for (const [key, yds] of Object.entries(COURSE_YARDAGE_DB)) {
+    if (name.includes(key) || key.includes(name.split(' ')[0])) return yds;
+  }
+  return null;
+}
+
+// ─── COURSE HCP INDEX HELPER ───
+const COURSE_HCP_DB = {
+  'pebble beach': [6,10,12,16,14,2,18,4,8, 3,9,17,7,1,13,11,15,5],
+  'turnberry isle': [4,6,2,16,8,10,12,18,14, 3,17,7,1,9,15,11,5,13],
+  'turnberry isle soffer': [4,6,2,16,8,10,12,18,14, 3,17,7,1,9,15,11,5,13],
+  'augusta national': [4,1,7,16,11,14,8,5,9, 10,6,12,2,3,13,18,15,17],
+};
+function getCourseHcpIndex(config) {
+  if (config?.courseHcpIndex?.length >= 9) return config.courseHcpIndex;
+  const name = (config?.event?.course || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  for (const [key, hcp] of Object.entries(COURSE_HCP_DB)) {
+    if (name.includes(key) || key.includes(name.split(' ')[0])) return hcp;
+  }
+  return [];
+}
+
+// ─── PREMIUM SCORECARD RENDERER ───
+// Renders a trifold-style country club scorecard with yardage, HCP, par, player scores,
+// golf-standard color coding (circles under par, squares over par), and running totals.
+function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble }) {
+  const isBack9 = currentHole > 9;
+  const startHole = isBack9 ? 10 : 1;
+  const endHole = isBack9 ? Math.min(18, holesPerRound) : Math.min(9, holesPerRound);
+  const numCols = endHole - startHole + 1;
+  const inlPar = pars[currentHole - 1] || 4;
+  const inlHcpRank = hcpIndex[currentHole - 1] ?? null;
+  const inlYds = yardage ? yardage[currentHole - 1] : null;
+  const hasYardage = yardage && yardage.some(y => y > 0);
+  const hasHcp = hcpIndex && hcpIndex.length > 0;
+
+  // Score style helper — golf standard color coding
+  function scoreStyle(score, par) {
+    const diff = score - par;
+    if (diff <= -2) return { bg: '#1D4ED8', color: '#fff', shape: 'circle', border: '2px solid #1D4ED8' };
+    if (diff === -1) return { bg: '#16A34A', color: '#fff', shape: 'circle', border: '2px solid #16A34A' };
+    if (diff === 0) return { bg: 'transparent', color: '#1A1A1A', shape: 'none', border: 'none' };
+    if (diff === 1) return { bg: 'rgba(220,38,38,0.08)', color: '#DC2626', shape: 'square', border: '1px solid rgba(220,38,38,0.2)' };
+    return { bg: 'rgba(220,38,38,0.15)', color: '#DC2626', shape: 'square', border: '1px solid rgba(220,38,38,0.3)' };
+  }
+
+  function renderScoreSpan(score, par) {
+    const st = scoreStyle(score, par);
+    const radius = st.shape === 'circle' ? 'border-radius:50%' : st.shape === 'square' ? 'border-radius:2px' : '';
+    const bg = st.bg !== 'transparent' ? `background:${st.bg};` : '';
+    const bdr = st.border !== 'none' ? `border:${st.border};` : '';
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;${radius};${bg}${bdr}font-weight:700;font-size:12px;color:${st.color}">${score}</span>`;
+  }
+
+  let html = '';
+
+  // Outer card
+  html += `<div style="background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB">`;
+
+  // Header with course name and hole detail
+  html += `<div style="padding:14px 16px 10px;border-bottom:1px solid #E8E5DE">`;
+  html += `<div style="display:flex;align-items:flex-start;justify-content:space-between">`;
+  html += `<div>`;
+  html += `<div style="font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">${escHtml(courseName || 'Course')}</div>`;
+  html += `<div style="font-size:12px;color:#6B7280;margin-top:3px">Hole ${currentHole} &middot; Par ${inlPar}${inlYds ? ' &middot; ' + inlYds + ' yds' : ''}${inlHcpRank !== null ? ' &middot; HCP ' + inlHcpRank : ''}</div>`;
+  html += `</div>`;
+  // Front/Back toggle
+  if (holesPerRound > 9) {
+    html += `<div style="display:flex;gap:0;border:1px solid #D1D5DB;border-radius:6px;overflow:hidden">`;
+    html += `<button onclick="window.MG.inlineScoreToggle9('front')" style="font-size:11px;font-weight:700;padding:5px 12px;border:none;cursor:pointer;background:${!isBack9 ? '#0D2818' : '#FAFAF7'};color:${!isBack9 ? '#fff' : '#6B7280'}">Front</button>`;
+    html += `<button onclick="window.MG.inlineScoreToggle9('back')" style="font-size:11px;font-weight:700;padding:5px 12px;border:none;cursor:pointer;background:${isBack9 ? '#0D2818' : '#FAFAF7'};color:${isBack9 ? '#fff' : '#6B7280'};border-left:1px solid #D1D5DB">Back</button>`;
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+
+  // Scorecard table
+  html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
+  html += `<table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px;min-width:${numCols * 40 + 64}px">`;
+
+  // ── Hole number header row (dark green) ──
+  html += `<tr style="background:#0D2818;color:#fff">`;
+  html += `<td style="padding:8px 10px;font-weight:700;font-size:11px;white-space:nowrap;position:sticky;left:0;background:#0D2818;z-index:2;border-right:1px solid #1A472A">${isScramble ? 'Team' : 'Hole'}</td>`;
+  for (let h = startHole; h <= endHole; h++) {
+    const isCurrent = h === currentHole;
+    html += `<td style="padding:8px 2px;text-align:center;min-width:36px;font-weight:700;font-size:12px;cursor:pointer;${isCurrent ? 'background:#B8962E;color:#0D2818' : 'border-right:1px solid #1A472A'}" onclick="window.MG.inlineScoreSetHole(${h})">${h}</td>`;
+  }
+  html += `<td style="padding:8px 6px;text-align:center;font-weight:700;font-size:10px;letter-spacing:0.5px;border-left:1px solid #1A472A">${isBack9 ? 'IN' : 'OUT'}</td>`;
+  html += `</tr>`;
+
+  // ── Yardage row ──
+  if (hasYardage) {
+    html += `<tr style="background:#F0F7F2">`;
+    html += `<td style="padding:4px 10px;font-weight:600;font-size:10px;color:#6B7280;position:sticky;left:0;background:#F0F7F2;z-index:2;border-right:1px solid #E5E7EB">Yds</td>`;
+    let ydsTotal = 0;
+    for (let h = startHole; h <= endHole; h++) {
+      const isCurrent = h === currentHole;
+      const y = yardage[h - 1] || 0;
+      ydsTotal += y;
+      html += `<td style="padding:4px 2px;text-align:center;font-size:10px;color:#6B7280;${isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E' : 'border-right:1px solid #EEE'}">${y || ''}</td>`;
+    }
+    html += `<td style="padding:4px 6px;text-align:center;font-size:10px;color:#6B7280;font-weight:700;border-left:1px solid #E5E7EB">${ydsTotal}</td>`;
+    html += `</tr>`;
+  }
+
+  // ── HCP row ──
+  if (hasHcp) {
+    html += `<tr style="background:#F0F7F2">`;
+    html += `<td style="padding:4px 10px;font-weight:600;font-size:10px;color:#6B7280;position:sticky;left:0;background:#F0F7F2;z-index:2;border-right:1px solid #E5E7EB">HCP</td>`;
+    for (let h = startHole; h <= endHole; h++) {
+      const isCurrent = h === currentHole;
+      html += `<td style="padding:4px 2px;text-align:center;font-size:10px;color:#6B7280;${isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E' : 'border-right:1px solid #EEE'}">${hcpIndex[h - 1] ?? ''}</td>`;
+    }
+    html += `<td style="padding:4px 6px;text-align:center;font-size:10px;color:#6B7280;border-left:1px solid #E5E7EB"></td>`;
+    html += `</tr>`;
+  }
+
+  // ── Par row ──
+  html += `<tr style="background:#F0F7F2;border-bottom:2px solid #0D2818">`;
+  html += `<td style="padding:5px 10px;font-weight:700;font-size:11px;color:#374151;position:sticky;left:0;background:#F0F7F2;z-index:2;border-right:1px solid #E5E7EB">Par</td>`;
+  let parTotal = 0;
+  for (let h = startHole; h <= endHole; h++) {
+    const isCurrent = h === currentHole;
+    const p = pars[h - 1] || 4;
+    parTotal += p;
+    html += `<td style="padding:5px 2px;text-align:center;font-size:12px;font-weight:700;color:#374151;${isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E' : 'border-right:1px solid #EEE'}">${p}</td>`;
+  }
+  html += `<td style="padding:5px 6px;text-align:center;font-size:12px;font-weight:700;color:#374151;border-left:1px solid #E5E7EB">${parTotal}</td>`;
+  html += `</tr>`;
+
+  // ── Player/Team score rows ──
+  entities.forEach((entity, idx) => {
+    const entityName = entity.name || entity;
+    const shortName = entityName.split(' ')[0];
+    const displayName = shortName.length > 5 ? shortName.substring(0, 5) : shortName;
+
+    html += `<tr style="border-bottom:1px solid #E5E7EB;background:#fff">`;
+    html += `<td style="padding:6px 10px;font-weight:600;font-size:11px;color:#1A1A1A;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:#fff;z-index:2;border-right:1px solid #E5E7EB">${escHtml(displayName)}</td>`;
+
+    let rowTotal = 0;
+    let hasAnyScore = false;
+    for (let h = startHole; h <= endHole; h++) {
+      const isCurrent = h === currentHole;
+      const existingScore = holes[h]?.scores?.[entityName] ?? null;
+      const inlineVal = isCurrent ? (inlScores[entityName] ?? null) : null;
+      const displayScore = inlineVal || existingScore;
+      const par = pars[h - 1] || 4;
+
+      if (displayScore) { rowTotal += displayScore; hasAnyScore = true; }
+
+      const currentHighlight = isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E;' : 'border-right:1px solid #EEE;';
+
+      if (isCurrent) {
+        // Input cell
+        const st = displayScore ? scoreStyle(displayScore, par) : null;
+        const inputBg = st && st.bg !== 'transparent' ? st.bg : '#FFFEF5';
+        const inputColor = st ? st.color : '#1A1A1A';
+        const inputBorder = displayScore ? (st && st.border !== 'none' ? st.border.split(' ').pop() : '#B8962E') : '#B8962E';
+        const inputRadius = st && st.shape === 'circle' ? 'border-radius:50%;' : 'border-radius:3px;';
+        html += `<td style="padding:3px 2px;text-align:center;${currentHighlight}">
+          <input type="number" inputmode="numeric" pattern="[0-9]*"
+            style="width:36px;height:36px;text-align:center;border:2px solid ${inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:14px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
+            value="${displayScore || ''}"
+            onfocus="this.select()"
+            oninput="window.MG.inlineScoreType('${escHtml(entityName)}',this.value)"
+            placeholder="\u00b7">
+        </td>`;
+      } else if (displayScore) {
+        html += `<td style="padding:4px 2px;text-align:center;cursor:pointer;${currentHighlight}" onclick="window.MG.inlineScoreSetHole(${h})">
+          ${renderScoreSpan(displayScore, par)}
+        </td>`;
+      } else {
+        // Future hole — empty
+        html += `<td style="padding:4px 2px;text-align:center;color:#D1D5DB;${currentHighlight}">&middot;</td>`;
+      }
+    }
+    // Row total
+    html += `<td style="padding:6px 6px;text-align:center;font-size:12px;font-weight:700;color:#374151;border-left:1px solid #E5E7EB;background:#F5F0E8">${hasAnyScore ? rowTotal : ''}</td>`;
+    html += `</tr>`;
+  });
+
+  // ── OUT/IN totals row ──
+  html += `<tr style="background:#F5F0E8;border-top:2px solid #0D2818">`;
+  html += `<td style="padding:6px 10px;font-weight:800;font-size:11px;color:#374151;position:sticky;left:0;background:#F5F0E8;z-index:2;border-right:1px solid #E5E7EB">${isBack9 ? 'IN' : 'OUT'}</td>`;
+  for (let h = startHole; h <= endHole; h++) {
+    const isCurrent = h === currentHole;
+    // Sum all entity scores for this hole
+    let holeTotal = 0;
+    let holeHasScore = false;
+    entities.forEach(entity => {
+      const entityName = entity.name || entity;
+      const sc = holes[h]?.scores?.[entityName] ?? null;
+      const inlineVal = (h === currentHole) ? (inlScores[entityName] ?? null) : null;
+      const val = inlineVal || sc;
+      if (val) { holeTotal += val; holeHasScore = true; }
+    });
+    html += `<td style="padding:6px 2px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;${isCurrent ? 'background:rgba(184,150,46,0.15);border-left:2px solid #B8962E;border-right:2px solid #B8962E' : 'border-right:1px solid #E8E5DE'}"></td>`;
+  }
+  // Grand total
+  html += `<td style="padding:6px 6px;text-align:center;font-size:11px;font-weight:800;color:#374151;border-left:1px solid #E5E7EB"></td>`;
+  html += `</tr>`;
+
+  html += `</table></div>`;
+
+  // Save button
+  const allFilled = entities.length > 0 && entities.every(e => {
+    const n = e.name || e;
+    return inlScores[n] >= 1 && inlScores[n] <= 15;
+  });
+  html += `<div style="padding:12px 16px 14px">`;
+  html += `<button onclick="window.MG.inlineScoreSave()" ${allFilled ? '' : 'disabled'}
+    style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
+    ${allFilled ? 'Save Hole ' + currentHole + ' \u2192' : 'Fill in all scores for Hole ' + currentHole}
+  </button>`;
+  html += `</div>`;
+
+  html += `</div>`;
+  return html;
+}
+
 // ─── RUNNING P&L HELPER ───
 // Computes minimum-transfers payment list from a P&L map.
 // Returns [{from, to, amount}] — the fewest Venmo payments to settle up.
@@ -389,15 +677,16 @@ function computePayablePairs(pnl) {
 
 // Computes settled cash P&L per player from skins/nassau results.
 // Returns {playerName: dollarAmount} (positive = winning, negative = losing)
-function computeRoundPnL(gameState, players, games, structure) {
+export function computeRoundPnL(gameState, players, games, structure) {
   const skinsBet = parseInt(structure?.skinsBet) || 5;
   const nassauBet = parseInt(structure?.nassauBet) || 10;
   const n = players.length;
   const pnl = {};
   players.forEach(p => { pnl[p.name] = 0; });
 
-  if (games.skins && gameState?.skins?.holes) {
-    Object.values(gameState.skins.holes).forEach(h => {
+  if (games.skins) {
+    const skinsH = getSkinsHoles(gameState, null, players);
+    Object.values(skinsH).forEach(h => {
       if (h.winner && pnl.hasOwnProperty(h.winner)) {
         const pot = h.potWon || 1;
         pnl[h.winner] += pot * (n - 1) * skinsBet;
@@ -425,41 +714,32 @@ function computeRoundPnL(gameState, players, games, structure) {
 }
 
 // ─── NAME PICKER MODAL ───
-// Overlays a bottom sheet on first load until the player identifies themselves.
+// One-time centered overlay modal. After picking or skipping, never shows again.
 export function renderNamePickerModal(state) {
   const players = (state._allPlayers || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  const input = state._nameInput || '';
 
-  const filtered = input.length >= 1
-    ? players.filter(p => (p.name || '').toLowerCase().includes(input.toLowerCase()))
-    : players;
-
-  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end">
-    <div style="background:var(--mg-surface);border-radius:16px 16px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;margin:0 auto;box-sizing:border-box">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Who are you?</div>
-      <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:16px">Pick your name to track bets and scores</div>
-      <input type="text" placeholder="Search players..." value="${escHtml(input)}"
-        oninput="window.MG.setNameInput(this.value);window.MG.refresh()"
-        style="width:100%;padding:12px;border:2px solid var(--mg-border);border-radius:10px;font-size:16px;margin-bottom:12px;background:var(--mg-surface);color:var(--mg-text);box-sizing:border-box">
-      <div style="display:flex;flex-direction:column;gap:2px;max-height:240px;overflow-y:auto;border:1px solid var(--mg-border);border-radius:10px">
-        ${filtered.map(p => `<button onclick="window.MG.pickNameFromModal('${escHtml(p.name)}')"
-          style="display:block;width:100%;padding:14px 16px;border:none;border-bottom:1px solid var(--mg-border);background:transparent;color:var(--mg-text);font-size:16px;font-weight:600;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent">
-          ${escHtml(p.name)}<span style="font-size:12px;color:var(--mg-text-muted);font-weight:400;margin-left:8px">HI ${p.handicapIndex ?? p.handicap ?? 0}</span>
-        </button>`).join('')}
-        ${input.length >= 2 && !players.some(p => p.name.toLowerCase() === input.toLowerCase())
-          ? `<button onclick="window.MG.pickNameFromModal('${escHtml(input)}')"
-              style="display:block;width:100%;padding:14px 16px;border:none;background:transparent;color:var(--mg-green);font-size:16px;font-weight:700;text-align:left;cursor:pointer">
-              + Join as "${escHtml(input)}"
-             </button>`
-          : ''}
+  return `<div style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg-secondary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:16px;padding:24px;max-width:340px;width:100%;box-sizing:border-box">
+      <div style="font-size:18px;font-weight:700;color:var(--text-primary,var(--mg-text));margin-bottom:4px">Who are you?</div>
+      <div style="font-size:13px;color:var(--text-secondary,var(--mg-text-muted));margin-bottom:16px">Pick your name to track your bets and P&amp;L</div>
+      <div style="max-height:300px;overflow-y:auto">
+        ${players.map(p => `
+          <button onclick="window.MG.pickNameFromModal('${escHtml(p.name)}')"
+            style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg-tertiary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:10px;color:var(--text-primary,var(--mg-text));font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent">
+            <span>${escHtml(p.name)}</span>
+            <span style="font-size:12px;color:var(--text-secondary,var(--mg-text-muted))">HI ${p.handicapIndex ?? p.handicap ?? 0}</span>
+          </button>
+        `).join('')}
       </div>
+      <button onclick="window.MG.pickNameFromModal('')" style="width:100%;padding:12px;background:transparent;border:none;color:var(--text-tertiary,var(--mg-text-muted));font-size:13px;cursor:pointer;margin-top:4px">Just watching</button>
     </div>
   </div>`;
 }
 
 /**
- * Scramble Leaderboard — the home screen for scramble/outing events ($149 tier).
- * Shows event header, live team leaderboard with to-par scoring, and side game results.
+ * Scramble Leaderboard — unified "board is the book" view for scramble/outing events ($149 tier).
+ * Mirrors the buddies trip experience: event header, inline score entry, Augusta-style
+ * leaderboard with betting lines, live ticker, side games, Calcutta, sponsors, and sharing.
  */
 export function renderScrambleLeaderboard(state) {
   const config = state._config;
@@ -471,95 +751,384 @@ export function renderScrambleLeaderboard(state) {
   const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
   const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
   const holesPlayed = scoredHoles.length;
+  const latestHole = holesPlayed > 0 ? Math.max(...scoredHoles) : 0;
+  const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+  const roundComplete = holesPlayed >= holesPerRound;
+  const holesRemaining = holesPerRound - holesPlayed;
+
+  // Teams & prize pool
+  const leaderboard = scramble?.leaderboard || [];
+  const totalTeams = leaderboard.length || (config?.scrambleTeams?.length || config?.roster?.length || 0);
+  const entryFee = config?.scrambleEntryFee || 0;
+  const totalPool = entryFee * (totalTeams || 0);
+  const formatLabel = config?.scrambleFormat ? config.scrambleFormat.replace(/_/g, ' ') : 'Scramble';
+  const calcuttaTeams = state._calcutta?.teams || {};
+  const slug = state._slug || (location.pathname.match(/\/waggle\/([a-z0-9_-]+)/)?.[1]) || 'event';
+
+  // Freshness / live indicator
+  const lastSync = state._lastSyncAt;
+  const now = Date.now();
+  const staleness = lastSync ? (now - lastSync) / 1000 : 999;
+  let freshnessColor = 'var(--win)';
+  let freshnessLabel = 'LIVE';
+  if (staleness > 120) { freshnessColor = 'var(--loss)'; freshnessLabel = 'OFFLINE'; }
+  else if (staleness > 30) { freshnessColor = 'var(--gold-bright)'; freshnessLabel = 'DELAYED'; }
+
+  // Prize payouts
+  const first = totalPool > 0 ? Math.round(totalPool * 0.5) : 0;
+  const second = totalPool > 0 ? Math.round(totalPool * 0.25) : 0;
+  const third = totalPool > 0 ? Math.round(totalPool * 0.15) : 0;
+  const fourth = totalPool > 0 ? totalPool - first - second - third : 0;
+  const payoutByPosition = [first, second, third, fourth];
 
   let html = '';
 
-  // Event header
-  html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:20px;text-align:center;border:none">
-    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700">${escHtml(config?.event?.name || 'Scramble')}</div>
-    <div style="font-size:12px;opacity:.7;margin-top:4px">${escHtml(config?.event?.venue || '')} &middot; ${holesPlayed} of ${holesPerRound} holes</div>
-    ${config?.scrambleFormat ? `<div style="font-size:11px;opacity:.5;margin-top:2px;text-transform:capitalize">${config.scrambleFormat.replace(/_/g,' ')}</div>` : ''}
-  </div>`;
+  // ================================================================
+  // SECTION 1: EVENT HEADER BAR (dark green, compact)
+  // ================================================================
+  {
+    const eventName = config?.event?.name || 'Scramble';
+    const venue = config?.event?.venue || config?.event?.course || '';
+    const roundNum = config?.currentRound || state._currentRound || 1;
 
-  // Live leaderboard
-  if (scramble?.leaderboard?.length > 0) {
-    html += `<div class="mg-card" style="padding:0;overflow:hidden">
-      <div style="background:var(--mg-green);color:#fff;padding:12px 16px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between">
-        <span>Team</span>
-        <div style="display:flex;gap:20px">
-          <span style="min-width:40px;text-align:right">Thru</span>
-          <span style="min-width:50px;text-align:right">Score</span>
-          <span style="min-width:50px;text-align:right">To Par</span>
+    html += `<div style="background:var(--mg-green);color:var(--text-primary);border-radius:10px;padding:12px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(eventName)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:2px">${venue ? escHtml(venue) + ' &middot; ' : ''}R${roundNum}</div>
+          ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
         </div>
-      </div>`;
-
-    scramble.leaderboard.forEach((entry, i) => {
-      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s,p)=>s+p, 0) : 0;
-      const toPar = entry.total - parForPlayed;
-      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
-      const toParColor = toPar < 0 ? 'var(--mg-win)' : toPar > 0 ? 'var(--mg-loss)' : 'var(--mg-text-muted)';
-      const isLeader = i === 0;
-
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--mg-border);${isLeader ? 'background:rgba(212,175,55,.06)' : ''}">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-family:'SF Mono',monospace;font-size:14px;font-weight:700;color:${isLeader ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-width:20px">${entry.position}</span>
-          <span style="font-size:14px;font-weight:${isLeader ? '700' : '500'}">${escHtml(entry.team)}</span>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px">
+          ${totalPool > 0 ? `<div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px">Prize Pool</div>
+          <div style="font-size:20px;font-weight:800;color:var(--gold-bright);font-family:'SF Mono',monospace">$${totalPool.toLocaleString()}</div>` : ''}
         </div>
-        <div style="display:flex;gap:20px;align-items:center">
-          <span style="font-size:12px;color:var(--mg-text-muted);min-width:40px;text-align:right">${holesPlayed}</span>
-          <span style="font-family:'SF Mono',monospace;font-size:16px;font-weight:700;min-width:50px;text-align:right">${entry.total}</span>
-          <span style="font-family:'SF Mono',monospace;font-size:14px;font-weight:700;color:${toParColor};min-width:50px;text-align:right">${toParStr}</span>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
-  } else {
-    html += `<div class="mg-card" style="text-align:center;padding:40px">
-      <div style="font-size:14px;color:var(--mg-text-muted)">Waiting for scores...</div>
-      <div style="font-size:12px;color:var(--mg-text-muted);margin-top:4px">Commissioner: enter scores in the "Enter" tab</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${totalTeams} team${totalTeams !== 1 ? 's' : ''}</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:capitalize;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${escHtml(formatLabel)}</span>
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--text-secondary)">Thru ${holesPlayed} of ${holesPerRound}</span>
+        <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:${freshnessColor};font-weight:700;letter-spacing:0.5px;margin-left:auto">
+          <span style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></span>
+          ${freshnessLabel}
+        </span>
+      </div>
     </div>`;
   }
 
-  // Side games results (closest to pin, longest drive)
+  // ================================================================
+  // SUB-TAB BAR (scramble mid-round)
+  // ================================================================
+  const scrShowSubTabs = holesPlayed > 0 && !roundComplete;
+  const scrActiveSubTab = scrShowSubTabs ? (state._boardSubTab || 'score') : null;
+  if (scrShowSubTabs) {
+    const scrTabItems = [
+      { key: 'score', icon: '\u25A6', label: 'Score' },
+      { key: 'board', icon: '\uD83C\uDFC6', label: 'Board' },
+      { key: 'bar',   icon: '\uD83C\uDF7A', label: 'The Bar' }
+    ];
+    html += `<div style="display:flex;gap:4px;margin-bottom:8px;padding:3px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border)">`;
+    scrTabItems.forEach(t => {
+      const isActive = scrActiveSubTab === t.key;
+      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="flex:1;padding:10px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-radius:8px;transition:all .15s;${isActive ? 'background:var(--gold-primary,var(--mg-gold));color:var(--bg-primary,var(--mg-green));box-shadow:0 2px 8px rgba(212,160,23,0.3)' : 'background:transparent;color:var(--text-secondary)'}">
+        <span style="margin-right:4px;font-size:12px">${t.icon}</span>${t.label}
+      </button>`;
+    });
+    html += `</div>`;
+  }
+
+  // ================================================================
+  // SECTION 2: INLINE SCORE ENTRY (admin/scorer only)
+  // ================================================================
+  if ((!scrShowSubTabs || scrActiveSubTab === 'score') && state.adminAuthed && !roundComplete) {
+    if (!state._inlineScore) {
+      const existingScores = holes[nextHole]?.scores || {};
+      state._inlineScore = { hole: nextHole, scores: { ...existingScores } };
+    }
+    const inl = state._inlineScore;
+    const currentHole = inl.hole;
+    const inlScores = inl.scores || {};
+    const teams = leaderboard.map(e => e.team);
+    const teamsFallback = teams.length > 0 ? teams : (config?.scrambleTeams?.map(t => t.name || t) || config?.roster?.map(r => r.name || r) || []);
+    const scrYardage = getCourseYardage(config);
+    const scrHcp = getCourseHcpIndex(config);
+    const scrCourseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
+
+    // Map team names to entity objects for premium scorecard
+    const scrEntities = teamsFallback.map(t => ({ name: typeof t === 'string' ? t : (t.name || t) }));
+
+    html += renderPremiumScorecard({
+      currentHole,
+      pars,
+      hcpIndex: scrHcp,
+      yardage: scrYardage,
+      holes,
+      entities: scrEntities,
+      inlScores,
+      holesPerRound,
+      courseName: scrCourseName,
+      isScramble: true
+    });
+  } else if (roundComplete && state.adminAuthed) {
+    html += `<div style="background:#FAFAF7;border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid #E5E7EB;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+      <div style="font-size:20px;font-weight:700;color:#0D2818;margin-bottom:8px">Round Complete</div>
+      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">All ${holesPerRound} holes scored. Final results below.</div>
+    </div>`;
+  }
+
+  // ================================================================
+  // SECTION 3: AUGUSTA-STYLE LEADERBOARD + BETTING (BOARD tab)
+  // ================================================================
+  if ((!scrShowSubTabs || scrActiveSubTab === 'board') && leaderboard.length > 0) {
+    html += `<div style="margin-bottom:8px">`;
+
+    // Header
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
+      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Leaderboard</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">Tap team for detail</span>
+    </div>`;
+
+    // Team rows — card-based with depth
+    leaderboard.forEach((entry, i) => {
+      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
+      const toPar = entry.total - parForPlayed;
+      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
+      const isLeader = i === 0;
+      const isTop3 = i < 3;
+      const toParColor = toPar < 0 ? 'var(--gold-bright)' : toPar > 0 ? 'var(--loss)' : 'var(--text-primary)';
+
+      // Implied odds based on position
+      const oddsArr = ['+150', '+225', '+350', '+500', '+700', '+900', '+1200', '+1500'];
+      const odds = oddsArr[i] || '+' + (1500 + (i - 7) * 500);
+      const oddsNum = parseFloat(odds.replace('+', ''));
+      const isFavorite = odds.startsWith('-');
+      const oddsColor = isFavorite ? 'white' : 'var(--text-secondary)';
+      const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
+
+      // Projected payout
+      const payout = payoutByPosition[i] || 0;
+      const payoutGlow = isLeader && payout > 0 ? 'text-shadow:0 0 8px rgba(212,160,23,0.4)' : '';
+
+      const expanded = state._expandedPlayer === entry.team;
+      const cOwner = calcuttaTeams[entry.team];
+      const ownerStr = cOwner?.sold ? cOwner.winner : null;
+
+      // Hole-by-hole scores for this team
+      const teamHoleScores = [];
+      let teamFront = 0, teamBack = 0;
+      for (let h = 1; h <= holesPerRound; h++) {
+        const sc = holes[h]?.scores?.[entry.team] ?? null;
+        teamHoleScores.push(sc);
+        if (sc !== null) {
+          if (h <= 9) teamFront += sc;
+          else teamBack += sc;
+        }
+      }
+
+      // Card styles — leader gets gold gradient, others get standard card
+      const cardBg = isLeader
+        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+
+      // Position badge
+      const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+      // To-par size — massive for leader
+      const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
+
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">`;
+
+      // Main row
+      html += `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${entry.position || (i + 1)}</span>
+            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
+            <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
+            ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:var(--gold-bright);${payoutGlow}">$${payout.toLocaleString()}</span>` : ''}
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+          </div>
+        </div>`;
+
+      // Expanded detail
+      if (expanded) {
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bg-tertiary);margin-left:32px">`;
+
+        // Hole-by-hole
+        if (holesPlayed > 0) {
+          const frontScores = teamHoleScores.slice(0, Math.min(9, holesPerRound));
+          const backScores = holesPerRound > 9 ? teamHoleScores.slice(9, holesPerRound) : [];
+          const frontStr = frontScores.map(s => s !== null ? String(s) : '-').join(' ');
+          const backStr = backScores.map(s => s !== null ? String(s) : '-').join(' ');
+          html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:var(--text-secondary);margin-bottom:6px">
+            <span style="color:var(--text-tertiary);font-size:10px">OUT:</span> ${frontStr}${teamFront > 0 ? ` <span style="color:var(--text-secondary)">= ${teamFront}</span>` : ''}
+          </div>`;
+          if (backScores.length > 0) {
+            html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:var(--text-secondary);margin-bottom:6px">
+              <span style="color:var(--text-tertiary);font-size:10px">IN:</span>&nbsp; ${backStr}${teamBack > 0 ? ` <span style="color:var(--text-secondary)">= ${teamBack}</span>` : ''}
+            </div>`;
+          }
+        }
+
+        // Pace projection
+        if (holesPlayed >= 3) {
+          const pace = Math.round((entry.total / holesPlayed) * holesPerRound);
+          const projPar = pace - totalPar;
+          const projStr = projPar === 0 ? 'E' : projPar > 0 ? '+' + projPar : String(projPar);
+          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Pace: ${pace} gross (proj final ${projStr})</div>`;
+        }
+
+        // Calcutta owner
+        if (ownerStr) {
+          html += `<div style="font-size:12px;color:rgba(212,160,23,0.6);margin-bottom:6px">Calcutta: Owned by ${escHtml(ownerStr)} ($${cOwner.amount})</div>`;
+        }
+
+        // Lay action button
+        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(212,160,23,0.3);border-radius:6px;color:var(--gold-bright);font-size:12px;font-weight:600;cursor:pointer;min-height:44px">Lay Action on ${escHtml(entry.team)}</button>`;
+
+        html += `</div>`;
+      } else if (ownerStr) {
+        // Show Calcutta owner in collapsed view too
+        html += `<div style="margin-left:32px;margin-top:2px"><span style="font-size:10px;color:rgba(212,160,23,0.4)">Calcutta: ${escHtml(ownerStr)} ($${cOwner.amount})</span></div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    // Prize pool footer
+    if (totalPool > 0) {
+      html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+        <span style="font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:10px">Prize Pool: $${totalPool.toLocaleString()}</span>
+        <div style="display:flex;gap:12px;font-size:10px">
+          <span style="color:var(--gold-bright)">1st $${first.toLocaleString()}</span>
+          <span style="color:var(--text-secondary)">2nd $${second.toLocaleString()}</span>
+          <span style="color:var(--text-tertiary)">3rd $${third.toLocaleString()}</span>
+        </div>
+      </div>`;
+    }
+
+    // Footer
+    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+      <span>Thru ${holesPlayed}</span>
+      <span>${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining</span>
+    </div>`;
+
+    html += `</div>`;
+  } else {
+    // No scores yet — waiting state
+    html += `<div style="background:var(--bg-secondary);border-radius:10px;overflow:hidden;margin-bottom:8px;text-align:center;padding:40px 20px">
+      <div style="font-size:18px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Waiting for Scores</div>
+      <div style="font-size:13px;color:var(--text-secondary)">
+        ${state.adminAuthed ? 'Use the scorecard above to enter hole 1.' : 'The commissioner will enter scores as teams play.'}
+      </div>
+      ${totalTeams > 0 ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:8px">${totalTeams} team${totalTeams !== 1 ? 's' : ''} registered</div>` : ''}
+    </div>`;
+  }
+
+  // ================================================================
+  // SECTION 4: LIVE TICKER (BOARD tab)
+  // ================================================================
+  if (!scrShowSubTabs || scrActiveSubTab === 'board') {
+    const feedItems = state._feed || [];
+    if (feedItems.length > 0 && holesPlayed > 0) {
+      const latestFeed = feedItems.slice(0, 5);
+      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      latestFeed.forEach((item, idx) => {
+        const text = item.text || '';
+        html += `<div style="font-size:12px;font-style:italic;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
+  // SECTION 5: SIDE GAMES (CTP / LD) — BAR tab
+  // ================================================================
   const sideGames = config?.scrambleSideGames;
-  if (sideGames) {
+  if ((!scrShowSubTabs || scrActiveSubTab === 'bar') && sideGames) {
     if (sideGames.closestToPin?.length > 0) {
-      html += `<div class="mg-card" style="padding:16px">
-        <div class="mg-card-header" style="margin-bottom:10px">CLOSEST TO PIN</div>`;
-      sideGames.closestToPin.forEach(hole => {
+      html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+          CLOSEST TO PIN
+        </div>`;
+      sideGames.closestToPin.forEach((hole, idx) => {
         const winner = gameState?.sideGames?.ctp?.[hole];
-        html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mg-border)">
-          <span style="font-size:13px;font-weight:600">Hole ${hole}</span>
-          <span style="font-size:13px;font-weight:600;color:${winner ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+        const played = scoredHoles.includes(hole);
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.closestToPin.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+          <span style="font-size:15px;font-weight:600;color:var(--mg-text)">Hole ${hole}</span>
+          <span style="font-size:15px;font-weight:700;color:${winner ? 'var(--gold-bright)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
         </div>`;
       });
       html += `</div>`;
     }
     if (sideGames.longestDrive?.length > 0) {
-      html += `<div class="mg-card" style="padding:16px">
-        <div class="mg-card-header" style="margin-bottom:10px">LONGEST DRIVE</div>`;
-      sideGames.longestDrive.forEach(hole => {
+      html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+          LONGEST DRIVE
+        </div>`;
+      sideGames.longestDrive.forEach((hole, idx) => {
         const winner = gameState?.sideGames?.ld?.[hole];
-        html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mg-border)">
-          <span style="font-size:13px;font-weight:600">Hole ${hole}</span>
-          <span style="font-size:13px;font-weight:600;color:${winner ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+        const played = scoredHoles.includes(hole);
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.longestDrive.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+          <span style="font-size:15px;font-weight:600;color:var(--mg-text)">Hole ${hole}</span>
+          <span style="font-size:15px;font-weight:700;color:${winner ? 'var(--gold-bright)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
         </div>`;
       });
       html += `</div>`;
     }
   }
 
-  // Entry fee / prize pool info
-  if (config?.scrambleEntryFee) {
-    const teams = config?.scrambleTeams || [];
-    const totalPool = config.scrambleEntryFee * teams.length;
-    html += `<div class="mg-card" style="padding:16px;text-align:center">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:4px">Prize Pool</div>
-      <div style="font-size:24px;font-weight:800;color:var(--mg-gold)">$${totalPool.toLocaleString()}</div>
-      <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">${teams.length} teams &times; $${config.scrambleEntryFee}/team</div>
-    </div>`;
+  // ================================================================
+  // SECTION 6: CALCUTTA (BAR tab)
+  // ================================================================
+  if (!scrShowSubTabs || scrActiveSubTab === 'bar') {
+    html += renderCalcuttaSection(state);
   }
 
+  // ================================================================
+  // SECTION 7: HOLE SPONSORS (BAR tab)
+  // ================================================================
+  const sponsors = config?.sponsors;
+  if ((!scrShowSubTabs || scrActiveSubTab === 'bar') && sponsors && Object.keys(sponsors).length > 0) {
+    html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+        HOLE SPONSORS
+      </div>`;
+    Object.keys(sponsors).sort((a, b) => parseInt(a) - parseInt(b)).forEach((hole, idx, arr) => {
+      const s = sponsors[hole];
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < arr.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <span style="font-size:13px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:0.5px">Hole ${hole}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:15px;font-weight:600;color:var(--gold-bright)">${escHtml(s.name)}</span>
+          ${s.logo ? `<img src="${escHtml(s.logo)}" style="height:24px;border-radius:3px" alt="${escHtml(s.name)}">` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ================================================================
+  // SECTION 8: SHARE + REGISTRATION LINK (BAR tab)
+  // ================================================================
+  if (!scrShowSubTabs || scrActiveSubTab === 'bar') {
+  html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px;text-align:center">
+    <button onclick="if(navigator.share){navigator.share({title:'${escHtml(config?.event?.name || 'Scramble Leaderboard')}',url:location.href})}else{navigator.clipboard.writeText(location.href).then(()=>alert('Link copied!'))}"
+      style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:48px;margin-bottom:10px">
+      Share Leaderboard
+    </button>
+    <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:6px">
+      Team Registration: <a href="/${slug}/register" style="color:var(--gold-muted);font-weight:600;text-decoration:underline">betwaggle.com/${escHtml(slug)}/register</a>
+    </div>
+    <div style="font-size:12px">
+      <a href="/${slug}?tv=1" style="color:var(--mg-text-muted);text-decoration:none;font-weight:500">Project to big screen &rarr;</a>
+    </div>
+  </div>`;
+  }
+
+  html += renderOddsBetSlip(state);
   return html;
 }
 
@@ -603,6 +1172,81 @@ function narrativize(item, gameState, structure) {
   return item.text;
 }
 
+/**
+ * Calculate real moneyline odds for a player to win the event.
+ * Uses the 16x16 gross win probability matrix via interpolateProb().
+ *
+ * @param {number} rank - current leaderboard position (0-based)
+ * @param {number} totalPlayers - total players in field
+ * @param {object} playerData - { hi, toPar, gross, ... }
+ * @param {number} holesPlayed - holes completed so far
+ * @param {number} holesPerRound - total holes in the round
+ * @param {Array} allPlayers - full standings array with { hi } for each player
+ */
+function calculateLiveOdds(rank, totalPlayers, playerData, holesPlayed, holesPerRound, allPlayers) {
+  const hcp = playerData.hi ?? playerData.handicapIndex ?? 10;
+  const others = (allPlayers || []).filter((_, idx) => idx !== rank);
+
+  // Compute win probability vs each opponent, then normalize to field win prob
+  let fieldProb;
+  if (others.length > 0) {
+    // Probability of beating each opponent individually
+    const pairProbs = others.map(opp => {
+      const oppHcp = opp.hi ?? opp.handicapIndex ?? 10;
+      return interpolateProb(hcp, oppHcp);
+    });
+    // Approximate probability of beating ALL opponents (winning the field)
+    // Use geometric mean as a balanced estimator for multi-player fields
+    const logSum = pairProbs.reduce((s, p) => s + Math.log(Math.max(p, 0.001)), 0);
+    fieldProb = Math.exp(logSum / pairProbs.length);
+    // Normalize: in a field of N, a perfectly average player has 1/N chance
+    // Scale so probabilities sum closer to 1 across the field
+    fieldProb = Math.pow(fieldProb, 1 + 0.3 * Math.log2(Math.max(totalPlayers, 2)));
+  } else {
+    fieldProb = 0.5;
+  }
+
+  // Mid-round: adjust for actual performance vs expectation
+  if (holesPlayed > 0 && playerData.toPar !== null && playerData.toPar !== undefined) {
+    const expectedToPar = (hcp / 18) * holesPlayed; // expected strokes over par at this point
+    const actualToPar = playerData.toPar;
+    const performanceDelta = expectedToPar - actualToPar; // positive = better than expected
+
+    // Shift probability using logistic curve
+    const shift = 1 / (1 + Math.exp(-0.3 * performanceDelta));
+    const adjustedProb = fieldProb * 0.5 + shift * 0.5; // blend pre-match with performance
+
+    // Decay pre-match edge as round progresses
+    const decay = Math.sqrt((holesPerRound - holesPlayed) / holesPerRound);
+    fieldProb = 0.5 + (adjustedProb - 0.5) * (0.3 + 0.7 * decay);
+  }
+
+  fieldProb = Math.max(0.03, Math.min(0.97, fieldProb));
+  return formatAmericanOdds(fieldProb);
+}
+
+function formatAmericanOdds(prob) {
+  if (prob >= 0.98) return '-5000';
+  if (prob <= 0.02) return '+5000';
+  if (Math.abs(prob - 0.5) < 0.005) return 'EVEN';
+  if (prob > 0.5) {
+    const ml = Math.round(-100 * prob / (1 - prob));
+    return String(ml);
+  } else {
+    const ml = Math.round(100 * (1 - prob) / prob);
+    return '+' + ml;
+  }
+}
+
+/**
+ * Compute H2H moneyline odds between two players using the ML table.
+ * Returns formatted American odds string for playerA vs playerB.
+ */
+function h2hOdds(hcpA, hcpB) {
+  const prob = interpolateProb(hcpA, hcpB);
+  return formatAmericanOdds(prob);
+}
+
 export function renderRoundFeed(state) {
   const config = state._config;
   const gameState = state._gameState;
@@ -631,6 +1275,25 @@ export function renderRoundFeed(state) {
   const { events, skinsPot, nassau } = deriveLiveFeed(gameState, holes, players);
   const roundComplete = scoredHoles.length >= holesPerRound;
 
+  // ================================================================
+  // TRIP PAGE — Pre-trip hype page (0 holes scored, 2+ players)
+  // ================================================================
+  const eventDate = config?.event?.dates?.day1 || config?.event?.startDate;
+  const isPreTrip = scoredHoles.length === 0 && players.length >= 2;
+
+  if (isPreTrip) {
+    return renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, games, eventDate);
+  }
+
+  // ================================================================
+  // TROPHY ROOM — Post-trip monument (event complete or frozen)
+  // ================================================================
+  const isTrophy = config?.event?.status === 'complete' || config?.event?.frozenAt;
+
+  if (isTrophy) {
+    return renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound, games, holes, gameState, scoredHoles, roundComplete);
+  }
+
   // Wolf rotation
   const playerNames = players.map(p => p.name);
   const wolfOrder = (config?.wolfOrder || playerNames).filter(n => playerNames.includes(n));
@@ -643,14 +1306,24 @@ export function renderRoundFeed(state) {
   const pnl = computeRoundPnL(gameState, players, games, config?.structure);
   const hasPnL = Object.values(pnl).some(v => v !== 0);
 
-  // Skins won count per player
-  const skinsHolesAll = gameState?.skins?.holes || {};
+  // Skins won count per player — handles both holes and history formats
+  const skinsHolesAll = getSkinsHoles(gameState, holes, players);
   const skinsCount = {};
   players.forEach(p => { skinsCount[p.name] = 0; });
   Object.values(skinsHolesAll).forEach(h => { if (h.winner && skinsCount.hasOwnProperty(h.winner)) skinsCount[h.winner]++; });
 
-  // Stroke data
+  // Stroke data — compute from holes if game engine hasn't run
   const strokeRunning = gameState?.stroke?.running || {};
+  if (Object.keys(strokeRunning).length === 0 && scoredHoles.length > 0) {
+    players.forEach(p => {
+      let total = 0, counted = 0;
+      scoredHoles.forEach(h => {
+        const sc = holes[h]?.scores?.[p.name];
+        if (sc != null) { total += sc; counted++; }
+      });
+      if (counted > 0) strokeRunning[p.name] = total;
+    });
+  }
 
   // Stakes info
   const skinsBetAmt = parseInt(config?.structure?.skinsBet) || 0;
@@ -711,96 +1384,135 @@ export function renderRoundFeed(state) {
     }
   }
 
+  // ── Odds movement tracking ──
+  // Compute current odds for each player, compare with previous, generate movement events
+  const oddsMovements = [];
+  if (standingsData.length > 0 && scoredHoles.length > 0) {
+    const currentOdds = {};
+    standingsData.forEach((p, i) => {
+      currentOdds[p.name] = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
+    });
+    const prevOdds = state._prevOdds || {};
+    Object.keys(currentOdds).forEach(name => {
+      const curr = currentOdds[name];
+      const prev = prevOdds[name];
+      if (prev && prev !== curr) {
+        // Parse to numeric for comparison
+        const parseOdds = s => s === 'EVEN' ? 0 : parseFloat(s.replace('+', ''));
+        const currNum = parseOdds(curr);
+        const prevNum = parseOdds(prev);
+        const firstName = name.split(' ')[0];
+        const lastHole = scoredHoles[scoredHoles.length - 1];
+        if (Math.abs(currNum - prevNum) > 20) {  // only show meaningful moves
+          const direction = currNum < prevNum ? 'shortened' : 'drifted';
+          oddsMovements.push(`${firstName}'s odds moved from ${prev} to ${curr} after #${lastHole}`);
+        }
+      }
+    });
+    state._prevOdds = currentOdds;
+  }
+
+  // ── Derived values for unified view ──
+  const totalPot = computeTotalPot(games, config?.structure, players.length, scoredHoles.length);
+  const holesRemaining = holesPerRound - scoredHoles.length;
+  const structure = config?.structure || {};
+  const eventName = config?.event?.name || 'Round';
+  const courseName = config?.event?.course || config?.event?.venue || config?.course?.name || '';
+  const roundNum = config?.currentRound || state._currentRound || 1;
+
+  // Games pills HTML
+  const gamesPillsHtml = activeGamesList.map(g => {
+    let detail = '';
+    if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
+    if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
+    return `<span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${escHtml(g)}${detail}</span>`;
+  }).join('');
+
   let html = '';
 
   // ── Spectator mode banner ──
   if (state._spectatorMode) {
-    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:#fff;padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
+    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:var(--text-primary);padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:8px;text-align:center">
       <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
       <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
     </div>`;
   }
 
-  // ── Hole flash overlay (preserved from original) ──
-  if (flashHole !== null && gameState) {
-    const flashHoleData = gameState.skins?.holes?.[flashHole];
-    const wolfResult = gameState.wolf?.results?.[flashHole];
-    const wolfPickFlash = gameState.wolf?.picks?.[flashHole];
-    const nassauFrontDone = flashHole === 9 && nassau.frontWinner;
-    const nassauBackDone = flashHole === 18 && nassau.backWinner;
-    const nassauTotalDone = flashHole === 18 && nassau.totalWinner;
-    const skinsBet2 = parseInt(config?.structure?.skinsBet) || 5;
-    const nassauBet2 = parseInt(config?.structure?.nassauBet) || 10;
-    const n2 = players.length || 2;
+  // ================================================================
+  // SECTION 1: EVENT HEADER BAR
+  // ================================================================
+  {
+    const lastSync = state._lastSyncAt;
+    const now = Date.now();
+    const staleness = lastSync ? (now - lastSync) / 1000 : 999;
+    let freshnessColor = 'var(--win)';
+    let freshnessLabel = 'Live';
+    if (staleness > 120) { freshnessColor = 'var(--loss)'; freshnessLabel = 'Offline'; }
+    else if (staleness > 30) { freshnessColor = 'var(--gold-bright)'; freshnessLabel = 'Delayed'; }
 
-    let flashType = 'hole';
-    let flashTitle = `Hole ${flashHole}`;
-    let flashMoney = '';
-    let flashMoneyColor = 'var(--mg-gold)';
-    let flashAccent = 'var(--mg-gold)';
-    const flashLines = [];
+    const roundsConfig2 = config?.rounds;
+    const hasMultiRound = roundsConfig2 && typeof roundsConfig2 === 'object' && Object.keys(roundsConfig2).length > 1;
+    const totalRounds = hasMultiRound ? Object.keys(roundsConfig2).length : 1;
+    const activeRound = config?.event?.currentRound || currentRound || 1;
 
-    if (flashHoleData?.winner) {
-      flashType = 'skin_win';
-      flashTitle = `${escHtml(flashHoleData.winner)} wins`;
-      const pot = flashHoleData.potWon || 1;
-      const earned = pot * skinsBet2 * (n2 - 1);
-      flashMoney = `+$${earned}`;
-      flashMoneyColor = '#22c55e';
-      flashAccent = '#22c55e';
-      flashLines.push(pot > 1 ? `${pot} skins \u00b7 Hole ${flashHole}` : `Hole ${flashHole}`);
-    } else if (flashHoleData?.carried) {
-      flashType = 'skin_carry';
-      flashTitle = `Carried \u2014 Hole ${flashHole}`;
-      const potAfter = gameState.skins?.pot || (flashHoleData.potBefore + 1);
-      flashMoney = `$${potAfter * skinsBet2 * (n2 - 1)} pot`;
-      flashMoneyColor = 'var(--mg-gold)';
-      flashAccent = 'var(--mg-gold)';
-      flashLines.push(`${potAfter} skin${potAfter !== 1 ? 's' : ''} on the line`);
-    }
-    if (nassauFrontDone) {
-      const marker = nassau.frontWinner ? escHtml(nassau.frontWinner) : '?';
-      flashLines.push(`Front 9: ${marker} leads \u00b7 $${nassauBet2 * (n2 - 1)} at stake`);
-    }
-    if (nassauBackDone) {
-      const marker = nassau.backWinner ? escHtml(nassau.backWinner) : '?';
-      flashLines.push(`Back 9: ${marker} wins \u00b7 +$${nassauBet2 * (n2 - 1)}`);
-    }
-    if (nassauTotalDone && nassau.totalWinner) {
-      flashLines.push(`Nassau: ${escHtml(nassau.totalWinner)} wins \u00b7 +$${nassauBet2 * (n2 - 1)}`);
-    }
-    if (wolfResult && wolfPickFlash) {
-      const side = wolfPickFlash.partner
-        ? `${escHtml(wolfPickFlash.wolf)} + ${escHtml(wolfPickFlash.partner)}`
-        : `${escHtml(wolfPickFlash.wolf)} (lone wolf)`;
-      flashLines.push(`Wolf: ${wolfResult.wolfWon ? side + ' win' : 'Opponents win'}`);
-    }
-
-    const flashBadge = flashType === 'skin_win' ? 'SKIN' : flashType === 'skin_carry' ? 'CARRY' : flashType === 'nassau' ? 'NASSAU' : 'HOLE';
-
-    html += `<div id="hole-flash-overlay" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;animation:flashIn 0.25s ease;cursor:pointer">
-      <div style="background:var(--mg-surface);border-top:3px solid ${flashAccent};border-radius:16px;padding:28px 24px;text-align:center;width:100%;max-width:340px;position:relative" onclick="event.stopPropagation()">
-        <button onclick="document.getElementById('hole-flash-overlay')?.remove()" style="position:absolute;top:10px;right:14px;background:none;border:none;color:var(--mg-text-muted);font-size:20px;cursor:pointer;line-height:1;padding:4px">&times;</button>
-        <div style="display:inline-block;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);border-radius:4px;padding:3px 10px;font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--mg-gold);margin-bottom:14px">${flashBadge}</div>
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-text);margin-bottom:4px;line-height:1.2">${flashTitle}</div>
-        ${flashMoney ? `<div style="font-size:38px;font-weight:900;color:${flashMoneyColor};margin:12px 0 4px;line-height:1;letter-spacing:-1px">${flashMoney}</div>` : ''}
-        ${flashLines.map(l => `<div style="font-size:12px;color:var(--mg-text-muted);margin-top:6px;letter-spacing:0.2px">${l}</div>`).join('')}
-        <div style="font-size:10px;color:var(--mg-text-muted);margin-top:18px;letter-spacing:0.5px;opacity:0.5">TAP TO DISMISS</div>
+    html += `<div style="background:var(--mg-green);color:var(--text-primary);border-radius:10px;padding:12px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:16px;font-weight:700">${escHtml(eventName)}</div>
+          <div style="font-size:11px;opacity:.6">${courseName ? escHtml(courseName) + ' \u00b7 ' : ''}R${roundNum}</div>
+          ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px">Pot</div>
+          <div style="font-size:20px;font-weight:800;color:var(--gold-bright);font-family:'SF Mono',monospace">$${totalPot}</div>
+        </div>
       </div>
-    </div>`;
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">`;
+
+    // Round pills
+    for (let r = 1; r <= totalRounds; r++) {
+      const isActive = r === activeRound;
+      const rdComplete = r < activeRound;
+      const canStart = r === activeRound + 1 && roundComplete && state.adminAuthed;
+      const rdInfo = roundsConfig2?.[r] || {};
+      if (isActive) {
+        html += `<div style="padding:3px 8px;background:var(--gold-bright);color:var(--bg-secondary);border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.5px">R${r}</div>`;
+      } else if (rdComplete) {
+        html += `<div style="padding:3px 8px;border:1px solid var(--text-tertiary);border-radius:4px;font-size:10px;font-weight:600;color:var(--text-secondary)">R${r} &#10003;</div>`;
+      } else if (canStart) {
+        html += `<button onclick="window.MG.startNextRound(${r}${rdInfo.course ? ",'" + rdInfo.course.replace(/'/g, "\\'") + "'" : ''}${rdInfo.courseId ? ",'" + rdInfo.courseId.replace(/'/g, "\\'") + "'" : ''})"
+          style="padding:3px 8px;border:1px dashed var(--gold-bright);border-radius:4px;font-size:10px;font-weight:600;color:var(--gold-bright);background:none;cursor:pointer">R${r}</button>`;
+      } else {
+        html += `<div style="padding:3px 8px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:600;color:var(--border-strong)">R${r}</div>`;
+      }
+    }
+
+    // Game pills
+    html += gamesPillsHtml;
+
+    // Holes status
+    html += `<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--text-secondary)">Thru ${scoredHoles.length} \u00b7 ${holesRemaining} left</span>`;
+
+    // Live indicator with pulsing dot
+    html += `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:${freshnessColor};font-weight:600;margin-left:auto">
+      <span style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:livePulse 1.5s ease-in-out infinite' : ''}"></span>
+      ${freshnessLabel}
+    </span>`;
+
+    html += `</div></div>`;
   }
 
   // ── Wolf announcement banner ──
   if (games.wolf && expectedWolf && !currentHoleScored && scoredHoles.length < holesPerRound) {
     const isMyWolfHole = state.adminAuthed && (state.bettorName === expectedWolf);
     if (isMyWolfHole) {
-      html += `<div style="background:var(--mg-gold);color:#000;border-radius:10px;padding:12px 16px;margin-bottom:10px;text-align:center">
+      html += `<div style="background:var(--mg-gold);color:var(--bg-primary);border-radius:10px;padding:12px 16px;margin-bottom:8px;text-align:center">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">You're the Wolf</div>
         <div style="font-size:18px;font-weight:700;margin:4px 0">Hole ${holeNum} -- Pick Your Partner</div>
         <div style="font-size:12px">Tap the score button to make your pick</div>
       </div>`;
     } else {
-      html += `<div style="background:rgba(180,140,60,0.12);border:1px solid var(--mg-gold-dim);border-radius:10px;padding:10px 16px;margin-bottom:10px;text-align:center">
+      html += `<div style="background:rgba(212,160,23,0.12);border:1px solid var(--mg-gold-dim);border-radius:10px;padding:10px 16px;margin-bottom:8px;text-align:center">
         <div style="font-size:11px;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:1px">Wolf -- Hole ${holeNum}</div>
         <div style="font-size:16px;font-weight:700;color:var(--mg-gold);margin-top:2px">${escHtml(expectedWolf)} is the Wolf</div>
         ${wolfPick ? `<div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">Picked: ${wolfPick.partner ? escHtml(wolfPick.partner) : 'Lone wolf'}</div>` : ''}
@@ -808,10 +1520,7 @@ export function renderRoundFeed(state) {
     }
   }
 
-  // ============================================================
-  // COMMISSIONER STATUS — in round mode everyone is commissioner by default
-  // Only show a lock if somehow not authed (shouldn't happen)
-  // ============================================================
+  // Commissioner unlock (if needed)
   if (!state.adminAuthed && !state._spectatorMode) {
     html += `<div style="text-align:center;margin-bottom:8px">
       <button onclick="var p=prompt('Enter PIN:');if(p)window.MG.inlineAuthQuick(p)"
@@ -821,156 +1530,151 @@ export function renderRoundFeed(state) {
     </div>`;
   }
 
-  // ============================================================
-  // ACTION BAR — the sweat meter
-  // ============================================================
-  if (scoredHoles.length > 0) {
-    const totalPot = computeTotalPot(games, config?.structure, players.length, scoredHoles.length);
-    const leader = standingsData[0];
-    const trailer = standingsData[standingsData.length - 1];
-    const spread = leader && trailer ? Math.abs((leader.money || 0) - (trailer.money || 0)) : 0;
-    const holesRemaining = holesPerRound - scoredHoles.length;
-    const isRedZone = holesRemaining <= 3 && standingsData.length >= 2 &&
-      Math.abs((standingsData[0].toPar || 0) - (standingsData[1]?.toPar || 0)) <= 1;
-
-    html += `<div style="background:var(--mg-green);color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px;${isRedZone ? 'border:2px solid var(--mg-gold);animation:redZonePulse 2s ease-in-out infinite;' : ''}">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${isRedZone ? 'var(--mg-gold)' : 'rgba(255,255,255,.5)'}">${isRedZone ? 'RED ZONE' : 'THE ACTION'}</div>
-          <div style="font-size:20px;font-weight:800;margin-top:2px;font-family:'SF Mono',monospace">${leader ? escHtml(leader.name.split(' ')[0]) + ' leads' : 'Even'}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px">Spread</div>
-          <div style="font-size:22px;font-weight:800;color:var(--mg-gold);font-family:'SF Mono',monospace">$${spread}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:rgba(255,255,255,.5)">
-        <span>${holesRemaining} holes remaining</span>
-        <span>Thru ${scoredHoles.length} of ${holesPerRound}</span>
-      </div>
-    </div>`;
-  }
-
-  // ============================================================
-  // ROUND BAR — round selector + data freshness (always visible at top)
-  // ============================================================
-  {
-    const lastSync = state._lastSyncAt;
-    const now = Date.now();
-    const staleness = lastSync ? (now - lastSync) / 1000 : 999;
-    let freshnessColor = 'var(--mg-win)'; // green
-    let freshnessLabel = 'Live';
-    if (staleness > 120) { freshnessColor = 'var(--mg-loss)'; freshnessLabel = 'Offline'; }
-    else if (staleness > 30) { freshnessColor = '#F59E0B'; freshnessLabel = 'Delayed'; }
-
-    const roundsConfig = config?.rounds;
-    const hasMultiRound = roundsConfig && typeof roundsConfig === 'object' && Object.keys(roundsConfig).length > 1;
-    const totalRounds = hasMultiRound ? Object.keys(roundsConfig).length : 1;
-    const activeRound = config?.event?.currentRound || currentRound || 1;
-    const activeRoundInfo = roundsConfig?.[activeRound] || roundsConfig?.['1'] || {};
-    const courseName = activeRoundInfo.course || config?.event?.course || config?.event?.venue || config?.course?.name || '';
-    const tees = activeRoundInfo.tees || config?.rounds?.['1']?.tees || '';
-
-    html += `<div style="background:var(--mg-green);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:6px">`;
-
-    // Round pills
-    for (let r = 1; r <= totalRounds; r++) {
-      const isActive = r === activeRound;
-      const rdComplete = r < activeRound;
-      const canStart = r === activeRound + 1 && roundComplete && state.adminAuthed;
-      const rdInfo = roundsConfig?.[r] || {};
-      if (isActive) {
-        html += `<div style="padding:4px 10px;background:var(--mg-gold);color:var(--mg-green);border-radius:12px;font-size:11px;font-weight:800;letter-spacing:.5px">R${r}</div>`;
-      } else if (rdComplete) {
-        html += `<div style="padding:4px 10px;border:1.5px solid rgba(255,255,255,.3);border-radius:12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.5)">R${r} &#10003;</div>`;
-      } else if (canStart) {
-        html += `<button onclick="window.MG.startNextRound(${r}${rdInfo.course ? ",'" + rdInfo.course.replace(/'/g, "\\'") + "'" : ''}${rdInfo.courseId ? ",'" + rdInfo.courseId.replace(/'/g, "\\'") + "'" : ''})"
-          style="padding:4px 10px;border:1.5px dashed var(--mg-gold);border-radius:12px;font-size:11px;font-weight:600;color:var(--mg-gold);background:none;cursor:pointer">R${r}</button>`;
-      } else {
-        html += `<div style="padding:4px 10px;border:1.5px solid rgba(255,255,255,.15);border-radius:12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.25)">R${r}</div>`;
-      }
-    }
-
-    html += `</div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:${freshnessColor};font-weight:600">
-          <div style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></div>
-          ${freshnessLabel}
-        </div>
-      </div>`;
-
-    // Course info line
-    if (courseName || tees) {
-      html += `<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:6px">${courseName ? escHtml(courseName) : ''}${tees ? ' &middot; ' + escHtml(tees) : ''} &middot; Par ${totalPar}</div>`;
-    }
-
+  // ================================================================
+  // SUB-TAB BAR (mid-round only: when scores exist and round not complete)
+  // ================================================================
+  const showSubTabs = scoredHoles.length > 0 && !roundComplete;
+  const activeSubTab = showSubTabs ? (state._boardSubTab || 'score') : null;
+  if (showSubTabs) {
+    const tabItems = [
+      { key: 'score', icon: '\u25A6', label: 'Score' },
+      { key: 'board', icon: '\uD83C\uDFC6', label: 'Board' },
+      { key: 'bar',   icon: '\uD83C\uDF7A', label: 'The Bar' }
+    ];
+    html += `<div style="display:flex;gap:4px;margin-bottom:8px;padding:3px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border)">`;
+    tabItems.forEach(t => {
+      const isActive = activeSubTab === t.key;
+      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="flex:1;padding:10px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-radius:8px;transition:all .15s;${isActive ? 'background:var(--gold-primary,var(--mg-gold));color:var(--bg-primary,var(--mg-green));box-shadow:0 2px 8px rgba(212,160,23,0.3)' : 'background:transparent;color:var(--text-secondary)'}">
+        <span style="margin-right:4px;font-size:12px">${t.icon}</span>${t.label}
+      </button>`;
+    });
     html += `</div>`;
   }
 
-  // ============================================================
-  // CARD 1: STANDINGS (most important — what everyone wants first)
-  // ============================================================
-  {
-    let standingsSummary = 'No scores yet';
-    if (scoredHoles.length > 0 && standingsData.length > 0) {
-      const leader = standingsData[0];
-      if (hasPnL) {
-        const moneyStr = leader.money > 0 ? '+$' + leader.money : leader.money < 0 ? '-$' + Math.abs(leader.money) : 'E';
-        standingsSummary = `${escHtml(leader.name)} leads ${moneyStr} \u00b7 Thru ${scoredHoles.length}`;
-      } else {
-        const toParStr = leader.toPar === null ? '' : leader.toPar === 0 ? 'E' : leader.toPar > 0 ? '+' + leader.toPar : String(leader.toPar);
-        standingsSummary = `${escHtml(leader.name)} leads ${toParStr} \u00b7 Thru ${scoredHoles.length}`;
-      }
-    } else if (players.length > 0) {
-      standingsSummary = `${players.length} players \u00b7 Not started`;
+  // ================================================================
+  // SECTION 2: SCORE ENTRY (inline scorecard grid)
+  // ================================================================
+  if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && !state._spectatorMode && players.length > 0) {
+    if (!state._inlineScore) {
+      const nextH = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+      const existingScores = holes[nextH]?.scores || {};
+      state._inlineScore = { hole: nextH, scores: { ...existingScores } };
     }
+    const inl = state._inlineScore;
+    const currentHole = inl.hole;
+    const inlScores = inl.scores || {};
+    const yardage = getCourseYardage(config);
+    const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
+    const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
 
-    html += `<div class="board-card open" id="board-card-standings">
-      <button class="board-card-header" onclick="document.getElementById('board-card-standings').classList.toggle('open')">
-        <div class="board-card-title">Standings</div>
-        <div class="board-card-summary" style="${scoredHoles.length > 0 ? 'color:var(--mg-gold-dim)' : ''}">${standingsSummary}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+    html += renderPremiumScorecard({
+      currentHole,
+      pars,
+      hcpIndex: resolvedHcp,
+      yardage,
+      holes,
+      entities: players,
+      inlScores,
+      holesPerRound,
+      courseName,
+      isScramble: false
+    });
+
+    // Scan scorecard (below the premium card)
+    html += `<div style="display:flex;gap:8px;margin-top:0;margin-bottom:8px">
+      <button onclick="document.getElementById('scorecard-camera').click()"
+        style="flex:1;padding:10px;background:#FAFAF7;border:1.5px solid #D1D5DB;border-radius:10px;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Scan Scorecard
       </button>
-      <div class="board-card-body">`;
+      <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
+        onchange="window.MG.scanScorecard(this.files[0])">
+    </div>`;
+    html += `<div id="scan-results" style="display:none"></div>`;
+  } else if (roundComplete && !state._spectatorMode) {
+    html += `<div style="border:2px solid var(--mg-gold);border-radius:10px;padding:20px;margin-bottom:8px;text-align:center;background:var(--bg-primary)">
+      <div style="font-size:20px;font-weight:700;color:var(--mg-gold);margin-bottom:8px">Round Complete</div>
+      <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored. Time to settle up.</div>
+      <a href="#settle" style="display:inline-block;padding:14px 32px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 3px 12px rgba(212,160,23,0.3)">View Settlement</a>
+    </div>`;
+  }
 
-    if (scoredHoles.length > 0 && standingsData.length > 0) {
-      // Column headers
-      html += `<div style="display:flex;align-items:center;padding:6px 0 6px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--mg-text-muted);border-bottom:1px solid var(--mg-border)">
-        <span style="width:20px"></span>
-        <span style="flex:1">Player</span>
-        <span style="min-width:36px;text-align:right;font-family:'SF Mono',monospace">Gross</span>
-        <span style="min-width:40px;text-align:right;font-family:'SF Mono',monospace">+/-</span>
-        ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">F</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace">B</span>` : ''}
-        ${games.skins ? `<span style="min-width:28px;text-align:center">SK</span>` : ''}
-        ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',monospace">P&L</span>` : ''}
-      </div>`;
+  // ================================================================
+  // SECTION 3: LEADERBOARD + BOOK (THE CORE)
+  // ================================================================
+  if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0 && standingsData.length > 0) {
+    html += `<div style="margin-bottom:8px">`;
 
-      standingsData.forEach((p, i) => {
-        const isLeader = i === 0;
-        const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
-        const toParColor = p.toPar === null ? 'var(--mg-text-muted)' : p.toPar < 0 ? '#22c55e' : p.toPar > 0 ? '#ef4444' : 'var(--mg-text-muted)';
-        const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
-        const moneyColor = p.money > 0 ? '#22c55e' : p.money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
-        const nassauFStr = p.nassauFront === null ? '--' : p.nassauFront === 0 ? 'E' : p.nassauFront > 0 ? '+' + p.nassauFront : String(p.nassauFront);
-        const nassauBStr = p.nassauBack === null ? '--' : p.nassauBack === 0 ? 'E' : p.nassauBack > 0 ? '+' + p.nassauBack : String(p.nassauBack);
-        const leaderClass = isLeader ? 'board-standings-leader' : '';
+    // Header
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
+      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Leaderboard</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">Tap player for detail</span>
+    </div>`;
 
-        html += `<div class="${leaderClass}" style="display:flex;align-items:center;padding:10px 0 10px;border-bottom:1px solid var(--mg-border);${isLeader ? 'padding-left:0' : ''}">
-          <span style="width:20px;font-size:12px;font-weight:700;color:${isLeader ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};flex-shrink:0;font-family:'SF Mono',monospace">${i + 1}</span>
-          <span style="flex:1;min-width:0">
-            <span style="font-size:14px;font-weight:${isLeader ? '700' : '500'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
-            <span style="font-size:10px;color:var(--mg-text-muted)">Thru ${p.thru}${p.hi ? ' \u00b7 HI ' + p.hi : ''}</span>
-          </span>
-          <span style="min-width:36px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:14px;font-weight:600">${p.gross !== null ? p.gross : '--'}</span>
-          <span style="min-width:40px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:13px;font-weight:600;color:${toParColor}">${toParStr}</span>
-          ${games.nassau ? `<span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauFStr}</span><span style="min-width:32px;text-align:right;font-family:'SF Mono',monospace;font-size:11px;color:var(--mg-text-muted)">${nassauBStr}</span>` : ''}
-          ${games.skins ? `<span style="min-width:28px;text-align:center;font-family:'SF Mono',monospace;font-size:12px;font-weight:600;color:${p.skins > 0 ? 'var(--mg-gold)' : 'var(--mg-text-muted)'}">${p.skins}</span>` : ''}
-          ${hasPnL ? `<span style="min-width:58px;text-align:right;font-family:'SF Mono',SFMono-Regular,monospace;font-size:15px;font-weight:800;color:${moneyColor}">${moneyStr}</span>` : ''}
+    // Player rows — card-based with depth
+    standingsData.forEach((p, i) => {
+      const isLeader = i === 0;
+      const isTop3 = i < 3;
+      const isLast = i === standingsData.length - 1 && standingsData.length > 1;
+      const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+      const toParColor = p.toPar === null ? 'var(--text-tertiary)' : p.toPar < 0 ? 'var(--gold-bright)' : p.toPar > 0 ? 'var(--loss)' : 'white';
+      const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
+      const moneyColor = p.money > 0 ? 'var(--win)' : p.money < 0 ? 'var(--loss)' : 'var(--text-tertiary)';
+      const moneyGlow = p.money > 0 ? 'text-shadow:0 0 8px rgba(63,185,80,0.3)' : p.money < 0 ? 'text-shadow:0 0 8px rgba(248,81,73,0.3)' : '';
+
+      const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
+      const oddsNum = parseFloat(odds.replace('+', ''));
+      const isFavorite = odds.startsWith('-');
+      const isHeavyFav = isFavorite && Math.abs(oddsNum) >= 500;
+      const oddsColor = isHeavyFav ? 'var(--gold-bright)' : isFavorite ? 'white' : 'var(--text-secondary)';
+      const oddsGlow = isHeavyFav ? 'text-shadow:0 0 8px rgba(212,160,23,0.4)' : '';
+      const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
+
+      const expanded = state._expandedPlayer === p.name;
+
+      // Card styles — leader gets gold gradient, others get standard card
+      const cardBg = isLeader
+        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+
+      // Position badge
+      const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+      // To-par size — massive for leader
+      const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
+
+      // COLLAPSED: Card per player
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
+            <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s;${oddsGlow}" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-left:32px;margin-top:4px;font-size:12px;font-family:'SF Mono',monospace">
+          <span style="color:${moneyColor};font-weight:700;${moneyGlow}">${moneyStr}</span>
+          <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--border-strong)'}">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+          <span style="color:var(--text-tertiary)">Thru ${p.thru}</span>
         </div>`;
-        // Auto-press badge
+
+      // EXPANDED: Betting detail (only if tapped)
+      if (expanded) {
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bg-tertiary);margin-left:30px">`;
+
+        // Nassau detail
+        if (games.nassau) {
+          const nassauFStr2 = p.nassauFront !== null ? (p.nassauFront <= 0 ? String(p.nassauFront === 0 ? 'E' : p.nassauFront) : '+' + p.nassauFront) : '--';
+          const nassauBStr2 = p.nassauBack !== null ? (p.nassauBack <= 0 ? String(p.nassauBack === 0 ? 'E' : p.nassauBack) : '+' + p.nassauBack) : '--';
+          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Nassau: Front ${nassauFStr2} | Back ${nassauBStr2}</div>`;
+        }
+
+        // Press button (if behind leader)
         const autoPress = config?.structure?.autoPress;
-        if (autoPress?.enabled && games.nassau && scoredHoles.length > 0) {
+        if (autoPress?.enabled && games.nassau && !isLeader) {
           const nassauState = gameState?.nassau?.running;
           if (nassauState) {
             const playerNassau = nassauState[p.name];
@@ -979,66 +1683,594 @@ export function renderRoundFeed(state) {
               const bT = typeof b === 'object' ? b.total : b;
               return (aT || 0) - (bT || 0);
             })[0];
-            const leaderTotal = typeof leaderNassau === 'object' ? leaderNassau.total : leaderNassau;
+            const leaderTotal2 = typeof leaderNassau === 'object' ? leaderNassau.total : leaderNassau;
             const playerTotal = typeof playerNassau === 'object' ? playerNassau.total : playerNassau;
-            if (playerTotal && leaderTotal && (playerTotal - leaderTotal) >= autoPress.threshold) {
-              html += `<div style="font-size:9px;font-weight:700;color:var(--mg-loss);background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;margin-left:20px">PRESS</div>`;
+            if (playerTotal && leaderTotal2 && (playerTotal - leaderTotal2) >= autoPress.threshold) {
+              html += `<button onclick="event.stopPropagation();window.MG.pressNassau('${escHtml(p.name)}')" style="width:100%;padding:10px;margin:6px 0;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Press \u2014 Double to $${nassauBetAmt * 2}</button>`;
             }
           }
         }
-      });
-    } else {
-      // No scores yet — show player roster
-      players.forEach((p, i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${i < players.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-          <span style="font-size:14px;font-weight:500">${escHtml(p.name)}</span>
-          <span style="font-size:12px;color:var(--mg-text-muted);font-family:'SF Mono',monospace">HI ${p.handicapIndex}</span>
-        </div>`;
-      });
-      html += `<div style="text-align:center;padding:10px 0 0;font-size:13px;color:var(--mg-text-muted)">${state.adminAuthed ? 'Tap the score button to enter hole 1' : 'Waiting for round to start...'}</div>`;
-    }
+
+        // Over/Under for this player
+        if (scoredHoles.length > 0 && p.gross !== null) {
+          const pace = Math.round((p.gross / scoredHoles.length) * holesPerRound);
+          const ouLine = Math.round(72 + (p.hi || 0) + 0.5);
+          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">O/U ${ouLine}.5 gross (pace: ${pace})</div>`;
+        }
+
+        // H2H moneylines vs each other player (real ML table)
+        if (standingsData.length >= 2) {
+          html += `<div style="margin-top:4px;margin-bottom:4px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:4px">H2H Moneylines</div>`;
+          standingsData.forEach((opp, j) => {
+            if (j === i) return;
+            const myHcp = p.hi ?? 0;
+            const oppHcp = opp.hi ?? 0;
+            const h2h = h2hOdds(myHcp, oppHcp);
+            const h2hFav = h2h.startsWith('-');
+            const h2hColor = h2hFav ? 'var(--gold-bright)' : 'var(--text-secondary)';
+            const label = h2hFav ? 'fav' : 'dog';
+            html += `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:'SF Mono',monospace;padding:1px 0">
+              <span style="color:var(--text-secondary)">vs ${escHtml(opp.name.split(' ')[0])}</span>
+              <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)} vs ${escHtml(opp.name.split(' ')[0])}','h2h','${h2h}')" style="padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-tertiary);color:${h2hColor};font-family:'SF Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${h2h} <span style="font-size:10px;opacity:0.6">(${label})</span></button>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        // Lay Action button
+        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(p.name)}')" style="width:100%;padding:8px;margin-top:4px;background:transparent;border:1.5px solid rgba(212,160,23,0.3);border-radius:6px;color:var(--gold-bright);font-size:12px;font-weight:600;cursor:pointer">Lay Action on ${escHtml(p.name.split(' ')[0])}</button>`;
+
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
 
     // Add Player inline (admin only)
     if (state.adminAuthed) {
-      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--mg-border)">
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:6px">
         <div style="display:flex;gap:6px">
-          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--mg-border);border-radius:6px;font-size:14px">
-          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--mg-border);border-radius:6px;font-size:14px;text-align:center">
-          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
+          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary style="font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:4px 0">Paste multiple players</summary>
+          <div style="margin-top:6px">
+            <textarea id="paste-players-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:transparent;color:var(--text-primary)" placeholder="One per line, or CSV: Name, HCP, @Venmo&#10;Tiger Woods, 0.6, @tigerwoods&#10;Rory McIlroy, -1.2"></textarea>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <button onclick="window.MG.pasteImportPlayers()" style="padding:6px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Import</button>
+              <span id="paste-import-status" style="font-size:12px;color:var(--text-secondary)"></span>
+            </div>
+          </div>
+        </details>
+      </div>`;
+    }
+
+    // Footer
+    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+      <span>Total: $${totalPot}</span>
+      <span>${holesRemaining} holes remaining</span>
+    </div>`;
+
+    html += `</div>`;
+  } else if (scoredHoles.length === 0 && players.length >= 2) {
+    // ================================================================
+    // SECTION 7: PRE-MATCH ACTION (when scoredHoles === 0)
+    // ================================================================
+    const sorted = [...players].sort((a, b) => (a.handicapIndex || 0) - (b.handicapIndex || 0));
+
+    // Header
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
+      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Pre-Match Action</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">Lines are set</span>
+    </div>`;
+
+    // Player rows with odds — card-based
+    sorted.forEach((p, i) => {
+      const sortedForOdds = sorted.map(s => ({ hi: s.handicapIndex || 0, toPar: null }));
+      const odds = calculateLiveOdds(i, sorted.length, { hi: p.handicapIndex || 0, toPar: null }, 0, holesPerRound, sortedForOdds);
+      const isFav2 = odds.startsWith('-');
+      const oddsColor2 = isFav2 ? 'white' : 'var(--text-secondary)';
+      const oddsBorderColor = isFav2 ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
+      const isFavCard = i === 0;
+
+      // Card styles — FAV gets gold gradient
+      const cardBg = isFavCard
+        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+      const badgeBg = isFavCard ? 'background:var(--gold-bright);color:var(--bg-secondary)' : i < 3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+      html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+            <div style="min-width:0">
+              <div style="font-size:15px;font-weight:${isFavCard ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+              <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
+            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor2};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+          </div>
         </div>
       </div>`;
+    });
+
+    // Opening Lines — head-to-head spreads — card-based
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px;padding:0">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Opening Lines</span>
+    </div>`;
+    for (let i = 0; i < Math.floor(sorted.length / 2); i++) {
+      const fav = sorted[i];
+      const dog = sorted[sorted.length - 1 - i];
+      const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
+          <span style="font-size:11px;color:var(--text-tertiary);font-weight:600">vs</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">+${spread}</button>
+          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
+        </div>
+      </div>`;
+    }
+
+    // Props — card-based with gold accent
+    const bestPlayer = sorted[0];
+    const worstPlayer = sorted[sorted.length - 1];
+    const overUnder = Math.round(72 + (bestPlayer.handicapIndex || 10) + 0.5);
+    const propsList = [
+      `Over/Under ${overUnder}.5 \u2014 ${bestPlayer.name.split(' ')[0]}'s gross score`,
+      `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
+      `${worstPlayer.name.split(' ')[0]} makes a birdie today: Yes/No`,
+    ];
+    html += `<div style="margin-top:12px;margin-bottom:6px;padding:0 2px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Prop Bets</span>
+    </div>`;
+    propsList.forEach(prop => {
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="font-size:12px;color:var(--text-primary);font-style:italic">${escHtml(prop)}</div>
+      </div>`;
+    });
+
+    // Trash talk — dark card with gold left border
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-top:8px;margin-bottom:6px">
+      <div style="font-size:12px;font-style:italic;color:var(--text-secondary)">"${escHtml(worstPlayer.name.split(' ')[0])} is getting ${Math.round((worstPlayer.handicapIndex || 0) - (bestPlayer.handicapIndex || 0))} strokes and still won't win a skin. Prove me wrong."</div>
+    </div>`;
+
+    // Add Player inline (admin only)
+    if (state.adminAuthed) {
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-top:8px">
+        <div style="display:flex;gap:6px">
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
+          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary style="font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:4px 0">Paste multiple players</summary>
+          <div style="margin-top:6px">
+            <textarea id="paste-players-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:transparent;color:var(--text-primary)" placeholder="One per line, or CSV: Name, HCP, @Venmo&#10;Tiger Woods, 0.6, @tigerwoods&#10;Rory McIlroy, -1.2"></textarea>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <button onclick="window.MG.pasteImportPlayers()" style="padding:6px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Import</button>
+              <span id="paste-import-status" style="font-size:12px;color:var(--text-secondary)"></span>
+            </div>
+          </div>
+        </details>
+      </div>`;
+    }
+  } else if (players.length > 0 && scoredHoles.length === 0) {
+    // Players exist but no scores yet and < 2 players — show roster
+    // Hidden once scores exist (scorecard already shows player names)
+    html += `<div style="background:var(--bg-secondary);border-radius:10px;overflow:hidden;margin-bottom:8px">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Players</span>
+      </div>`;
+    players.forEach((p, i) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;${i < players.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        <span style="font-size:15px;font-weight:500;color:var(--text-primary)">${escHtml(p.name)}</span>
+        <span style="font-size:12px;color:var(--text-secondary);font-family:'SF Mono',monospace">HI ${p.handicapIndex || 0}</span>
+      </div>`;
+    });
+    if (state.adminAuthed) {
+      html += `<div style="padding:10px 16px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:6px">
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
+          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+        </div>
+      </div>`;
+    }
+    html += `<div style="text-align:center;padding:10px 16px;font-size:13px;color:var(--text-secondary)">${state.adminAuthed ? 'Tap the score card to enter hole 1' : 'Waiting for round to start...'}</div>`;
+    html += `</div>`;
+  }
+
+  // ================================================================
+  // SECTION 3.5: SETTLEMENT PREVIEW (BOARD tab)
+  // ================================================================
+  if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0 && hasPnL) {
+    const payPairs = computePayablePairs(pnl);
+    if (payPairs.length > 0) {
+      const venmoHandles = {};
+      (config?.players || config?.roster || []).forEach(p => {
+        if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
+      });
+      const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
+      html += `<div style="background:linear-gradient(90deg,rgba(212,160,23,0.06),var(--bg-secondary));border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:14px 16px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-bright)">Settlement${roundComplete ? '' : ' (Running)'}</div>
+          ${roundComplete ? `<a href="#settle" style="font-size:11px;font-weight:600;color:var(--mg-gold);text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:10px;color:var(--text-tertiary)">Thru ${scoredHoles.length} holes</span>`}
+        </div>`;
+      payPairs.forEach(pair => {
+        const toVenmo = venmoHandles[pair.to] || pair.to;
+        const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
+        const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;color:var(--text-primary)">${escHtml(pair.from.split(' ')[0])} <span style="font-size:12px;color:var(--text-tertiary)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'SF Mono',monospace;font-size:18px;font-weight:800;color:var(--gold-bright)">$${pair.amount}</span>
+            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:5px 12px;background:#3D95CE;color:var(--text-primary);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;min-height:32px;display:flex;align-items:center">Venmo</a>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
+  // SECTION 4: LIVE TICKER (BOARD tab)
+  // ================================================================
+  if (!showSubTabs || activeSubTab === 'board') {
+    const feedItems = state._feed || [];
+    const allTickerItems = [...(feedItems || []).slice(0, 5)];
+    // Inject odds movement events into the ticker
+    oddsMovements.forEach(msg => {
+      allTickerItems.unshift({ text: msg, isOddsMove: true });
+    });
+    if (allTickerItems.length > 0 && scoredHoles.length > 0) {
+      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      allTickerItems.slice(0, 7).forEach((item, i) => {
+        const text = item.text || '';
+        const color = item.isOddsMove ? 'var(--gold-bright)' : 'var(--mg-text)';
+        const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px">LINE MOVE</span>' : '';
+        html += `<div style="font-size:12px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
+  // SECTION 5: THE BAR (BAR tab — projections, chirps, momentum)
+  // ================================================================
+  if ((!showSubTabs || activeSubTab === 'bar') && scoredHoles.length > 0) {
+    const barHasContent = scoredHoles.length >= 3;
+    const barOpen = state._barOpen;
+    // When shown as a dedicated tab, always open and no toggle button needed
+    const barIsTab = showSubTabs && activeSubTab === 'bar';
+    html += `<div style="margin-bottom:8px">`;
+    if (!barIsTab) {
+      html += `<button onclick="window.MG.toggleSection('bar')" style="width:100%;padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+        <span style="font-style:italic;font-size:14px;color:var(--mg-text)">The Bar</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--mg-text-muted)">Projections + Chirps</span>
+          <svg class="bar-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transform:${barOpen?'rotate(180deg)':''}"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </button>`;
+    }
+    html += `<div id="bar-section" style="display:${barIsTab || barOpen?'block':'none'};padding:12px 0">`;
+
+    // ── TRASH TALK / LIVE FEED (first thing in The Bar — the best part) ──
+    {
+      const barFeed = state._feed || [];
+      const barFeedEvts = events || [];
+      const barItems = [];
+      barFeedEvts.slice(0, 5).forEach(ev => {
+        let t = '';
+        if (ev.type === 'skin_won') t = `${ev.player} wins the skin on Hole ${ev.hole}`;
+        else if (ev.type === 'skin_carried') t = `Skin carried on Hole ${ev.hole}`;
+        else if (ev.type === 'nassau_front_complete') t = `Front 9: ${ev.winner} leads`;
+        else if (ev.type === 'nassau_back_complete') t = `Back 9: ${ev.winner} wins`;
+        else if (ev.type === 'nassau_total_complete') t = `Nassau: ${ev.winner} wins`;
+        else if (ev.type === 'wolf_result') t = ev.wolfWon ? `Wolf wins Hole ${ev.hole}` : `Opponents win wolf Hole ${ev.hole}`;
+        if (t) barItems.push({ text: t, type: 'game', ts: ev.ts || Date.now() });
+      });
+      barFeed.slice(0, 15).forEach(fi => {
+        barItems.push({ text: fi.text || '', type: fi.type || 'chirp', player: fi.player, emoji: fi.emoji, ts: fi.ts || Date.now() });
+      });
+      barItems.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      const barShown = barItems.slice(0, 10);
+
+      html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--win);animation:wg-pulse 2s infinite"></span> Live Feed
+        </div>`;
+      if (barShown.length > 0) {
+        html += `<div style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:8px">`;
+        barShown.forEach(bi => {
+          const bc = bi.type === 'game' ? 'var(--mg-gold)' : bi.type === 'score' ? 'var(--mg-gold-dim)' : 'var(--mg-green)';
+          const bn = bi.player ? bi.player[0].toUpperCase() : (bi.type === 'game' ? '\u26F3' : '?');
+          const bd = narrativize(bi, gameState, config?.structure);
+          html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--mg-surface);border:1px solid var(--mg-border)">
+            <div style="width:24px;height:24px;min-width:24px;border-radius:50%;background:${bc};color:var(--text-primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml(String(bn))}</div>
+            <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bi.emoji ? '<span style="font-size:18px;margin-right:4px">' + escHtml(bi.emoji) + '</span>' : ''}${escHtml(bd)}</div></div>
+            <div style="font-size:10px;color:var(--mg-text-muted);flex-shrink:0">${feedTimeAgo(bi.ts)}</div>
+          </div>`;
+        });
+        html += `</div>`;
+      } else {
+        html += `<div style="text-align:center;padding:16px;font-size:13px;color:var(--mg-text-muted)">No trash talk yet. Be the first!</div>`;
+      }
+      // Chirp input
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--mg-surface);border-radius:12px;border:1px solid var(--mg-border)">
+        <input id="bar-chirp-input" type="text" placeholder="Talk trash..." maxlength="100"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();window.MG.sendChirp()}"
+          style="flex:1;background:transparent;border:none;outline:none;color:var(--text-secondary);font-size:14px;padding:6px 0" />
+        <button onclick="window.MG.sendChirp()" style="background:var(--mg-green);color:var(--text-primary);border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">Send</button>
+      </div>`;
+      // Emoji reactions
+      html += `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">`;
+      ['\u{1F525}','\u{1F480}','\u{1F3CC}\u{FE0F}','\u{1F426}','\u{1F4B0}','\u{1F3AF}'].forEach(em => {
+        html += `<button onclick="window.MG.sendEmoji('${em}')" style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:6px 10px;font-size:18px;cursor:pointer">${em}</button>`;
+      });
+      html += `</div>`;
+      // AI Trash Talk
+      if (scoredHoles.length >= 2) {
+        html += `<button id="ai-chirp-btn" onclick="window.MG.generateAIChirp()" style="width:100%;margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(212,160,23,0.12),rgba(212,160,23,0.04));border:1.5px solid var(--mg-gold);border-radius:8px;color:var(--mg-gold);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;letter-spacing:0.5px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Generate Trash Talk
+        </button>`;
+        html += `<div id="ai-chirp-result" style="margin-top:4px"></div>`;
+      }
+      html += `</div>`;
+    }
+
+    // If Everyone Pars Out
+    {
+      const remainingHoles = [];
+      for (let h = 1; h <= holesPerRound; h++) {
+        if (!scoredHoles.includes(h)) remainingHoles.push(h);
+      }
+      if (remainingHoles.length > 0) {
+        const simParOut = {};
+        remainingHoles.forEach(h => {
+          simParOut[h] = {};
+          players.forEach(p => { simParOut[h][p.name] = pars[h - 1] || 4; });
+        });
+        const projPnl = computeSimulatedPnL(gameState, simParOut, players, games, structure, holesPerRound, pars, holes);
+        const currentPnl = pnl;
+
+        html += `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:10px">If Everyone Pars Out</div>`;
+
+        const projSorted = players.map(p => ({ name: p.name, current: currentPnl[p.name] || 0, projected: projPnl[p.name] || 0 }))
+          .sort((a, b) => b.projected - a.projected);
+
+        projSorted.forEach((pp, pi) => {
+          const delta = pp.projected - pp.current;
+          const arrow = delta > 0 ? '\u25B2' : delta < 0 ? '\u25BC' : '';
+          const deltaColor = delta > 0 ? 'var(--win)' : delta < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${pi < projSorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+            <div style="font-size:14px;font-weight:600;color:var(--mg-text)">${escHtml(pp.name.split(' ')[0])}</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:10px;color:${deltaColor}">${arrow} ${delta !== 0 ? '$' + Math.abs(delta) : '\u2014'}</span>
+              <span style="font-size:16px;font-weight:800;font-family:'SF Mono',monospace;color:${pp.projected >= 0 ? 'var(--win)' : 'var(--loss)'}">${pp.projected >= 0 ? '+' : ''}$${Math.abs(pp.projected)}</span>
+            </div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+    }
+
+    // What You Need
+    if (scoredHoles.length >= 3) {
+      const myName = state.bettorName || players[0]?.name || '';
+      const myPnl = pnl[myName] || 0;
+      const leader = standingsData[0];
+      const leaderPnl = pnl[leader?.name] || 0;
+      const remainingCount = holesPerRound - scoredHoles.length;
+
+      if (myName && leader && leader.name !== myName && leaderPnl > myPnl) {
+        const deficit = leaderPnl - myPnl;
+        html += `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-left:3px solid var(--mg-gold);border-radius:8px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:6px">What You Need</div>
+          <div style="font-size:14px;color:var(--mg-text);line-height:1.5">You're <span style="font-family:'SF Mono',monospace;color:var(--loss);font-weight:700">$${deficit}</span> behind ${escHtml(leader.name.split(' ')[0])} with ${remainingCount} holes left. ${games.skins ? `A skin is worth $${parseInt(structure?.skinsBet) || 5} \u00d7 ${players.length - 1} = $${(parseInt(structure?.skinsBet) || 5) * (players.length - 1)}.` : 'Make birdies.'}</div>
+        </div>`;
+      } else if (myName && leader && leader.name === myName) {
+        const second = standingsData[1];
+        const lead = myPnl - (pnl[second?.name] || 0);
+        html += `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-left:3px solid var(--win);border-radius:8px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--win);margin-bottom:6px">You're Leading</div>
+          <div style="font-size:14px;color:var(--mg-text);line-height:1.5">Up <span style="font-family:'SF Mono',monospace;color:var(--win);font-weight:700">$${lead}</span> on ${escHtml((second?.name || '').split(' ')[0])} with ${remainingCount} to play. Don't get comfortable.</div>
+        </div>`;
+      }
+    }
+
+    // The Chirps
+    if (scoredHoles.length >= 3) {
+      const chirps = [];
+      const recentHoles = scoredHoles.slice(-3);
+      players.forEach(p => {
+        let bogeys = 0;
+        recentHoles.forEach(h => {
+          const hData = holes[h];
+          const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+          const par = pars[h - 1] || 4;
+          if (score && score > par) bogeys++;
+        });
+        if (bogeys >= 2) chirps.push(`${p.name.split(' ')[0]} has bogeyed ${bogeys} of the last 3 holes. Is it nerves or just bad golf?`);
+      });
+      if (gameState?.skins) {
+        const skinCounts = {};
+        players.forEach(p => { skinCounts[p.name] = 0; });
+        if (gameState.skins.history) {
+          gameState.skins.history.forEach(s => { if (s.winner) skinCounts[s.winner] = (skinCounts[s.winner] || 0) + 1; });
+        }
+        const maxSkins = Math.max(...Object.values(skinCounts));
+        const skinless = players.filter(p => skinCounts[p.name] === 0);
+        if (skinless.length > 0 && maxSkins > 0) {
+          chirps.push(`${skinless.map(p => p.name.split(' ')[0]).join(' and ')} ${skinless.length === 1 ? 'hasn\'t' : 'haven\'t'} won a single skin. Somebody buy them a drink.`);
+        }
+      }
+      const sortedPnl = players.map(p => ({ name: p.name, pnl: pnl[p.name] || 0 })).sort((a, b) => b.pnl - a.pnl);
+      if (sortedPnl.length >= 2) {
+        const spread = sortedPnl[0].pnl - sortedPnl[sortedPnl.length - 1].pnl;
+        if (spread >= 20) chirps.push(`$${spread} separates first and last. That's a round of drinks for ${sortedPnl[sortedPnl.length - 1].name.split(' ')[0]}.`);
+      }
+
+      if (chirps.length > 0) {
+        html += `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">The Chirps</div>`;
+        chirps.forEach(c => {
+          html += `<div style="font-size:13px;color:var(--mg-text);padding:6px 0;border-bottom:1px solid var(--mg-border);line-height:1.4;font-style:italic">"${escHtml(c)}"</div>`;
+        });
+        html += `</div>`;
+      }
+    }
+
+    // Momentum / Trends
+    if (scoredHoles.length >= 6) {
+      const halfHoles = scoredHoles.slice(0, Math.floor(scoredHoles.length / 2));
+      const secondHalf = scoredHoles.slice(Math.floor(scoredHoles.length / 2));
+      const trendData = players.map(p => {
+        let firstHalfTotal = 0, secondHalfTotal = 0;
+        halfHoles.forEach(h => {
+          const hData = holes[h];
+          const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+          const par = pars[h - 1] || 4;
+          if (score) firstHalfTotal += score - par;
+        });
+        secondHalf.forEach(h => {
+          const hData = holes[h];
+          const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+          const par = pars[h - 1] || 4;
+          if (score) secondHalfTotal += score - par;
+        });
+        return { name: p.name, first: firstHalfTotal, second: secondHalfTotal, trend: firstHalfTotal - secondHalfTotal };
+      }).filter(t => t.trend !== 0).sort((a, b) => b.trend - a.trend);
+
+      if (trendData.length > 0) {
+        html += `<div style="padding:12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">Momentum</div>`;
+        trendData.forEach(t => {
+          const improving = t.trend > 0;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+            <span style="font-size:13px;font-weight:600;color:var(--mg-text)">${escHtml(t.name.split(' ')[0])}</span>
+            <span style="font-size:12px;font-weight:700;color:${improving ? 'var(--win)' : 'var(--loss)'}">
+              ${improving ? '\u25B2 Heating Up' : '\u25BC Cooling Off'}
+              <span style="font-family:'SF Mono',monospace;margin-left:4px">(${t.second > 0 ? '+' : ''}${t.second} \u2192 ${t.first > 0 ? '+' : ''}${t.first})</span>
+            </span>
+          </div>`;
+        });
+        html += `</div>`;
+      }
     }
 
     html += `</div></div>`;
   }
 
-  // ============================================================
-  // CARD 2: GAMES — full control for everyone (no admin gate)
-  // ============================================================
-  {
+  // ================================================================
+  // SECTION 6: PROPS + SIDE ACTION (BAR tab)
+  // ================================================================
+  if (!showSubTabs || activeSubTab === 'bar') {
+    const propsData = state._props || [];
+    const openProps = propsData.filter(p => p.status === 'open');
+    const acceptedProps = propsData.filter(p => p.status === 'accepted');
+    const settledProps = propsData.filter(p => p.status === 'settled');
+    const hasWinners = Object.values(pnl).some(v => v > 0);
+    const winners = players.filter(p => (pnl[p.name] || 0) > 0).sort((a, b) => (pnl[b.name] || 0) - (pnl[a.name] || 0));
+    const topWinAmount = winners.length > 0 ? pnl[winners[0].name] : 0;
+    const hasAnyAction = openProps.length > 0 || acceptedProps.length > 0 || settledProps.length > 0 || (roundComplete && hasWinners);
+
+    if (hasAnyAction || scoredHoles.length > 0) {
+      html += `<div style="margin-bottom:8px">`;
+
+      // Double or Nothing
+      if (roundComplete && hasWinners && roundNum >= 1) {
+        const existingDoN = propsData.find(p => p.type === 'double_or_nothing' && p.roundNumber === roundNum + 1);
+        if (!existingDoN) {
+          html += `<div style="background:linear-gradient(135deg, rgba(212,160,23,0.08), rgba(212,160,23,0.02));border:1.5px solid var(--mg-gold);border-radius:10px;padding:14px;margin-bottom:8px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:6px">Double or Nothing</div>
+            <div style="font-size:13px;color:var(--mg-text);margin-bottom:10px">${escHtml(winners[0].name)} won <span style="font-family:'SF Mono',monospace;color:var(--win);font-weight:700">+$${topWinAmount}</span> this round. Run it back?</div>
+            <button onclick="window.MG.createDoubleOrNothing()" style="width:100%;padding:12px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;min-height:44px">
+              Double or Nothing \u2014 $${topWinAmount * 2} on Round ${roundNum + 1}
+            </button>
+          </div>`;
+        }
+      }
+
+      // Open propositions
+      openProps.forEach(prop => {
+        const bettorName = state.bettorName || '';
+        const alreadyAccepted = (prop.acceptedBy || []).includes(bettorName);
+        html += `<div style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:12px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--mg-gold-dim)">${escHtml(prop.type.replace(/_/g, ' '))}</div>
+            <div style="font-size:10px;color:var(--mg-text-muted)">by ${escHtml((prop.creator || '').split(' ')[0])}</div>
+          </div>
+          <div style="font-size:13px;color:var(--mg-text);margin-bottom:8px">${escHtml(prop.description)}</div>
+          <div style="font-size:16px;font-weight:800;font-family:'SF Mono',monospace;color:var(--mg-gold);margin-bottom:8px">$${prop.amount || 0}</div>
+          ${!alreadyAccepted && prop.creator !== bettorName
+            ? `<button onclick="window.MG.acceptProp('${prop.id}')" style="width:100%;padding:10px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">Accept</button>`
+            : `<div style="font-size:11px;color:var(--mg-text-muted);text-align:center;padding:6px">Waiting for opponent...</div>`
+          }
+        </div>`;
+      });
+
+      // Accepted/locked props
+      acceptedProps.forEach(prop => {
+        html += `<div style="background:rgba(63,185,80,0.04);border:1.5px solid var(--win);border-radius:8px;padding:12px;margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--win)">Locked In</div>
+            <div style="font-size:16px;font-weight:800;font-family:'SF Mono',monospace;color:var(--win)">$${prop.amount || 0}</div>
+          </div>
+          <div style="font-size:13px;color:var(--mg-text)">${escHtml(prop.description)}</div>
+        </div>`;
+      });
+
+      // Settled props
+      settledProps.slice(0, 3).forEach(prop => {
+        html += `<div style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:10px;margin-bottom:6px;opacity:0.7">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;color:var(--mg-text)">${escHtml(prop.description)}</div>
+            <div style="font-size:12px;font-weight:700;font-family:'SF Mono',monospace;color:var(--mg-gold)">$${prop.amount || 0}</div>
+          </div>
+          <div style="font-size:10px;color:var(--mg-text-muted);margin-top:2px">${prop.result || 'Settled'}</div>
+        </div>`;
+      });
+
+      // Side bet button
+      html += `<button onclick="window.MG.createSideBet()" style="width:100%;padding:10px;background:transparent;border:1.5px dashed var(--mg-gold);border-radius:8px;color:var(--mg-gold-dim);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.5px;min-height:44px">
+        + Propose a Side Bet
+      </button>`;
+
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
+  // GAMES CONFIG (BAR tab — collapsible)
+  // ================================================================
+  if (!showSubTabs || activeSubTab === 'bar') {
     const allGameIds = ['nassau', 'skins', 'wolf', 'vegas', 'stableford', 'matchPlay', 'banker', 'bbb', 'nines', 'scramble'];
     const allGameLabels = { nassau: 'Nassau', skins: 'Skins', wolf: 'Wolf', vegas: 'Vegas', stableford: 'Stableford', matchPlay: 'Match Play', banker: 'Banker', bbb: 'BBB', nines: '9s', scramble: 'Scramble' };
     const inactiveGames = allGameIds.filter(g => !games[g]);
 
-    const gamesPills = activeGamesList.map(g => {
-      let detail = '';
-      if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
-      if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
-      return `<span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:rgba(212,175,55,0.15);color:var(--mg-gold-dim);padding:3px 8px;border-radius:4px;border:1px solid rgba(212,175,55,0.25)">${escHtml(g)}${detail}</span>`;
-    }).join(' ');
+    const gamesOpen = state._gamesOpen;
+    const gamesIsTab = showSubTabs && activeSubTab === 'bar';
+    html += `<div style="margin-bottom:8px">`;
+    if (!gamesIsTab) {
+      html += `<button onclick="window.MG.toggleSection('games')" style="width:100%;padding:10px 16px;background:transparent;border:1px solid var(--border);border-radius:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+        <span style="font-size:13px;font-weight:600;color:var(--mg-text)">Games & Stakes</span>
+        <span style="font-size:10px;color:var(--mg-text-muted)">${activeGamesList.join(' \u00b7 ') || 'None set'}</span>
+      </button>`;
+    }
+    html += `<div id="games-config-section" style="display:${gamesIsTab || gamesOpen?'block':'none'};padding:12px 0">`;
 
-    html += `<div class="board-card open" id="board-card-games">
-      <button class="board-card-header" onclick="document.getElementById('board-card-games').classList.toggle('open')">
-        <div class="board-card-title">Games</div>
-        <div class="board-card-summary">${gamesPills || '<span style="color:var(--mg-text-muted)">No games set</span>'}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    // AI advisor — prominent at top when no scores entered (no admin gate)
+    // AI advisor
     if (scoredHoles.length === 0) {
-      html += `<div style="padding:12px;background:rgba(212,175,55,.04);border:1.5px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
-        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      html += `<div style="padding:12px;background:rgba(212,160,23,0.04);border:1.5px solid var(--mg-gold);border-radius:8px;margin-bottom:8px">
+        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Recommend Games for This Group
         </button>
@@ -1046,9 +2278,9 @@ export function renderRoundFeed(state) {
       </div>`;
     }
 
-    // Active games — gold pills, tappable to disable
+    // Active games pills
     if (activeGamesList.length > 0) {
-      html += `<div style="margin-bottom:10px">
+      html += `<div style="margin-bottom:8px">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:6px">Active</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">`;
       activeGamesList.forEach(g => {
@@ -1057,7 +2289,7 @@ export function renderRoundFeed(state) {
         if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
         if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
         html += `<button onclick="window.MG.toggleGame('${gId}')"
-          style="padding:8px 14px;background:rgba(212,175,55,0.15);color:var(--mg-gold-dim);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent">
+          style="padding:8px 14px;background:rgba(212,160,23,0.15);color:var(--mg-gold-dim);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;min-height:44px;-webkit-tap-highlight-color:transparent">
           ${escHtml(g)}${detail}
           <span style="font-size:10px;opacity:.5">&times;</span>
         </button>`;
@@ -1065,21 +2297,21 @@ export function renderRoundFeed(state) {
       html += `</div></div>`;
     }
 
-    // + Add Game button — reveals inactive games
+    // Add Game
     if (inactiveGames.length > 0 && !state._spectatorMode) {
-      html += `<div style="margin-bottom:10px">
+      html += `<div style="margin-bottom:8px">
         <button onclick="document.getElementById('inactive-games-list').style.display=document.getElementById('inactive-games-list').style.display==='none'?'flex':'none'"
-          style="padding:8px 14px;background:none;color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">+ Add Game</button>
+          style="padding:8px 14px;background:none;color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">+ Add Game</button>
         <div id="inactive-games-list" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px">`;
       inactiveGames.forEach(gId => {
         const label = allGameLabels[gId] || gId;
         html += `<button onclick="window.MG.toggleGame('${gId}')"
-          style="padding:8px 14px;background:var(--mg-surface);color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">${escHtml(label)}</button>`;
+          style="padding:8px 14px;background:var(--mg-surface);color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">${escHtml(label)}</button>`;
       });
       html += `</div></div>`;
     }
 
-    // Stakes quick-pick — Nassau and Skins
+    // Stakes quick-pick
     if ((games.nassau || games.skins) && !state._spectatorMode) {
       html += `<div style="padding:10px 0;border-top:1px solid var(--mg-border)">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">Stakes</div>`;
@@ -1091,7 +2323,7 @@ export function renderRoundFeed(state) {
         nassauOptions.forEach(amt => {
           const isActive = nassauBetAmt === amt;
           html += `<button onclick="window.MG.updateStakesQuick('nassau',${amt})"
-            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,175,55,.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:44px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
         });
         html += `</div></div>`;
       }
@@ -1103,393 +2335,63 @@ export function renderRoundFeed(state) {
         skinsOptions.forEach(amt => {
           const isActive = skinsBetAmt === amt;
           html += `<button onclick="window.MG.updateStakesQuick('skins',${amt})"
-            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,175,55,.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:44px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
         });
         html += `</div></div>`;
       }
       html += `</div>`;
     }
 
-    // Game detail sections (existing logic — Nassau/Skins/Wolf/Vegas status)
-    if (activeGamesList.length > 0 && scoredHoles.length > 0) {
-      html += `<div style="border-top:1px solid var(--mg-border);padding-top:10px">`;
-
-      // Nassau detail
-      if (games.nassau) {
-        const nassauL = gameState?.nassau || {};
-        let frontStatus = 'Not started';
-        let backStatus = 'Not started';
-        let overallStatus = '';
-        if (scoredHoles.length > 0 && scoredHoles.length <= 9) {
-          const frontLeader = [...standingsData].filter(p => p.nassauFront !== null && p.nassauFront !== undefined).sort((a, b) => (a.nassauFront ?? 0) - (b.nassauFront ?? 0))[0];
-          frontStatus = frontLeader ? `${escHtml(frontLeader.name)} leads` : 'In play';
-        }
-        if (nassauL.frontWinner) frontStatus = `${escHtml(nassauL.frontWinner)} wins`;
-        else if (scoredHoles.length >= 9) frontStatus = 'Tied';
-        if (scoredHoles.length > 9) {
-          const backLeader = [...standingsData].filter(p => p.nassauBack !== null && p.nassauBack !== undefined).sort((a, b) => (a.nassauBack ?? 0) - (b.nassauBack ?? 0))[0];
-          backStatus = backLeader ? `${escHtml(backLeader.name)} leads` : 'In play';
-        }
-        if (nassauL.backWinner) backStatus = `${escHtml(nassauL.backWinner)} wins`;
-        if (nassauL.totalWinner) overallStatus = `${escHtml(nassauL.totalWinner)} wins overall`;
-
-        html += `<div style="padding:10px 0;${games.skins || games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Nassau${nassauBetAmt ? ' \u00b7 $' + nassauBetAmt : ''}</div>
-          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Front:</span> ${frontStatus}</div>
-          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted);margin-right:4px">Back:</span> ${backStatus}</div>
-          ${overallStatus ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold);margin-top:2px">${overallStatus}</div>` : ''}
-        </div>`;
-      }
-
-      // Skins detail
-      if (games.skins) {
-        const totalSkinsWon = Object.values(skinsCount).reduce((s, v) => s + v, 0);
-        const carries = Object.values(skinsHolesAll).filter(h => h.carried).length;
-        const topSkinPlayer = Object.entries(skinsCount).sort((a, b) => b[1] - a[1])[0];
-
-        html += `<div style="padding:10px 0;${games.wolf || games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Skins${skinsBetAmt ? ' \u00b7 $' + skinsBetAmt : ''}</div>
-          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Won:</span> ${totalSkinsWon} <span style="color:var(--mg-text-muted);margin-left:6px">Carried:</span> ${carries}</div>
-          <div style="font-size:12px;margin-bottom:3px"><span style="color:var(--mg-text-muted)">Pot:</span> <span style="font-weight:700;color:var(--mg-gold)">${skinsPot}x</span></div>
-          ${topSkinPlayer && topSkinPlayer[1] > 0 ? `<div style="font-size:12px;font-weight:600;color:var(--mg-gold)">${escHtml(topSkinPlayer[0])}: ${topSkinPlayer[1]} skin${topSkinPlayer[1] !== 1 ? 's' : ''}</div>` : ''}
-        </div>`;
-      }
-
-      // Wolf detail
-      if (games.wolf) {
-        const wolfPicks2 = gameState?.wolf?.picks || {};
-        const wolfResults = gameState?.wolf?.results || {};
-        const wolfHolesPlayed = Object.keys(wolfResults).length;
-        let wolfStatusText = '';
-        if (!currentHoleScored && expectedWolf && scoredHoles.length < holesPerRound) {
-          wolfStatusText = `${escHtml(expectedWolf)} picking Hole ${holeNum}`;
-          if (wolfPick) {
-            wolfStatusText = wolfPick.partner ? `${escHtml(expectedWolf)} + ${escHtml(wolfPick.partner)}` : `${escHtml(expectedWolf)} going lone wolf`;
-          }
-        } else {
-          wolfStatusText = `${wolfHolesPlayed} hole${wolfHolesPlayed !== 1 ? 's' : ''} played`;
-        }
-
-        html += `<div style="padding:10px 0;${games.vegas ? 'border-bottom:1px solid var(--mg-border);margin-bottom:10px' : ''}">
-          <div style="font-size:11px;font-weight:700;color:#9B6DFF;margin-bottom:6px">Wolf</div>
-          <div style="font-size:12px;line-height:1.4">${wolfStatusText}</div>
-          ${wolfOrder.length > 0 ? `<div style="font-size:10px;color:var(--mg-text-muted);margin-top:4px">Rotation: ${wolfOrder.map(n => escHtml(n.split(' ')[0])).join(' \u2192 ')}</div>` : ''}
-        </div>`;
-      }
-
-      // Vegas detail
-      if (games.vegas) {
-        html += `<div style="padding:10px 0">
-          <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px">Vegas</div>
-          <div style="font-size:12px;color:var(--mg-text-muted)">In play</div>
-        </div>`;
-      }
-
-      html += `</div>`;
-    }
-
     html += `</div></div>`;
   }
 
-  // ============================================================
-  // SCORE ENTRY BUTTON (prominent, inline — the main action)
-  // ============================================================
-  if (!roundComplete && !state._spectatorMode && players.length > 0) {
-    const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
-    const nextPar = pars[nextHole - 1] || 4;
-    html += `<button onclick="window.MG.openScoreModal()"
-      style="width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3);-webkit-tap-highlight-color:transparent;letter-spacing:.02em">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Score Hole ${nextHole} <span style="font-weight:400;opacity:.7">\u00b7 Par ${nextPar}</span>
-    </button>`;
-    // Scan scorecard button (camera + AI) — no admin gate in round mode
-    html += `<div style="display:flex;gap:8px;margin-bottom:10px">
-      <button onclick="document.getElementById('scorecard-camera').click()"
-        style="flex:1;padding:12px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;font-size:13px;font-weight:600;color:var(--mg-gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Scan Scorecard
-      </button>
-      <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
-        onchange="window.MG.scanScorecard(this.files[0])">
-    </div>`;
-    html += `<div id="scan-results" style="display:none"></div>`;
-  } else if (roundComplete && !state._spectatorMode) {
-    html += `<a href="#settle" style="display:block;width:100%;padding:16px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;margin-bottom:10px;box-shadow:0 3px 12px rgba(201,168,76,.3)">View Settlement</a>`;
-  }
-
-  // ============================================================
-  // CARD 3: SCORECARD + COURSE (combined — one card for all scoring data)
-  // ============================================================
-  if (players.length > 0) {
-    // Course info for the card header
-    const courseNameForCard = config?.event?.course || config?.event?.venue || config?.course?.name || '';
-    const progressForCard = scoredHoles.length === 0 ? 'Not started' : roundComplete ? 'Complete' : `Thru ${scoredHoles.length}`;
-    // Compute summary: front/back/total for the viewer (or first player)
-    const viewerName = state.bettorName || (players[0] ? players[0].name : '');
-    let frontTotal = 0, frontPar = 0, backTotal = 0, backPar = 0, frontScored = false, backScored = false;
-    for (let h = 1; h <= 9; h++) {
-      const sc = holes[h]?.scores?.[viewerName];
-      if (sc !== undefined && sc !== null) { frontTotal += sc; frontPar += (pars[h - 1] || 4); frontScored = true; }
-    }
-    for (let h = 10; h <= 18; h++) {
-      const sc = holes[h]?.scores?.[viewerName];
-      if (sc !== undefined && sc !== null) { backTotal += sc; backPar += (pars[h - 1] || 4); backScored = true; }
-    }
-    const frontDiff = frontTotal - frontPar;
-    const backDiff = backTotal - backPar;
-    const totalScore = (frontScored ? frontTotal : 0) + (backScored ? backTotal : 0);
-    const totalDiff = (frontScored ? frontDiff : 0) + (backScored ? backDiff : 0);
-    const fmtDiff = d => d === 0 ? 'E' : d > 0 ? '+' + d : String(d);
-    const frontStr = frontScored ? `${frontTotal} (${fmtDiff(frontDiff)})` : '\u2014';
-    const backStr = backScored ? `${backTotal} (${fmtDiff(backDiff)})` : '\u2014';
-    const totalStr = (frontScored || backScored) ? `${totalScore} (${fmtDiff(totalDiff)})` : '\u2014';
-    const scorecardSummary = `Front: ${frontStr} \u00b7 Back: ${backStr} \u00b7 Total: ${totalStr}`;
-
-    // Find leader total for gold highlight
-    let leaderTotal = null;
-    if (scoredHoles.length > 0 && standingsData.length > 0) {
-      leaderTotal = standingsData[0].name;
-    }
-
-    html += `<div class="board-card" id="board-card-scorecard">
-      <button class="board-card-header" onclick="document.getElementById('board-card-scorecard').classList.toggle('open')">
-        <div class="board-card-title">Scorecard</div>
-        <div class="board-card-summary">${courseNameForCard ? escHtml(courseNameForCard) + ' \u00b7 ' : ''}Par ${totalPar}${config?.rounds?.['1']?.tees ? ' \u00b7 ' + escHtml(config.rounds['1'].tees) : ''} \u00b7 ${progressForCard}</div>
-        <svg class="board-card-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="board-card-body">`;
-
-    // Round selector if multi-round
-    const roundsInfoSC = config?.rounds;
-    const hasMultiRoundSC = roundsInfoSC && typeof roundsInfoSC === 'object' && Object.keys(roundsInfoSC).length > 1;
-    if (hasMultiRoundSC) {
-      html += `<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">`;
-      Object.entries(roundsInfoSC).forEach(([num, rd]) => {
-        html += `<div style="flex-shrink:0;padding:6px 12px;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:6px;font-size:11px">
-          <span style="font-weight:700;color:var(--mg-green)">R${num}</span>
-          <span style="color:var(--mg-text-muted);margin-left:4px">${escHtml(rd.course || '')}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    // Inline scorecard — groups of 4 players, front 9 + back 9
-    const groupSize = 4;
-    const playerGroups = [];
-    for (let i = 0; i < players.length; i += groupSize) {
-      playerGroups.push(players.slice(i, i + groupSize));
-    }
-
-    playerGroups.forEach((groupPlayers, gi) => {
-      if (playerGroups.length > 1) {
-        html += `<div style="font-size:11px;font-weight:700;color:var(--mg-gold-dim);text-transform:uppercase;letter-spacing:1px;margin:${gi > 0 ? '12px' : '0'} 0 4px">Group ${gi + 1}</div>`;
-      }
-
-      [0, 1].forEach(half => {
-        const startHole = half * 9 + 1;
-        const endHole = Math.min(startHole + 8, holesPerRound);
-        const holeNums = Array.from({ length: endHole - startHole + 1 }, (_, i) => startHole + i);
-        const halfPar = holeNums.reduce((s, h) => s + (pars[h - 1] || 4), 0);
-        const halfLabel = half === 0 ? 'Out' : 'In';
-
-        html += `<div style="overflow-x:auto;margin-bottom:10px">
-          <table style="width:100%;border-collapse:collapse;font-family:'SF Mono',SFMono-Regular,monospace;min-width:${holeNums.length * 34 + 100}px;border-top:2px solid var(--mg-gold)">
-            <thead>
-              <tr style="color:var(--mg-text-muted);font-size:10px">
-                <th style="text-align:left;padding:5px 6px;font-weight:700;min-width:72px">Hole</th>
-                ${holeNums.map(h => `<th style="text-align:center;padding:5px 2px;min-width:28px">${h}</th>`).join('')}
-                <th style="text-align:center;padding:5px 6px;min-width:34px;color:var(--mg-gold);font-weight:700;border-left:1px solid var(--mg-border)">${halfLabel}</th>
-              </tr>
-              <tr style="background:rgba(212,175,55,0.04)">
-                <td style="padding:5px 6px;font-weight:700;font-size:11px;color:var(--mg-gold)">Par</td>
-                ${holeNums.map(h => `<td style="text-align:center;padding:5px 2px;font-weight:600;font-size:12px">${pars[h-1] || 4}</td>`).join('')}
-                <td style="text-align:center;padding:5px 6px;font-weight:700;font-size:12px;border-left:1px solid var(--mg-border)">${halfPar}</td>
-              </tr>
-            </thead>
-            <tbody>`;
-
-        groupPlayers.forEach((player, pi) => {
-          let playerTotal = 0;
-          let playerScoredAll = true;
-          const playerScores = holeNums.map(h => {
-            const holeData = holes[h] || {};
-            const holeScores = holeData.scores || holeData;
-            const gross = holeScores[player.name] !== undefined ? holeScores[player.name] : null;
-            if (gross !== null) playerTotal += gross; else playerScoredAll = false;
-            return gross;
-          });
-
-          const isLeaderRow = player.name === leaderTotal;
-          const rowBg = pi % 2 === 1 ? 'background:rgba(0,0,0,0.025);' : '';
-
-          html += `<tr style="${rowBg}">
-            <td style="padding:5px 6px;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px">${escHtml(player.name.split(' ')[0])}</td>`;
-
-          playerScores.forEach((gross, idx) => {
-            const h = holeNums[idx];
-            const par = pars[h - 1] || 4;
-            let display = gross !== null ? gross : '\u00b7';
-            let spanStyle = 'font-size:13px;font-family:\'SF Mono\',SFMono-Regular,monospace;';
-            if (gross !== null) {
-              const diff = gross - par;
-              if (diff <= -2) {
-                // Eagle: gold circle with double border
-                spanStyle += 'background:var(--mg-gold);color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--mg-gold);';
-              } else if (diff === -1) {
-                // Birdie: solid gold circle
-                spanStyle += 'background:var(--mg-gold);color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;';
-              } else if (diff === 1) {
-                // Bogey: thin border square
-                spanStyle += 'border:2px solid var(--mg-text-muted);border-radius:3px;width:26px;height:26px;line-height:22px;display:inline-block;text-align:center;';
-              } else if (diff >= 2) {
-                // Double+: filled red square
-                spanStyle += 'background:var(--mg-loss,#ef4444);color:#fff;border-radius:3px;width:26px;height:26px;line-height:26px;display:inline-block;text-align:center;';
-              }
-              // Par: no decoration (default)
-            }
-            html += `<td style="text-align:center;padding:3px 1px;vertical-align:middle"><span style="${spanStyle}">${display}</span></td>`;
-          });
-
-          const totalStyle = isLeaderRow
-            ? 'text-align:center;padding:5px 6px;font-weight:700;font-size:16px;color:var(--mg-gold);border-left:1px solid var(--mg-border)'
-            : 'text-align:center;padding:5px 6px;font-weight:700;font-size:16px;border-left:1px solid var(--mg-border)';
-          html += `<td style="${totalStyle}">${playerScoredAll ? playerTotal : '\u2014'}</td>`;
-          html += `</tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-      });
-    });
-
-    // Legend — updated to match new premium styling
-    html += `<div style="display:flex;gap:14px;padding:8px 0 0;font-size:11px;color:var(--mg-text-muted);justify-content:center;flex-wrap:wrap">
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-gold);border-radius:50%"></span>Birdie</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-gold);border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--mg-gold)"></span>Eagle</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;border:2px solid var(--mg-text-muted);border-radius:3px"></span>Bogey</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:16px;height:16px;background:var(--mg-loss,#ef4444);border-radius:3px"></span>Double+</span>
-    </div>`;
-
-    html += `</div></div>`;
-  }
-
-  // ============================================================
-  // (Course card removed — merged into Scorecard card above)
-
-  // ============================================================
-  // ROUND COMPLETE CTA
-  // ============================================================
+  // ================================================================
+  // ROUND COMPLETE CTA + ROUND MANAGER
+  // ================================================================
   if (roundComplete) {
-    html += `<div class="mg-card" style="padding:20px;text-align:center;border-top:3px solid var(--mg-gold);margin-bottom:10px">
+    html += `<div style="padding:20px;text-align:center;border-top:3px solid var(--mg-gold);border-radius:10px;background:var(--mg-surface);margin-bottom:8px">
       <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--mg-gold);margin-bottom:8px">ROUND COMPLETE</div>
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:14px">Final results are ready</div>
-      <a href="#settle" class="mg-btn mg-btn-primary" style="text-decoration:none;display:inline-block;width:auto;padding:11px 32px;font-size:15px">View Settlement</a>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:14px">Final results are ready</div>
+      <a href="#settle" style="text-decoration:none;display:inline-block;padding:14px 32px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;min-height:44px">View Settlement</a>
     </div>`;
   }
 
-  // ============================================================
-  // ROUND MANAGER — set up next round (only when current round is done)
-  // ============================================================
   if (roundComplete && state.adminAuthed) {
-    const currentRound = config?.event?.currentRound || 1;
-    const roundsConfig = config?.rounds;
-    const nextRound = currentRound + 1;
-    const nextRoundInfo = roundsConfig?.[nextRound];
+    const curRound = config?.event?.currentRound || 1;
+    const roundsConfig3 = config?.rounds;
+    const nextRound = curRound + 1;
+    const nextRoundInfo = roundsConfig3?.[nextRound];
 
-    html += `<div class="mg-card" style="padding:16px;border:1.5px solid var(--mg-gold);margin-bottom:10px">
+    html += `<div style="padding:16px;border:1.5px solid var(--mg-gold);border-radius:10px;background:var(--mg-surface);margin-bottom:8px">
       <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:12px">Set Up Round ${nextRound}</div>`;
 
     if (nextRoundInfo) {
-      html += `<div style="padding:12px;background:rgba(212,175,55,.04);border:1px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
+      html += `<div style="padding:12px;background:rgba(212,160,23,0.04);border:1px solid var(--mg-gold);border-radius:8px;margin-bottom:12px">
         <div style="font-size:14px;font-weight:700;color:var(--mg-green)">${escHtml(nextRoundInfo.course || '')}</div>
         <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">${escHtml(nextRoundInfo.tees || '')} &middot; Par ${nextRoundInfo.par || 72}</div>
       </div>
       <button onclick="window.MG.startNextRound(${nextRound}, '${escHtml(nextRoundInfo.course || '').replace(/'/g, "\\'")}', '${escHtml(nextRoundInfo.courseId || '').replace(/'/g, "\\'")}')"
-        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px">
         Start Round ${nextRound}: ${escHtml(nextRoundInfo.course || 'Next Course')}
       </button>`;
     } else {
       html += `<div style="margin-bottom:10px">
         <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Select course for Round ${nextRound}:</div>
         <input type="text" id="next-round-course" placeholder="Search course..." oninput="window.MG.searchNextRoundCourse(this.value)"
-          style="width:100%;padding:10px;background:var(--mg-surface);color:var(--mg-text);border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px;box-sizing:border-box">
+          style="width:100%;padding:10px;background:var(--mg-surface);color:var(--mg-text);border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
         <div id="next-round-results"></div>
       </div>
       <button onclick="window.MG.startNextRound(${nextRound})"
-        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px">
         Start Round ${nextRound}
       </button>`;
     }
 
-    html += `<div style="margin-top:10px;font-size:11px;color:var(--mg-text-muted);text-align:center">This archives Round ${currentRound} scores and resets the scorecard</div>
+    html += `<div style="margin-top:10px;font-size:11px;color:var(--mg-text-muted);text-align:center">This archives Round ${curRound} scores and resets the scorecard</div>
     </div>`;
   }
 
-  // ============================================================
-  // CARD 5: FEED (not collapsible — always shows last 5)
-  // ============================================================
-  {
-    const feed = state._feed || [];
-    const feedEvents = events || [];
-    // Combine game events + activity feed
-    const allFeedItems = [];
-
-    // Add game events as feed items
-    feedEvents.slice(0, 5).forEach(ev => {
-      let text = '';
-      if (ev.type === 'skin_won') text = `${ev.player} wins the skin on Hole ${ev.hole}`;
-      else if (ev.type === 'skin_carried') text = `Skin carried on Hole ${ev.hole}`;
-      else if (ev.type === 'nassau_front_complete') text = `Front 9: ${ev.winner} leads`;
-      else if (ev.type === 'nassau_back_complete') text = `Back 9: ${ev.winner} wins`;
-      else if (ev.type === 'nassau_total_complete') text = `Nassau: ${ev.winner} wins`;
-      else if (ev.type === 'wolf_result') text = ev.wolfWon ? `Wolf wins Hole ${ev.hole}` : `Opponents win wolf Hole ${ev.hole}`;
-      if (text) allFeedItems.push({ text, type: 'game', ts: ev.ts || Date.now() });
-    });
-
-    // Add chirps/scores from activity feed
-    feed.slice(0, 10).forEach(item => {
-      allFeedItems.push({ text: item.text || '', type: item.type || 'chirp', player: item.player, ts: item.ts || Date.now() });
-    });
-
-    // Sort by timestamp descending, take last 5
-    allFeedItems.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    const shown = allFeedItems.slice(0, 5);
-
-    if (shown.length > 0 || feed.length > 0) {
-      html += `<div style="margin-top:4px;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);padding:0 4px 6px;display:flex;align-items:center;gap:6px">
-          <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:wg-pulse 2s infinite"></span> Feed
-        </div>`;
-
-      if (shown.length > 0) {
-        shown.forEach(item => {
-          const badgeColor = item.type === 'game' ? 'var(--mg-gold)' : item.type === 'score' ? 'var(--mg-gold-dim)' : 'var(--mg-green)';
-          const initial = item.player ? item.player[0].toUpperCase() : (item.type === 'game' ? '\u26F3' : '?');
-          const displayText = narrativize(item, gameState, config?.structure);
-          html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:3px;border-radius:6px;background:var(--mg-surface);border:1px solid var(--mg-border)">
-            <div style="width:24px;height:24px;min-width:24px;border-radius:50%;background:${badgeColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml(String(initial))}</div>
-            <div style="flex:1;font-size:12px;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayText)}</div>
-            <div style="font-size:10px;color:var(--mg-text-muted);flex-shrink:0">${feedTimeAgo(item.ts)}</div>
-          </div>`;
-        });
-      } else {
-        html += `<div style="text-align:center;padding:12px;font-size:12px;color:var(--mg-text-muted)">No activity yet</div>`;
-      }
-
-      // Show all link + chirp input
-      html += `<div id="board-feed-full" style="display:none">${renderActivityFeed(state)}</div>`;
-      html += `<button onclick="var el=document.getElementById('board-feed-full');if(el.style.display==='none'){el.style.display='block';this.textContent='Hide feed'}else{el.style.display='none';this.textContent='Show all'}" style="width:100%;margin-top:6px;padding:8px;background:none;border:1px solid var(--mg-border);border-radius:6px;font-size:11px;font-weight:600;color:var(--mg-text-muted);cursor:pointer">Show all</button>`;
-      html += `</div>`;
-    } else {
-      // No feed items at all — still render the activity feed for chirp input
-      html += renderActivityFeed(state);
-    }
-  }
-
-  // Score entry modal overlay
-  if (state._scoreModal) {
-    html += renderScoreModal(state, players);
-  }
-
+  html += renderOddsBetSlip(state);
   return html;
 }
 
@@ -1518,11 +2420,11 @@ function renderScoreModal(state, players) {
     const hPar = pars[h - 1] || 4;
     const hasScore = state._holes?.[h]?.scores && Object.keys(state._holes[h].scores).length > 0;
     // Par 3 = teal dot, Par 5 = gold dot, Par 4 = no dot
-    const parDot = hPar === 3 ? `<div style="width:5px;height:5px;border-radius:50%;background:${isActive ? 'rgba(255,255,255,0.8)' : '#0D9488'};margin:0 auto;margin-top:1px"></div>`
-                 : hPar === 5 ? `<div style="width:5px;height:5px;border-radius:50%;background:${isActive ? 'rgba(255,255,255,0.8)' : '#D4AF37'};margin:0 auto;margin-top:1px"></div>`
+    const parDot = hPar === 3 ? `<div style="width:5px;height:5px;border-radius:50%;background:${isActive ? 'var(--text-primary)' : '#0D9488'};margin:0 auto;margin-top:1px"></div>`
+                 : hPar === 5 ? `<div style="width:5px;height:5px;border-radius:50%;background:${isActive ? 'var(--text-primary)' : 'var(--gold-primary)'};margin:0 auto;margin-top:1px"></div>`
                  : `<div style="width:5px;height:5px;margin-top:1px"></div>`;
     holePicker += `<button onclick="window.MG.setScoreModalHole(${h})"
-      style="min-width:36px;height:44px;border-radius:8px;border:2px solid ${isActive ? 'var(--mg-green)' : 'var(--mg-border)'};background:${isActive ? 'var(--mg-green)' : (hasScore ? 'rgba(26,71,42,0.08)' : 'transparent')};color:${isActive ? '#fff' : 'var(--mg-text)'};font-size:12px;font-weight:${isActive ? '700' : '500'};cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;line-height:1.1">
+      style="min-width:36px;height:44px;border-radius:8px;border:2px solid ${isActive ? 'var(--mg-green)' : 'var(--mg-border)'};background:${isActive ? 'var(--mg-green)' : (hasScore ? 'rgba(35,134,54,0.08)' : 'transparent')};color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'};font-size:12px;font-weight:${isActive ? '700' : '500'};cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;line-height:1.1">
       <span>${h}</span>
       ${parDot}
       </button>`;
@@ -1531,7 +2433,7 @@ function renderScoreModal(state, players) {
   // Legend
   holePicker += `<div style="display:flex;gap:12px;font-size:11px;color:var(--mg-text-muted);margin-bottom:12px;margin-top:-8px">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#0D9488;display:inline-block"></span>Par 3</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#D4AF37;display:inline-block"></span>Par 5</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--gold-primary);display:inline-block"></span>Par 5</span>
     <span style="color:var(--mg-text-muted)">No dot = Par 4</span>
   </div>`;
 
@@ -1542,10 +2444,10 @@ function renderScoreModal(state, players) {
     let relStyle = '';
     if (net !== null) {
       if (net <= -2) relStyle = 'color:#1565C0;font-weight:700';
-      else if (net === -1) relStyle = 'color:#2E7D32;font-weight:700';
+      else if (net === -1) relStyle = 'color:var(--win);font-weight:700';
       else if (net === 0) relStyle = 'color:var(--mg-text-muted)';
-      else if (net === 1) relStyle = 'color:#C62828';
-      else relStyle = 'color:#B71C1C;font-weight:700';
+      else if (net === 1) relStyle = 'color:var(--loss)';
+      else relStyle = 'color:var(--loss);font-weight:700';
     }
     // Score buttons: show par-2 through par+4 (covers 95% of amateur scores)
     const lo = Math.max(1, par - 2);
@@ -1556,11 +2458,11 @@ function renderScoreModal(state, players) {
       const isActive = val === s;
       const diff = s - par;
       let bg = isActive ? 'var(--mg-green)' : 'var(--mg-surface)';
-      let col = isActive ? '#fff' : 'var(--mg-text)';
+      let col = isActive ? 'var(--text-primary)' : 'var(--mg-text)';
       let border = isActive ? 'var(--mg-green)' : 'var(--mg-border)';
       if (!isActive && diff <= -2) { col = '#1565C0'; }
-      else if (!isActive && diff === -1) { col = '#2E7D32'; }
-      else if (!isActive && diff >= 2) { col = '#C62828'; }
+      else if (!isActive && diff === -1) { col = 'var(--win)'; }
+      else if (!isActive && diff >= 2) { col = 'var(--loss)'; }
       return `<button onclick="window.MG.setScoreModalScore('${escHtml(p.name)}',${s})"
         style="min-width:38px;height:40px;border-radius:8px;border:2px solid ${border};background:${bg};color:${col};font-size:16px;font-weight:700;cursor:pointer;flex:1">${s}</button>`;
     }).join('');
@@ -1582,7 +2484,7 @@ function renderScoreModal(state, players) {
     <div style="background:var(--mg-surface);border-radius:16px 16px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;margin:0 auto;box-sizing:border-box;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
-          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--mg-green)">Hole ${hole}</div>
+          <div style="font-size:20px;font-weight:700;color:var(--mg-green)">Hole ${hole}</div>
           <div style="font-size:12px;color:var(--mg-text-muted)">Par ${par}${hcpRank !== null ? ` &nbsp;·&nbsp; HCP ${hcpRank}` : ''} &nbsp;·&nbsp; Enter gross scores</div>
         </div>
         <button onclick="window.MG.closeScoreModal()" style="width:32px;height:32px;border:none;background:var(--mg-border);border-radius:50%;font-size:18px;cursor:pointer;color:var(--mg-text);line-height:1">×</button>
@@ -1590,7 +2492,7 @@ function renderScoreModal(state, players) {
       ${holePicker}
       <div>${playerRows}</div>
       <button onclick="window.MG.submitScoreModal()" ${allFilled ? '' : 'disabled'}
-        style="width:100%;margin-top:16px;padding:16px;background:${allFilled ? 'var(--mg-green)' : 'var(--mg-border)'};color:${allFilled ? '#fff' : 'var(--mg-text-muted)'};border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'}">
+        style="width:100%;margin-top:16px;padding:16px;background:${allFilled ? 'var(--mg-green)' : 'var(--mg-border)'};color:${allFilled ? 'var(--text-primary)' : 'var(--mg-text-muted)'};border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'}">
         ${allFilled ? `Save Hole ${hole}` : 'Fill in all scores'}
       </button>
     </div>
@@ -1744,20 +2646,20 @@ export function renderAdmin(state) {
 
         <div id="magic-link-section">
           <p class="text-sm text-muted" style="margin-bottom:12px">Enter your phone or email to receive a login link</p>
-          <input type="text" id="magic-contact" placeholder="Phone or email" style="width:100%;padding:12px;border:1.5px solid var(--mg-border,#333);border-radius:8px;background:var(--mg-surface,#1a1a1a);color:var(--mg-text,#fff);font-size:15px;margin-bottom:10px">
+          <input type="text" id="magic-contact" placeholder="Phone or email" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:15px;margin-bottom:10px">
           <button class="mg-btn mg-btn-primary" style="width:100%" onclick="window.MG.requestMagicLink()">Send Magic Link</button>
         </div>
 
         <div id="magic-sent-section" style="display:none">
-          <p class="text-sm" style="color:var(--mg-green,#16A34A);margin-bottom:12px;font-weight:600">Check your messages — a login code was sent.</p>
+          <p class="text-sm" style="color:var(--mg-green);margin-bottom:12px;font-weight:600">Check your messages — a login code was sent.</p>
           <input type="text" id="magic-code" maxlength="6" placeholder="Enter 6-character code" autocomplete="off" autocapitalize="characters"
-            style="width:100%;padding:14px;border:1.5px solid var(--mg-border,#333);border-radius:8px;background:var(--mg-surface,#1a1a1a);color:var(--mg-text,#fff);font-size:18px;text-align:center;letter-spacing:4px;font-family:monospace;margin-bottom:10px">
+            style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:18px;text-align:center;letter-spacing:4px;font-family:monospace;margin-bottom:10px">
           <button class="mg-btn mg-btn-primary" style="width:100%" onclick="window.MG.verifyMagicCode()">Verify Code</button>
-          <button class="mg-btn" style="width:100%;margin-top:6px;background:transparent;color:var(--mg-text-muted,#888);font-size:13px" onclick="window.MG.showMagicLinkForm()">Send again</button>
+          <button class="mg-btn" style="width:100%;margin-top:6px;background:transparent;color:var(--text-secondary);font-size:13px" onclick="window.MG.showMagicLinkForm()">Send again</button>
         </div>
 
         <div style="margin-top:16px;text-align:center">
-          <button id="toggle-pin-btn" style="background:none;border:none;color:var(--mg-text-muted,#888);font-size:12px;cursor:pointer;text-decoration:underline" onclick="window.MG.togglePinEntry()">Use PIN instead</button>
+          <button id="toggle-pin-btn" style="background:none;border:none;color:var(--text-secondary);font-size:12px;cursor:pointer;text-decoration:underline" onclick="window.MG.togglePinEntry()">Use PIN instead</button>
         </div>
 
         <div id="pin-section" style="display:none;margin-top:12px">
@@ -1780,27 +2682,27 @@ export function renderAdmin(state) {
     html += `<div id="onboard-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px">
       <div style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:12px;max-width:380px;width:100%;padding:24px">
         <div style="text-align:center;margin-bottom:20px">
-          <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--mg-gold)">W</div>
-          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin-top:8px">Welcome, Admin</div>
+          <div style="font-size:28px;font-weight:700;color:var(--mg-gold)">W</div>
+          <div style="font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin-top:8px">Welcome, Admin</div>
           <p class="text-sm text-muted" style="margin-top:4px">Here's how to run your event in 3 steps</p>
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px">
           <div style="display:flex;gap:12px;align-items:flex-start">
-            <div style="background:var(--mg-green);color:#000;font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+            <div style="background:var(--mg-green);color:var(--bg-primary);font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
             <div>
               <div style="font-size:14px;font-weight:600">Set up your games</div>
               <div style="font-size:12px;color:var(--mg-text-muted)">Go to Scorecard tab → assign Vegas teams, set wolf order if needed</div>
             </div>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
-            <div style="background:var(--mg-green);color:#000;font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+            <div style="background:var(--mg-green);color:var(--bg-primary);font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
             <div>
               <div style="font-size:14px;font-weight:600">Enter scores hole by hole</div>
               <div style="font-size:12px;color:var(--mg-text-muted)">Scorecard tab → pick a hole → enter gross scores → Save. Odds update live.</div>
             </div>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
-            <div style="background:var(--mg-green);color:#000;font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+            <div style="background:var(--mg-green);color:var(--bg-primary);font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
             <div>
               <div style="font-size:14px;font-weight:600">Share the settlement card</div>
               <div style="font-size:12px;color:var(--mg-text-muted)">After round ends → Scores tab → "View Settlement Card" → Share with group</div>
@@ -2035,7 +2937,7 @@ function renderAdminBook(state) {
   html += `<div class="mg-card">
     <div class="mg-card-header" style="display:flex;align-items:center;gap:8px">
       <span style="font-size:14px">SPORTSBOOK</span>
-      <span style="font-size:10px;background:${settledPL >= 0 ? 'var(--mg-win)' : 'var(--mg-loss)'};color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">${settledPL >= 0 ? 'HOUSE UP' : 'HOUSE DOWN'}</span>
+      <span style="font-size:10px;background:${settledPL >= 0 ? 'var(--mg-win)' : 'var(--mg-loss)'};color:var(--text-primary);padding:2px 8px;border-radius:4px;font-weight:700">${settledPL >= 0 ? 'HOUSE UP' : 'HOUSE DOWN'}</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;font-size:11px">
       <div style="text-align:center"><div class="text-xs text-muted">Handle</div><div style="font-weight:700">$${totalHandle.toLocaleString()}</div></div>
@@ -2079,7 +2981,7 @@ function renderAdminBook(state) {
       const tA = T(m.teamA), tB = T(m.teamB);
       const nameA = TN(tA);
       const nameB = TN(tB);
-      const color = pct > 70 ? 'var(--mg-loss)' : pct > 55 ? '#f59e0b' : 'var(--mg-win)';
+      const color = pct > 70 ? 'var(--mg-loss)' : pct > 55 ? 'var(--gold-bright)' : 'var(--mg-win)';
       const heavyName = heavy === 'A' ? nameA : nameB;
       html += `<div style="padding:6px 14px;border-bottom:1px solid var(--mg-border);display:flex;align-items:center;gap:8px">
         <div style="width:40px;font-size:16px;font-weight:800;color:${color};text-align:center">${pct}%</div>
@@ -2105,13 +3007,13 @@ function renderAdminBook(state) {
       let badge = '';
       if (b.status === 'won') badge = '<span style="color:var(--mg-win);font-weight:700;font-size:10px">W</span>';
       else if (b.status === 'lost') badge = '<span style="color:var(--mg-loss);font-weight:700;font-size:10px">L</span>';
-      else if (b.status === 'voided') badge = '<span style="color:#666;font-size:10px">V</span>';
+      else if (b.status === 'voided') badge = '<span style="color:var(--text-tertiary);font-size:10px">V</span>';
       html += `<div style="padding:4px 14px;border-bottom:1px solid var(--mg-border);display:flex;align-items:center;gap:6px;font-size:11px">
         <span style="font-weight:600;min-width:60px">${escHtml(b.bettor || '')}</span>
         <span style="flex:1;color:var(--mg-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(b.description || '')}</span>
         <span style="font-weight:700">$${(b.stake||0).toLocaleString()}</span>
         ${badge}
-        ${b.status === 'active' ? `<button onclick="window.MG.voidBet('${b.id}')" style="background:var(--mg-loss);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:9px;cursor:pointer">Void</button>` : ''}
+        ${b.status === 'active' ? `<button onclick="window.MG.voidBet('${b.id}')" style="background:var(--mg-loss);color:var(--text-primary);border:none;border-radius:4px;padding:2px 6px;font-size:9px;cursor:pointer">Void</button>` : ''}
       </div>`;
     });
     html += `</div>`;
@@ -2175,7 +3077,7 @@ function renderAdminPlayers(state) {
           <div class="text-xs text-muted">HI ${r.hi}</div>
         </div>
         <div style="display:flex;gap:6px">
-          <button onclick="window.MG.approveJoin('${r.id}','${escHtml(r.name)}')" style="background:var(--mg-green);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Approve</button>
+          <button onclick="window.MG.approveJoin('${r.id}','${escHtml(r.name)}')" style="background:var(--mg-green);color:var(--text-primary);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Approve</button>
           <button onclick="window.MG.rejectJoin('${r.id}')" style="background:transparent;color:var(--mg-text-muted);border:1px solid var(--mg-border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Reject</button>
         </div>
       </div>`;
@@ -2203,7 +3105,7 @@ function renderAdminPlayers(state) {
         <td style="padding:6px 6px;text-align:right;font-weight:700;color:var(--mg-gold-dim)">$${(p.credits || 0).toLocaleString()}</td>
         <td style="padding:6px 6px;text-align:right">$${(p.totalWagered || 0).toLocaleString()}</td>
         <td style="padding:6px 6px;text-align:center">${pBets.length}${active > 0 ? ` (${active})` : ''}</td>
-        <td style="padding:6px 10px;text-align:center"><button onclick="window.MG.adminAddCredits('${escHtml(p.name)}')" style="background:var(--mg-green);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">+/-</button></td>
+        <td style="padding:6px 10px;text-align:center"><button onclick="window.MG.adminAddCredits('${escHtml(p.name)}')" style="background:var(--mg-green);color:var(--text-primary);border:none;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">+/-</button></td>
       </tr>`;
     });
     html += `</tbody></table></div></div>`;
@@ -2213,7 +3115,7 @@ function renderAdminPlayers(state) {
   html += `<div class="mg-card" style="padding:16px;margin-top:12px">
     <div class="mg-card-header">Bulk Import Players</div>
     <p style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Name, Handicap, @Venmo (optional) — one per line</p>
-    <textarea id="bulk-players-input" style="width:100%;min-height:100px;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="Tiger Woods, 0.6, @tigerwoods\nRory McIlroy, -1.2"></textarea>
+    <textarea id="bulk-players-input" style="width:100%;min-height:100px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box" placeholder="Tiger Woods, 0.6, @tigerwoods\nRory McIlroy, -1.2"></textarea>
     <button class="mg-btn mg-btn-primary" style="margin-top:8px" onclick="window.MG.bulkImportPlayers()">Import Players</button>
   </div>`;
 
@@ -2290,7 +3192,7 @@ function renderLineBoard(state, round, allBets) {
       if (totalMatchHandle > 0) {
         const maxPct = Math.max(pctA, pctB);
         if (maxPct > 70) { exposureColor = 'var(--mg-loss)'; exposureLabel = pctA > pctB ? nameA + ' heavy' : nameB + ' heavy'; }
-        else if (maxPct > 55) { exposureColor = '#f59e0b'; exposureLabel = pctA > pctB ? nameA + ' leaning' : nameB + ' leaning'; }
+        else if (maxPct > 55) { exposureColor = 'var(--gold-bright)'; exposureLabel = pctA > pctB ? nameA + ' leaning' : nameB + ' leaning'; }
       } else {
         exposureLabel = 'No action';
         exposureColor = 'var(--mg-text-muted)';
@@ -2298,16 +3200,16 @@ function renderLineBoard(state, round, allBets) {
 
       // Match status overlay
       let statusTag = '';
-      if (isFinal) statusTag = '<span style="background:#666;color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:6px">FINAL</span>';
-      else if (m.status === 'live') statusTag = '<span style="background:var(--mg-loss);color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:6px;animation:pulse 1.5s infinite">LIVE</span>';
-      if (locked) statusTag += '<span style="background:#ef4444;color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:4px">LOCKED</span>';
-      if (hasOverride) statusTag += '<span style="background:#8b5cf6;color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:4px">MOVED</span>';
+      if (isFinal) statusTag = '<span style="background:var(--text-tertiary);color:var(--text-primary);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:6px">FINAL</span>';
+      else if (m.status === 'live') statusTag = '<span style="background:var(--mg-loss);color:var(--text-primary);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:6px;animation:pulse 1.5s infinite">LIVE</span>';
+      if (locked) statusTag += '<span style="background:var(--loss);color:var(--text-primary);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:4px">LOCKED</span>';
+      if (hasOverride) statusTag += '<span style="background:#8b5cf6;color:var(--text-primary);padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;margin-left:4px">MOVED</span>';
 
-      html += `<div style="margin:0 10px 8px;padding:10px 12px;border:1px solid ${locked ? '#ef4444' : 'var(--mg-border)'};border-radius:10px;background:${isFinal ? 'rgba(100,100,100,0.1)' : locked ? 'rgba(239,68,68,0.05)' : 'var(--mg-card-bg)'}">
+      html += `<div style="margin:0 10px 8px;padding:10px 12px;border:1px solid ${locked ? 'var(--loss)' : 'var(--mg-border)'};border-radius:10px;background:${isFinal ? 'var(--border)' : locked ? 'rgba(248,81,73,0.05)' : 'var(--mg-card-bg)'}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div style="font-size:11px;color:var(--mg-text-muted)">P${m.pairing}${statusTag}</div>
           <div style="display:flex;gap:4px">
-            ${!isFinal ? `<button onclick="window.MG.lockMatch('${m.id}')" style="background:${locked ? '#ef4444' : 'transparent'};color:${locked ? '#fff' : 'var(--mg-text-muted)'};border:1px solid ${locked ? '#ef4444' : 'var(--mg-border)'};border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">${locked ? 'Unlock' : 'Lock'}</button>` : ''}
+            ${!isFinal ? `<button onclick="window.MG.lockMatch('${m.id}')" style="background:${locked ? 'var(--loss)' : 'transparent'};color:${locked ? 'var(--text-primary)' : 'var(--mg-text-muted)'};border:1px solid ${locked ? 'var(--loss)' : 'var(--mg-border)'};border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">${locked ? 'Unlock' : 'Lock'}</button>` : ''}
             ${hasOverride && !isFinal ? `<button onclick="window.MG.resetLine('${m.id}')" style="background:transparent;color:#8b5cf6;border:1px solid #8b5cf6;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer">Reset</button>` : ''}
           </div>
         </div>
@@ -2332,7 +3234,7 @@ function renderLineBoard(state, round, allBets) {
         ${totalMatchHandle > 0 ? `<div style="margin-top:6px">
           <div style="display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--mg-border)">
             <div style="width:${pctA}%;background:var(--mg-green);transition:width 0.3s"></div>
-            <div style="width:${100 - pctA - pctB}%;background:#f59e0b"></div>
+            <div style="width:${100 - pctA - pctB}%;background:var(--gold-bright)"></div>
             <div style="width:${pctB}%;background:#3b82f6;transition:width 0.3s"></div>
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:2px">
@@ -2404,8 +3306,8 @@ function renderScrambleScoreEntry(state) {
     html += `<button onclick="window.MG.setScorecardHole(${h})"
       style="width:36px;height:36px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
       border:2px solid ${isActive ? 'var(--mg-green)' : hasScore ? 'var(--mg-gold-dim)' : 'var(--mg-border)'};
-      background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(180,140,60,0.15)' : 'var(--mg-surface)'};
-      color:${isActive ? '#fff' : 'var(--mg-text)'}">${h}</button>`;
+      background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};
+      color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'}">${h}</button>`;
   }
   html += `</div></div>`;
 
@@ -2527,8 +3429,8 @@ function renderAdminScorecard(state) {
     html += `<button onclick="window.MG.setScorecardHole(${h})"
       style="width:36px;height:36px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
       border:2px solid ${isActive ? 'var(--mg-green)' : hasScore ? 'var(--mg-gold-dim)' : 'var(--mg-border)'};
-      background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(180,140,60,0.15)' : 'var(--mg-surface)'};
-      color:${isActive ? '#fff' : 'var(--mg-text)'}">${h}</button>`;
+      background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};
+      color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'}">${h}</button>`;
   }
   html += `</div></div>`;
 
@@ -2536,7 +3438,7 @@ function renderAdminScorecard(state) {
   if (games.vegas) {
     html += `<div class="mg-card" style="padding:12px">
       <div class="mg-card-header" style="margin-bottom:8px">VEGAS TEAMS
-        ${vegasAssigned ? `<span style="font-size:11px;color:var(--mg-green);font-weight:400;margin-left:8px">✓ Assigned</span>` : `<span style="font-size:11px;color:#e67e22;font-weight:400;margin-left:8px">Not set — assign before Round 1</span>`}
+        ${vegasAssigned ? `<span style="font-size:11px;color:var(--mg-green);font-weight:400;margin-left:8px">✓ Assigned</span>` : `<span style="font-size:11px;color:var(--gold-bright);font-weight:400;margin-left:8px">Not set — assign before Round 1</span>`}
       </div>`;
     if (players.length >= 2) {
       const tA = vegasTeamA.length > 0 ? vegasTeamA : playerNames.slice(0, Math.ceil(playerNames.length / 2));
@@ -2544,14 +3446,14 @@ function renderAdminScorecard(state) {
       html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--mg-gold);margin-bottom:6px;text-transform:uppercase">Team A</div>
-          ${tA.map(n => `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(180,140,60,0.12);border-radius:6px;margin-bottom:4px;font-size:12px;font-weight:500">
+          ${tA.map(n => `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(212,160,23,0.12);border-radius:6px;margin-bottom:4px;font-size:12px;font-weight:500">
             <span>${escHtml(n)}</span>
             <button onclick="window.MG.vegasMovePlayer('${escHtml(n)}','B')" style="border:none;background:none;color:var(--mg-text-muted);cursor:pointer;font-size:11px;padding:0 2px" title="Move to Team B">→</button>
           </div>`).join('')}
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--mg-green);margin-bottom:6px;text-transform:uppercase">Team B</div>
-          ${tB.map(n => `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(34,139,34,0.1);border-radius:6px;margin-bottom:4px;font-size:12px;font-weight:500">
+          ${tB.map(n => `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(63,185,80,0.1);border-radius:6px;margin-bottom:4px;font-size:12px;font-weight:500">
             <button onclick="window.MG.vegasMovePlayer('${escHtml(n)}','A')" style="border:none;background:none;color:var(--mg-text-muted);cursor:pointer;font-size:11px;padding:0 2px" title="Move to Team A">←</button>
             <span>${escHtml(n)}</span>
           </div>`).join('')}
@@ -2577,7 +3479,7 @@ function renderAdminScorecard(state) {
         const isExpected = name === expectedWolf;
         html += `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:${isExpected?700:400};
           background:${isExpected?'var(--mg-gold)':'var(--mg-surface)'};
-          color:${isExpected?'#000':'var(--mg-text-muted)'};
+          color:${isExpected?'var(--bg-primary)':'var(--mg-text-muted)'};
           border:1px solid ${isExpected?'var(--mg-gold)':'var(--mg-border)'}">${escHtml(name.split(' ').pop())}${isExpected?' ★':''}</span>`;
       });
       html += `</div>`;
@@ -2585,10 +3487,10 @@ function renderAdminScorecard(state) {
 
     if (wolfPick) {
       // Already picked — show result with edit option
-      html += `<div style="background:rgba(180,140,60,0.1);border:1px solid var(--mg-gold-dim);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      html += `<div style="background:rgba(212,160,23,0.1);border:1px solid var(--mg-gold-dim);border-radius:8px;padding:10px 12px;margin-bottom:8px">
         <div style="font-size:13px">Wolf: <strong style="color:var(--mg-gold)">${escHtml(wolfPick.wolf)}</strong>`;
       if (wolfPick.partner) html += ` &nbsp;+&nbsp; Partner: <strong style="color:var(--mg-green)">${escHtml(wolfPick.partner)}</strong>`;
-      else html += ` &nbsp;<span style="color:#e67e22;font-size:12px">(Lone wolf)</span>`;
+      else html += ` &nbsp;<span style="color:var(--gold-bright);font-size:12px">(Lone wolf)</span>`;
       html += `</div></div>
       <button class="mg-btn mg-btn-outline" style="width:auto;padding:6px 12px;font-size:12px" onclick="window.MG._wolfEditMode=true;window.MG.refresh()">Edit Pick</button>`;
     } else {
@@ -2606,8 +3508,8 @@ function renderAdminScorecard(state) {
         const isSelected = `window.MG._wolfSelWolf==='${escHtml(p.name)}'`;
         html += `<button
           id="wbtn-${escHtml(p.name.replace(/\s+/g,'_'))}"
-          onclick="window.MG._wolfSelWolf='${escHtml(p.name)}';document.querySelectorAll('[id^=wbtn-]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor=''});this.style.background='var(--mg-gold)';this.style.color='#000';this.style.borderColor='var(--mg-gold)'"
-          style="padding:7px 12px;border:2px solid ${isExpected?'var(--mg-gold)':'var(--mg-border)'};border-radius:8px;background:${isExpected?'rgba(180,140,60,0.15)':'var(--mg-surface)'};color:var(--mg-text);cursor:pointer;font-size:13px;font-weight:${isExpected?700:400}">
+          onclick="window.MG._wolfSelWolf='${escHtml(p.name)}';document.querySelectorAll('[id^=wbtn-]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor=''});this.style.background='var(--mg-gold)';this.style.color='var(--bg-primary)';this.style.borderColor='var(--mg-gold)'"
+          style="padding:7px 12px;border:2px solid ${isExpected?'var(--mg-gold)':'var(--mg-border)'};border-radius:8px;background:${isExpected?'rgba(212,160,23,0.15)':'var(--mg-surface)'};color:var(--mg-text);cursor:pointer;font-size:13px;font-weight:${isExpected?700:400}">
           ${escHtml(p.name.split(' ').pop())}${isExpected?' ★':''}
         </button>`;
       });
@@ -2617,9 +3519,9 @@ function renderAdminScorecard(state) {
       html += `<div style="margin-bottom:10px">
         <div style="font-size:11px;font-weight:600;color:var(--mg-text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Partner <span style="font-weight:400">(skip = lone wolf)</span></div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          <button onclick="window.MG._wolfSelPartner=null;document.querySelectorAll('[id^=pbtn-]').forEach(b=>{b.style.background='';b.style.borderColor=''});this.style.background='rgba(230,119,34,0.2)';this.style.borderColor='#e67e22'"
+          <button onclick="window.MG._wolfSelPartner=null;document.querySelectorAll('[id^=pbtn-]').forEach(b=>{b.style.background='';b.style.borderColor=''});this.style.background='rgba(240,192,64,0.2)';this.style.borderColor='var(--gold-bright)'"
             id="pbtn-none"
-            style="padding:7px 12px;border:2px solid #e67e22;border-radius:8px;background:rgba(230,119,34,0.2);color:var(--mg-text);cursor:pointer;font-size:13px">
+            style="padding:7px 12px;border:2px solid var(--gold-bright);border-radius:8px;background:rgba(240,192,64,0.2);color:var(--mg-text);cursor:pointer;font-size:13px">
             Lone wolf
           </button>`;
       players.forEach(p => {
@@ -2656,8 +3558,8 @@ function renderAdminScorecard(state) {
       html += `<div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1;font-size:14px;font-weight:${isWolf?700:500}">
           ${escHtml(p.name)}
-          ${isWolf ? `<span style="font-size:10px;background:var(--mg-gold);color:#000;border-radius:4px;padding:1px 5px;margin-left:4px">WOLF</span>` : ''}
-          ${isPartner ? `<span style="font-size:10px;background:var(--mg-green);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">PARTNER</span>` : ''}
+          ${isWolf ? `<span style="font-size:10px;background:var(--mg-gold);color:var(--bg-primary);border-radius:4px;padding:1px 5px;margin-left:4px">WOLF</span>` : ''}
+          ${isPartner ? `<span style="font-size:10px;background:var(--mg-green);color:var(--text-primary);border-radius:4px;padding:1px 5px;margin-left:4px">PARTNER</span>` : ''}
         </div>
         <div style="font-size:11px;color:var(--mg-text-muted)">+${p.handicapIndex ?? 0}</div>
         <input type="number" min="1" max="15" inputmode="numeric" value="${curVal}"
@@ -2696,9 +3598,9 @@ export function renderScorecard(state) {
     const ageMs = Date.now() - state._lastSyncAt;
     const ageMins = Math.floor(ageMs / 60000);
     if (ageMins >= 5) {
-      staleHtml = `<div style="background:#1a1a1a;border:1px solid #fbbf24;border-radius:8px;padding:8px 12px;font-size:12px;color:#fbbf24;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+      staleHtml = `<div style="background:var(--bg-secondary);border:1px solid var(--gold-bright);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--gold-bright);margin-bottom:8px;display:flex;align-items:center;gap:6px">
         <span>⚠</span><span>Last updated ${ageMins} min ago — tap to refresh</span>
-        <button onclick="window.MG.refresh()" style="margin-left:auto;background:#fbbf24;color:#000;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer">Refresh</button>
+        <button onclick="window.MG.refresh()" style="margin-left:auto;background:var(--gold-bright);color:var(--bg-primary);border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer">Refresh</button>
       </div>`;
     }
   }
@@ -2708,7 +3610,7 @@ export function renderScorecard(state) {
   if (Object.keys(holes).length === 0) {
     html += `<div class="mg-card" style="text-align:center;padding:32px 20px">
       <div style="font-size:36px;margin-bottom:12px">&#9971;</div>
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Round Not Started</div>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Round Not Started</div>
       <p class="text-sm text-muted">Scores will appear here once the admin enters hole results</p>
     </div>`;
     return html;
@@ -2795,7 +3697,7 @@ export function renderScorecard(state) {
 
     sorted.forEach((row, i) => {
       html += `<div style="display:grid;grid-template-columns:1fr ${Array.from({length:totalRounds},()=>'auto').join(' ')} auto;gap:6px;padding:5px 0;border-bottom:1px solid var(--mg-border);align-items:center">
-        <span style="font-size:13px;font-weight:${i===0?'700':'400'}">${escHtml(row.name)}${i===0?' <span style="font-size:9px;font-weight:800;letter-spacing:1px;color:var(--mg-gold);background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);padding:1px 5px;border-radius:3px;margin-left:5px">1ST</span>':''}</span>
+        <span style="font-size:13px;font-weight:${i===0?'700':'400'}">${escHtml(row.name)}${i===0?' <span style="font-size:9px;font-weight:800;letter-spacing:1px;color:var(--mg-gold);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:1px 5px;border-radius:3px;margin-left:5px">1ST</span>':''}</span>
         ${row.rounds.map(r => `<span style="font-size:12px;text-align:center">${r || '—'}</span>`).join('')}
         <span style="font-size:14px;font-weight:700;text-align:center;color:${i===0?'var(--mg-green)':'inherit'}">${row.total || '—'}</span>
       </div>`;
@@ -2826,9 +3728,10 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
   // Skins
   if (games.skins && gameState.skins) {
     const s = gameState.skins;
+    const sHolesDetail = getSkinsHoles(gameState, holes, players);
     const pot = s.pot || 1;
-    const won = Object.values(s.holes || {}).filter(h => h.winner).length;
-    const carried = Object.values(s.holes || {}).filter(h => h.carried).length;
+    const won = Object.values(sHolesDetail).filter(h => h.winner).length;
+    const carried = Object.values(sHolesDetail).filter(h => h.carried).length;
     html += `<div class="mg-card" style="padding:12px">
       <div class="mg-card-header" style="margin-bottom:8px">SKINS <span style="font-weight:400;color:var(--mg-text-muted)">${holesPlayed} holes</span></div>
       <div style="display:flex;gap:16px;margin-bottom:8px">
@@ -2836,7 +3739,7 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
         <div><div style="font-size:11px;color:var(--mg-text-muted)">Won</div><div style="font-size:20px;font-weight:700;color:var(--mg-green)">${won}</div></div>
         <div><div style="font-size:11px;color:var(--mg-text-muted)">Carried</div><div style="font-size:20px;font-weight:700">${carried}</div></div>
       </div>`;
-    const holeEntries = Object.entries(s.holes || {});
+    const holeEntries = Object.entries(sHolesDetail);
     if (holeEntries.length > 0) {
       html += `<div style="display:flex;flex-direction:column;gap:4px">`;
       holeEntries.forEach(([h, data]) => {
@@ -2879,15 +3782,15 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
       const hasPress = activePresses.some(p => p.player === name);
 
       html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${isAdmin?' 1fr':''};gap:4px;font-size:13px;padding:6px 4px;border-top:1px solid var(--mg-border);align-items:center">
-        <span style="font-weight:500">${escHtml(name.split(' ').pop())}${hasPress?` <span style="font-size:9px;background:#e67e22;color:#fff;border-radius:3px;padding:1px 4px">PRESS</span>`:''}
+        <span style="font-weight:500">${escHtml(name.split(' ').pop())}${hasPress?` <span style="font-size:9px;background:var(--gold-bright);color:var(--text-primary);border-radius:3px;padding:1px 4px">PRESS</span>`:''}
         </span>
-        <span style="text-align:center;color:${(s.front||0)<0?'var(--mg-green)':(s.front||0)>0?'#e74c3c':'var(--mg-text)'}">${s.front||0}</span>
-        <span style="text-align:center;color:${(s.back||0)<0?'var(--mg-green)':(s.back||0)>0?'#e74c3c':'var(--mg-text)'}">${s.back||0}</span>
-        <span style="text-align:center;font-weight:700;color:${(s.total||0)<0?'var(--mg-green)':(s.total||0)>0?'#e74c3c':'var(--mg-text)'}">${s.total||0}</span>
+        <span style="text-align:center;color:${(s.front||0)<0?'var(--mg-green)':(s.front||0)>0?'var(--loss)':'var(--mg-text)'}">${s.front||0}</span>
+        <span style="text-align:center;color:${(s.back||0)<0?'var(--mg-green)':(s.back||0)>0?'var(--loss)':'var(--mg-text)'}">${s.back||0}</span>
+        <span style="text-align:center;font-weight:700;color:${(s.total||0)<0?'var(--mg-green)':(s.total||0)>0?'var(--loss)':'var(--mg-text)'}">${s.total||0}</span>
         ${isAdmin ? `<span style="text-align:right">
-          ${canPressFront ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','front',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid #e67e22;border-radius:4px;background:rgba(230,119,34,0.1);color:#e67e22;cursor:pointer;white-space:nowrap">Press F</button>` : ''}
-          ${canPressBack  ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','back',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid #e67e22;border-radius:4px;background:rgba(230,119,34,0.1);color:#e67e22;cursor:pointer;white-space:nowrap">Press B</button>` : ''}
-          ${!canPressFront && !canPressBack && canPressTotal ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','full',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid #e67e22;border-radius:4px;background:rgba(230,119,34,0.1);color:#e67e22;cursor:pointer;white-space:nowrap">Press</button>` : ''}
+          ${canPressFront ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','front',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press F</button>` : ''}
+          ${canPressBack  ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','back',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press B</button>` : ''}
+          ${!canPressFront && !canPressBack && canPressTotal ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','full',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press</button>` : ''}
         </span>` : ''}
       </div>`;
     });
@@ -2918,7 +3821,7 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
     entries.forEach((e, i) => {
       html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:${i>0?'1px solid var(--mg-border)':'none'};font-size:13px">
         <span><span style="color:var(--mg-text-muted);margin-right:6px">${i+1}</span>${escHtml(e.name.split(' ').pop())}</span>
-        <span style="font-weight:700;color:${e.net<0?'var(--mg-green)':e.net>0?'#e74c3c':'var(--mg-text)'}">${e.net===0?'E':e.net>0?'+'+e.net:e.net}</span>
+        <span style="font-weight:700;color:${e.net<0?'var(--mg-green)':e.net>0?'var(--loss)':'var(--mg-text)'}">${e.net===0?'E':e.net>0?'+'+e.net:e.net}</span>
       </div>`;
     });
     html += `</div>`;
@@ -3002,7 +3905,7 @@ function renderAdminSettings(state) {
     <div class="mg-card-header">Co-Organizers</div>
     <p style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Invite someone to help manage this event</p>
     <div style="display:flex;gap:8px">
-      <input type="email" id="co-admin-email" placeholder="Email address" style="flex:1;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:14px">
+      <input type="email" id="co-admin-email" placeholder="Email address" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px">
       <button class="mg-btn mg-btn-gold" style="width:auto;padding:10px 16px;font-size:13px" onclick="window.MG.inviteCoAdmin()">Invite</button>
     </div>
     ${coAdminEmails.length > 0 ? `
@@ -3030,7 +3933,7 @@ function renderAdminSettings(state) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
   allGameOptions.forEach(g => {
     const active = !!games[g.id];
-    html += `<button onclick="window.MG.toggleGame('${g.id}')" style="padding:12px;border-radius:8px;border:2px solid ${active ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${active ? 'rgba(212,175,55,.08)' : 'var(--mg-surface)'};cursor:pointer;text-align:left">
+    html += `<button onclick="window.MG.toggleGame('${g.id}')" style="padding:12px;border-radius:8px;border:2px solid ${active ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${active ? 'rgba(212,160,23,0.08)' : 'var(--mg-surface)'};cursor:pointer;text-align:left">
       <div style="font-size:13px;font-weight:700;color:${active ? 'var(--mg-gold-dim)' : 'var(--mg-text)'}">${g.name}</div>
       <div style="font-size:11px;color:var(--mg-text-muted);margin-top:2px">${g.desc}</div>
     </button>`;
@@ -3044,11 +3947,11 @@ function renderAdminSettings(state) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div>
         <label style="font-size:11px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:.5px">Nassau</label>
-        <input type="number" id="stakes-nassau" value="${structure.nassauBet || 10}" style="width:100%;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
+        <input type="number" id="stakes-nassau" value="${structure.nassauBet || 10}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:.5px">Skins</label>
-        <input type="number" id="stakes-skins" value="${structure.skinsBet || 5}" style="width:100%;padding:10px;border:1.5px solid var(--mg-border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
+        <input type="number" id="stakes-skins" value="${structure.skinsBet || 5}" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;margin-top:4px" onchange="window.MG.updateStakes()">
       </div>
     </div>
   </div>`;
@@ -3085,7 +3988,7 @@ function renderCashBetting(state) {
   if (!myName) {
     return `<div style="padding:40px 20px;text-align:center">
       <div style="font-size:40px;margin-bottom:12px">&#9971;</div>
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Pick Your Name First</div>
+      <div style="font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Pick Your Name First</div>
       <p class="text-sm text-muted" style="margin-bottom:16px">So your bets are tracked to you</p>
       <a href="#dashboard" class="mg-btn mg-btn-primary" style="width:auto;padding:12px 32px;font-size:15px;text-decoration:none;display:inline-block">Go to Home</a>
     </div>`;
@@ -3140,9 +4043,10 @@ function renderCashBetting(state) {
     html += `<div class="mg-section-title" style="margin-top:16px">Live Odds <span style="font-size:11px;font-weight:400;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed!==1?'s':''} played</span></div>`;
 
     // Skins live odds
-    if (games.skins && gameState?.skins?.holes) {
+    if (games.skins) {
+      const skinsHolesLive = getSkinsHoles(gameState, holes, getPlayersFromConfig(state._config));
       const skinsWon = {};
-      Object.values(gameState.skins.holes).forEach(h => {
+      Object.values(skinsHolesLive).forEach(h => {
         if (h.winner) skinsWon[h.winner] = (skinsWon[h.winner] || 0) + (h.potWon || 1);
       });
       const potSize = gameState.skins?.pot || 1;
@@ -3273,18 +4177,18 @@ function renderCashBetting(state) {
     const amt = parseInt(m.amount) || 0;
     html += `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:flex-end" onclick="if(event.target===this)window.MG.closeCashBetModal()">
       <div style="background:var(--mg-surface);border-radius:16px 16px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;margin:0 auto;box-sizing:border-box">
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--mg-green);margin-bottom:16px">Make a Bet</div>
+        <div style="font-size:20px;font-weight:700;color:var(--mg-green);margin-bottom:16px">Make a Bet</div>
         <label class="text-xs text-muted" style="display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">What's the bet?</label>
         <input type="text" id="cash-bet-desc" value="${escHtml(m.desc)}" placeholder="e.g. Dave wins Front Nine" oninput="window.MG.setCashBetDesc(this.value)"
-          style="width:100%;padding:12px;border:2px solid var(--mg-border);border-radius:8px;font-size:16px;margin-bottom:14px;background:var(--mg-surface-2,var(--mg-surface));color:var(--mg-text);box-sizing:border-box">
+          style="width:100%;padding:12px;border:2px solid var(--mg-border);border-radius:8px;font-size:16px;margin-bottom:14px;background:var(--bg-tertiary);color:var(--mg-text);box-sizing:border-box">
         <label class="text-xs text-muted" style="display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Amount</label>
         <div style="display:flex;gap:8px;margin-bottom:10px">
-          ${[5,10,20,50].map(n => `<button onclick="window.MG.setCashBetAmount(${n})" style="flex:1;padding:8px 0;border:2px solid ${amt===n?'var(--mg-green)':'var(--mg-border)'};border-radius:8px;background:${amt===n?'rgba(27,67,50,0.4)':'transparent'};color:var(--mg-text);font-size:14px;font-weight:700;cursor:pointer">$${n}</button>`).join('')}
+          ${[5,10,20,50].map(n => `<button onclick="window.MG.setCashBetAmount(${n})" style="flex:1;padding:8px 0;border:2px solid ${amt===n?'var(--mg-green)':'var(--mg-border)'};border-radius:8px;background:${amt===n?'rgba(35,134,54,0.4)':'transparent'};color:var(--mg-text);font-size:14px;font-weight:700;cursor:pointer">$${n}</button>`).join('')}
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
           <span style="font-size:20px;font-weight:700;color:var(--mg-text)">$</span>
           <input type="number" id="cash-bet-amount" value="${m.amount||''}" placeholder="0" oninput="window.MG.setCashBetAmount(parseInt(this.value)||0)"
-            inputmode="numeric" style="flex:1;padding:10px;border:2px solid var(--mg-border);border-radius:8px;font-size:20px;font-weight:700;text-align:center;background:var(--mg-surface-2,var(--mg-surface));color:var(--mg-text)">
+            inputmode="numeric" style="flex:1;padding:10px;border:2px solid var(--mg-border);border-radius:8px;font-size:20px;font-weight:700;text-align:center;background:var(--bg-tertiary);color:var(--mg-text)">
         </div>
         <div style="display:flex;gap:10px">
           <button class="mg-btn mg-btn-outline" style="flex:1" onclick="window.MG.closeCashBetModal()">Cancel</button>
@@ -3309,7 +4213,7 @@ export function renderBetting(state) {
   if (!state.bettorName) {
     html += `<div style="padding:40px 20px;text-align:center">
       <div style="font-size:40px;margin-bottom:12px">&#9971;</div>
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Select Your Name First</div>
+      <div style="font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Select Your Name First</div>
       <p class="text-sm text-muted mb-4">Go to the home page to pick your name</p>
       <a href="#dashboard" class="mg-btn mg-btn-primary" style="width:auto;padding:12px 32px;font-size:15px;text-decoration:none;display:inline-block">Go to Home</a>
     </div>`;
@@ -3452,12 +4356,13 @@ function renderFutureBets(state) {
     html += `<div class="mg-section-title">Live Game Bets <span style="font-size:11px;font-weight:400;color:var(--mg-text-muted)">${holesPlayed} holes played</span></div>`;
 
     // Skins: bet on who wins the most skins
-    if (games.skins && gameState.skins?.holes) {
+    if (games.skins) {
+      const skinsHolesBets = getSkinsHoles(gameState, holes, getPlayersFromConfig(state._config));
       const skinsWon = {};
-      Object.values(gameState.skins.holes).forEach(h => {
+      Object.values(skinsHolesBets).forEach(h => {
         if (h.winner) skinsWon[h.winner] = (skinsWon[h.winner] || 0) + (h.potWon || 1);
       });
-      const potSize = gameState.skins.pot || 1;
+      const potSize = gameState.skins?.pot || 1;
       const standings = Object.entries(skinsWon)
         .map(([name, n]) => ({ name, score: -n })) // negative so lower = better for sorting
         .sort((a, b) => a.score - b.score);
@@ -3596,7 +4501,7 @@ function renderFutureBets(state) {
   if (!html) {
     html = `<div class="mg-card" style="text-align:center;padding:32px 20px">
       <div style="font-size:36px;margin-bottom:12px">&#9971;</div>
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">No Live Markets Yet</div>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">No Live Markets Yet</div>
       <p class="text-sm text-muted">Markets open once hole scores are entered</p>
     </div>`;
   }
@@ -3627,7 +4532,7 @@ function renderPropBets(state) {
     html += `<div class="mg-card" style="padding:0;overflow:hidden;cursor:pointer" onclick="window.MG.togglePropFlight('${fId}')">
       <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--mg-green)">${flight.name}</div>
+          <div style="font-size:15px;font-weight:600;color:var(--mg-green)">${flight.name}</div>
           <div class="text-xs text-muted">${matchCount} match${matchCount !== 1 ? 'es' : ''} open &bull; ${flight.tees} Tees</div>
         </div>
         <div style="font-size:18px;color:var(--mg-text-muted);transition:transform 0.2s;transform:rotate(${isOpen ? '180' : '0'}deg)">&#9660;</div>
@@ -3765,7 +4670,7 @@ function renderCashMyBets(state) {
   const net = totalWon - totalLost;
 
   let html = `<div class="mg-card">
-    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:10px">${escHtml(myName)}</div>
+    <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:10px">${escHtml(myName)}</div>
     <div style="display:flex;gap:0;border:1px solid var(--mg-border);border-radius:8px;overflow:hidden">
       <div style="flex:1;text-align:center;padding:10px 6px;border-right:1px solid var(--mg-border)">
         <div class="text-xs text-muted">Active</div>
@@ -3862,7 +4767,7 @@ export function renderMyBets(state) {
   // Player card
   html += `<div class="mg-card">
     <div style="margin-bottom:8px">
-      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--mg-green)">${escHtml(state.bettorName)}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-green)">${escHtml(state.bettorName)}</div>
     </div>
     <div style="display:flex;gap:12px">
       <div style="flex:1;text-align:center">
@@ -3884,7 +4789,7 @@ export function renderMyBets(state) {
   if (pendingBets.length > 0) {
     html += `<div class="mg-section-title">Pending (${pendingBets.length})</div>`;
     pendingBets.forEach(b => {
-      html += `<div class="mg-bet-card" style="border-left:3px solid #f59e0b">
+      html += `<div class="mg-bet-card" style="border-left:3px solid var(--gold-bright)">
         <div class="mg-bet-type">PENDING — will submit when online</div>
         <div class="mg-bet-desc">${escHtml(b.description || '')}</div>
         <div class="text-xs text-muted">$${(b.stake || 0).toLocaleString()}</div>
@@ -3944,7 +4849,7 @@ export function renderMyBets(state) {
           </div>
           <div class="mg-bet-result ${cls}" style="font-size:15px;font-weight:800">${label}</div>
         </div>
-        ${b.status === 'won' ? `<button class="mg-share-btn" data-desc="${encodeURIComponent(b.description || '')}" data-ml="${encodeURIComponent(americanDisplay)}" data-stake="${b.stake}" data-towin="${(b.payout || b.stake) - b.stake}" data-status="won" style="margin-top:8px;width:100%;padding:8px;border:1px solid var(--mg-win);border-radius:8px;background:rgba(0,200,83,0.1);color:var(--mg-win);font-size:12px;font-weight:700;cursor:pointer">Brag About This Win</button>` : ''}
+        ${b.status === 'won' ? `<button class="mg-share-btn" data-desc="${encodeURIComponent(b.description || '')}" data-ml="${encodeURIComponent(americanDisplay)}" data-stake="${b.stake}" data-towin="${(b.payout || b.stake) - b.stake}" data-status="won" style="margin-top:8px;width:100%;padding:8px;border:1px solid var(--mg-win);border-radius:8px;background:rgba(63,185,80,0.1);color:var(--mg-win);font-size:12px;font-weight:700;cursor:pointer">Brag About This Win</button>` : ''}
       </div>`;
     });
   }
@@ -3965,49 +4870,216 @@ function formatBetTime(b) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// ===== CALCUTTA =====
+// ===== CALCUTTA AUCTION =====
 export function renderCalcutta(state) {
-  if (!state.calcutta) state.calcutta = {};
+  const calcutta = state._calcutta || { status: 'pending', currentTeam: null, teams: {}, pool: 0, payoutSplit: [50, 25, 15, 10], teamOrder: [] };
+  const isAdmin = state.adminAuthed;
+  const teams = calcutta.teams || {};
+  const teamOrder = calcutta.teamOrder || Object.keys(teams);
+  const soldCount = Object.values(teams).filter(t => t.sold).length;
+  const totalTeams = teamOrder.length;
 
-  let totalPool = 0;
-  Object.values(state.calcutta).forEach(c => totalPool += (c.price || 0));
+  let html = '';
 
-  let html = `<div class="mg-section-title">Calcutta Auction</div>
-    <div class="mg-card">
-      <div class="flex-between">
-        <div>
-          <div class="text-xs text-muted">Total Pool</div>
-          <div style="font-size:24px;font-weight:700;color:var(--mg-gold-dim)">$${totalPool.toLocaleString()}</div>
+  // Header
+  html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:var(--text-primary);padding:20px;text-align:center;border:none">
+    <div style="font-size:22px;font-weight:700">Calcutta Auction</div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:12px">
+      <div><div style="font-size:24px;font-weight:800;color:var(--gold-bright)">$${calcutta.pool.toLocaleString()}</div><div style="font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:1px">Auction Pool</div></div>
+      <div><div style="font-size:24px;font-weight:800;color:var(--text-primary)">${soldCount}/${totalTeams}</div><div style="font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:1px">Teams Sold</div></div>
+    </div>
+  </div>`;
+
+  // ── PENDING STATE ──
+  if (calcutta.status === 'pending') {
+    html += `<div class="mg-card" style="text-align:center;padding:40px 20px">
+      <div style="font-size:48px;margin-bottom:12px">&#9939;</div>
+      <div style="font-size:16px;font-weight:600;color:var(--mg-text)">Auction has not started</div>
+      <div style="font-size:13px;color:var(--mg-text-muted);margin-top:4px">${totalTeams > 0 ? totalTeams + ' teams available' : 'Teams will be loaded from event config'}</div>
+      ${isAdmin ? `<button class="mg-btn mg-btn-gold" style="margin-top:20px;padding:14px 28px;font-size:15px;min-height:48px" onclick="window.MG.calcuttaStart()">Start Auction</button>` : ''}
+    </div>`;
+    return html;
+  }
+
+  // ── ACTIVE STATE ──
+  if (calcutta.status === 'active' && calcutta.currentTeam) {
+    const teamName = calcutta.currentTeam;
+    const teamData = teams[teamName] || { bids: [], sold: false };
+    const highBid = teamData.bids.length > 0 ? teamData.bids[teamData.bids.length - 1] : null;
+    const teamIdx = teamOrder.indexOf(teamName);
+
+    // Progress indicator
+    html += `<div style="padding:8px 16px;font-size:11px;color:var(--mg-text-muted);text-align:center">
+      Team ${teamIdx + 1} of ${totalTeams}
+    </div>`;
+
+    // Current bidding card
+    html += `<div class="mg-card" style="border:2px solid var(--mg-gold);padding:0;overflow:hidden">
+      <div style="background:var(--mg-green);padding:16px;text-align:center">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px">NOW BIDDING</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${escHtml(teamName)}</div>
+      </div>
+      <div style="padding:20px;text-align:center">`;
+
+    if (highBid) {
+      html += `<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:4px">CURRENT BID</div>
+        <div style="font-size:36px;font-weight:900;color:var(--mg-gold);font-family:'SF Mono',monospace">$${highBid.amount.toLocaleString()}</div>
+        <div style="font-size:13px;color:var(--mg-text-secondary);margin-top:4px">${escHtml(highBid.bidder)}</div>`;
+    } else {
+      html += `<div style="font-size:36px;font-weight:900;color:var(--mg-text-muted);font-family:'SF Mono',monospace">$0</div>
+        <div style="font-size:13px;color:var(--mg-text-muted);margin-top:4px">No bids yet</div>`;
+    }
+
+    html += `</div>`;
+
+    // Quick bid buttons (large touch targets for tablet)
+    const currentAmt = highBid ? highBid.amount : 0;
+    const increments = [25, 50, 100];
+    html += `<div style="padding:0 20px 12px;display:flex;gap:8px;justify-content:center">`;
+    increments.forEach(inc => {
+      const newBid = currentAmt + inc;
+      html += `<button class="mg-btn" style="flex:1;padding:14px 8px;font-size:15px;font-weight:700;min-height:48px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:8px;cursor:pointer"
+        onclick="window.MG.calcuttaQuickBid(${newBid})">+$${inc}</button>`;
+    });
+    html += `</div>`;
+
+    // Custom bid input
+    html += `<div style="padding:0 20px 16px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="calcutta-bidder" placeholder="Your Name"
+          style="flex:1;padding:12px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:48px;background:var(--mg-surface);color:var(--mg-text)"
+          value="${escHtml(state._calcuttaBidder || state.bettorName || '')}">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <div style="position:relative;flex:1">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mg-text-muted);font-size:14px;font-weight:600">$</span>
+          <input type="number" id="calcutta-amount" placeholder="Custom amount" min="${currentAmt + 1}"
+            style="width:100%;padding:12px 12px 12px 24px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:48px;background:var(--mg-surface);color:var(--mg-text)">
         </div>
-        <div style="text-align:right">
-          <div class="text-xs text-muted">Teams Sold</div>
-          <div style="font-size:24px;font-weight:700;color:var(--mg-green)">${Object.keys(state.calcutta).length}/48</div>
-        </div>
+        <button class="mg-btn mg-btn-gold" style="padding:12px 20px;font-size:14px;font-weight:700;min-height:48px;white-space:nowrap" onclick="window.MG.calcuttaPlaceBid()">Place Bid</button>
       </div>
     </div>`;
 
-  flightOrder().forEach(fId => {
-    const flight = F(fId);
-    html += `<div class="mg-card">
-      <div class="mg-card-header">${flight.name}</div>`;
-
-    flight.teamIds.forEach(tid => {
-      const t = T(tid);
-      const c = state.calcutta[tid] || {};
-      html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--mg-border)">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${TN(t)}</div>
-          ${c.buyer ? `<div class="text-xs text-muted">${escHtml(c.buyer)} — $${c.price}</div>` : '<div class="text-xs text-muted">Unsold</div>'}
-        </div>
-        <button class="mg-btn mg-btn-outline" style="width:auto;padding:4px 10px;font-size:11px" onclick="window.MG.editCalcutta(${tid})">
-          ${c.buyer ? 'Edit' : 'Sell'}
-        </button>
+    // Admin controls
+    if (isAdmin) {
+      html += `<div style="padding:12px 20px 20px;border-top:1px solid var(--mg-border);display:flex;gap:8px">
+        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:700;min-height:48px;background:var(--gold-primary);color:var(--bg-secondary);border:none;border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaSold()">Sold!</button>
+        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:600;min-height:48px;background:var(--mg-surface);color:var(--mg-text);border:1px solid var(--mg-border);border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaNext()">Next Team</button>
       </div>`;
-    });
+    }
+
+    // Bid history for current team
+    if (teamData.bids.length > 0) {
+      html += `<div style="padding:0 20px 16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">Bid History</div>`;
+      [...teamData.bids].reverse().forEach((bid, i) => {
+        html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--mg-border);${i === 0 ? 'font-weight:700;color:var(--mg-gold-dim)' : 'color:var(--mg-text-muted)'}">
+          <span style="font-size:13px">${escHtml(bid.bidder)}</span>
+          <span style="font-size:13px;font-family:'SF Mono',monospace">$${bid.amount.toLocaleString()}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
 
     html += `</div>`;
-  });
+  }
 
+  // ── COMPLETE STATE ──
+  if (calcutta.status === 'complete') {
+    html += `<div class="mg-card" style="text-align:center;padding:20px">
+      <div style="font-size:16px;font-weight:700;color:var(--mg-green)">Auction Complete</div>
+      <div style="font-size:13px;color:var(--mg-text-muted);margin-top:4px">All teams have been sold</div>
+    </div>`;
+  }
+
+  // ── ALL TEAMS LISTING (sold results + payout projection) ──
+  if (soldCount > 0 || calcutta.status === 'complete') {
+    const payoutSplit = calcutta.payoutSplit || [50, 25, 15, 10];
+    html += `<div class="mg-card" style="padding:16px">
+      <div class="mg-card-header" style="margin-bottom:12px">AUCTION RESULTS</div>`;
+
+    // Payout split info
+    if (calcutta.pool > 0) {
+      html += `<div style="display:flex;gap:8px;margin-bottom:16px;justify-content:center">`;
+      payoutSplit.forEach((pct, i) => {
+        const places = ['1st', '2nd', '3rd', '4th'];
+        const amt = Math.round(calcutta.pool * pct / 100);
+        html += `<div style="text-align:center;padding:8px 12px;background:${i === 0 ? 'rgba(212,160,23,0.15)' : 'var(--mg-odds-bg)'};border-radius:6px">
+          <div style="font-size:10px;font-weight:700;color:${i === 0 ? 'var(--mg-gold-dim)' : 'var(--mg-text-muted)'}">${places[i] || (i+1)+'th'}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--mg-text);font-family:'SF Mono',monospace">$${amt.toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--mg-text-muted)">${pct}%</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Teams list
+    teamOrder.forEach(name => {
+      const t = teams[name] || {};
+      if (t.sold) {
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--mg-border)">
+          <div>
+            <div style="font-size:14px;font-weight:600">${escHtml(name)}</div>
+            <div style="font-size:12px;color:var(--mg-text-muted)">Owned by ${escHtml(t.winner)}</div>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--mg-gold-dim);font-family:'SF Mono',monospace">$${t.amount.toLocaleString()}</div>
+        </div>`;
+      } else {
+        html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--mg-border)">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--mg-text-muted)">${escHtml(name)}</div>
+          </div>
+          <div style="font-size:12px;color:var(--mg-text-muted)">Unsold</div>
+        </div>`;
+      }
+    });
+    html += `</div>`;
+  }
+
+  // Admin reset
+  if (isAdmin && calcutta.status !== 'pending') {
+    html += `<div style="text-align:center;padding:20px">
+      <button class="mg-btn mg-btn-outline" style="font-size:12px;padding:8px 16px;color:var(--mg-text-muted)" onclick="if(confirm('Reset the entire Calcutta auction?')) window.MG.calcuttaReset()">Reset Auction</button>
+    </div>`;
+  }
+
+  return html;
+}
+
+// ===== CALCUTTA SECTION FOR SCRAMBLE LEADERBOARD =====
+function renderCalcuttaSection(state) {
+  const calcutta = state._calcutta;
+  if (!calcutta) return '';
+  const config = state._config;
+  if (!config?.features?.calcutta) return '';
+
+  const teams = calcutta.teams || {};
+  const soldCount = Object.values(teams).filter(t => t.sold).length;
+
+  let html = `<div class="mg-card" style="padding:16px;border:1px solid rgba(212,160,23,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="mg-card-header" style="margin:0">CALCUTTA AUCTION</div>
+      <a href="#calcutta" style="font-size:12px;color:var(--mg-gold);text-decoration:none;font-weight:600">View Full Auction</a>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <span style="font-size:10px;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:1px">Pool</span>
+        <span style="font-size:18px;font-weight:800;color:var(--mg-gold);margin-left:8px;font-family:'SF Mono',monospace">$${(calcutta.pool || 0).toLocaleString()}</span>
+      </div>
+      <div style="font-size:12px;color:var(--mg-text-muted)">${soldCount} teams sold</div>
+    </div>`;
+
+  if (calcutta.status === 'active' && calcutta.currentTeam) {
+    const teamData = teams[calcutta.currentTeam] || { bids: [] };
+    const topBid = teamData.bids.length > 0 ? teamData.bids[teamData.bids.length - 1] : null;
+    html += `<div style="margin-top:12px;padding:10px;background:rgba(212,160,23,0.08);border-radius:6px;text-align:center">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--mg-gold-dim)">NOW BIDDING</div>
+      <div style="font-size:14px;font-weight:700;margin-top:2px">${escHtml(calcutta.currentTeam)}</div>
+      ${topBid ? `<div style="font-size:18px;font-weight:800;color:var(--mg-gold);font-family:'SF Mono',monospace;margin-top:4px">$${topBid.amount.toLocaleString()}</div>` : ''}
+    </div>`;
+  }
+
+  html += `</div>`;
   return html;
 }
 
@@ -4074,7 +5146,7 @@ export function renderShootout(state) {
       const winner = T(alive[0]);
       html += `<div class="mg-card text-center" style="padding:30px">
         <div style="font-size:40px">\u{1F3C6}</div>
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-gold-dim);margin-top:8px">Champions!</div>
+        <div style="font-size:22px;font-weight:700;color:var(--mg-gold-dim);margin-top:8px">Champions!</div>
         <div style="font-size:18px;font-weight:600;color:var(--mg-green);margin-top:4px">${winner.member} & ${winner.guest}</div>
       </div>`;
     }
@@ -4097,7 +5169,7 @@ export function renderSettlement(state) {
 
   if (isTrophy) {
     html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-gold),var(--mg-gold-dim));padding:20px;text-align:center;border:none">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-green)">Trophy Room</div>
+      <div style="font-size:22px;font-weight:700;color:var(--mg-green)">Trophy Room</div>
       <div style="font-size:13px;color:var(--mg-green);opacity:.7;margin-top:4px">${escHtml(config?.event?.name || 'Golf Event')} &middot; Final Results</div>
     </div>`;
   }
@@ -4115,7 +5187,7 @@ export function renderSettlement(state) {
   if (!gameState || holesPlayed === 0) {
     html += `<div class="mg-card" style="text-align:center;padding:40px 20px">
       <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--mg-text-muted);margin-bottom:10px">NO SCORES YET</div>
-      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--mg-text)">Settlement appears after holes are scored</div>
+      <div style="font-size:16px;font-weight:600;color:var(--mg-text)">Settlement appears after holes are scored</div>
     </div>`;
     return html;
   }
@@ -4129,7 +5201,7 @@ export function renderSettlement(state) {
 
   html += `<div class="mg-card" style="background:var(--mg-surface);border:1px solid var(--mg-gold-dim);padding:16px;text-align:center">
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mg-text-muted)">${escHtml(eventDate)}</div>
-    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin:4px 0">${escHtml(eventName)}</div>
+    <div style="font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin:4px 0">${escHtml(eventName)}</div>
     <div style="font-size:12px;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed !== 1 ? 's' : ''} played</div>
   </div>`;
 
@@ -4142,7 +5214,7 @@ export function renderSettlement(state) {
     sortedPlayers.forEach((p, i) => {
       const money = settlePnL[p.name] || 0;
       const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-      const moneyColor = money > 0 ? '#22c55e' : money < 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const moneyColor = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
       html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i < sortedPlayers.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
         <div style="font-size:15px;font-weight:600">${escHtml(p.name)}</div>
         <div style="font-size:22px;font-weight:800;color:${moneyColor}">${moneyStr}</div>
@@ -4169,17 +5241,17 @@ export function renderSettlement(state) {
         html += `<div style="padding:14px 0;border-bottom:1px solid var(--mg-border)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div>
-              <div style="font-size:15px;font-weight:700"><span style="color:#ef4444">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)">pays</span> <span style="color:#22c55e">${escHtml(to)}</span></div>
+              <div style="font-size:15px;font-weight:700"><span style="color:var(--loss)">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)">pays</span> <span style="color:var(--win)">${escHtml(to)}</span></div>
             </div>
             <div style="font-size:28px;font-weight:900;color:var(--mg-text)">$${amount}</div>
           </div>
           <div style="display:flex;gap:8px">
             <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#3D95CE;color:#fff;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#3D95CE;color:var(--text-primary);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
               Venmo $${amount}</a>
             <a href="${cashappUrl}" target="_blank" rel="noopener"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#00D64F;color:#fff;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--win);color:var(--text-primary);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm3.5 14.3c-.7.9-1.8 1.4-3.2 1.4-1.6 0-2.8-.6-3.6-1.6l1.5-1.5c.5.6 1.2 1 2.1 1 .7 0 1.2-.3 1.2-.8s-.4-.7-1.4-1l-.8-.2c-1.8-.5-2.6-1.3-2.6-2.8 0-2 1.5-3.1 3.3-3.1 1.3 0 2.4.5 3.1 1.3l-1.4 1.4c-.4-.5-1-.8-1.7-.8-.6 0-1 .3-1 .7 0 .4.3.6 1.1.8l.9.3c2 .6 2.8 1.4 2.8 2.9 0 .8-.3 1.5-.8 2z"/></svg>
               Cash App</a>
           </div>
@@ -4192,8 +5264,9 @@ export function renderSettlement(state) {
   // ── Skins ──
   if (games.skins && gameState.skins) {
     const s = gameState.skins;
-    const skinWinners = Object.entries(s.holes || {}).filter(([, d]) => d.winner);
-    const carryovers = Object.entries(s.holes || {}).filter(([, d]) => d.carried);
+    const sHolesNorm = getSkinsHoles(gameState, holes, players);
+    const skinWinners = Object.entries(sHolesNorm).filter(([, d]) => d.winner);
+    const carryovers = Object.entries(sHolesNorm).filter(([, d]) => d.carried);
     const totalPot = skinWinners.reduce((sum, [, d]) => sum + (d.potWon || 1), 0);
 
     html += `<div class="mg-card" style="padding:12px">
@@ -4246,8 +5319,8 @@ export function renderSettlement(state) {
     players.forEach((name, i) => {
       const s = r[name];
       const isLeader = (s.total || 0) === best.total;
-      html += `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--mg-border);${i === 0 ? 'background:rgba(52,211,153,0.05);' : ''}">
-        <span style="font-size:13px;font-weight:${isLeader ? '700' : '400'}">${escHtml(name)}</span>${isLeader ? `<span style="font-size:9px;font-weight:800;letter-spacing:1px;color:var(--mg-gold);background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);padding:1px 5px;border-radius:3px;margin-left:6px">1ST</span>` : ''}
+      html += `<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--mg-border);${i === 0 ? 'background:rgba(63,185,80,0.05);' : ''}">
+        <span style="font-size:13px;font-weight:${isLeader ? '700' : '400'}">${escHtml(name)}</span>${isLeader ? `<span style="font-size:9px;font-weight:800;letter-spacing:1px;color:var(--mg-gold);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:1px 5px;border-radius:3px;margin-left:6px">1ST</span>` : ''}
         <span style="font-size:12px;text-align:right;color:${(s.front||0) === Math.min(...players.map(n=>r[n].front||0)) ? 'var(--mg-green)' : 'inherit'}">${s.front ?? '—'}</span>
         <span style="font-size:12px;text-align:right;color:${(s.back||0) === Math.min(...players.map(n=>r[n].back||0)) ? 'var(--mg-green)' : 'inherit'}">${s.back ?? '—'}</span>
         <span style="font-size:14px;font-weight:700;text-align:right;color:${isLeader ? 'var(--mg-green)' : 'inherit'}">${s.total ?? '—'}</span>
@@ -4402,19 +5475,19 @@ export function renderSettlement(state) {
       const eventUrl = location.href.replace(/#.*$/, '');
       const referralUrl = 'https://betwaggle.com/create/?ref=' + encodeURIComponent(state._slug);
       html += `<div id="settle-share-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease">
-        <div style="background:#FAF8F5;border-radius:16px;max-width:380px;width:100%;padding:28px 24px;text-align:center">
-          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:4px">Round Complete</div>
-          <div style="font-size:14px;color:#7A7A7A;margin-bottom:20px">${escHtml(eventName)}</div>
-          <div style="font-size:13px;color:#3D3D3D;margin-bottom:20px;line-height:1.6">Drop the settlement card in the group chat. Everyone sees who owes what — with Venmo links.</div>
+        <div style="background:var(--bg-primary);border-radius:16px;max-width:380px;width:100%;padding:28px 24px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--bg-secondary);margin-bottom:4px">Round Complete</div>
+          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">${escHtml(eventName)}</div>
+          <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:20px;line-height:1.6">Drop the settlement card in the group chat. Everyone sees who owes what — with Venmo links.</div>
           <div style="display:flex;flex-direction:column;gap:10px">
-            <button onclick="window.MG.exportSettlementCard()" style="width:100%;padding:16px;background:#C9A84C;color:#0D2818;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Export Settlement Card</button>
-            <button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:#0D2818;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Share Results</button>
+            <button onclick="window.MG.exportSettlementCard()" style="width:100%;padding:16px;background:var(--gold-primary);color:var(--bg-secondary);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Export Settlement Card</button>
+            <button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:var(--bg-secondary);color:var(--text-primary);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Share Results</button>
           </div>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #D4CFC7">
-            <div style="font-size:12px;color:#7A7A7A;margin-bottom:8px">Want to run your own?</div>
-            <a href="${referralUrl}" style="display:block;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;color:#9A7A2E;font-size:14px;font-weight:700;text-decoration:none">Create Your Outing</a>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--text-secondary)">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Want to run your own?</div>
+            <a href="${referralUrl}" style="display:block;padding:12px;background:rgba(212,160,23,0.1);border:1px solid rgba(212,160,23,0.3);border-radius:8px;color:var(--gold-muted);font-size:14px;font-weight:700;text-decoration:none">Create Your Outing</a>
           </div>
-          <button onclick="document.getElementById('settle-share-modal').remove()" style="margin-top:12px;background:none;border:none;color:#7A7A7A;font-size:13px;cursor:pointer;padding:8px">Dismiss</button>
+          <button onclick="document.getElementById('settle-share-modal').remove()" style="margin-top:12px;background:none;border:none;color:var(--text-secondary);font-size:13px;cursor:pointer;padding:8px">Dismiss</button>
         </div>
       </div>`;
     }
@@ -4451,7 +5524,7 @@ export function renderCasualScorecard(state) {
     players.forEach(p => {
       const money = pnl[p.name] || 0;
       const moneyStr = money === 0 ? 'E' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-      const color = money > 0 ? 'var(--mg-win,#22c55e)' : money < 0 ? 'var(--mg-loss,#ef4444)' : 'var(--mg-text-muted)';
+      const color = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
       html += `<div style="flex-shrink:0;background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:8px 12px;text-align:center;min-width:70px">
         <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:2px">${escHtml(p.name.split(' ')[0])}</div>
         <div style="font-size:16px;font-weight:800;color:${color}">${moneyStr}</div>
@@ -4488,7 +5561,7 @@ export function renderCasualScorecard(state) {
             ${holeNums.map(h => `<th style="text-align:center;padding:3px 4px;width:28px">${h}</th>`).join('')}
             <th style="text-align:center;padding:3px 6px;min-width:32px;color:var(--mg-text)">Out</th>
           </tr>
-          <tr style="background:var(--mg-surface-2,rgba(0,0,0,0.05))">
+          <tr style="background:var(--bg-tertiary)">
             <td style="padding:3px 6px;font-weight:700;font-size:11px;color:var(--mg-text-muted)">Par</td>
             ${holeNums.map(h => `<td style="text-align:center;padding:3px 4px;font-weight:600">${pars[h-1] || 4}</td>`).join('')}
             <td style="text-align:center;padding:3px 6px;font-weight:700">${halfPar}</td>
@@ -4513,7 +5586,7 @@ export function renderCasualScorecard(state) {
       });
       const parTotal = holeNums.reduce((s, h) => s + (pars[h - 1] || 4), 0);
 
-      html += `<tr style="${pi % 2 === 1 ? 'background:rgba(0,0,0,0.03)' : ''}">
+      html += `<tr style="${pi % 2 === 1 ? 'background:rgba(240,246,252,0.03)' : ''}">
         <td style="padding:4px 6px;font-weight:600;font-size:13px">${escHtml(player.name.split(' ')[0])}</td>`;
 
       playerScores.forEach((gross, idx) => {
@@ -4523,10 +5596,10 @@ export function renderCasualScorecard(state) {
         let display = gross !== null ? gross : '·';
         if (gross !== null) {
           const diff = gross - par;
-          if (diff <= -2) cellStyle += 'background:#1d4ed8;color:#fff;border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;'; // eagle
-          else if (diff === -1) cellStyle += 'background:var(--mg-green);color:#fff;border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;'; // birdie
-          else if (diff === 1) cellStyle += 'border:2px solid #e74c3c;border-radius:2px;'; // bogey
-          else if (diff >= 2) cellStyle += 'border:2px solid #e74c3c;border-radius:50%;'; // double+
+          if (diff <= -2) cellStyle += 'background:#1d4ed8;color:var(--text-primary);border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;'; // eagle
+          else if (diff === -1) cellStyle += 'background:var(--mg-green);color:var(--text-primary);border-radius:50%;width:22px;height:22px;line-height:22px;display:inline-block;'; // birdie
+          else if (diff === 1) cellStyle += 'border:2px solid var(--loss);border-radius:2px;'; // bogey
+          else if (diff >= 2) cellStyle += 'border:2px solid var(--loss);border-radius:50%;'; // double+
         }
         html += `<td style="text-align:center;padding:2px"><span style="${cellStyle}">${display}</span></td>`;
       });
@@ -4545,7 +5618,7 @@ export function renderCasualScorecard(state) {
   html += `<div style="display:flex;gap:12px;padding:8px 0;font-size:11px;color:var(--mg-text-muted);justify-content:center">
     <span><span style="display:inline-block;width:14px;height:14px;background:var(--mg-green);border-radius:50%;vertical-align:middle;margin-right:3px"></span>Birdie</span>
     <span><span style="display:inline-block;width:14px;height:14px;background:#1d4ed8;border-radius:50%;vertical-align:middle;margin-right:3px"></span>Eagle</span>
-    <span><span style="display:inline-block;width:14px;height:14px;border:2px solid #e74c3c;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Bogey+</span>
+    <span><span style="display:inline-block;width:14px;height:14px;border:2px solid var(--loss);border-radius:2px;vertical-align:middle;margin-right:3px"></span>Bogey+</span>
   </div>`;
 
   return html;
@@ -4686,7 +5759,7 @@ function renderScrambleWhatIf(state) {
 
   // Header
   html += `<div style="margin-bottom:16px">
-    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--mg-text)">Scramble What If...</div>
+    <div style="font-size:22px;font-weight:700;color:var(--mg-text)">Scramble What If...</div>
     <div style="font-size:13px;color:var(--mg-text-muted);margin-top:2px">Project how remaining holes change the leaderboard</div>
   </div>`;
 
@@ -4696,7 +5769,7 @@ function renderScrambleWhatIf(state) {
     html += `<div class="mg-card" style="padding:12px;margin-bottom:12px">
       <div class="mg-card-header" style="margin-bottom:8px">CURRENT STANDINGS &middot; THRU ${holesPlayed}</div>`;
     leaderboard.forEach((entry, i) => {
-      const totalColor = entry.total <= 0 ? '#22c55e' : entry.total > 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const totalColor = entry.total <= 0 ? 'var(--win)' : entry.total > 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
       const totalStr = entry.total === 0 ? 'E' : entry.total > 0 ? `+${entry.total}` : `${entry.total}`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < leaderboard.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
         <div style="display:flex;align-items:center;gap:8px">
@@ -4742,7 +5815,7 @@ function renderScrambleWhatIf(state) {
       scores.forEach(s => {
         const selected = simScore === s;
         const label = s === par - 2 ? 'Eag' : s === par - 1 ? 'Bir' : s === par ? 'Par' : s === par + 1 ? 'Bog' : 'Dbl';
-        html += `<button style="min-width:32px;height:28px;border-radius:6px;border:1px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${selected ? 'rgba(212,175,55,0.15)' : 'transparent'};color:${selected ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};font-size:10px;font-weight:${selected ? '800' : '600'};cursor:pointer" onclick="window.MG.setSimHoleScore(${h},'${escapedName}',${s})">${s}</button>`;
+        html += `<button style="min-width:32px;height:28px;border-radius:6px;border:1px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${selected ? 'rgba(212,160,23,0.15)' : 'transparent'};color:${selected ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};font-size:10px;font-weight:${selected ? '800' : '600'};cursor:pointer" onclick="window.MG.setSimHoleScore(${h},'${escapedName}',${s})">${s}</button>`;
       });
       html += `</div></div>`;
     });
@@ -4787,7 +5860,7 @@ function renderScrambleWhatIf(state) {
       const curEntry = leaderboard.find(e => e.team === entry.team);
       const curTotal = curEntry?.total ?? 0;
       const diff = entry.total - curTotal;
-      const totalColor = entry.total <= 0 ? '#22c55e' : entry.total > 0 ? '#ef4444' : 'var(--mg-text-muted)';
+      const totalColor = entry.total <= 0 ? 'var(--win)' : entry.total > 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
       const totalStr = entry.total === 0 ? 'E' : entry.total > 0 ? `+${entry.total}` : `${entry.total}`;
       const diffStr = diff === 0 ? '' : diff > 0 ? `(+${diff})` : `(${diff})`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < projLeaderboard.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
@@ -4807,7 +5880,7 @@ function renderScrambleWhatIf(state) {
   return html;
 }
 
-// ─── Round-Mode Scenario / What-If ─────────────────────────────
+// ─── Round-Mode "The Bar" — projections, trash talk, side action ──
 function renderRoundScenarios(state) {
   const config = state._config;
   const gameState = state._gameState;
@@ -4830,160 +5903,188 @@ function renderRoundScenarios(state) {
     if (!scoredHoles.includes(h)) remainingHoles.push(h);
   }
 
-  // Scenario state
-  if (!state._scenario) state._scenario = {};
-  if (!state._scenario.simHoles) state._scenario.simHoles = {};
-  const scenario = state._scenario;
-  const simHoles = scenario.simHoles;
-  const myPlayer = scenario.myPlayer || (state.bettorName || players[0]?.name || '');
-  const rivalPlayer = scenario.rivalPlayer || '';
-
   const currentPnl = computeRoundPnL(gameState, players, games, structure);
+  const props = state._props || [];
 
   let html = '';
 
-  // ── Player Selectors ──
-  html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
-    <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:8px">What-If Battle Mode</div>
-    <div style="display:flex;gap:8px;margin-bottom:8px">
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:4px">You</div>
-        <select id="whatif-my-player" onchange="window.MG.setWhatIfPlayer('my', this.value)" style="width:100%;padding:10px;border:1.5px solid var(--mg-gold);border-radius:8px;font-size:14px;font-weight:600;background:rgba(212,175,55,.04)">
-          ${players.map(p => `<option value="${escHtml(p.name)}" ${p.name === myPlayer ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('')}
-        </select>
-      </div>
-      <div style="display:flex;align-items:flex-end;padding-bottom:10px;font-size:14px;font-weight:700;color:var(--mg-text-muted)">vs</div>
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:4px">Rival</div>
-        <select id="whatif-rival" onchange="window.MG.setWhatIfPlayer('rival', this.value)" style="width:100%;padding:10px;border:1.5px solid var(--mg-loss, #ef4444);border-radius:8px;font-size:14px;font-weight:600;background:rgba(239,68,68,.04)">
-          <option value="">Select rival...</option>
-          ${players.filter(p => p.name !== myPlayer).map(p => `<option value="${escHtml(p.name)}" ${p.name === rivalPlayer ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
+  // ── If Everyone Pars Out ──
+  if (remainingHoles.length > 0 && holesPlayed > 0) {
+    // Build simulated "par out" scores for remaining holes
+    const simParOut = {};
+    remainingHoles.forEach(h => {
+      simParOut[h] = {};
+      players.forEach(p => { simParOut[h][p.name] = pars[h - 1] || 4; });
+    });
+    const projPnl = computeSimulatedPnL(gameState, simParOut, players, games, structure, holesPerRound, pars, holes);
 
-  // ── Battle Mode Header ──
-  if (myPlayer) {
-    const myPnl = currentPnl[myPlayer] || 0;
-    const rivalPnl = rivalPlayer ? (currentPnl[rivalPlayer] || 0) : 0;
+    html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:10px">If Everyone Pars Out</div>`;
 
-    // Compute projected delta using simulated scores
-    // Translate my/rival keys to player names for computeSimulatedPnL
-    let projMyPnl = myPnl;
-    let projRivalPnl = rivalPnl;
-    const simCount = Object.keys(simHoles).length;
-    if (simCount > 0) {
-      const translatedSim = {};
-      Object.entries(simHoles).forEach(([h, scores]) => {
-        translatedSim[h] = {};
-        if (scores.my !== undefined && myPlayer) translatedSim[h][myPlayer] = scores.my;
-        if (scores.rival !== undefined && rivalPlayer) translatedSim[h][rivalPlayer] = scores.rival;
-      });
-      const mergedPnl = computeSimulatedPnL(gameState, translatedSim, players, games, structure, holesPerRound, pars, holes);
-      projMyPnl = mergedPnl[myPlayer] || 0;
-      if (rivalPlayer) projRivalPnl = mergedPnl[rivalPlayer] || 0;
+    // Sort by projected P&L
+    const sorted = players.map(p => ({ name: p.name, current: currentPnl[p.name] || 0, projected: projPnl[p.name] || 0 }))
+      .sort((a, b) => b.projected - a.projected);
+
+    sorted.forEach((p, i) => {
+      const delta = p.projected - p.current;
+      const arrow = delta > 0 ? '&#9650;' : delta < 0 ? '&#9660;' : '';
+      const deltaColor = delta > 0 ? 'var(--win)' : delta < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:20px;height:20px;border-radius:50%;background:${i === 0 ? 'var(--mg-gold)' : 'var(--mg-surface)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${i === 0 ? 'var(--mg-green)' : 'var(--mg-text-muted)'}">${i + 1}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--mg-text)">${escHtml(p.name.split(' ')[0])}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:10px;color:${deltaColor}">${arrow} ${delta !== 0 ? '$' + Math.abs(delta) : '—'}</div>
+          <div style="font-size:16px;font-weight:800;font-family:'SF Mono',monospace;color:${p.projected >= 0 ? 'var(--win)' : 'var(--loss)'}">${p.projected >= 0 ? '+' : ''}$${Math.abs(p.projected)}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── What You Need ──
+  if (remainingHoles.length > 0 && holesPlayed >= 3) {
+    const myName = state.bettorName || players[0]?.name || '';
+    const myPnl = currentPnl[myName] || 0;
+    const leader = players.reduce((best, p) => (currentPnl[p.name] || 0) > (currentPnl[best.name] || 0) ? p : best, players[0]);
+    const leaderPnl = currentPnl[leader.name] || 0;
+
+    if (myName && leader.name !== myName && leaderPnl > myPnl) {
+      const deficit = leaderPnl - myPnl;
+      html += `<div class="mg-card" style="padding:14px;margin-bottom:10px;border-left:3px solid var(--mg-gold)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:6px">What You Need</div>
+        <div style="font-size:14px;color:var(--mg-text);line-height:1.5">You're <span style="font-family:'SF Mono',monospace;color:var(--loss);font-weight:700">$${deficit}</span> behind ${escHtml(leader.name.split(' ')[0])} with ${remainingHoles.length} holes left. ${games.skins ? `A skin is worth $${parseInt(structure?.skinsBet) || 5} × ${players.length - 1} = $${(parseInt(structure?.skinsBet) || 5) * (players.length - 1)}. You need ${Math.ceil(deficit / ((parseInt(structure?.skinsBet) || 5) * (players.length - 1)))} skin${Math.ceil(deficit / ((parseInt(structure?.skinsBet) || 5) * (players.length - 1))) > 1 ? 's' : ''} to take the lead.` : 'Make birdies.'}</div>
+      </div>`;
+    } else if (myName && leader.name === myName) {
+      const second = players.filter(p => p.name !== myName).reduce((best, p) => (currentPnl[p.name] || 0) > (currentPnl[best.name] || 0) ? p : best, players.filter(p => p.name !== myName)[0]);
+      const lead = myPnl - (currentPnl[second?.name] || 0);
+      html += `<div class="mg-card" style="padding:14px;margin-bottom:10px;border-left:3px solid var(--win)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--win);margin-bottom:6px">You're Leading</div>
+        <div style="font-size:14px;color:var(--mg-text);line-height:1.5">Up <span style="font-family:'SF Mono',monospace;color:var(--win);font-weight:700">$${lead}</span> on ${escHtml((second?.name || '').split(' ')[0])} with ${remainingHoles.length} to play. Don't get comfortable.</div>
+      </div>`;
     }
-    const projDelta = projMyPnl - projRivalPnl;
-    const curDelta = myPnl - rivalPnl;
-    const showProjected = simCount > 0;
-    const displayDelta = showProjected ? projDelta : curDelta;
+  }
 
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--mg-border)">
-      <div style="text-align:center;flex:1">
-        <div style="font-size:12px;font-weight:600;color:var(--mg-gold-dim)">${escHtml(myPlayer.split(' ')[0])}</div>
-        <div style="font-size:20px;font-weight:800;color:${(showProjected ? projMyPnl : myPnl) >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'};font-family:'SF Mono',monospace">${(showProjected ? projMyPnl : myPnl) >= 0 ? '+' : ''}$${Math.abs(showProjected ? projMyPnl : myPnl)}</div>
-        ${showProjected && projMyPnl !== myPnl ? `<div style="font-size:10px;color:var(--mg-text-muted)">was ${myPnl >= 0 ? '+' : ''}$${Math.abs(myPnl)}</div>` : ''}
-      </div>
-      <div style="text-align:center;padding:0 12px">
-        <div style="font-size:10px;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:1px">${showProjected ? 'Projected' : 'Delta'}</div>
-        <div id="whatif-delta" style="font-size:28px;font-weight:900;color:${displayDelta >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'};font-family:'SF Mono',monospace;transition:transform .15s">${displayDelta >= 0 ? '+' : ''}$${Math.abs(displayDelta)}</div>
-        ${showProjected && displayDelta !== curDelta ? `<div style="font-size:10px;color:${displayDelta > curDelta ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)'}">${displayDelta > curDelta ? '+' : ''}$${displayDelta - curDelta} swing</div>` : ''}
-      </div>
-      <div style="text-align:center;flex:1">
-        <div style="font-size:12px;font-weight:600;color:var(--mg-loss, #ef4444)">${rivalPlayer ? escHtml(rivalPlayer.split(' ')[0]) : '---'}</div>
-        <div style="font-size:20px;font-weight:800;color:${rivalPlayer ? ((showProjected ? projRivalPnl : rivalPnl) >= 0 ? 'var(--mg-win, #22c55e)' : 'var(--mg-loss, #ef4444)') : 'var(--mg-text-muted)'};font-family:'SF Mono',monospace">${rivalPlayer ? ((showProjected ? projRivalPnl : rivalPnl) >= 0 ? '+' : '') + '$' + Math.abs(showProjected ? projRivalPnl : rivalPnl) : '---'}</div>
-        ${showProjected && rivalPlayer && projRivalPnl !== rivalPnl ? `<div style="font-size:10px;color:var(--mg-text-muted)">was ${rivalPnl >= 0 ? '+' : ''}$${Math.abs(rivalPnl)}</div>` : ''}
-      </div>
+  // ── Trash Talk / The Chirps ──
+  if (holesPlayed >= 3) {
+    const chirps = [];
+    // Who's cold?
+    const recentHoles = scoredHoles.slice(-3);
+    players.forEach(p => {
+      let bogeys = 0;
+      recentHoles.forEach(h => {
+        const hData = holes[h];
+        const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+        const par = pars[h - 1] || 4;
+        if (score && score > par) bogeys++;
+      });
+      if (bogeys >= 2) chirps.push(`${p.name.split(' ')[0]} has bogeyed ${bogeys} of the last 3 holes. Is it nerves or just bad golf?`);
+    });
+    // Who's winning skins?
+    if (gameState?.skins) {
+      const skinCounts = {};
+      players.forEach(p => { skinCounts[p.name] = 0; });
+      if (gameState.skins.history) {
+        gameState.skins.history.forEach(s => { if (s.winner) skinCounts[s.winner] = (skinCounts[s.winner] || 0) + 1; });
+      }
+      const maxSkins = Math.max(...Object.values(skinCounts));
+      const skinless = players.filter(p => skinCounts[p.name] === 0);
+      if (skinless.length > 0 && maxSkins > 0) {
+        chirps.push(`${skinless.map(p => p.name.split(' ')[0]).join(' and ')} ${skinless.length === 1 ? 'hasn\'t' : 'haven\'t'} won a single skin. Somebody buy them a drink.`);
+      }
+    }
+    // Biggest swing
+    const sorted = players.map(p => ({ name: p.name, pnl: currentPnl[p.name] || 0 })).sort((a, b) => b.pnl - a.pnl);
+    if (sorted.length >= 2) {
+      const spread = sorted[0].pnl - sorted[sorted.length - 1].pnl;
+      if (spread >= 20) chirps.push(`$${spread} separates first and last. That's a round of drinks for ${sorted[sorted.length - 1].name.split(' ')[0]}.`);
+    }
+
+    if (chirps.length > 0) {
+      html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:10px">The Chirps</div>`;
+      chirps.forEach(c => {
+        html += `<div style="font-size:13px;color:var(--mg-text);padding:8px 0;border-bottom:1px solid var(--mg-border);line-height:1.4;font-style:italic">"${escHtml(c)}"</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ── Side Action (active props) ──
+  const activeProps = props.filter(p => p.status === 'open' || p.status === 'accepted');
+  if (activeProps.length > 0) {
+    html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:10px">Side Action</div>`;
+    activeProps.forEach(prop => {
+      const statusBadge = prop.status === 'accepted'
+        ? '<span style="font-size:9px;font-weight:700;background:var(--win);color:var(--text-primary);padding:2px 6px;border-radius:4px">LOCKED</span>'
+        : '<span style="font-size:9px;font-weight:700;background:var(--mg-gold);color:var(--mg-green);padding:2px 6px;border-radius:4px">OPEN</span>';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--mg-border)">
+        <div>
+          <div style="font-size:13px;color:var(--mg-text)">${escHtml(prop.description)}</div>
+          <div style="font-size:11px;color:var(--mg-text-muted);margin-top:2px">by ${escHtml((prop.creator || '').split(' ')[0])}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:14px;font-weight:800;font-family:'SF Mono',monospace;color:var(--mg-gold)">$${prop.amount || 0}</div>
+          ${statusBadge}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Round Trends ──
+  if (holesPlayed >= 6) {
+    const halfHoles = scoredHoles.slice(0, Math.floor(holesPlayed / 2));
+    const secondHalf = scoredHoles.slice(Math.floor(holesPlayed / 2));
+    const trendData = players.map(p => {
+      let firstHalfTotal = 0, secondHalfTotal = 0;
+      halfHoles.forEach(h => {
+        const hData = holes[h];
+        const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+        const par = pars[h - 1] || 4;
+        if (score) firstHalfTotal += score - par;
+      });
+      secondHalf.forEach(h => {
+        const hData = holes[h];
+        const score = hData?.scores ? hData.scores[p.name] : hData?.[p.name];
+        const par = pars[h - 1] || 4;
+        if (score) secondHalfTotal += score - par;
+      });
+      return { name: p.name, first: firstHalfTotal, second: secondHalfTotal, trend: firstHalfTotal - secondHalfTotal };
+    }).filter(t => t.trend !== 0).sort((a, b) => b.trend - a.trend);
+
+    if (trendData.length > 0) {
+      html += `<div class="mg-card" style="padding:14px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted);margin-bottom:10px">Momentum</div>`;
+      trendData.forEach(t => {
+        const improving = t.trend > 0;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <div style="font-size:13px;font-weight:600;color:var(--mg-text)">${escHtml(t.name.split(' ')[0])}</div>
+          <div style="font-size:12px;font-weight:700;color:${improving ? 'var(--win)' : 'var(--loss)'}">
+            ${improving ? '&#9650; Heating Up' : '&#9660; Cooling Off'}
+            <span style="font-family:'SF Mono',monospace;margin-left:4px">(${t.second > 0 ? '+' : ''}${t.second} → ${t.first > 0 ? '+' : ''}${t.first})</span>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ── No data yet state ──
+  if (holesPlayed === 0) {
+    html += `<div class="mg-card" style="padding:24px;text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">&#127866;</div>
+      <div style="font-size:14px;color:var(--mg-text-muted)">The Bar opens after the first few holes are scored. Until then, grab a drink and talk trash in person.</div>
     </div>`;
   }
-  html += `</div>`;
 
   // ── All holes scored ──
-  if (remainingHoles.length === 0) {
+  if (remainingHoles.length === 0 && holesPlayed > 0) {
     html += `<div class="mg-card" style="padding:20px;text-align:center;color:var(--mg-text-muted)">
-      All ${holesPerRound} holes have been scored. View <a href="#settle" style="color:var(--mg-gold)">settlement</a> for final results.
+      All ${holesPerRound} holes scored. The bar is closed — head to <a href="#settle" style="color:var(--mg-gold)">settlement</a> to settle up.
     </div>`;
-    return html;
-  }
-
-  // ── What-If Buttons — one row per remaining hole ──
-  const scoreOptions = [
-    { label: 'Eagle', diff: -2 },
-    { label: 'Birdie', diff: -1 },
-    { label: 'Par', diff: 0 },
-    { label: 'Bogey', diff: 1 },
-    { label: 'Dbl', diff: 2 },
-  ];
-
-  if (myPlayer) {
-    const simCount = Object.keys(simHoles).length;
-    html += `<div class="mg-card" style="padding:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-text-muted)">${remainingHoles.length} Holes Remaining</div>
-        ${simCount > 0 ? `<button onclick="window.MG.resetWhatIf()" style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">Clear</button>` : ''}
-      </div>`;
-
-    remainingHoles.forEach(h => {
-      const par = pars[h - 1] || 4;
-      const myScore = simHoles[h]?.my;
-      const rivalScore = simHoles[h]?.rival;
-
-      html += `<div style="padding:10px 0;border-bottom:1px solid var(--mg-border)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:14px;font-weight:700;color:var(--mg-text)">Hole ${h}</div>
-          <div style="font-size:12px;color:var(--mg-text-muted)">Par ${par}</div>
-        </div>
-        <div style="margin-bottom:6px">
-          <div style="font-size:10px;color:var(--mg-gold-dim);font-weight:600;margin-bottom:4px">${escHtml(myPlayer.split(' ')[0])}</div>
-          <div style="display:flex;gap:4px">`;
-
-      scoreOptions.forEach(opt => {
-        const score = par + opt.diff;
-        const selected = myScore === score;
-        html += `<button onclick="window.MG.setWhatIfScore(${h},'my',${score})"
-          style="flex:1;min-height:48px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
-          border:2px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};
-          background:${selected ? 'var(--mg-gold)' : 'var(--mg-surface, transparent)'};
-          color:${selected ? 'var(--mg-green, #1A472A)' : 'var(--mg-text)'};
-          -webkit-tap-highlight-color:transparent">${score}<div style="font-size:8px;font-weight:500;margin-top:1px;opacity:.6">${opt.label}</div></button>`;
-      });
-
-      html += `</div></div>`;
-
-      // Rival scores (only if rival selected)
-      if (rivalPlayer) {
-        html += `<div>
-          <div style="font-size:10px;color:var(--mg-loss, #ef4444);font-weight:600;margin-bottom:4px">${escHtml(rivalPlayer.split(' ')[0])}</div>
-          <div style="display:flex;gap:4px">`;
-
-        scoreOptions.forEach(opt => {
-          const score = par + opt.diff;
-          const selected = rivalScore === score;
-          html += `<button onclick="window.MG.setWhatIfScore(${h},'rival',${score})"
-            style="flex:1;min-height:48px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
-            border:2px solid ${selected ? 'var(--mg-loss, #ef4444)' : 'var(--mg-border)'};
-            background:${selected ? 'rgba(239,68,68,.1)' : 'var(--mg-surface, transparent)'};
-            color:${selected ? 'var(--mg-loss, #ef4444)' : 'var(--mg-text)'};
-            -webkit-tap-highlight-color:transparent">${score}<div style="font-size:8px;font-weight:500;margin-top:1px;opacity:.6">${opt.label}</div></button>`;
-        });
-
-        html += `</div></div>`;
-      }
-
-      html += `</div>`;
-    });
-
-    html += `</div>`;
   }
 
   return html;
@@ -5154,7 +6255,7 @@ export function renderScenarios(state) {
     // Team A row
     html += `<div style="margin-bottom:6px">`;
     html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
-    html += `<span style="font-family:'Playfair Display',serif;font-size:15px;${isSimulated && sim.scoreA < sim.scoreB ? 'color:var(--mg-text-muted)' : ''}">${TN(tA)}</span>`;
+    html += `<span style="font-size:15px;${isSimulated && sim.scoreA < sim.scoreB ? 'color:var(--mg-text-muted)' : ''}">${TN(tA)}</span>`;
     html += `<div style="display:flex;gap:3px">`;
     [7, 6, 5].forEach(score => {
       const otherScore = 10 - score;
@@ -5166,7 +6267,7 @@ export function renderScenarios(state) {
     // Team B row
     html += `<div>`;
     html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
-    html += `<span style="font-family:'Playfair Display',serif;font-size:15px;${isSimulated && sim.scoreB < sim.scoreA ? 'color:var(--mg-text-muted)' : ''}">${TN(tB)}</span>`;
+    html += `<span style="font-size:15px;${isSimulated && sim.scoreB < sim.scoreA ? 'color:var(--mg-text-muted)' : ''}">${TN(tB)}</span>`;
     html += `<div style="display:flex;gap:3px">`;
     [7, 6, 5].forEach(score => {
       const otherScore = 10 - score;
@@ -5199,7 +6300,7 @@ export function renderScenarios(state) {
   // Standings table
   html += `<div style="overflow-x:auto">`;
   html += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
-  html += `<thead><tr style="background:var(--mg-bg);font-size:10px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:0.5px">
+  html += `<thead><tr style="background:var(--bg-primary);font-size:10px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:0.5px">
     <th style="padding:8px 12px;text-align:left">Team</th>
     <th style="padding:8px 8px;text-align:center">Pts</th>
     <th style="padding:8px 8px;text-align:center;min-width:80px">Win %</th>
@@ -5215,10 +6316,10 @@ export function renderScenarios(state) {
 
     // Status badge colors
     const statusColors = {
-      clinched: { bg: 'var(--mg-green)', color: '#fff' },
+      clinched: { bg: 'var(--mg-green)', color: 'var(--text-primary)' },
       alive: { bg: 'var(--mg-gold)', color: 'var(--mg-green)' },
       bubble: { bg: 'var(--mg-odds-bg)', color: 'var(--mg-text-secondary)' },
-      eliminated: { bg: '#FEE2E2', color: '#DC2626' },
+      eliminated: { bg: 'rgba(248,81,73,0.15)', color: 'var(--loss)' },
     };
     const sc = statusColors[ts.status] || statusColors.bubble;
     const statusLabel = ts.status === 'clinched' ? 'Clinched' : ts.status === 'alive' ? 'Alive' : ts.status === 'bubble' ? 'Bubble' : 'Dead';
@@ -5233,15 +6334,15 @@ export function renderScenarios(state) {
 
     // Row highlight for sim-impacted teams
     const rowStyle = isSimImpact
-      ? 'border-left:3px solid var(--mg-gold);background:rgba(212,175,55,0.05)'
+      ? 'border-left:3px solid var(--mg-gold);background:rgba(212,160,23,0.05)'
       : 'border-left:3px solid transparent';
 
     html += `<tr style="${rowStyle};${ts.status === 'eliminated' ? 'opacity:0.5' : ''}">
       <td style="padding:10px 12px">
-        <div style="font-family:'Playfair Display',serif;font-size:14px;line-height:1.2">${TN(team)}</div>
+        <div style="font-size:14px;line-height:1.2">${TN(team)}</div>
         ${idx === 0 ? '<div style="font-size:9px;font-weight:700;color:var(--mg-gold);text-transform:uppercase;margin-top:1px">Leader</div>' : ''}
       </td>
-      <td style="padding:10px 8px;text-align:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700">
+      <td style="padding:10px 8px;text-align:center;font-size:16px;font-weight:700">
         ${ts.projectedPoints}
         ${hasDelta ? `<span style="font-size:10px;font-family:Inter,sans-serif;color:${ts.delta > 0 ? 'var(--mg-win)' : 'var(--mg-loss)'};font-weight:700;font-style:italic;margin-left:2px">${ts.delta > 0 ? '+' : ''}${ts.delta}</span>` : ''}
       </td>
@@ -5265,15 +6366,15 @@ export function renderScenarios(state) {
 
   // Scenario Props
   if (data.scenarioProps.length > 0) {
-    html += `<div class="mg-card" style="margin-top:12px;background:var(--mg-green);color:#fff;overflow:hidden">`;
+    html += `<div class="mg-card" style="margin-top:12px;background:var(--mg-green);color:var(--text-primary);overflow:hidden">`;
     html += `<div style="padding:16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--mg-gold)">Scenario Props</div>`;
     data.scenarioProps.forEach(prop => {
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid rgba(255,255,255,0.1)">
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid var(--border)">
         <div>
           <div style="font-size:13px;font-weight:600">${escHtml(String(prop.description))}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.5)">${escHtml(String(prop.detail))}</div>
+          <div style="font-size:10px;color:var(--text-secondary)">${escHtml(String(prop.detail))}</div>
         </div>
-        <span style="font-family:'Playfair Display',serif;font-size:18px;color:var(--mg-gold)">${prop.odds}</span>
+        <span style="font-size:18px;color:var(--mg-gold)">${prop.odds}</span>
       </div>`;
     });
     html += `</div>`;
@@ -5282,16 +6383,16 @@ export function renderScenarios(state) {
   // Info cards
   html += `<div class="mg-scenario-info">`;
   html += `<div class="mg-card" style="padding:16px;display:flex;gap:12px;align-items:flex-start;margin-top:12px">
-    <div style="font-size:24px;min-width:40px;height:40px;background:var(--mg-bg);border-radius:8px;display:flex;align-items:center;justify-content:center">&#9881;</div>
+    <div style="font-size:24px;min-width:40px;height:40px;background:var(--bg-primary);border-radius:8px;display:flex;align-items:center;justify-content:center">&#9881;</div>
     <div>
-      <div style="font-family:'Playfair Display',serif;font-size:16px;margin-bottom:4px">Elimination Math</div>
+      <div style="font-size:16px;margin-bottom:4px">Elimination Math</div>
       <div style="font-size:12px;color:var(--mg-text-secondary);line-height:1.5">Magic numbers represent points needed to guarantee a spot. Cap rule: max 7 pts per match, 10 total per match.</div>
     </div>
   </div>`;
   html += `<div class="mg-card" style="padding:16px;display:flex;gap:12px;align-items:flex-start;margin-top:8px">
-    <div style="font-size:24px;min-width:40px;height:40px;background:var(--mg-bg);border-radius:8px;display:flex;align-items:center;justify-content:center">&#9733;</div>
+    <div style="font-size:24px;min-width:40px;height:40px;background:var(--bg-primary);border-radius:8px;display:flex;align-items:center;justify-content:center">&#9733;</div>
     <div>
-      <div style="font-family:'Playfair Display',serif;font-size:16px;margin-bottom:4px">Win Probability</div>
+      <div style="font-size:16px;margin-bottom:4px">Win Probability</div>
       <div style="font-size:12px;color:var(--mg-text-secondary);line-height:1.5">${nonFinalMatches.length <= 6 ? 'Exact enumeration' : 'Monte Carlo simulation (10K samples)'} across all remaining match outcomes, weighted by handicap-based moneyline odds.</div>
     </div>
   </div>`;
@@ -5303,8 +6404,712 @@ export function renderScenarios(state) {
   return html;
 }
 
+// ================================================================
+// TRIP PAGE — Pre-trip hype when event exists but no scores yet
+// ================================================================
+function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, games, eventDate) {
+  const sorted = [...players].sort((a, b) => (a.handicapIndex || 0) - (b.handicapIndex || 0));
+  const eventName = config?.event?.name || 'The Round';
+  const courseName = config?.event?.course || config?.event?.venue || config?.course?.name || '';
+  const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
+  const skinsBetAmt = parseInt(config?.structure?.skinsBet) || 0;
+  const nassauBetAmt = parseInt(config?.structure?.nassauBet) || 0;
+  const slug = state._slug || (location.pathname.match(/\/waggle\/([a-z0-9_-]+)/)?.[1]) || 'event';
+  const totalPot = computeTotalPot(games, config?.structure, players.length, 0);
+
+  let html = '';
+
+  // ── a) Countdown Header ──
+  {
+    let countdownHtml = '';
+    if (eventDate) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const target = new Date(eventDate + 'T00:00:00');
+      const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+      if (diffDays > 0) {
+        countdownHtml = `<div style="font-size:64px;font-weight:900;color:var(--gold-bright);font-family:'SF Mono','Menlo',monospace;line-height:1;text-shadow:0 0 24px rgba(212,160,23,0.4),0 0 48px rgba(212,160,23,0.15)">${diffDays}</div>
+          <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-top:4px">day${diffDays !== 1 ? 's' : ''} until tee time</div>`;
+      } else if (diffDays === 0) {
+        countdownHtml = `<div style="font-size:36px;font-weight:900;color:var(--gold-bright);line-height:1;text-shadow:0 0 20px rgba(212,160,23,0.4)">Game Day</div>
+          <div style="font-size:14px;color:var(--text-primary);margin-top:6px">Lines are set. Time to play.</div>`;
+      } else {
+        countdownHtml = `<div style="font-size:28px;font-weight:700;color:var(--gold-bright);text-shadow:0 0 16px rgba(212,160,23,0.3)">Lines Are Set</div>
+          <div style="font-size:14px;color:var(--text-primary);margin-top:6px">Waiting for first tee</div>`;
+      }
+    } else {
+      countdownHtml = `<div style="font-size:28px;font-weight:700;color:var(--gold-bright);text-shadow:0 0 16px rgba(212,160,23,0.3)">Lines Are Set</div>
+        <div style="font-size:14px;color:var(--text-primary);margin-top:6px">Place your bets before first tee</div>`;
+    }
+
+    html += `<div style="background:linear-gradient(135deg,var(--bg-secondary) 0%,var(--green-muted) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 0 20px rgba(212,160,23,0.1)">
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(212,160,23,0.02) 20px,rgba(212,160,23,0.02) 40px);pointer-events:none"></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:12px">You Are Invited</div>
+        <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${escHtml(eventName)}</div>
+        ${courseName ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${escHtml(courseName)}${eventDate ? ' &middot; ' + escHtml(eventDate) : ''}</div>` : ''}
+        ${state.bettorName ? `<div style="margin-bottom:12px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:11px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+        ${countdownHtml}
+        ${totalPot > 0 ? `<div style="margin-top:16px;font-size:12px;color:rgba(212,160,23,0.6)">Estimated pot: <span style="font-family:'SF Mono',monospace;font-weight:800;color:var(--gold-bright);font-size:16px">$${totalPot}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── b) Course Preview ──
+  if (courseName) {
+    const totalYardage = config?.courseYardage?.reduce((s, y) => s + y, 0) || 0;
+    html += `<div style="background:var(--mg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--mg-green)">${escHtml(courseName)}</div>
+          <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">Par ${totalPar}${totalYardage ? ' &middot; ' + totalYardage.toLocaleString() + ' yards' : ''}</div>
+        </div>
+        <div style="font-size:28px">&#9971;</div>
+      </div>
+      <details style="cursor:pointer">
+        <summary style="font-size:12px;font-weight:600;color:var(--mg-gold-dim);padding:6px 0">Hole-by-Hole</summary>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:11px">
+            <tr style="background:var(--mg-green);color:var(--text-primary)">
+              <td style="padding:4px 6px;font-weight:700">Hole</td>
+              ${pars.map((_, i) => `<td style="padding:4px 3px;text-align:center;min-width:26px">${i + 1}</td>`).join('')}
+            </tr>
+            <tr style="background:rgba(35,134,54,0.06)">
+              <td style="padding:4px 6px;font-weight:600;color:var(--mg-text-muted)">Par</td>
+              ${pars.map(p => `<td style="padding:4px 3px;text-align:center;color:var(--mg-text-muted)">${p}</td>`).join('')}
+            </tr>
+            ${hcpIndex.length > 0 ? `<tr>
+              <td style="padding:4px 6px;font-weight:600;color:var(--mg-text-muted)">HCP</td>
+              ${hcpIndex.map(h => `<td style="padding:4px 3px;text-align:center;color:var(--mg-text-muted);font-size:10px">${h}</td>`).join('')}
+            </tr>` : ''}
+            ${config?.courseYardage?.length ? `<tr>
+              <td style="padding:4px 6px;font-weight:600;color:var(--mg-text-muted)">Yds</td>
+              ${config.courseYardage.map(y => `<td style="padding:4px 3px;text-align:center;color:var(--mg-text-muted);font-size:10px">${y}</td>`).join('')}
+            </tr>` : ''}
+          </table>
+        </div>
+      </details>
+    </div>`;
+  }
+
+  // ── c) Player Cards ──
+  html += `<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
+      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">The Field</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">${sorted.length} players</span>
+    </div>`;
+
+  sorted.forEach((p, i) => {
+    const sortedForOdds3 = sorted.map(s => ({ hi: s.handicapIndex || 0, toPar: null }));
+    const odds = calculateLiveOdds(i, sorted.length, { hi: p.handicapIndex || 0, toPar: null }, 0, holesPerRound, sortedForOdds3);
+    const isFav = i === 0;
+    const oddsNum = parseFloat(odds.replace('+', ''));
+    const isFavorite = odds.startsWith('-');
+    const oddsColor = isFavorite ? 'white' : 'var(--text-secondary)';
+    const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
+
+    // Card styles — FAV gets gold gradient, others get standard card
+    const cardBg = isFav
+      ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+      : 'background:var(--bg-secondary);border:1px solid var(--border)';
+
+    // Position badge
+    const badgeBg = isFav ? 'background:var(--gold-bright);color:var(--bg-secondary)' : i < 3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+    html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;position:relative">
+      ${isFav ? '<div style="position:absolute;top:10px;right:12px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--gold-bright);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:2px 6px;border-radius:4px">FAV</div>' : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+          <div style="min-width:0">
+            <div style="font-size:15px;font-weight:${isFav ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
+          <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // ── d) Opening Lines Section (card-based, DraftKings-style) ──
+  html += `<div style="margin-bottom:10px">`;
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
+    <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Opening Lines</span>
+    <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">H2H spreads</span>
+  </div>`;
+
+  // All H2H matchups — each as a card
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const fav = sorted[i];
+      const dog = sorted[j];
+      const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
+          <span style="font-size:11px;color:var(--text-tertiary);font-weight:600">vs</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">+${spread}</button>
+          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
+        </div>
+      </div>`;
+    }
+  }
+  html += `</div>`;
+
+  // Props — card-based with gold accent
+  if (sorted.length >= 2) {
+    const bestPlayer = sorted[0];
+    const worstPlayer = sorted[sorted.length - 1];
+    const overUnder = Math.round(72 + (bestPlayer.handicapIndex || 10) + 0.5);
+    const propsList = [
+      `Over/Under ${overUnder}.5 \u2014 ${bestPlayer.name.split(' ')[0]}'s gross score`,
+      `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
+      `${worstPlayer.name.split(' ')[0]} makes a birdie: Yes/No`,
+    ];
+    html += `<div style="margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);padding:0 2px 8px">Prop Bets</div>`;
+    propsList.forEach(prop => {
+      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="font-size:13px;color:var(--text-primary);font-style:italic">${escHtml(prop)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Active games — card-based
+  const activeGamesList = [];
+  if (games.nassau) activeGamesList.push('Nassau' + (nassauBetAmt > 0 ? ' $' + nassauBetAmt : ''));
+  if (games.skins) activeGamesList.push('Skins' + (skinsBetAmt > 0 ? ' $' + skinsBetAmt : ''));
+  if (games.wolf) activeGamesList.push('Wolf');
+  if (games.vegas) activeGamesList.push('Vegas');
+  if (activeGamesList.length > 0) {
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);width:100%;margin-bottom:2px">Games</span>
+      ${activeGamesList.map(g => `<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;background:var(--bg-tertiary);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}</span>`).join('')}
+    </div>`;
+  }
+
+  // ── e) Trash Talk Feed — dark card with gold left border ──
+  {
+    const feed = state._feed || [];
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--win);animation:wg-pulse 2s infinite"></span> Trash Talk
+      </div>`;
+    if (feed.length > 0) {
+      feed.slice(0, 5).forEach(item => {
+        const initial = item.player ? item.player[0].toUpperCase() : '?';
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;background:var(--bg-tertiary)">
+          <div style="width:28px;height:28px;min-width:28px;border-radius:50%;background:var(--mg-green);color:var(--text-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${escHtml(String(initial))}</div>
+          <div style="flex:1;font-size:13px;color:var(--text-primary)">${escHtml(item.text || '')}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);flex-shrink:0">${feedTimeAgo(item.ts)}</div>
+        </div>`;
+      });
+    } else {
+      html += `<div style="text-align:center;padding:16px;font-size:13px;color:var(--text-tertiary);font-style:italic">Talk trash before tee time</div>`;
+    }
+    html += `</div>`;
+  }
+
+  // ── f) Share Button — secondary style ──
+  {
+    const shareText = `${eventName} \u2014 Lines are set. Who's taking the action?`;
+    html += `<div style="display:flex;gap:8px;margin-bottom:10px">
+      <button onclick="(function(){var t='${escHtml(shareText).replace(/'/g, "\\'")} '+location.href;if(navigator.share){navigator.share({title:'${escHtml(eventName).replace(/'/g, "\\'")}',text:t,url:location.href}).catch(function(){})}else{navigator.clipboard.writeText(t).then(function(){alert('Link copied!')})}})()"
+        style="flex:1;padding:14px;background:transparent;border:2px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:var(--gold-bright)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share This Page
+      </button>
+    </div>`;
+  }
+
+  // Commissioner unlock
+  if (!state.adminAuthed && !state._spectatorMode) {
+    html += `<div style="text-align:center;margin-bottom:8px">
+      <button onclick="var p=prompt('Enter PIN:');if(p)window.MG.inlineAuthQuick(p)"
+        style="font-size:11px;color:var(--mg-text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">
+        Unlock commissioner features
+      </button>
+    </div>`;
+  }
+
+  // Add Player (admin only)
+  if (state.adminAuthed) {
+    html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:8px">Add Player</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
+        <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
+        <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+      </div>
+    </div>`;
+  }
+
+  return html;
+}
+
+// ================================================================
+// TROPHY ROOM — Post-trip monument for completed events
+// ================================================================
+function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound, games, holes, gameState, scoredHoles, roundComplete) {
+  const eventName = config?.event?.name || 'Golf Event';
+  const courseName = config?.event?.course || config?.event?.venue || config?.course?.name || '';
+  const eventDate = config?.event?.dates?.day1 || config?.event?.startDate || '';
+  const structure = config?.structure || {};
+  const skinsBetAmt = parseInt(structure?.skinsBet) || 0;
+  const nassauBetAmt = parseInt(structure?.nassauBet) || 0;
+  const pnl = computeRoundPnL(gameState, players, games, structure);
+  const payPairs = computePayablePairs(pnl);
+  const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
+  const slug = state._slug || (location.pathname.match(/\/waggle\/([a-z0-9_-]+)/)?.[1]) || 'event';
+
+  // Stroke data — compute from holes if game engine hasn't run
+  const strokeRunning = gameState?.stroke?.running || {};
+  if (Object.keys(strokeRunning).length === 0 && scoredHoles.length > 0) {
+    players.forEach(p => {
+      let total = 0, counted = 0;
+      scoredHoles.forEach(h => {
+        const sc = holes[h]?.scores?.[p.name];
+        if (sc != null) { total += sc; counted++; }
+      });
+      if (counted > 0) strokeRunning[p.name] = total;
+    });
+  }
+  const skinsHolesAllTrophy = getSkinsHoles(gameState, holes, players);
+  const skinsCount = {};
+  players.forEach(p => { skinsCount[p.name] = 0; });
+  Object.values(skinsHolesAllTrophy).forEach(h => { if (h.winner && skinsCount.hasOwnProperty(h.winner)) skinsCount[h.winner]++; });
+
+  // Build standings
+  const standingsData = players.map(p => {
+    const name = p.name;
+    const gross = strokeRunning[name] ?? null;
+    const parForPlayed = scoredHoles.reduce((s, h) => s + (pars[h - 1] || 4), 0);
+    const toPar = gross !== null ? gross - parForPlayed : null;
+    const money = pnl[name] || 0;
+    const skins = skinsCount[name] || 0;
+    return { name, gross, toPar, money, skins, hi: p.handicapIndex ?? 0 };
+  }).sort((a, b) => {
+    if (Object.values(pnl).some(v => v !== 0)) return b.money - a.money;
+    return (a.toPar ?? 999) - (b.toPar ?? 999);
+  });
+
+  const winner = standingsData[0];
+
+  let html = '';
+
+  // ── a) Trophy Header — gold gradient glow ──
+  html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.08) 0%,var(--bg-secondary) 30%,var(--green-muted) 60%,rgba(212,160,23,0.06) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 0 24px rgba(212,160,23,0.15)">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-conic-gradient(rgba(212,160,23,0.03) 0% 25%,transparent 0% 50%) 0 0/40px 40px;pointer-events:none"></div>
+    <div style="position:relative;z-index:1">
+      <div style="font-size:56px;margin-bottom:8px">&#127942;</div>
+      <div style="font-size:26px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${escHtml(eventName)}</div>
+      <div style="display:inline-block;padding:4px 14px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.4);border-radius:4px;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright)">Final Results</span>
+      </div>
+      ${courseName ? `<div style="font-size:13px;color:var(--text-secondary)">${escHtml(courseName)}</div>` : ''}
+      ${eventDate ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${escHtml(eventDate)}</div>` : ''}
+      ${state.bettorName ? `<div style="margin-top:8px"><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:11px;font-weight:600;color:var(--gold-bright)"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+      ${winner ? `<div style="margin-top:16px">
+        <div style="font-size:11px;color:rgba(212,160,23,0.5);text-transform:uppercase;letter-spacing:1.5px;font-weight:700">Champion</div>
+        <div style="font-size:24px;font-weight:700;color:var(--gold-bright);margin-top:4px;text-shadow:0 0 16px rgba(212,160,23,0.4)">${escHtml(winner.name)}</div>
+        ${winner.money > 0 ? `<div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:var(--win);margin-top:4px;text-shadow:0 0 8px rgba(63,185,80,0.3)">+$${winner.money}</div>` : ''}
+      </div>` : ''}
+    </div>
+  </div>`;
+
+  // ── b) Final Leaderboard — card-based rows ──
+  html += `<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
+      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Final Leaderboard</span>
+      <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.4);background:rgba(212,160,23,0.08);padding:3px 8px;border-radius:3px">FINAL</span>
+    </div>`;
+
+  standingsData.forEach((p, i) => {
+    const isLeader = i === 0;
+    const isTop3 = i < 3;
+    const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+    const toParColor = p.toPar === null ? 'var(--text-tertiary)' : p.toPar < 0 ? 'var(--gold-bright)' : p.toPar > 0 ? 'var(--loss)' : 'white';
+    const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
+    const moneyColor = p.money > 0 ? 'var(--win)' : p.money < 0 ? 'var(--loss)' : 'var(--text-tertiary)';
+    const moneyGlow = p.money > 0 ? 'text-shadow:0 0 8px rgba(63,185,80,0.3)' : p.money < 0 ? 'text-shadow:0 0 8px rgba(248,81,73,0.3)' : '';
+
+    // Card styles — leader gets gold gradient
+    const cardBg = isLeader
+      ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+      : 'background:var(--bg-secondary);border:1px solid var(--border)';
+
+    // Position badge
+    const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+    // To-par size
+    const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
+
+    html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${isLeader ? '&#127942;' : i + 1}</span>
+          <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary)">${escHtml(p.name)}</span>
+        </div>
+        <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor};flex-shrink:0;margin-left:8px">${toParStr}</span>
+      </div>
+      <div style="display:flex;gap:12px;margin-left:32px;margin-top:4px;font-size:12px;font-family:'SF Mono',monospace">
+        <span style="color:${moneyColor};font-weight:700;${moneyGlow}">${moneyStr}</span>
+        <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--border-strong)'}">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+        ${p.gross !== null ? `<span style="color:var(--text-tertiary)">${p.gross} gross</span>` : ''}
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // ── c) Settlement Summary ──
+  if (payPairs.length > 0) {
+    const venmoHandles = {};
+    (config?.players || config?.roster || []).forEach(p => {
+      if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
+    });
+
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:16px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:12px">Who Pays Who</div>`;
+
+    payPairs.forEach(({ from, to, amount }) => {
+      const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle Settlement`);
+      const toVenmo = venmoHandles[to] || to;
+      const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
+      const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
+
+      html += `<div style="background:var(--bg-tertiary);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:15px;font-weight:700"><span style="color:var(--loss)">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--text-tertiary)">pays</span> <span style="color:var(--win)">${escHtml(to)}</span></div>
+          <div style="font-size:24px;font-weight:900;color:var(--text-primary)">$${amount}</div>
+        </div>
+        <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;background:#008CFF;color:white;padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:44px;box-shadow:0 2px 8px rgba(0,140,255,0.3)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
+          Venmo $${amount}
+        </a>
+      </div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  // ── d) AI Recap ──
+  {
+    const recap = state._lastRecap;
+    if (recap) {
+      html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.06),rgba(212,160,23,0.02));border:1.5px solid var(--mg-gold);border-radius:10px;padding:16px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:10px">AI Recap</div>
+        <div style="font-size:14px;line-height:1.6;color:var(--mg-text);font-style:italic;white-space:pre-wrap">${escHtml(recap)}</div>
+      </div>`;
+    } else {
+      html += `<div style="margin-bottom:10px">
+        <button onclick="window.MG.getRecap()" style="width:100%;padding:14px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;color:var(--mg-gold-dim);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Generate AI Recap
+        </button>
+        <div id="mg-recap-card" style="display:none"></div>
+      </div>`;
+    }
+  }
+
+  // ── e) Memorable Moments ──
+  {
+    const moments = [];
+
+    // Biggest Skin
+    if (games.skins) {
+      const skinsHolesMoments = skinsHolesAllTrophy;
+      let biggestSkin = null;
+      Object.entries(skinsHolesMoments).forEach(([h, d]) => {
+        if (d.winner && (d.potWon || 1) > (biggestSkin?.pot || 0)) {
+          biggestSkin = { player: d.winner, hole: parseInt(h), pot: d.potWon || 1 };
+        }
+      });
+      if (biggestSkin) {
+        const amt = biggestSkin.pot * (players.length - 1) * skinsBetAmt;
+        const carryText = biggestSkin.pot > 1 ? ` (${biggestSkin.pot}-hole carry)` : '';
+        moments.push(`Biggest Skin: ${biggestSkin.player} \u2014 ${amt > 0 ? '$' + amt : biggestSkin.pot + 'x'} on Hole ${biggestSkin.hole}${carryText}`);
+      }
+    }
+
+    // Most Skins
+    if (games.skins) {
+      let mostSkinsPlayer = null;
+      let mostSkinsCount = 0;
+      Object.entries(skinsCount).forEach(([name, cnt]) => {
+        if (cnt > mostSkinsCount) { mostSkinsPlayer = name; mostSkinsCount = cnt; }
+      });
+      if (mostSkinsPlayer && mostSkinsCount > 0) {
+        const totalAmt = Object.entries(skinsHolesAllTrophy)
+          .filter(([, d]) => d.winner === mostSkinsPlayer)
+          .reduce((s, [, d]) => s + (d.potWon || 1), 0) * (players.length - 1) * skinsBetAmt;
+        moments.push(`Most Skins: ${mostSkinsPlayer} \u2014 ${mostSkinsCount} skin${mostSkinsCount !== 1 ? 's' : ''}${totalAmt > 0 ? ' ($' + totalAmt + ')' : ''}`);
+      }
+    }
+
+    // Worst Hole
+    let worstHoleData = null;
+    scoredHoles.forEach(h => {
+      const scores = holes[h]?.scores || {};
+      Object.entries(scores).forEach(([name, score]) => {
+        const par = pars[h - 1] || 4;
+        const over = score - par;
+        if (over >= 2 && (!worstHoleData || over > worstHoleData.over)) {
+          const label = over === 2 ? 'double bogey' : over === 3 ? 'triple bogey' : '+' + over;
+          worstHoleData = { player: name, hole: h, over, label };
+        }
+      });
+    });
+    if (worstHoleData) {
+      moments.push(`Worst Hole: ${worstHoleData.player} \u2014 ${worstHoleData.label} on #${worstHoleData.hole}`);
+    }
+
+    // Best Comeback (biggest P&L swing from negative to less negative or positive)
+    if (standingsData.length >= 2) {
+      const last = standingsData[standingsData.length - 1];
+      const secondToLast = standingsData[standingsData.length - 2];
+      if (last.money > secondToLast.money && last.money < 0) {
+        moments.push(`Fought Hard: ${last.name} \u2014 finished at $${last.money} despite being the underdog`);
+      }
+    }
+
+    if (moments.length > 0) {
+      html += `<div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-bright);padding:0 2px 10px">Memorable Moments</div>`;
+      const momentIcons = ['&#127942;', '&#127775;', '&#128165;', '&#128170;'];
+      moments.forEach((m, mi) => {
+        html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+          <div style="font-size:20px;flex-shrink:0">${momentIcons[mi % momentIcons.length]}</div>
+          <div style="font-size:13px;color:var(--text-primary);line-height:1.4">${escHtml(m)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ── f) Run It Back Button — gold CTA, most prominent ──
+  html += `<div style="display:flex;gap:8px;margin-bottom:10px">
+    <a href="/app/?create=1&clone=${encodeURIComponent(slug)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:var(--gold-bright,var(--mg-gold));color:var(--bg-primary,var(--mg-green));border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;min-height:52px;box-shadow:0 3px 12px rgba(212,160,23,0.3)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      Run It Back
+    </a>
+  </div>`;
+
+  // ── g) Share Results Button ──
+  {
+    const standingsText = standingsData.map((p, i) => {
+      const moneyStr = p.money === 0 ? 'Even' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
+      return `${i + 1}. ${p.name} (${moneyStr})`;
+    }).join('\\n');
+    const shareText = `${eventName} \u2014 Final Results\\n${standingsText}\\n`;
+
+    html += `<div style="margin-bottom:10px">
+      <button onclick="(function(){var t='${escHtml(shareText).replace(/'/g, "\\'")}\\n'+location.href;if(navigator.share){navigator.share({title:'${escHtml(eventName).replace(/'/g, "\\'")} - Results',text:t,url:location.href}).catch(function(){})}else{navigator.clipboard.writeText(t).then(function(){alert('Results copied!')})}})()"
+        style="width:100%;padding:14px;background:transparent;border:2px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:var(--gold-bright)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share Results
+      </button>
+    </div>`;
+  }
+
+  return html;
+}
+
+// ===== TV / SPECTATOR MODE LEADERBOARD =====
+export function renderTVLeaderboard(state) {
+  const config = state._config;
+  const gameState = state._gameState;
+  const holes = state._holes || {};
+  const pars = getCoursePars(config);
+  const holesPerRound = config?.holesPerRound || 18;
+  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const holesPlayed = scoredHoles.length;
+  const eventName = config?.event?.name || 'Golf Scramble';
+  const venue = config?.event?.venue || '';
+  const isScramble = (config?.event?.eventType || config?.eventType) === 'scramble';
+
+  let html = '';
+
+  // Full-screen TV container
+  html += `<div class="tv-container">`;
+
+  // Header bar
+  html += `<div class="tv-header">
+    <div class="tv-event-name">${escHtml(eventName)}</div>
+    <div class="tv-event-meta">${escHtml(venue)}${venue && holesPlayed > 0 ? ' &middot; ' : ''}${holesPlayed > 0 ? holesPlayed + ' of ' + holesPerRound + ' holes' : ''} &middot; LIVE</div>
+  </div>`;
+
+  // Leaderboard table
+  html += `<div class="tv-leaderboard">`;
+
+  // Column headers
+  html += `<div class="tv-row tv-row-header">
+    <div class="tv-col-pos">POS</div>
+    <div class="tv-col-team">TEAM</div>
+    <div class="tv-col-thru">THRU</div>
+    <div class="tv-col-score">SCORE</div>
+    <div class="tv-col-topar">TO PAR</div>
+  </div>`;
+
+  if (isScramble && gameState?.scramble?.leaderboard?.length > 0) {
+    const calcuttaTeams = state._calcutta?.teams || {};
+    gameState.scramble.leaderboard.forEach((entry, i) => {
+      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
+      const toPar = entry.total - parForPlayed;
+      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
+      const isLeader = i === 0;
+      const isTop3 = i < 3;
+      const toParColor = toPar < 0 ? 'var(--gold-bright)' : toPar > 0 ? 'var(--loss)' : 'var(--text-primary)';
+      const cOwner = calcuttaTeams[entry.team];
+      const ownerLabel = cOwner?.sold ? ` (${escHtml(cOwner.winner)})` : '';
+
+      html += `<div class="tv-row ${isLeader ? 'tv-row-leader' : ''} ${isTop3 ? 'tv-row-top3' : ''}">
+        <div class="tv-col-pos"><div class="tv-pos-badge ${isLeader ? 'tv-pos-leader' : ''}">${entry.position}</div></div>
+        <div class="tv-col-team">
+          <span class="tv-team-name">${escHtml(entry.team)}</span>
+          ${ownerLabel ? `<span class="tv-team-owner">${ownerLabel}</span>` : ''}
+        </div>
+        <div class="tv-col-thru">${holesPlayed}</div>
+        <div class="tv-col-score">${entry.total}</div>
+        <div class="tv-col-topar" style="color:${toParColor}">${toParStr}</div>
+      </div>`;
+    });
+  } else {
+    // Buddies trip / player standings for TV mode
+    const players = getPlayersFromConfig(config);
+    const strokeRunning = gameState?.stroke?.running || {};
+    const standings = players.map(p => ({
+      name: p.name,
+      total: strokeRunning[p.name] || 0,
+      hi: p.handicapIndex || 0,
+    })).sort((a, b) => a.total - b.total);
+
+    standings.forEach((entry, i) => {
+      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
+      const toPar = entry.total - parForPlayed;
+      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
+      const isLeader = i === 0;
+      const isTop3 = i < 3;
+      const toParColor = toPar < 0 ? 'var(--gold-bright)' : toPar > 0 ? 'var(--loss)' : 'var(--text-primary)';
+
+      html += `<div class="tv-row ${isLeader ? 'tv-row-leader' : ''} ${isTop3 ? 'tv-row-top3' : ''}">
+        <div class="tv-col-pos"><div class="tv-pos-badge ${isLeader ? 'tv-pos-leader' : ''}">${i + 1}</div></div>
+        <div class="tv-col-team"><span class="tv-team-name">${escHtml(entry.name)}</span></div>
+        <div class="tv-col-thru">${holesPlayed}</div>
+        <div class="tv-col-score">${entry.total || '-'}</div>
+        <div class="tv-col-topar" style="color:${toParColor}">${entry.total ? toParStr : '-'}</div>
+      </div>`;
+    });
+  }
+
+  html += `</div>`;
+
+  // Footer bar: side games + branding
+  const sideGames = config?.scrambleSideGames;
+  const sponsors = config?.sponsors;
+  html += `<div class="tv-footer">`;
+  html += `<div class="tv-footer-left">`;
+
+  // CTP results
+  if (sideGames?.closestToPin?.length > 0) {
+    sideGames.closestToPin.forEach(hole => {
+      const winner = gameState?.sideGames?.ctp?.[hole];
+      if (winner) html += `<span class="tv-footer-item">CTP #${hole}: ${escHtml(winner)}</span>`;
+    });
+  }
+  // LD results
+  if (sideGames?.longestDrive?.length > 0) {
+    sideGames.longestDrive.forEach(hole => {
+      const winner = gameState?.sideGames?.ld?.[hole];
+      if (winner) html += `<span class="tv-footer-item">LD #${hole}: ${escHtml(winner)}</span>`;
+    });
+  }
+  // Prize pool
+  const entryFee = config?.scrambleEntryFee || 0;
+  const teamCount = config?.scrambleTeams?.length || 0;
+  const pool = entryFee * teamCount;
+  if (pool > 0) html += `<span class="tv-footer-item">Prize Pool: $${pool.toLocaleString()}</span>`;
+  // Calcutta pool
+  if (state._calcutta?.pool > 0) html += `<span class="tv-footer-item">Calcutta Pool: $${state._calcutta.pool.toLocaleString()}</span>`;
+
+  html += `</div>`;
+  html += `<div class="tv-footer-right">betwaggle.com</div>`;
+  html += `</div>`;
+
+  // Sponsor ticker at very bottom
+  if (sponsors && Object.keys(sponsors).length > 0) {
+    html += `<div class="tv-sponsor-ticker"><div class="tv-sponsor-ticker-inner">`;
+    Object.keys(sponsors).sort((a, b) => parseInt(a) - parseInt(b)).forEach(hole => {
+      const s = sponsors[hole];
+      html += `<span class="tv-sponsor-item">Hole ${hole}: ${escHtml(s.name)}</span>`;
+    });
+    // Duplicate for seamless scroll
+    Object.keys(sponsors).sort((a, b) => parseInt(a) - parseInt(b)).forEach(hole => {
+      const s = sponsors[hole];
+      html += `<span class="tv-sponsor-item">Hole ${hole}: ${escHtml(s.name)}</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  html += `</div>`;
+
+  return html;
+}
+
 function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML.replace(/'/g, '&#39;');
+}
+
+// ─── ODDS BET SLIP (DraftKings-style bottom sheet) ───
+export function renderOddsBetSlip(state) {
+  if (!state._oddsBetSlip) return '';
+  const { player, betType, odds } = state._oddsBetSlip;
+  const amount = state._oddsBetSlipAmount || '';
+  const oddsNum = parseInt(odds.replace('+', ''));
+  const isNeg = odds.startsWith('-');
+  const payout = amount ? (isNeg
+    ? (parseFloat(amount) * 100 / Math.abs(oddsNum)).toFixed(2)
+    : (parseFloat(amount) * Math.abs(oddsNum) / 100).toFixed(2)
+  ) : '0.00';
+
+  return `<div data-odds-bet-slip style="position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--bg-secondary);border-top:2px solid var(--gold-primary, var(--gold-bright));border-radius:16px 16px 0 0;padding:16px;box-shadow:0 -4px 24px rgba(0,0,0,0.4);animation:slideUpSlip .25s ease-out">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;font-weight:600">${betType === 'to_win' ? 'To Win' : 'Head to Head'}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${escHtml(player)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'SF Mono',monospace;font-size:20px;font-weight:800;color:var(--gold-bright)">${odds}</span>
+        <button onclick="window.MG.closeOddsBetSlip()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">\u00d7</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      ${[5, 10, 20, 50].map(amt => `
+        <button onclick="window.MG.setOddsBetAmount(${amt})" style="flex:1;padding:10px;border-radius:8px;border:1px solid ${String(amount)==String(amt)?'var(--gold-bright)':'var(--border)'};background:${String(amount)==String(amt)?'rgba(212,160,23,0.1)':'var(--bg-tertiary)'};color:${String(amount)==String(amt)?'var(--gold-bright)':'var(--text-primary)'};font-size:14px;font-weight:700;cursor:pointer;font-family:'SF Mono',monospace;-webkit-tap-highlight-color:transparent;transition:all .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">$${amt}</button>
+      `).join('')}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <input type="number" inputmode="numeric" placeholder="Custom \$" value="${amount}"
+        oninput="window.MG.setOddsBetAmount(this.value)"
+        style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:16px;font-family:'SF Mono',monospace;outline:none;-webkit-appearance:none">
+      <div style="text-align:right;min-width:80px">
+        <div style="font-size:11px;color:var(--text-secondary)">To win</div>
+        <div style="font-size:18px;font-weight:800;color:var(--win, #4ade80);font-family:'SF Mono',monospace">\$${payout}</div>
+      </div>
+    </div>
+    <button onclick="window.MG.placeOddsBet()"
+      style="width:100%;padding:14px;border-radius:10px;border:none;background:${amount?'var(--gold-bright)':'var(--border)'};color:${amount?'var(--bg-primary, #111)':'var(--text-tertiary)'};font-size:16px;font-weight:800;cursor:${amount?'pointer':'default'};letter-spacing:0.5px;-webkit-tap-highlight-color:transparent;transition:all .15s;min-height:48px"
+      ${amount?'':'disabled'}>
+      ${amount ? 'Lock It In \u2014 \$' + amount + ' to win \$' + payout : 'Enter amount'}
+    </button>
+  </div>`;
 }

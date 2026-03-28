@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — Waggle | Golf Sportsbook for Every Group Size</title>
+  <meta name="description" content="Free for weekend rounds. $32 for buddies trips. $149 for tournament-grade member-guest events. Live odds, settlement cards, AI recaps. No app download.">
+  <link rel="canonical" href="https://betwaggle.com/pricing/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Waggle Pricing — From Free to Tournament-Grade">
+  <meta property="og:description" content="Track any match free. Unlock the full sportsbook for buddies trips ($32) or member-guest tournaments ($149). Live odds, props, AI recaps, Venmo settlement.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/pricing/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Waggle">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Waggle Pricing — From Free to Tournament-Grade">
+  <meta name="twitter:description" content="Track any match free. Full sportsbook for buddies trips or member-guest tournaments.">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.jpg">
+
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#0D2818">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/bet_waggle_logo_no_background.png">
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- JSON-LD Pricing Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Waggle Pricing",
+    "description": "Pricing plans for Waggle golf sportsbook platform",
+    "url": "https://betwaggle.com/pricing/",
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "name": "Weekend Warrior",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Track any match for free. Skins, Nassau, Wolf, Match Play. Up to 4 players.",
+          "url": "https://betwaggle.com/create/?tier=free"
+        },
+        {
+          "@type": "Offer",
+          "name": "Buddies Trip",
+          "price": "32",
+          "priceCurrency": "USD",
+          "description": "Full sportsbook experience. Up to 8 players. All game formats. Live odds. Props and side action. AI recaps. Settlement cards with Venmo deep links.",
+          "url": "https://betwaggle.com/create/?tier=buddies"
+        },
+        {
+          "@type": "Offer",
+          "name": "Member-Guest",
+          "price": "149",
+          "priceCurrency": "USD",
+          "description": "Tournament-grade. Up to 48 teams. Flighted round-robin. Multi-day events. Full betting book. Commissioner dashboard. Calcutta auction support.",
+          "url": "https://betwaggle.com/create/?tier=tournament"
+        }
+      ]
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #0D2818;
+      --green:    #1B4332;
+      --green-mid:#2D6A4F;
+      --sage:     #52B788;
+      --ivory:    #F5F0E8;
+      --ivory-dk: #EDE8DF;
+      --gold:     #C9A84C;
+      --gold-dk:  #9A7A2E;
+      --text:     #1A1A1A;
+      --text-2:   #2D3748;
+      --muted:    #6B7280;
+      --rule:     #D4CFC7;
+      --white:    #FAFAF7;
+      --border:   #DDD8CC;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--ivory);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    a { color: inherit; }
+
+    /* ── NAV ── */
+    nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 32px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo span {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+
+    .nav-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 12px 4px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      transition: color .15s;
+    }
+    .nav-link:hover { color: var(--gold); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--forest);
+      position: relative;
+      overflow: hidden;
+      padding: 120px 20px 72px;
+      text-align: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(82,183,136,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(201,168,76,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .hero-kicker {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(30px, 6vw, 48px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,.3);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: rgba(255,255,255,.6);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── CURVE TRANSITION ── */
+    .curve {
+      height: 60px;
+      background: var(--forest);
+      position: relative;
+    }
+    .curve::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: var(--ivory);
+      border-radius: 32px 32px 0 0;
+    }
+
+    /* ── PRICING CARDS ── */
+    .pricing-section {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .pricing-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 28px 32px;
+      position: relative;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,.08);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold), 0 8px 32px rgba(201,168,76,.15);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: var(--forest);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pricing-tier {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
+
+    .pricing-tagline {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .pricing-price {
+      margin-bottom: 24px;
+    }
+
+    .pricing-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1;
+    }
+
+    .pricing-amount .currency {
+      font-size: 24px;
+      vertical-align: super;
+      margin-right: 2px;
+    }
+
+    .pricing-period {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .pricing-features li {
+      font-size: 14px;
+      color: var(--text-2);
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,.04);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .pricing-features li:last-child { border-bottom: none; }
+
+    .pricing-features .check {
+      color: var(--green-mid);
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+
+    .pricing-promo {
+      background: rgba(201,168,76,.1);
+      border: 1px solid rgba(201,168,76,.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--gold-dk);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .pricing-promo code {
+      background: var(--forest);
+      color: var(--gold);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+
+    .btn-pricing {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s, box-shadow .15s, background .15s;
+    }
+    .btn-pricing:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-pricing.primary {
+      background: var(--gold);
+      color: var(--forest);
+      box-shadow: 0 4px 20px rgba(201,168,76,.3);
+    }
+    .btn-pricing.primary:hover {
+      background: #d9b85c;
+      box-shadow: 0 8px 32px rgba(201,168,76,.4);
+    }
+
+    .btn-pricing.secondary {
+      background: var(--forest);
+      color: #fff;
+    }
+    .btn-pricing.secondary:hover {
+      background: var(--green);
+    }
+
+    .btn-pricing.outline {
+      background: transparent;
+      color: var(--forest);
+      border: 2px solid var(--border);
+    }
+    .btn-pricing.outline:hover {
+      border-color: var(--green-mid);
+      color: var(--green-mid);
+    }
+
+    /* ── COMPARISON TABLE ── */
+    .comparison-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    .comparison-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 700;
+      color: var(--forest);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--white);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .comparison-table thead th {
+      background: var(--forest);
+      color: #fff;
+      padding: 16px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .comparison-table thead th:not(:first-child) {
+      text-align: center;
+      width: 20%;
+    }
+    .comparison-table thead th.col-gold {
+      background: linear-gradient(180deg, var(--forest) 0%, rgba(201,168,76,.15) 100%);
+      color: var(--gold);
+    }
+
+    .comparison-table td {
+      padding: 12px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(0,0,0,.04);
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table td:not(:first-child) { text-align: center; }
+
+    .comparison-table td:first-child {
+      font-weight: 500;
+      color: var(--text-2);
+    }
+
+    .comparison-table .section-row td {
+      background: var(--ivory);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 20px;
+    }
+
+    .y { color: var(--green-mid); font-weight: 700; }
+    .n { color: var(--rule); }
+    .val { font-weight: 600; color: var(--text); }
+
+    /* ── FAQ ── */
+    .faq-section {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    .faq-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 700;
+      color: var(--forest);
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+
+    .faq-q {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--forest);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      user-select: none;
+    }
+
+    .faq-q::after {
+      content: '+';
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+
+    .faq-item.open .faq-q::after {
+      transform: rotate(45deg);
+    }
+
+    .faq-a {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.75;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease, padding .3s ease;
+      padding-top: 0;
+    }
+
+    .faq-item.open .faq-a {
+      max-height: 300px;
+      padding-top: 12px;
+    }
+
+    /* ── BOTTOM CTA ── */
+    .bottom-cta {
+      background: var(--forest);
+      padding: 72px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bottom-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(201,168,76,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .bottom-cta-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .bottom-cta h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .bottom-cta p {
+      font-size: 16px;
+      color: rgba(255,255,255,.55);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .btn-gold-lg {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--forest);
+      padding: 18px 44px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 16px;
+      text-decoration: none;
+      letter-spacing: .04em;
+      transition: transform .2s, box-shadow .2s, background .15s;
+      box-shadow: 0 4px 24px rgba(201,168,76,.35);
+    }
+    .btn-gold-lg:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 36px rgba(201,168,76,.45);
+      background: #d9b85c;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: var(--forest);
+      padding: 56px 24px 36px;
+      text-align: center;
+      border-top: 1px solid rgba(201,168,76,.2);
+    }
+
+    .footer-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      margin-bottom: 24px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .footer-links a {
+      color: rgba(255,255,255,.35);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 4px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .15s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,.6); }
+
+    .footer-rule {
+      width: 48px;
+      height: 2px;
+      background: var(--gold);
+      opacity: .3;
+      margin: 0 auto 20px;
+    }
+
+    .footer-copy {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 420px;
+        margin: 0 auto;
+        gap: 32px;
+      }
+
+      /* On mobile, re-order so featured card is first */
+      .pricing-card.featured { order: -1; }
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 16px 16px; }
+      .nav-links { gap: 10px; }
+      .hero { padding: 100px 16px 56px; }
+      .hero-sub { font-size: 15px; }
+      .curve { height: 40px; }
+      .curve::after { height: 40px; border-radius: 20px 20px 0 0; }
+      .pricing-section { padding: 32px 16px 56px; }
+      .pricing-card { padding: 28px 20px 24px; }
+      .pricing-tier { font-size: 20px; }
+      .pricing-amount { font-size: 40px; }
+      .comparison-section { padding: 0 12px 56px; }
+      .comparison-table thead th,
+      .comparison-table td { padding: 10px 12px; font-size: 12px; }
+      .faq-section { padding: 0 16px 56px; }
+      .faq-q { font-size: 15px; }
+      .bottom-cta { padding: 56px 16px; }
+      .footer { padding: 36px 16px 24px; }
+    }
+
+    /* Scroll overflow for comparison table on very small screens */
+    @media (max-width: 480px) {
+      .nav-links a:first-child { display: none; }
+      .comparison-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -12px;
+        padding: 0 12px;
+      }
+      .comparison-table { min-width: 560px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <span>Waggle</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="/tour/">How It Works</a>
+      <a class="nav-link" href="/create/">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-kicker">Simple pricing</div>
+      <h1>Pay per event, or <em>subscribe</em> and save.</h1>
+      <p class="hero-sub">One-time pricing for casual rounds. Season Pass for groups that play every week. Every player gets full access on their phone.</p>
+    </div>
+  </section>
+  <div class="curve"></div>
+
+  <!-- PRICING CARDS -->
+  <section class="pricing-section">
+    <div class="pricing-grid">
+
+      <!-- Weekend Warrior — FREE -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Weekend Warrior</div>
+        <div class="pricing-tagline">Track any match for free. Great for trying it out.</div>
+        <div class="pricing-price">
+          <div class="pricing-amount">Free</div>
+          <div class="pricing-period">No payment required</div>
+        </div>
+        <ul class="pricing-features">
+          <li><span class="check">&#10003;</span> Up to 4 players</li>
+          <li><span class="check">&#10003;</span> Skins, Nassau, Wolf, Match Play</li>
+          <li><span class="check">&#10003;</span> Real-time scoring</li>
+          <li><span class="check">&#10003;</span> Basic settlement summary</li>
+          <li><span class="check">&#10003;</span> Works on every phone</li>
+          <li><span class="check">&#10003;</span> No app download</li>
+        </ul>
+        <a href="/create/?tier=free" class="btn-pricing outline">Start Free</a>
+      </div>
+
+      <!-- Buddies Trip — $32 -->
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Most Popular</div>
+        <div class="pricing-tier">Buddies Trip</div>
+        <div class="pricing-tagline">Full sportsbook experience for your golf trip.</div>
+        <div class="pricing-price">
+          <div class="pricing-amount"><span class="currency">$</span>32</div>
+          <div class="pricing-period">per event</div>
+        </div>
+        <ul class="pricing-features">
+          <li><span class="check">&#10003;</span> Up to 8 players</li>
+          <li><span class="check">&#10003;</span> All game formats</li>
+          <li><span class="check">&#10003;</span> Live odds</li>
+          <li><span class="check">&#10003;</span> Props &amp; side action</li>
+          <li><span class="check">&#10003;</span> AI recaps</li>
+          <li><span class="check">&#10003;</span> Settlement cards with Venmo deep links</li>
+        </ul>
+        <div class="pricing-promo">Use code <code>FIRSTTRIP</code> for 50% off</div>
+        <a href="/create/?tier=buddies" class="btn-pricing primary">Get Started</a>
+      </div>
+
+      <!-- Season Pass — Subscription -->
+      <div class="pricing-card">
+        <div class="pricing-badge" style="background:#C9A84C;color:#0D2818">Best Value</div>
+        <div class="pricing-tier">Season Pass</div>
+        <div class="pricing-tagline">Unlimited events. One monthly price.</div>
+        <div class="pricing-price">
+          <div class="pricing-amount"><span class="currency">$</span><span id="seasonPrice">9</span><span style="font-size:20px;font-weight:400">.99</span></div>
+          <div class="pricing-period"><span id="seasonPeriod">per month</span></div>
+          <div style="margin-top:8px">
+            <button id="toggleMonthly" onclick="setSeasonPlan('monthly')" style="padding:4px 12px;font-size:12px;border:1px solid #C9A84C;background:#C9A84C;color:#0D2818;cursor:pointer;font-weight:600">Monthly</button>
+            <button id="toggleAnnual" onclick="setSeasonPlan('annual')" style="padding:4px 12px;font-size:12px;border:1px solid #D4A574;background:transparent;color:#666;cursor:pointer">Annual — save 34%</button>
+          </div>
+        </div>
+        <ul class="pricing-features">
+          <li><span class="check">&#10003;</span> <strong>Unlimited</strong> events per month</li>
+          <li><span class="check">&#10003;</span> Everything in Buddies Trip</li>
+          <li><span class="check">&#10003;</span> Season leaderboard</li>
+          <li><span class="check">&#10003;</span> Priority support</li>
+          <li><span class="check">&#10003;</span> Cancel anytime</li>
+        </ul>
+        <button class="btn-pricing primary" onclick="startSubscription()" id="seasonCta">Start Season Pass</button>
+      </div>
+
+      <!-- Member-Guest — $149 -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Member-Guest</div>
+        <div class="pricing-tagline">Tournament-grade for clubs and large events.</div>
+        <div class="pricing-price">
+          <div class="pricing-amount"><span class="currency">$</span>149</div>
+          <div class="pricing-period">per event</div>
+        </div>
+        <ul class="pricing-features">
+          <li><span class="check">&#10003;</span> Up to 48 teams</li>
+          <li><span class="check">&#10003;</span> Flighted round-robin</li>
+          <li><span class="check">&#10003;</span> Multi-day events</li>
+          <li><span class="check">&#10003;</span> Full betting book</li>
+          <li><span class="check">&#10003;</span> Commissioner dashboard</li>
+          <li><span class="check">&#10003;</span> Calcutta auction support</li>
+          <li><span class="check">&#10003;</span> Affiliate program</li>
+        </ul>
+        <a href="/create/?tier=tournament" class="btn-pricing secondary">Create Tournament</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section class="comparison-section">
+    <h2>Compare Plans</h2>
+    <div class="comparison-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Weekend Warrior</th>
+            <th class="col-gold">Buddies Trip</th>
+            <th>Member-Guest</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="section-row"><td colspan="4">Players &amp; Format</td></tr>
+          <tr><td>Max players / teams</td><td class="val">4</td><td class="val">8</td><td class="val">48 teams</td></tr>
+          <tr><td>Multi-day events</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Flighted round-robin</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+
+          <tr class="section-row"><td colspan="4">Game Formats</td></tr>
+          <tr><td>Skins</td><td class="y">&#10003;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Nassau</td><td class="y">&#10003;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Wolf</td><td class="y">&#10003;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Match Play</td><td class="y">&#10003;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Vegas, Banker, Bloodsome, Stableford</td><td class="n">&#10005;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+
+          <tr class="section-row"><td colspan="4">Sportsbook Features</td></tr>
+          <tr><td>Live odds</td><td class="n">&#10005;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Props &amp; side action</td><td class="n">&#10005;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>AI recaps</td><td class="n">&#10005;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Full betting book</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Calcutta auction</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+
+          <tr class="section-row"><td colspan="4">Settlement &amp; Admin</td></tr>
+          <tr><td>Basic settlement</td><td class="y">&#10003;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Settlement cards + Venmo links</td><td class="n">&#10005;</td><td class="y">&#10003;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Commissioner dashboard</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+          <tr><td>Affiliate program</td><td class="n">&#10005;</td><td class="n">&#10005;</td><td class="y">&#10003;</td></tr>
+
+          <tr class="section-row"><td colspan="4">Price</td></tr>
+          <tr><td>Per event</td><td class="val">Free</td><td class="val" style="color:var(--gold-dk)">$32</td><td class="val">$149</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+        What happens after my event?
+      </div>
+      <div class="faq-a">
+        Your event data stays available for 30 days after the event ends. You can view final results, settlement summaries, and share the recap link with your group at any time. After 30 days, the event is archived but can be restored on request.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+        Can I upgrade mid-event?
+      </div>
+      <div class="faq-a">
+        Yes. You can upgrade from Weekend Warrior to Buddies Trip at any point during your event. Your existing scores and data carry over seamlessly. You will only pay the difference between tiers. Upgrading unlocks live odds, props, AI recaps, and expanded player slots immediately.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+        Do players need to pay?
+      </div>
+      <div class="faq-a">
+        No. Only the event organizer pays. Every player in your group gets full access on their phone through a shared link. No accounts, no app download, no per-player fees. Just open the link and play.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+        How does settlement work?
+      </div>
+      <div class="faq-a">
+        When your round ends, Waggle calculates exactly who owes what based on all the games and side action. On Buddies Trip and above, each player gets a personalized settlement card with one-tap Venmo deep links. No more spreadsheets, no more arguments at the 19th hole.
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM CTA -->
+  <section class="bottom-cta">
+    <div class="bottom-cta-inner">
+      <h2>Ready to run your sportsbook?</h2>
+      <p>Set up in 2 minutes. No app download. Every phone.</p>
+      <a href="/create/" class="btn-gold-lg">Create Your Outing</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">Waggle</div>
+      <div class="footer-tagline">The sportsbook for your golf trip.</div>
+      <div class="footer-links">
+        <a href="/create/">Create Your Outing</a>
+        <a href="/courses/">Find a Course</a>
+        <a href="/tour/">How It Works</a>
+        <a href="/overview/">Setup Guide</a>
+      </div>
+      <div class="footer-rule"></div>
+      <p class="footer-copy">betwaggle.com</p>
+    </div>
+  </footer>
+
+  <script>
+    // Capture UTM and ref params for attribution
+    (function() {
+      var p = new URLSearchParams(window.location.search);
+      var src = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(function(k) {
+        if (p.get(k)) src[k] = p.get(k);
+      });
+      if (Object.keys(src).length) {
+        sessionStorage.setItem('waggle_attribution', JSON.stringify(src));
+      }
+    })();
+  </script>
+
+  <!-- Season Pass subscription logic -->
+  <script>
+    let _seasonPlan = 'monthly';
+    function setSeasonPlan(plan) {
+      _seasonPlan = plan;
+      const priceEl = document.getElementById('seasonPrice');
+      const periodEl = document.getElementById('seasonPeriod');
+      const monthBtn = document.getElementById('toggleMonthly');
+      const annualBtn = document.getElementById('toggleAnnual');
+      if (plan === 'annual') {
+        priceEl.textContent = '79';
+        priceEl.nextElementSibling.textContent = '';
+        periodEl.textContent = 'per year';
+        annualBtn.style.background = '#C9A84C'; annualBtn.style.color = '#0D2818'; annualBtn.style.fontWeight = '600';
+        monthBtn.style.background = 'transparent'; monthBtn.style.color = '#666'; monthBtn.style.fontWeight = '400';
+      } else {
+        priceEl.textContent = '9';
+        priceEl.nextElementSibling.textContent = '.99';
+        periodEl.textContent = 'per month';
+        monthBtn.style.background = '#C9A84C'; monthBtn.style.color = '#0D2818'; monthBtn.style.fontWeight = '600';
+        annualBtn.style.background = 'transparent'; annualBtn.style.color = '#666'; annualBtn.style.fontWeight = '400';
+      }
+    }
+    async function startSubscription() {
+      const email = prompt('Enter your email to start your Season Pass:');
+      if (!email || !email.includes('@')) return;
+      const btn = document.getElementById('seasonCta');
+      btn.textContent = 'Loading...'; btn.disabled = true;
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, plan: _seasonPlan }),
+        });
+        const data = await res.json();
+        if (data.checkoutUrl) { window.location.href = data.checkoutUrl; }
+        else { alert(data.error || 'Something went wrong'); btn.textContent = 'Start Season Pass'; btn.disabled = false; }
+      } catch (e) { alert('Network error. Please try again.'); btn.textContent = 'Start Season Pass'; btn.disabled = false; }
+    }
+
+    // Check if returning from successful subscription
+    const params = new URLSearchParams(location.search);
+    if (params.get('subscribed') === 'true') {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#C9A84C;color:#0D2818;text-align:center;padding:16px;font-weight:700;font-size:16px;position:fixed;top:0;left:0;right:0;z-index:1000';
+      banner.textContent = 'Season Pass activated! Create unlimited events at betwaggle.com/create';
+      document.body.prepend(banner);
+      setTimeout(() => banner.remove(), 8000);
+    }
+  </script>
+
+</body>
+</html>

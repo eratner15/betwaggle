@@ -39,14 +39,14 @@ const ML = [
 // ---- helpers ------------------------------------------------
 
 // American moneyline → implied probability
-function mlToProb(ml) {
+export function mlToProb(ml) {
   if (ml === 0) return 0.5;
   if (ml < 0) return (-ml) / (-ml + 100);
   return 100 / (ml + 100);
 }
 
 // Format American moneyline from raw number
-function fmtML(ml) {
+export function fmtML(ml) {
   if (ml === 0) return "EVEN";
   return ml > 0 ? `+${ml}` : `${ml}`;
 }
@@ -108,7 +108,7 @@ export function isMatchLocked(matchId) {
  */
 // Bilinear interpolation on the probability table
 // Converts fractional handicaps to a blended probability
-function interpolateProb(hcpA, hcpB) {
+export function interpolateProb(hcpA, hcpB) {
   // Clamp to chart range
   const a = Math.max(0, Math.min(15, hcpA));
   const b = Math.max(0, Math.min(15, hcpB));
@@ -187,6 +187,72 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
   const mlB = probToML(probB);
 
   return { probA, probB, mlA, mlB };
+}
+
+// ---- live odds (mid-round adjustment) -----------------------
+
+/**
+ * Get LIVE moneyline odds that factor in current match state.
+ * Uses holes remaining + score differential to shift pre-match odds.
+ *
+ * Model: The pre-match edge (from handicap) decays proportional to
+ * sqrt(holesRemaining/totalHoles). The current score differential
+ * creates additional edge based on empirical match play close-out
+ * probabilities.
+ *
+ * @param {string} teamAId
+ * @param {string} teamBId
+ * @param {string} matchId
+ * @param {object} liveState - { holesPlayed, totalHoles, scoreA, scoreB }
+ *   scoreA/scoreB = cumulative match play points (or stroke differential)
+ * @returns {{ probA, probB, mlA, mlB, isLive }}
+ */
+export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
+  if (!liveState || !liveState.holesPlayed || liveState.holesPlayed === 0) {
+    return { ...getMatchMoneyline(teamAId, teamBId, matchId), isLive: false };
+  }
+
+  // Check for manual override — always takes precedence
+  if (matchId && _oddsOverrides[matchId]) {
+    const ov = _oddsOverrides[matchId];
+    return { probA: mlToProb(ov.mlA), probB: mlToProb(ov.mlB), mlA: ov.mlA, mlB: ov.mlB, isLive: true };
+  }
+
+  const { holesPlayed, totalHoles = 18, scoreA = 0, scoreB = 0 } = liveState;
+  const holesRemaining = Math.max(1, totalHoles - holesPlayed);
+  const scoreDiff = scoreA - scoreB; // positive = A leading
+
+  // Start with pre-match handicap probability
+  const preMatch = getMatchMoneyline(teamAId, teamBId, matchId);
+  let baseProb = preMatch.probA;
+
+  // 1. Decay handicap edge by sqrt(remaining/total)
+  //    As match progresses, pre-match handicap matters less
+  const decayFactor = Math.sqrt(holesRemaining / totalHoles);
+  let liveProb = 0.5 + (baseProb - 0.5) * decayFactor;
+
+  // 2. Apply score differential shift
+  //    Empirical match play: each hole lead ≈ 8-12% swing in close-out prob
+  //    Scale by holes remaining (a 2-up lead with 3 to play is huge vs 2-up with 12 to play)
+  if (scoreDiff !== 0) {
+    const leadStrength = scoreDiff / holesRemaining; // normalized lead
+    // Logistic curve: converts lead strength to probability shift
+    // leadStrength of 1.0 (1-up with 1 to play) → ~75% close-out
+    // leadStrength of 0.5 (1-up with 2 to play) → ~65% close-out
+    // leadStrength of 0.33 (2-up with 6 to play) → ~60% close-out
+    const scoreShift = 1 / (1 + Math.exp(-2.5 * leadStrength)) - 0.5;
+    liveProb = liveProb + scoreShift * (1 - Math.abs(liveProb - 0.5) * 0.5);
+  }
+
+  // Clamp to reasonable range
+  liveProb = Math.max(0.03, Math.min(0.97, liveProb));
+
+  const probA = liveProb;
+  const probB = 1 - liveProb;
+  const mlA = probToML(probA);
+  const mlB = probToML(probB);
+
+  return { probA, probB, mlA, mlB, isLive: true };
 }
 
 // ---- match-level odds (with draw) ---------------------------

@@ -254,28 +254,39 @@ export async function fetchState() {
 // ── Submit hole scores (admin token if available, otherwise player-mode for round events) ──
 // Includes clientTs for conflict detection on the server
 export async function submitHoleScores(holeNum, scores, clientTs) {
-  try {
-    // Include admin token if present; server accepts unauthenticated for quick/buddies_trip
-    const headers = ADMIN_TOKEN ? adminHeaders() : publicHeaders();
-    const payload = { holeNum, scores };
-    if (clientTs) payload.clientTs = clientTs;
-    const res = await offlineAwareFetch(`${API}/hole`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn('Hole submit rejected:', err.error || res.status);
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const headers = ADMIN_TOKEN ? adminHeaders() : publicHeaders();
+      const payload = { holeNum, scores };
+      if (clientTs) payload.clientTs = clientTs;
+      const res = await offlineAwareFetch(`${API}/hole`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      // Auto-retry on 409 "Sportsbook busy" (concurrent write)
+      if (res.status === 409 && attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+        continue;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.warn('Hole submit rejected:', err.error || res.status);
+        return null;
+      }
+      return await res.json();
+    } catch (e) {
+      if (e.message === 'offline') throw e;
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+        continue;
+      }
+      console.warn('Hole submit failed after retries:', e);
       return null;
     }
-    return await res.json();
-  } catch (e) {
-    console.warn('Hole submit failed (offline?):', e);
-    // Re-throw 'offline' errors so callers can distinguish offline from server errors
-    if (e.message === 'offline') throw e;
-    return null;
   }
+  return null;
 }
 
 // ── Fetch live game state (holes + engine results) ──
@@ -414,6 +425,35 @@ export async function resolveDispute(disputeId, resolution, correctedScore) {
       method: 'POST',
       headers: adminHeaders(),
       body: JSON.stringify({ disputeId, resolution, correctedScore }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// ── Props (propositions / side bets) ──
+export async function fetchProps() {
+  try {
+    const res = await offlineAwareFetch(`${API}/props`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch { return []; }
+}
+
+export async function createProp(prop) {
+  try {
+    const res = await offlineAwareFetch(`${API}/props`, {
+      method: 'POST', headers: publicHeaders(), body: JSON.stringify(prop)
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+export async function acceptProp(propId, player) {
+  try {
+    const res = await offlineAwareFetch(`${API}/props/${propId}/accept`, {
+      method: 'POST', headers: publicHeaders(), body: JSON.stringify({ player })
     });
     if (!res.ok) return null;
     return await res.json();

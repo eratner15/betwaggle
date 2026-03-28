@@ -12,26 +12,58 @@
   <meta property="og:url" content="https://betwaggle.com/demo/">
   <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', -apple-system, sans-serif; background: #0D2818; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
-    .wrap { max-width: 400px; padding: 40px 20px; }
-    h1 { font-family: Georgia, serif; font-size: 28px; font-weight: 700; margin-bottom: 12px; }
-    p { font-size: 15px; color: rgba(255,255,255,.6); line-height: 1.6; margin-bottom: 24px; }
-    .btn { display: inline-block; background: #C9A84C; color: #0D2818; padding: 16px 32px; border-radius: 6px; font-size: 16px; font-weight: 700; text-decoration: none; }
-    .sub { font-size: 12px; color: rgba(255,255,255,.35); margin-top: 16px; }
-    .sub a { color: #C9A84C; text-decoration: none; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F0E8; color: #1a1a1a; min-height: 100vh; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 48px 20px; }
+    h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 700; color: #1A472A; text-align: center; margin-bottom: 8px; }
+    .sub-head { text-align: center; font-size: 15px; color: #6B7280; margin-bottom: 32px; }
+    .demo-card { background: #fff; border: 1.5px solid rgba(26,71,42,0.1); border-radius: 12px; padding: 24px; margin-bottom: 16px; text-decoration: none; display: block; transition: transform 0.15s, box-shadow 0.15s; }
+    .demo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,71,42,0.1); }
+    .demo-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #D4AF37; margin-bottom: 8px; }
+    .demo-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1A472A; margin-bottom: 6px; }
+    .demo-desc { font-size: 14px; color: #6B7280; line-height: 1.5; margin-bottom: 12px; }
+    .demo-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .demo-pill { font-size: 11px; font-weight: 600; background: rgba(212,175,55,0.1); color: #B8962E; padding: 4px 10px; border-radius: 6px; }
+    .demo-arrow { display: flex; align-items: center; justify-content: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(26,71,42,0.06); font-size: 14px; font-weight: 700; color: #1A472A; gap: 6px; }
+    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: #6B7280; }
+    .footer a { color: #1A472A; font-weight: 600; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Waggle Live Demo</h1>
-    <p>Experience the full sportsbook: live odds, real-time scoring, Nassau, Skins, Wolf, and automatic settlement.</p>
-    <a href="/cabot-citrus-invitational/#dashboard" class="btn">Open the Demo</a>
-    <script>
-      // Auto-redirect after 1.5s for fast experience
-      setTimeout(function() { window.location.href = '/cabot-citrus-invitational/#dashboard'; }, 1500);
-    </script>
-    <div class="sub">
+    <h1>See Waggle Live</h1>
+    <p class="sub-head">Pick a format. Scores are pre-loaded so you can see the action mid-round.</p>
+
+    <a href="/demo-buddies/#dashboard" class="demo-card">
+      <div class="demo-label">Buddies Trip</div>
+      <div class="demo-title">The Dunes Trip 2026</div>
+      <div class="demo-desc">4 players at Streamsong Black. Nassau, Skins, and Wolf with real money on the line. See P&L, presses, and side action.</div>
+      <div class="demo-meta">
+        <span class="demo-pill">4 Players</span>
+        <span class="demo-pill">Nassau $10</span>
+        <span class="demo-pill">Skins $5</span>
+        <span class="demo-pill">Thru 12</span>
+      </div>
+      <div class="demo-arrow">Open The Board <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+    </a>
+
+    <a href="/demo-scramble/#dashboard" class="demo-card">
+      <div class="demo-label">Charity Scramble</div>
+      <div class="demo-title">Spring Scramble 2026</div>
+      <div class="demo-desc">8 teams at TPC Sawgrass. Two-person scramble with a tight front 9 leaderboard. Three teams within a shot.</div>
+      <div class="demo-meta">
+        <span class="demo-pill">8 Teams</span>
+        <span class="demo-pill">Scramble</span>
+        <span class="demo-pill">Thru 9</span>
+      </div>
+      <div class="demo-arrow">Open The Board <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+    </a>
+
+    <div class="footer">
       Ready for your own? <a href="/create/">Create Your Outing</a>
     </div>
   </div>

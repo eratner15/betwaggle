@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Your Team — Waggle</title>
+  <meta name="theme-color" content="#0D2818">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:#1A472A; --green-light:#2D6A3E; --gold:#D4AF37; --gold-dim:#B8962E;
+      --ivory:#F5F0E8; --white:#FAFAF7; --dark:#0D2818; --text:#1a1a1a;
+      --muted:#6B7280; --border:#E5E1D8; --win:#16A34A; --lose:#DC2626;
+      --shadow-sm:0 1px 3px rgba(26,71,42,0.06); --shadow-md:0 4px 12px rgba(26,71,42,0.08);
+      --shadow-glow:0 0 24px rgba(212,175,55,0.2);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--ivory);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+    /* ── Header ── */
+    .event-header{background:linear-gradient(135deg,var(--dark),var(--green));color:#fff;padding:32px 20px 28px;text-align:center}
+    .event-header .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(212,175,55,0.12);padding:4px 12px;border-radius:20px;margin-bottom:12px}
+    .event-header h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.2}
+    .event-header .meta{font-size:13px;opacity:0.7;line-height:1.6}
+    .event-header .meta span+span::before{content:' \00b7 '}
+    .event-header .fee{margin-top:14px;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 18px;font-size:15px;font-weight:700;color:var(--gold)}
+    .event-header .fee .label{font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);display:block;margin-bottom:2px}
+
+    /* ── Container ── */
+    .container{max-width:560px;margin:0 auto;padding:0 16px 120px}
+
+    /* ── Form card ── */
+    .form-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:28px 24px;margin-top:-16px;position:relative;z-index:1;box-shadow:var(--shadow-md)}
+    .form-card h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:4px}
+    .form-card .subtitle{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+    /* ── Form elements ── */
+    .form-group{margin-bottom:20px}
+    .form-group label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;letter-spacing:0.3px}
+    .form-group .optional{color:var(--muted);font-weight:400}
+    input[type="text"],input[type="email"],input[type="number"]{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--white);color:var(--text);transition:border 0.2s,box-shadow 0.2s}
+    input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
+    input::placeholder{color:#bbb}
+
+    /* ── Handicap row ── */
+    .hcp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .hcp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .hcp-row .player-name{font-size:13px;font-weight:500;color:var(--text);min-width:60px;flex:1}
+    .hcp-row input{width:80px;text-align:center;padding:10px 8px;flex-shrink:0}
+    .combined-hcp{background:var(--dark);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .combined-hcp .label{font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.5px;text-transform:uppercase}
+    .combined-hcp .value{font-family:'SF Mono','Menlo',monospace;font-size:22px;font-weight:800;color:var(--gold)}
+
+    /* ── Section divider ── */
+    .divider{height:1px;background:var(--border);margin:24px 0}
+    .section-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+
+    /* ── Submit button ── */
+    .btn-primary{width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+    .btn-primary:active{transform:translateY(0)}
+    .btn-pay{background:var(--gold);color:var(--dark)}
+    .btn-register{background:var(--green);color:#fff}
+    .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    .btn-primary .spinner{display:none;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
+    .btn-primary.loading .spinner{display:block}
+    .btn-primary.loading .btn-text{display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Alert ── */
+    .alert{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:16px;display:none}
+    .alert.error{display:block;background:#fef2f2;color:#DC2626;border:1px solid #fecaca}
+    .alert.success{display:block;background:#f0fdf4;color:#16A34A;border:1px solid #bbf7d0}
+
+    /* ── Teams list ── */
+    .teams-section{margin-top:32px}
+    .teams-section h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--dark);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .teams-section .count{font-size:12px;font-weight:600;color:var(--gold);background:rgba(212,175,55,0.12);padding:2px 10px;border-radius:12px}
+    .team-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;transition:box-shadow 0.2s}
+    .team-card:hover{box-shadow:var(--shadow-sm)}
+    .team-card .team-info h4{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:2px}
+    .team-card .team-info .captain{font-size:12px;color:var(--muted)}
+    .team-card .team-info .players{font-size:11px;color:var(--muted);margin-top:2px}
+    .team-card .team-hcp{font-family:'SF Mono','Menlo',monospace;font-size:16px;font-weight:700;color:var(--green);background:rgba(26,71,42,0.06);padding:6px 12px;border-radius:8px}
+    .team-card .paid-badge{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:3px 8px;border-radius:6px;margin-left:8px}
+    .team-card .paid-badge.yes{background:#dcfce7;color:#16A34A}
+    .team-card .paid-badge.no{background:#fef3c7;color:#D97706}
+    .teams-empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:14px}
+    .teams-empty .icon{font-size:32px;margin-bottom:8px;opacity:0.5}
+
+    /* ── Back link ── */
+    .back-link{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--green);text-decoration:none;padding:16px 0 0;margin-bottom:-8px}
+    .back-link:hover{color:var(--green-light)}
+
+    /* ── Sponsors ── */
+    .sponsors-section{margin-top:32px}
+    .sponsors-section h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--dark);margin-bottom:16px}
+    .sponsor-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+    .sponsor-row .hole-num{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+    .sponsor-row .sponsor-name{font-size:14px;font-weight:600;color:var(--dark)}
+    .sponsor-row img{height:28px;border-radius:4px}
+
+    /* ── No-JS fallback ── */
+    noscript .noscript-msg{background:#fef3c7;color:#92400e;padding:16px;border-radius:10px;text-align:center;margin:20px 0;font-size:14px}
+
+    @media(min-width:600px){
+      .event-header h1{font-size:34px}
+      .form-card{padding:36px 32px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- No-JS fallback -->
+<noscript>
+  <div class="container" style="padding-top:20px">
+    <div class="noscript-msg">
+      This registration page requires JavaScript to load event details and submit your team.
+      Please enable JavaScript and reload the page.
+    </div>
+  </div>
+</noscript>
+
+<!-- Event header — populated by JS -->
+<div class="event-header" id="eventHeader">
+  <div class="badge">Team Registration</div>
+  <h1 id="eventName">Loading...</h1>
+  <div class="meta">
+    <span id="eventDate"></span>
+    <span id="eventCourse"></span>
+  </div>
+  <div class="fee" id="entryFeeBox" style="display:none">
+    <span class="label">Entry Fee Per Team</span>
+    <span id="entryFeeAmount"></span>
+  </div>
+</div>
+
+<div class="container">
+  <a href="javascript:history.back()" class="back-link">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to Event
+  </a>
+
+  <!-- Registration form -->
+  <div class="form-card" id="formCard">
+    <h2>Register Your Team</h2>
+    <p class="subtitle">Fill out your team details below. All fields marked with * are required.</p>
+
+    <div id="alertBox" class="alert"></div>
+
+    <form id="registerForm" onsubmit="return false">
+      <!-- Team name -->
+      <div class="form-group">
+        <label>Team Name *</label>
+        <input type="text" id="teamName" placeholder="e.g. The Sandbaggers" required maxlength="60" autocomplete="off">
+      </div>
+
+      <!-- Captain -->
+      <div class="section-label">Captain</div>
+      <div class="form-group">
+        <label>Captain Name *</label>
+        <input type="text" id="captainName" placeholder="Full name" required maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Captain Email *</label>
+        <input type="email" id="captainEmail" placeholder="email@example.com" required maxlength="120">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Players -->
+      <div class="section-label">Players</div>
+      <div class="form-group">
+        <label>Player 2 Name *</label>
+        <input type="text" id="player2" placeholder="Full name" required maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Player 3 Name <span class="optional">(optional)</span></label>
+        <input type="text" id="player3" placeholder="Full name" maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Player 4 Name <span class="optional">(optional)</span></label>
+        <input type="text" id="player4" placeholder="Full name" maxlength="50">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Handicaps -->
+      <div class="section-label">Handicaps</div>
+      <div id="hcpInputs">
+        <div class="hcp-row">
+          <span class="player-name" id="hcpLabel1">Captain</span>
+          <input type="number" class="hcp-input" id="hcp1" placeholder="HCP" min="0" max="54" step="0.1">
+        </div>
+        <div class="hcp-row">
+          <span class="player-name" id="hcpLabel2">Player 2</span>
+          <input type="number" class="hcp-input" id="hcp2" placeholder="HCP" min="0" max="54" step="0.1">
+        </div>
+        <div class="hcp-row">
+          <span class="player-name" id="hcpLabel3">Player 3</span>
+          <input type="number" class="hcp-input" id="hcp3" placeholder="HCP" min="0" max="54" step="0.1">
+        </div>
+        <div class="hcp-row">
+          <span class="player-name" id="hcpLabel4">Player 4</span>
+          <input type="number" class="hcp-input" id="hcp4" placeholder="HCP" min="0" max="54" step="0.1">
+        </div>
+      </div>
+      <div class="combined-hcp">
+        <span class="label">Combined Team HCP</span>
+        <span class="value" id="combinedHcp">--</span>
+      </div>
+
+      <!-- Submit -->
+      <div style="margin-top:28px">
+        <button type="button" class="btn-primary btn-register" id="submitBtn" onclick="handleSubmit()">
+          <span class="btn-text" id="btnText">Register Team</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Registered teams list -->
+  <div class="teams-section" id="teamsSection">
+    <h3>Registered Teams <span class="count" id="teamCount">0</span></h3>
+    <div id="teamsList">
+      <div class="teams-empty">
+        <div class="icon">&#9971;</div>
+        <div>No teams registered yet. Be the first!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hole sponsors -->
+  <div class="sponsors-section" id="sponsorsSection" style="display:none">
+    <h3>Hole Sponsors</h3>
+    <div id="sponsorsList"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Extract slug from URL: /:slug/register
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const slug = pathParts[0] || '';
+  if (!slug) {
+    document.getElementById('eventName').textContent = 'Event Not Found';
+    return;
+  }
+
+  const API_BASE = '/' + slug + '/api';
+  let eventConfig = null;
+  let entryFee = 0;
+
+  // Load event config
+  async function loadEvent() {
+    try {
+      const res = await fetch('/' + slug + '/config.json');
+      if (!res.ok) throw new Error('Event not found');
+      eventConfig = await res.json();
+
+      const ev = eventConfig.event || {};
+      document.getElementById('eventName').textContent = ev.name || ev.shortName || slug;
+      document.title = (ev.name || 'Register') + ' — Team Registration';
+
+      const dateParts = [];
+      if (ev.dates?.day1) dateParts.push(ev.dates.day1);
+      else if (ev.date) dateParts.push(ev.date);
+      document.getElementById('eventDate').textContent = dateParts.join('');
+
+      const course = ev.course || ev.venue || eventConfig.course?.name || '';
+      document.getElementById('eventCourse').textContent = course;
+
+      // Entry fee
+      entryFee = eventConfig.scrambleEntryFee || eventConfig.entryFee || 0;
+      if (entryFee > 0) {
+        document.getElementById('entryFeeBox').style.display = 'inline-block';
+        document.getElementById('entryFeeAmount').textContent = '$' + entryFee;
+        document.getElementById('btnText').textContent = 'Pay & Register \u2014 $' + entryFee;
+        document.getElementById('submitBtn').classList.remove('btn-register');
+        document.getElementById('submitBtn').classList.add('btn-pay');
+      }
+
+      // Load sponsors
+      loadSponsors();
+    } catch (e) {
+      document.getElementById('eventName').textContent = 'Event Not Found';
+      document.getElementById('formCard').innerHTML = '<div class="alert error" style="display:block">Could not load event. Check the URL and try again.</div>';
+    }
+  }
+
+  // Load registered teams
+  async function loadTeams() {
+    try {
+      const res = await fetch(API_BASE + '/teams');
+      if (!res.ok) return;
+      const teams = await res.json();
+      renderTeams(teams);
+    } catch {}
+  }
+
+  function renderTeams(teams) {
+    const count = teams.length;
+    document.getElementById('teamCount').textContent = count;
+
+    if (count === 0) {
+      document.getElementById('teamsList').innerHTML = '<div class="teams-empty"><div class="icon">&#9971;</div><div>No teams registered yet. Be the first!</div></div>';
+      return;
+    }
+
+    let html = '';
+    teams.forEach(function(t) {
+      const players = (t.players || []).filter(function(p) { return p; });
+      const playerNames = players.length > 0 ? players.join(', ') : '';
+      const paidClass = t.paid ? 'yes' : 'no';
+      const paidLabel = t.paid ? 'Paid' : 'Pending';
+      html += '<div class="team-card">'
+        + '<div class="team-info">'
+        + '<h4>' + escHtml(t.name) + (entryFee > 0 ? '<span class="paid-badge ' + paidClass + '">' + paidLabel + '</span>' : '') + '</h4>'
+        + '<div class="captain">Captain: ' + escHtml(t.captain) + '</div>'
+        + (playerNames ? '<div class="players">' + escHtml(playerNames) + '</div>' : '')
+        + '</div>'
+        + '<div class="team-hcp">' + (t.handicap ? t.handicap.toFixed(1) : '--') + '</div>'
+        + '</div>';
+    });
+    document.getElementById('teamsList').innerHTML = html;
+  }
+
+  // Load hole sponsors
+  async function loadSponsors() {
+    try {
+      const res = await fetch(API_BASE + '/sponsors');
+      if (!res.ok) return;
+      const sponsors = await res.json();
+      if (!sponsors || Object.keys(sponsors).length === 0) return;
+
+      document.getElementById('sponsorsSection').style.display = 'block';
+      let html = '';
+      const holes = Object.keys(sponsors).sort(function(a, b) { return parseInt(a) - parseInt(b); });
+      holes.forEach(function(h) {
+        const s = sponsors[h];
+        html += '<div class="sponsor-row">'
+          + '<span class="hole-num">Hole ' + h + '</span>'
+          + '<span class="sponsor-name">' + escHtml(s.name) + '</span>'
+          + (s.logo ? '<img src="' + escHtml(s.logo) + '" alt="' + escHtml(s.name) + '">' : '')
+          + '</div>';
+      });
+      document.getElementById('sponsorsList').innerHTML = html;
+    } catch {}
+  }
+
+  // Calculate combined handicap
+  function updateCombinedHcp() {
+    var total = 0;
+    var count = 0;
+    for (var i = 1; i <= 4; i++) {
+      var val = parseFloat(document.getElementById('hcp' + i).value);
+      if (!isNaN(val)) { total += val; count++; }
+    }
+    document.getElementById('combinedHcp').textContent = count > 0 ? total.toFixed(1) : '--';
+  }
+
+  // Bind handicap inputs
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('hcp' + i).addEventListener('input', updateCombinedHcp);
+  }
+
+  // Update HCP labels when player names change
+  document.getElementById('captainName').addEventListener('input', function() {
+    document.getElementById('hcpLabel1').textContent = this.value.trim() || 'Captain';
+  });
+  document.getElementById('player2').addEventListener('input', function() {
+    document.getElementById('hcpLabel2').textContent = this.value.trim() || 'Player 2';
+  });
+  document.getElementById('player3').addEventListener('input', function() {
+    document.getElementById('hcpLabel3').textContent = this.value.trim() || 'Player 3';
+  });
+  document.getElementById('player4').addEventListener('input', function() {
+    document.getElementById('hcpLabel4').textContent = this.value.trim() || 'Player 4';
+  });
+
+  // Submit handler
+  window.handleSubmit = async function() {
+    var alertBox = document.getElementById('alertBox');
+    alertBox.className = 'alert';
+    alertBox.textContent = '';
+
+    var teamName = document.getElementById('teamName').value.trim();
+    var captain = document.getElementById('captainName').value.trim();
+    var captainEmail = document.getElementById('captainEmail').value.trim();
+    var player2 = document.getElementById('player2').value.trim();
+    var player3 = document.getElementById('player3').value.trim();
+    var player4 = document.getElementById('player4').value.trim();
+
+    if (!teamName || !captain || !captainEmail || !player2) {
+      alertBox.className = 'alert error';
+      alertBox.textContent = 'Please fill in all required fields (team name, captain name, email, and player 2).';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(captainEmail)) {
+      alertBox.className = 'alert error';
+      alertBox.textContent = 'Please enter a valid email address.';
+      return;
+    }
+
+    var players = [captain, player2];
+    if (player3) players.push(player3);
+    if (player4) players.push(player4);
+
+    // Calculate combined HCP
+    var totalHcp = 0;
+    var hcpCount = 0;
+    for (var i = 1; i <= 4; i++) {
+      var v = parseFloat(document.getElementById('hcp' + i).value);
+      if (!isNaN(v)) { totalHcp += v; hcpCount++; }
+    }
+    var handicap = hcpCount > 0 ? parseFloat(totalHcp.toFixed(1)) : 0;
+
+    var btn = document.getElementById('submitBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      // If there's an entry fee, go through Stripe checkout
+      if (entryFee > 0) {
+        // First register the team (unpaid)
+        var regRes = await fetch(API_BASE + '/teams/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamName: teamName, captain: captain, captainEmail: captainEmail, players: players, handicap: handicap })
+        });
+        var regData = await regRes.json();
+        if (!regRes.ok) throw new Error(regData.error || 'Registration failed');
+
+        // Then create Stripe checkout
+        var checkRes = await fetch(API_BASE + '/teams/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamId: regData.team.id })
+        });
+        var checkData = await checkRes.json();
+        if (!checkRes.ok) throw new Error(checkData.error || 'Checkout failed');
+
+        if (checkData.checkoutUrl) {
+          window.location.href = checkData.checkoutUrl;
+          return;
+        }
+      }
+
+      // Free registration (no entry fee)
+      var res = await fetch(API_BASE + '/teams/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamName: teamName, captain: captain, captainEmail: captainEmail, players: players, handicap: handicap })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      // Success
+      alertBox.className = 'alert success';
+      alertBox.textContent = 'Team "' + teamName + '" registered successfully!';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('registerForm').reset();
+      document.getElementById('combinedHcp').textContent = '--';
+      ['hcpLabel1','hcpLabel2','hcpLabel3','hcpLabel4'].forEach(function(id, i) {
+        document.getElementById(id).textContent = ['Captain','Player 2','Player 3','Player 4'][i];
+      });
+
+      // Reload teams
+      loadTeams();
+    } catch (e) {
+      alertBox.className = 'alert error';
+      alertBox.textContent = e.message || 'Something went wrong. Please try again.';
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  };
+
+  function escHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  // Check for Stripe success redirect
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('paid') === 'true') {
+    setTimeout(function() {
+      var alertBox = document.getElementById('alertBox');
+      alertBox.className = 'alert success';
+      alertBox.textContent = 'Payment successful! Your team is registered and confirmed.';
+    }, 500);
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  // Init
+  loadEvent();
+  loadTeams();
+})();
+</script>
+</body>
+</html>

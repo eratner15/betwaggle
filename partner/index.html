@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0D2818">
+  <title>Partner Dashboard | Waggle</title>
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAFAF7;
+      --bg-alt: #F0EDE6;
+      --surface: #FFFFFF;
+      --surface-hover: #F9F8F5;
+      --green-dark: #0D2818;
+      --green: #2D6A4F;
+      --green-light: #40916C;
+      --gold: #C9A84C;
+      --gold-dim: #A68B3A;
+      --text: #1A1A1A;
+      --text-secondary: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E2DA;
+      --border-gold: rgba(201,168,76,0.3);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    .header {
+      background: var(--green-dark);
+      padding: 20px 24px;
+      border-bottom: 3px solid var(--gold);
+    }
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-left img { height: 32px; width: 32px; }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.3px;
+    }
+    .header-partner-name {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      display: none;
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-code {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Inter', monospace;
+      display: none;
+    }
+    .logout-link {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      cursor: pointer;
+      display: none;
+    }
+    .logout-link:hover { color: #fff; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* Login */
+    .login-wrap {
+      max-width: 420px;
+      margin: 80px auto 0;
+      text-align: center;
+    }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+    }
+    .login-card .subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+    .login-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .login-input-row input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-input-row input::placeholder { color: var(--text-muted); }
+    .login-input-row input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,106,79,0.1); }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--green-dark);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #163A24; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--green-dark);
+    }
+    .btn-gold:hover { background: var(--gold-dim); }
+    .btn-outline {
+      background: transparent;
+      color: var(--green);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--bg-alt); border-color: var(--green); }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .error-msg {
+      color: #DC2626;
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Dashboard layout */
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .login-wrap.hidden { display: none; }
+
+    /* Welcome bar */
+    .welcome-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .welcome-bar h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      color: var(--green-dark);
+    }
+    .welcome-bar .partner-code {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    /* Revenue cards */
+    .revenue-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .revenue-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .revenue-card.featured {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, #fff 0%, #FDF8EE 100%);
+    }
+    .revenue-card .revenue-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--green-dark);
+      line-height: 1.1;
+    }
+    .revenue-card.featured .revenue-value { color: var(--gold-dim); }
+    .revenue-card .revenue-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 6px;
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .section-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--green-dark);
+    }
+
+    /* Event cards */
+    .events-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .event-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s;
+    }
+    .event-card:hover { box-shadow: var(--shadow-md); }
+    .event-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .event-name {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--green-dark);
+    }
+    .event-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .event-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .event-status.active {
+      background: rgba(34,197,94,0.1);
+      color: #16A34A;
+    }
+    .event-status.complete {
+      background: rgba(107,114,128,0.1);
+      color: #6B7280;
+    }
+    .event-status.upcoming {
+      background: rgba(59,130,246,0.1);
+      color: #2563EB;
+    }
+    .event-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .empty-card {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .empty-card p { margin-bottom: 16px; }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-box .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+    .stat-box .stat-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-top: 4px;
+    }
+
+    /* Team database */
+    .team-db-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+    .team-db-info {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .team-db-info strong {
+      color: var(--text);
+    }
+    .team-db-actions { display: flex; gap: 8px; }
+
+    /* Search modal */
+    .search-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 80px 16px;
+    }
+    .search-overlay.active { display: flex; }
+    .search-modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 600px;
+      max-height: 70vh;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+    }
+    .search-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .search-modal-header input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      background: transparent;
+      color: var(--text);
+    }
+    .search-modal-header input::placeholder { color: var(--text-muted); }
+    .search-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+    .search-results {
+      overflow-y: auto;
+      padding: 8px 0;
+      max-height: 50vh;
+    }
+    .search-result-item {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--bg-alt);
+      font-size: 13px;
+      cursor: default;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-name { font-weight: 600; color: var(--text); }
+    .search-result-meta { color: var(--text-secondary); margin-top: 2px; }
+    .search-empty {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Payout table */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+    }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--bg-alt);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 16px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 14px 16px;
+      border-top: 1px solid var(--bg-alt);
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: var(--surface-hover); }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .status-badge.pending {
+      background: rgba(234,179,8,0.12);
+      color: #B45309;
+    }
+    .status-badge.paid {
+      background: rgba(34,197,94,0.1);
+      color: #16A34A;
+    }
+    .payout-empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Payout request bar */
+    .payout-request-bar {
+      background: var(--surface);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+    .payout-request-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gold-dim);
+    }
+    .payout-request-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .payout-msg {
+      font-size: 13px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .payout-msg.success { color: #16A34A; }
+    .payout-msg.error { color: #DC2626; }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Loading overlay */
+    .loading-overlay {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container { padding: 20px 14px 40px; }
+      .revenue-grid { grid-template-columns: 1fr; gap: 10px; }
+      .stats-row { grid-template-columns: 1fr; gap: 10px; }
+      .revenue-card { padding: 16px; }
+      .revenue-card .revenue-value { font-size: 26px; }
+      .welcome-bar h2 { font-size: 22px; }
+      .event-card-top { flex-direction: column; }
+      .team-db-bar { flex-direction: column; text-align: center; }
+      .payout-request-bar { flex-direction: column; text-align: center; }
+      .login-input-row { flex-direction: column; }
+      .login-input-row .btn { width: 100%; justify-content: center; }
+      .header-inner { flex-direction: column; gap: 8px; text-align: center; }
+    }
+    @media (min-width: 641px) {
+      .revenue-grid { grid-template-columns: repeat(3, 1fr); }
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <img src="/bet_waggle_logo_no_background.png" alt="Waggle">
+        <div>
+          <h1>Partner Dashboard</h1>
+          <div class="header-partner-name" id="header-partner-name"></div>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="header-code" id="header-code"></span>
+        <a class="logout-link" id="logout-link" onclick="logout()">Sign out</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div class="login-wrap" id="login-wrap">
+    <div class="login-card">
+      <h2>Partner Login</h2>
+      <p class="subtitle">Enter your affiliate code to access your dashboard.</p>
+      <div class="login-input-row">
+        <input type="text" id="code-input" placeholder="Affiliate code" autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+      </div>
+      <div class="error-msg" id="login-error"></div>
+    </div>
+    <p style="margin-top:16px;font-size:13px;color:var(--text-muted)">
+      Not a partner yet? <a href="/affiliates/" style="color:var(--green);font-weight:600">Apply here</a>
+    </p>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <div class="container">
+
+      <!-- Welcome -->
+      <div class="welcome-bar">
+        <div>
+          <h2 id="welcome-name">Partner Dashboard</h2>
+          <span class="partner-code" id="welcome-code"></span>
+        </div>
+        <a href="/create/" class="btn btn-gold">+ Create New Event</a>
+      </div>
+
+      <!-- Revenue summary -->
+      <div class="revenue-grid">
+        <div class="revenue-card">
+          <div class="revenue-value" id="rev-month">$0</div>
+          <div class="revenue-label">This Month</div>
+        </div>
+        <div class="revenue-card">
+          <div class="revenue-value" id="rev-year">$0</div>
+          <div class="revenue-label">This Year</div>
+        </div>
+        <div class="revenue-card featured">
+          <div class="revenue-value" id="rev-all">$0</div>
+          <div class="revenue-label">All Time</div>
+        </div>
+      </div>
+
+      <!-- Events -->
+      <div class="section-header">
+        <h3>Your Events</h3>
+        <span id="event-count" style="font-size:13px;color:var(--text-muted)"></span>
+      </div>
+      <div class="events-list" id="events-list">
+        <div class="loading-overlay"><span class="spinner"></span> Loading events...</div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="section-header">
+        <h3>Quick Stats</h3>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-events">0</div>
+          <div class="stat-lbl">Total Events</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-teams">0</div>
+          <div class="stat-lbl">Total Teams</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-avg">0</div>
+          <div class="stat-lbl">Avg Teams / Event</div>
+        </div>
+      </div>
+
+      <!-- Team Database -->
+      <div class="section-header">
+        <h3>Team Database</h3>
+      </div>
+      <div class="team-db-bar">
+        <div class="team-db-info" id="team-db-info">
+          <strong>0</strong> teams across <strong>0</strong> events
+        </div>
+        <div class="team-db-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportCSV()">Export CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="openSearch()">Search Teams</button>
+        </div>
+      </div>
+
+      <!-- Payout section -->
+      <div class="section-header">
+        <h3>Payout History</h3>
+      </div>
+      <div class="payout-request-bar">
+        <div>
+          <div class="payout-request-amount" id="payout-owed">$0.00</div>
+          <div class="payout-request-label">Available for payout</div>
+        </div>
+        <button class="btn btn-gold" id="payout-btn" onclick="requestPayout()">Request Payout</button>
+      </div>
+      <div class="payout-msg" id="payout-msg"></div>
+
+      <div class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Events</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="payout-tbody">
+              <tr><td colspan="4" class="payout-empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Search overlay -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-modal">
+      <div class="search-modal-header">
+        <input type="text" id="search-input" placeholder="Search teams by name..." oninput="filterTeams()">
+        <button class="search-close" onclick="closeSearch()">&times;</button>
+      </div>
+      <div class="search-results" id="search-results">
+        <div class="search-empty">Type to search across all your events</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentCode = '';
+    let dashboardData = null;
+    let allTeams = [];
+
+    // Init: check URL param or localStorage
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = params.get('code');
+      const savedCode = localStorage.getItem('waggle_partner_code');
+      const code = urlCode || savedCode;
+      if (code) {
+        document.getElementById('code-input').value = code;
+        doLogin();
+      }
+      document.getElementById('code-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doLogin();
+      });
+    })();
+
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function fmtCents(cents) {
+      if (cents >= 100) return '$' + Math.floor(cents / 100).toLocaleString() + (cents % 100 ? '.' + String(cents % 100).padStart(2, '0') : '');
+      return '$' + (cents / 100).toFixed(2);
+    }
+    function fmtDollars(cents) {
+      return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    async function doLogin() {
+      const input = document.getElementById('code-input');
+      const code = input.value.trim().toLowerCase();
+      if (!code) { showError('Please enter your affiliate code.'); return; }
+
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+      hideError();
+
+      try {
+        const resp = await fetch('/api/partner/' + encodeURIComponent(code));
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          showError(data.error || 'Partner not found. Check your code.');
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
+          return;
+        }
+        const data = await resp.json();
+        currentCode = code;
+        dashboardData = data;
+        localStorage.setItem('waggle_partner_code', code);
+        window.history.replaceState({}, '', '/partner/?code=' + encodeURIComponent(code));
+        renderDashboard(data);
+      } catch (err) {
+        showError('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('login-wrap').classList.add('hidden');
+      document.getElementById('dashboard').classList.add('active');
+
+      const aff = data.affiliate || {};
+      const name = aff.name || 'Partner';
+
+      // Header
+      document.getElementById('header-partner-name').textContent = name;
+      document.getElementById('header-partner-name').style.display = 'block';
+      document.getElementById('header-code').textContent = aff.code || currentCode;
+      document.getElementById('header-code').style.display = 'inline';
+      document.getElementById('logout-link').style.display = 'inline';
+
+      // Welcome
+      document.getElementById('welcome-name').textContent = name;
+      document.getElementById('welcome-code').textContent = 'Code: ' + (aff.code || currentCode);
+
+      // Revenue
+      const rev = data.revenue || {};
+      document.getElementById('rev-month').textContent = fmtDollars(rev.thisMonth || 0);
+      document.getElementById('rev-year').textContent = fmtDollars(rev.thisYear || 0);
+      document.getElementById('rev-all').textContent = fmtDollars(rev.allTime || 0);
+
+      // Events
+      const events = data.events || [];
+      const eventsList = document.getElementById('events-list');
+      document.getElementById('event-count').textContent = events.length + ' event' + (events.length !== 1 ? 's' : '');
+
+      if (events.length === 0) {
+        eventsList.innerHTML = '<div class="empty-card"><p>No events yet. Create your first event to get started.</p><a href="/create/?ref=' + encodeURIComponent(currentCode) + '" class="btn btn-gold">Create Event</a></div>';
+      } else {
+        eventsList.innerHTML = events.map(function(ev) {
+          const date = ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const teamCount = ev.teamCount || 0;
+          const price = ev.priceCents ? fmtDollars(ev.priceCents) : '';
+          const statusClass = ev.status === 'active' ? 'active' : ev.status === 'complete' ? 'complete' : 'upcoming';
+          const statusLabel = ev.status === 'active' ? 'Active' : ev.status === 'complete' ? 'Complete' : 'Upcoming';
+          return '<div class="event-card">' +
+            '<div class="event-card-top">' +
+              '<div>' +
+                '<div class="event-name">' + escHtml(ev.name || ev.slug) + '</div>' +
+                '<div class="event-meta">' + [date, teamCount + ' teams', price].filter(Boolean).join(' &middot; ') + '</div>' +
+              '</div>' +
+              '<span class="event-status ' + statusClass + '">' + statusLabel + '</span>' +
+            '</div>' +
+            '<div class="event-actions">' +
+              '<a href="/' + escHtml(ev.slug) + '/" class="btn btn-outline btn-sm">View</a>' +
+              '<a href="/' + escHtml(ev.slug) + '/#admin" class="btn btn-outline btn-sm">Manage</a>' +
+              '<a href="/' + escHtml(ev.slug) + '/#leaderboard" class="btn btn-outline btn-sm">Leaderboard</a>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      // Stats
+      const stats = data.stats || {};
+      document.getElementById('stat-events').textContent = stats.totalEvents || 0;
+      document.getElementById('stat-teams').textContent = stats.totalTeams || 0;
+      document.getElementById('stat-avg').textContent = stats.avgTeamsPerEvent || '0';
+
+      // Team DB
+      allTeams = data.teams || [];
+      document.getElementById('team-db-info').innerHTML = '<strong>' + allTeams.length + '</strong> teams across <strong>' + (stats.totalEvents || 0) + '</strong> events';
+
+      // Payout
+      const owed = data.owed_cents || 0;
+      document.getElementById('payout-owed').textContent = fmtCents(owed);
+      const payoutBtn = document.getElementById('payout-btn');
+      if (owed < 2000) {
+        payoutBtn.disabled = true;
+        payoutBtn.title = 'Minimum $20 required';
+      }
+
+      // Payout table
+      renderPayoutTable(data.referrals || []);
+    }
+
+    function renderPayoutTable(referrals) {
+      const tbody = document.getElementById('payout-tbody');
+      if (referrals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="payout-empty">No referral history yet.</td></tr>';
+        return;
+      }
+      // Group by month
+      const months = {};
+      referrals.forEach(function(r) {
+        const d = r.created_at ? new Date(r.created_at + (r.created_at.includes('Z') ? '' : 'Z')) : new Date();
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (!months[key]) months[key] = { events: 0, cents: 0, statuses: [] };
+        months[key].events++;
+        months[key].cents += (r.commission_cents || 0);
+        months[key].statuses.push(r.status);
+      });
+      const sortedKeys = Object.keys(months).sort().reverse();
+      tbody.innerHTML = sortedKeys.map(function(key) {
+        const m = months[key];
+        const [y, mo] = key.split('-');
+        const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const allPaid = m.statuses.every(function(s) { return s === 'paid'; });
+        const statusClass = allPaid ? 'paid' : 'pending';
+        const statusText = allPaid ? 'Paid' : 'Pending';
+        return '<tr>' +
+          '<td>' + label + '</td>' +
+          '<td>' + m.events + ' event' + (m.events !== 1 ? 's' : '') + '</td>' +
+          '<td style="font-weight:600">' + fmtCents(m.cents) + '</td>' +
+          '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    async function requestPayout() {
+      const btn = document.getElementById('payout-btn');
+      const msgEl = document.getElementById('payout-msg');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+      msgEl.style.display = 'none';
+      try {
+        const resp = await fetch('/api/partner/' + encodeURIComponent(currentCode) + '/payout-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: currentCode })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          msgEl.className = 'payout-msg success';
+          msgEl.textContent = 'Payout request submitted. Expect payment within 3-5 business days.';
+        } else {
+          msgEl.className = 'payout-msg error';
+          msgEl.textContent = data.error || 'Failed to request payout.';
+          btn.disabled = false;
+        }
+      } catch {
+        msgEl.className = 'payout-msg error';
+        msgEl.textContent = 'Network error. Please try again.';
+        btn.disabled = false;
+      }
+      msgEl.style.display = 'block';
+      btn.textContent = 'Request Payout';
+    }
+
+    function exportCSV() {
+      if (!allTeams.length) { alert('No teams to export.'); return; }
+      const header = 'Event,Team Name,Members,Handicap\n';
+      const rows = allTeams.map(function(t) {
+        return [t.event || '', t.name || '', t.members || '', t.handicap || ''].map(function(v) {
+          return '"' + String(v).replace(/"/g, '""') + '"';
+        }).join(',');
+      }).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'waggle-teams-' + currentCode + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function openSearch() {
+      document.getElementById('search-overlay').classList.add('active');
+      document.getElementById('search-input').value = '';
+      document.getElementById('search-input').focus();
+      renderSearchResults(allTeams.slice(0, 50));
+    }
+    function closeSearch() {
+      document.getElementById('search-overlay').classList.remove('active');
+    }
+    function filterTeams() {
+      const q = document.getElementById('search-input').value.trim().toLowerCase();
+      if (!q) { renderSearchResults(allTeams.slice(0, 50)); return; }
+      const filtered = allTeams.filter(function(t) {
+        return (t.name || '').toLowerCase().includes(q) ||
+               (t.members || '').toLowerCase().includes(q) ||
+               (t.event || '').toLowerCase().includes(q);
+      });
+      renderSearchResults(filtered.slice(0, 50));
+    }
+    function renderSearchResults(teams) {
+      const el = document.getElementById('search-results');
+      if (!teams.length) {
+        el.innerHTML = '<div class="search-empty">No teams found</div>';
+        return;
+      }
+      el.innerHTML = teams.map(function(t) {
+        return '<div class="search-result-item">' +
+          '<div class="search-result-name">' + escHtml(t.name || 'Unnamed') + '</div>' +
+          '<div class="search-result-meta">' + escHtml(t.event || '') + ' &middot; ' + escHtml(t.members || '') + '</div>' +
+        '</div>';
+      }).join('');
+    }
+    // Close search on escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeSearch();
+    });
+    // Close search on overlay click
+    document.getElementById('search-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeSearch();
+    });
+
+    function logout() {
+      localStorage.removeItem('waggle_partner_code');
+      currentCode = '';
+      dashboardData = null;
+      allTeams = [];
+      window.history.replaceState({}, '', '/partner/');
+      document.getElementById('login-wrap').classList.remove('hidden');
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('code-input').value = '';
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = 'Sign In';
+      document.getElementById('header-partner-name').style.display = 'none';
+      document.getElementById('header-code').style.display = 'none';
+      document.getElementById('logout-link').style.display = 'none';
+      document.getElementById('payout-msg').style.display = 'none';
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('login-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideError() {
+      document.getElementById('login-error').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

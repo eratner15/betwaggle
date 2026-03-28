@@ -14,6 +14,7 @@ export async function loadConfig(slug, basePath) {
 // Builds the full matches map from config pairings.
 export function generateMatches(config) {
   const matches = {};
+  if (!config.flightOrder || !Array.isArray(config.flightOrder)) return matches;
   for (const flightId of config.flightOrder) {
     for (let round = 1; round <= config.structure.roundsTotal; round++) {
       const pairings = config.pairings[flightId][round];

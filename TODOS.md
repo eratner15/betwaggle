@@ -21,72 +21,63 @@
 
 ---
 
+## P0.5: Code Quality (completed 2026-03-26)
+- [x] Meta Pixel — reads from env.META_PIXEL_ID, no more hardcoded placeholder
+- [x] Demo auto-spectate — demo events bypass "Who are you?" modal
+- [x] Service worker cache versioning (CACHE_VERSION const, stale cache cleanup on activate)
+- [x] Rate limit POST /bet — 30 bets/hr per IP (KV-backed, 429 response)
+- [x] Betting engine test suite — 572 tests (ML table symmetry, odds roundtrip, settlement, vig, edge cases)
+- [x] Live odds engine — getLiveMatchMoneyline() adjusts odds mid-round based on holes played + score differential
+- [x] Pricing page (/pricing) — 3-tier comparison (Weekend Warrior / Buddies / Member-Guest)
+- [x] Affiliate dashboard UI (/affiliate/dashboard) — stats, referral history, payout requests
+- [ ] Worker.js modularization (5500 lines → lib/ modules) — in progress
+
+---
+
 ## P1: Critical Architecture (v2 sprint)
 
-### Durable Objects migration (KV concurrency)
-**Problem:** Cloudflare KV is eventually consistent. Two carts submitting scores simultaneously can overwrite each other. Current mitigation: timestamp-based conflict detection + dispute resolution UI.
-**Fix:** Migrate live game state (scores, bets, game-state) to Cloudflare Durable Objects for single-threaded, transactional writes. Keep KV for configs and static data.
-**Effort:** L (human: 2 weeks / CC: ~4 hours)
-**Risk:** Architecture change — needs careful migration path. Events created before migration need backward compat.
-**Depends on:** Nothing — can be done independently.
+### ~~Durable Objects migration (KV concurrency)~~
+**Status:** MITIGATED — KV write mutex + merge-not-overwrite pattern added to score POST. Short-lived lock key (5s TTL) serializes writes, scores are merged not replaced. Full DO migration deferred until concurrent user load justifies it.
 
-### DOM diffing (performance)
-**Problem:** views.js re-renders entire innerHTML every 30s sync. On mobile: destroys scroll position, cancels touch highlights, drains battery.
-**Fix:** Implement targeted DOM updates — only mutate elements whose data changed. Options: (A) morphdom library, (B) manual ID-targeted updates for scores/standings, (C) virtual DOM (preact/htm).
-**Effort:** M (human: 1 week / CC: ~2 hours)
-**Risk:** Low if using morphdom (drop-in). High if manual (lots of IDs to track).
-**Depends on:** Nothing.
+### ~~DOM diffing (performance)~~
+**Status:** DONE — Lightweight morphdom alternative implemented (`app/js/morph.js`). First render uses full innerHTML, subsequent re-renders diff only changed nodes. Preserves scroll position, focus, and animations.
 
 ### WebSocket real-time push
 **Problem:** 30s polling means scores take up to 30s to appear on other devices. The .live-dot pulses but the data is stale.
 **Fix:** Cloudflare Durable Objects + WebSocket connections. When a score is submitted, push to all connected clients instantly.
 **Effort:** L (human: 2 weeks / CC: ~4 hours)
 **Risk:** Requires Durable Objects (bundle with that migration).
-**Depends on:** Durable Objects migration.
+**Depends on:** Full Durable Objects migration.
 
 ---
 
 ## P1: User Experience (v2 sprint)
 
-### Trophy Room (permanent event URLs)
-**Problem:** After an event ends, the URL still shows the live sportsbook UI. No way to "lock" it as a permanent record.
-**Fix:** When commissioner marks event complete, freeze the URL into a read-only "Trophy Room" state. Show final standings, settlement, AI recap, memorable moments. This becomes a digital monument — guys link back to it for years.
-**Effort:** M (human: 1 week / CC: ~1 hour)
-**Depends on:** Event completion flow (already built — POST /event/complete).
+### ~~Trophy Room (permanent event URLs)~~
+**Status:** DONE — POST `/:slug/api/event/freeze` endpoint freezes events into read-only "complete" state with `frozenAt` timestamp.
 
-### Event cloning
-**Problem:** Commissioner runs the same trip every year. No way to duplicate an event with same players/games/course.
-**Fix:** "Clone this event" button on /my-events/ that pre-fills the create wizard with last year's config.
-**Effort:** S (human: 2 days / CC: ~20 min)
-**Depends on:** Commissioner dashboard (done).
+### ~~Event cloning~~
+**Status:** DONE — GET `/:slug/api/event/clone-config` returns sanitized config. Create wizard supports `?clone=SLUG` param, pre-fills all fields with "(Copy)" suffix and green banner.
 
-### Co-organizer support
+### ~~Co-organizer support~~
 **Problem:** Single admin PIN per event. If commissioner loses PIN, no recovery. Can't invite a co-organizer.
 **Fix:** Allow multiple admin emails per event. Each gets their own magic link. Commissioner can invite co-admins from the admin panel.
 **Effort:** M (human: 1 week / CC: ~1 hour)
 **Depends on:** Magic link auth (done).
+**Status:** DEFERRED — not blocking launch.
 
-### Bulk player import on existing events
-**Problem:** Can only add players one at a time after event creation (POST /event/add-player). Large groups (20+) need CSV/paste import.
-**Fix:** Add CSV/paste import to the admin player management tab (same parser as create wizard).
-**Effort:** S (human: 2 days / CC: ~15 min)
-**Depends on:** Event editing (done).
+### ~~Bulk player import on existing events~~
+**Status:** DONE — POST `/:slug/api/event/bulk-import-players` accepts JSON array or CSV. Admin UI has collapsible "Paste multiple players" textarea on The Board.
 
 ---
 
 ## P2: Growth & Marketing
 
-### Settlement card AI recap in share text
-**Problem:** The AI recap (getRecap) generates great narrative but it's buried. Not included in the share payload.
-**Fix:** After round completes, auto-fetch recap and append a 1-2 sentence snippet to the settlement share text. "Tiger closed out the front with a clutch birdie on 9. Rory's skins haul was the story of the day."
-**Effort:** S (human: 1 day / CC: ~15 min)
-**Depends on:** AI recap endpoint (done), settlement share (done).
+### ~~Settlement card AI recap in share text~~
+**Status:** DONE — Already implemented in shareSettlement() handler. Fetches recap and appends to share text.
 
-### Formal invitation generator
-**Problem:** Success page has "Copy Formal Invitation" but the auto-share flow (iMessage) doesn't use it.
-**Fix:** Make the formal invitation the DEFAULT share text when commissioner taps "Share with Group" on success page. Not the raw URL.
-**Effort:** S (CC: ~10 min)
-**Depends on:** Nothing.
+### ~~Formal invitation generator~~
+**Status:** DONE — "Share with Group" now uses formal invitation text as default share body (event name, tagline, stakes, date, URL).
 
 ### Google Ads + Meta Pixel activation
 **Problem:** Placeholder IDs (AW-PLACEHOLDER, PIXEL_PLACEHOLDER) in the code. No real tracking yet.
@@ -100,51 +91,38 @@
 **Effort:** M (human: 3 days / CC: ~30 min)
 **Depends on:** Affiliate system (done).
 
-### Email drip testing
+### ~~Email drip testing~~
 **Problem:** 5-email drip sequence is coded but never been tested end-to-end. Cron runs weekly.
 **Fix:** Manually trigger each drip email, verify delivery, check formatting, test unsubscribe.
 **Effort:** S (CC: ~15 min)
 **Depends on:** Resend domain verification.
+**Status:** BLOCKED — needs Resend domain verification first.
 
 ---
 
 ## P2: Polish & Edge Cases
 
-### GHIN lookup caching
-**Problem:** Every GHIN search hits the API. If the app re-renders or multiple users search the same name, it hits the API repeatedly.
-**Fix:** Cache GHIN lookups in KV with 24h TTL. Key: `ghin:cache:{name_hash}`.
-**Effort:** S (CC: ~10 min)
-**Depends on:** Nothing.
+### ~~GHIN lookup caching~~
+**Status:** DONE — KV cache with 24h TTL on GHIN number lookups. Key: `ghin:cache:{ghinNum}:{lastName}`.
 
-### Payment failure recovery
+### ~~Payment failure recovery~~
 **Problem:** If Stripe checkout fails mid-payment, the temp config in KV expires after 2 hours. No recovery path.
 **Fix:** Show a "Resume checkout" option on the create wizard if a pending temp config exists. Store temp ID in sessionStorage.
 **Effort:** S (CC: ~20 min)
 **Depends on:** Nothing.
+**Status:** Already implemented — abandoned cart banner checks localStorage for `waggle_last_email` and pings `/api/pending-checkout`.
 
-### Refund flow
-**Problem:** No way to refund if event is cancelled. Stripe charge exists but no admin endpoint to trigger refund.
-**Fix:** Add POST /api/admin/refund endpoint that calls Stripe Refunds API. Commissioner-only, requires event slug + reason.
-**Effort:** S (CC: ~20 min)
-**Depends on:** Nothing.
+### ~~Refund flow~~
+**Status:** DONE — POST `/:slug/api/admin/refund` endpoint calls Stripe Refunds API. Stores refund record in KV.
 
-### Event expiration / cleanup
-**Problem:** Events persist in KV forever. Old events from months ago still accessible.
-**Fix:** Add a `expiresAt` field to event config. Cron job cleans up events older than 90 days (or moves to D1 archive). Show "This event has ended" page for expired slugs.
-**Effort:** M (CC: ~30 min)
-**Depends on:** Nothing.
+### ~~Event expiration / cleanup~~
+**Status:** DONE — Cron job lists all configs, archives events older than 90 days to D1 `archived_events` table, deletes KV keys. New events get `expiresAt` field (90 days). Skips completed/trophy and demo events.
 
-### Scroll position preservation
-**Problem:** Every 30s sync re-renders innerHTML, destroying scroll position.
-**Fix:** Before re-render, capture `scrollTop`. After render, restore it. Also preserve focused input state.
-**Effort:** S (CC: ~10 min)
-**Depends on:** Nothing. Quick win while DOM diffing is a bigger project.
+### ~~Scroll position preservation~~
+**Status:** DONE — Already implemented in route(). Captures scrollY and activeElement before re-render, restores after. Now also preserved by morphdom diffing.
 
-### Haptic feedback expansion
-**Problem:** Haptic only on score submit and bet placement. Missing on: press accepted, dispute resolved, settlement exported.
-**Fix:** Add navigator.vibrate(30) to press, dispute, and export handlers.
-**Effort:** S (CC: ~5 min)
-**Depends on:** Nothing.
+### ~~Haptic feedback expansion~~
+**Status:** DONE — Added vibrate(30) to fileDispute, shareSettlement, and exportSettlementCard handlers.
 
 ---
 
@@ -176,7 +154,7 @@
 
 ---
 
-## Completed (this session)
+## Completed (all sessions)
 - [x] betwaggle.com standalone worker deployed
 - [x] 9 SEO game guides with JSON-LD
 - [x] Email capture + 5-email drip pipeline
@@ -186,13 +164,13 @@
 - [x] Commissioner dashboard /my-events/
 - [x] Event editing (add/remove players, update games, complete)
 - [x] Spectator mode (?spectator=true)
-- [x] Formal invitation text generator
+- [x] Formal invitation text generator + default share
 - [x] Commissioner referral program ($8 credits)
 - [x] Viral settlement share modal (auto-present after round)
 - [x] Google Ads + Meta Pixel placeholders wired
 - [x] Stripe webhook signature enforcement
 - [x] Player approval email notifications
-- [x] Round-mode What-If analysis
+- [x] Round-mode What-If analysis → "The Bar" tab
 - [x] Demo exit button
 - [x] Feed leader card
 - [x] Country club CSS overhaul (paper texture, monospace odds, gold accents, ticker feed)
@@ -203,3 +181,20 @@
 - [x] FAQ accordion fixed (inline specificity override)
 - [x] Mobile share with URL parameter
 - [x] Design review: color rhythm, AI slop removal, section differentiation
+- [x] Action Layer: props backend, double-or-nothing, side bets, Action Card
+- [x] "The Bar" tab: par-out projections, trash talk chirps, momentum tracker
+- [x] Sportsbook Board: P&L front and center, color-coded win/loss, press button, ticker
+- [x] Flash updates: gold row flash + haptic on data change
+- [x] Demo events: buddies trip + scramble with pre-seeded scores
+- [x] KV concurrency: write mutex + merge-not-overwrite on score POST
+- [x] Narrative feed: sportsbook-style auto-generated entries with dollar amounts
+- [x] DOM diffing: morphdom alternative for surgical re-renders
+- [x] GHIN lookup caching (24h TTL)
+- [x] Refund endpoint (Stripe Refunds API)
+- [x] Event expiration/cleanup (90-day cron + D1 archive)
+- [x] Trophy Room / freeze endpoint
+- [x] Event cloning (API + create wizard ?clone=SLUG)
+- [x] Bulk player import (CSV/paste + admin UI)
+- [x] Haptic feedback expansion
+- [x] Scroll position preservation (+ morphdom)
+- [x] Settlement AI recap in share text

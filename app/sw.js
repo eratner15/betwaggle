@@ -1,4 +1,5 @@
-const CACHE = "mg-2026-v14";
+const CACHE_VERSION = 15;
+const CACHE = `mg-2026-v${CACHE_VERSION}`;
 const ASSETS = [
   "/app/",
   "/app/index.html",

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1A472A">
-  <title>Turnberry Isle Member-Guest 2026</title>
+  <meta name="theme-color" content="#0D2818">
+  <title>Waggle — Your Group's Sportsbook</title>
 
   <!-- Open Graph — makes iMessage/WhatsApp/text previews look great -->
   <meta property="og:title" content="Turnberry Isle Member-Guest 2026">
@@ -34,7 +34,7 @@
   <!-- #19: Preconnect for fonts (avoid render-blocking @import) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/styles.css">
   <style>
     @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
@@ -61,7 +61,7 @@
     </div>
   </div>
 
-  <button id="score-fab" class="score-fab" style="display:none" onclick="window.MG.openScoreModal()">
+  <button id="score-fab" class="score-fab" style="display:none" onclick="var el=document.getElementById('board-card-score-entry');if(el){el.scrollIntoView({behavior:'smooth',block:'center'})}else{window.MG.openScoreModal()}">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     <span id="score-fab-text">Score</span>
   </button>
@@ -90,9 +90,9 @@
       </a>
       <a href="#scenarios" data-tab="scenarios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span class="nav-label">Scenarios</span>
+        <span class="nav-label">The Bar</span>
       </a>
-      <a href="#settle" data-tab="settle" style="display:none">
+      <a href="#settle" data-tab="settle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         <span class="nav-label">Settle</span>
       </a>
@@ -136,7 +136,7 @@
   <script type="module" src="/app/js/app.js"></script>
   <script>
     // Nuclear cache buster — force fresh on stale mobile clients
-    var MG_VERSION = 15;
+    var MG_VERSION = 34;
     var storedVer = parseInt(localStorage.getItem('mg_sw_ver') || '0');
     if (storedVer < MG_VERSION) {
       // Nuke everything and reload

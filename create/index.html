@@ -138,6 +138,32 @@
     .admin-card .pin-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
     .admin-card .pin-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.5}
 
+    /* ── Quick Start ── */
+    .qs-overlay{position:fixed;inset:0;z-index:100;background:var(--ivory);overflow-y:auto;animation:fadeIn 0.25s ease}
+    .qs-inner{max-width:520px;margin:0 auto;padding:24px 20px 140px}
+    .qs-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;padding:0;margin-bottom:20px}
+    .qs-back:hover{color:var(--text)}
+    .qs-textarea{width:100%;min-height:140px;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:'SF Mono','Menlo',monospace;font-size:14px;line-height:1.7;background:var(--white);color:var(--text);resize:vertical}
+    .qs-textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
+    .qs-textarea::placeholder{color:#bbb}
+    .qs-games{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+    .qs-game{padding:10px 16px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:var(--white);transition:border 0.15s,background 0.15s;user-select:none}
+    .qs-game.on{border-color:var(--gold);background:rgba(212,175,55,0.08);color:var(--dark)}
+    .qs-game.on::after{content:' \2713';font-size:11px;color:var(--gold)}
+    .qs-go{width:100%;padding:18px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:background 0.2s,transform 0.15s;margin-top:24px}
+    .qs-go:hover{background:var(--green-light);transform:translateY(-1px)}
+    .qs-go:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+    .qs-go .dot{display:inline-block;width:10px;height:10px;background:#4ade80;border-radius:50%;margin-right:8px;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .qs-advanced{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;font-family:inherit}
+    .qs-advanced:hover{color:var(--green)}
+    .qs-error{color:var(--lose);font-size:13px;margin-top:8px;padding:8px 12px;background:#fef2f2;border-radius:8px}
+    .qs-preview{margin-top:12px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .qs-preview-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04)}
+    .qs-preview-row:last-child{border-bottom:none}
+    .qs-preview-row .nm{font-weight:600}
+    .qs-preview-row .hc{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
+
     /* ── Bottom nav ── */
     .nav-bar{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:12px;z-index:10;max-width:560px;margin:0 auto}
     @media(min-width:561px){.nav-bar{left:50%;transform:translateX(-50%);border-radius:12px 12px 0 0;box-shadow:0 -4px 12px rgba(0,0,0,0.06)}}
@@ -207,9 +233,9 @@
       coastal: { primary:'#1E3A5F', accent:'#F59E0B', bg:'#F0F4F8', label:'Coastal' },
     };
 
-    // Quick Round: type(0) → quick-setup(1) → launch(6)
+    // Quick Round: type(0) → quick-setup(1) → games+course(4) → launch(6)
     // Buddies Trip: type(0) → buddies-setup(1) → launch(6)  [same structure, different renderer]
-    const QUICK_STEPS = [0, 1, 6];
+    const QUICK_STEPS = [0, 1, 4, 6];
 
     function isQuick() { return W.type === 'quick'; }
     function isBuddiesTrip() { return W.type === 'trip'; }
@@ -224,7 +250,7 @@
           `<div class="prog-step ${i<W.step?'done':''} ${i===W.step?'active':''}"></div>`).join('');
       } else if (isFastFlow()) {
         const qi = QUICK_STEPS.indexOf(W.step);
-        const labels = isBuddiesTrip() ? ['Type','Setup','Launch'] : ['Type','Setup','Launch'];
+        const labels = isBuddiesTrip() ? ['Type','Setup','Launch'] : ['Type','Setup','Games','Launch'];
         document.getElementById('progress').innerHTML = labels.map((_,i) =>
           `<div class="prog-step ${i<qi?'done':''} ${i===qi?'active':''}"></div>`).join('');
       } else {
@@ -295,11 +321,15 @@
         if (W.step === 0) { W.step = 1; render(); scrollTo(0,0); return; }
         if (W.step === 1) {
           if (!W.name || W.name === 'Weekend Warrior') W.name = 'Weekend Warrior · ' + fmtDate(W.date1);
-          if (!W.venue) W.venue = 'On the course';
+          if (!W.venue) W.venue = W._courseQuery || 'On the course';
           if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
-          const firstGame = ['skins','nassau','wolf','vegas','match_play','stroke_play'].find(g => W.games[g]) || 'skins';
+          W.step = 4; render(); scrollTo(0,0); return;
+        }
+        if (W.step === 4) {
+          const firstGame = ['nassau','skins','wolf','vegas','match_play','stroke_play'].find(g => W.games[g]) || 'skins';
           W.format = firstGame;
           W.features.betting = true; W.theme = 'club';
+          if (!W.venue || W.venue === 'On the course') W.venue = W._courseQuery || 'On the course';
           autoFlights(); autoPairings();
           W.step = 6; render(); scrollTo(0,0); return;
         }
@@ -353,6 +383,8 @@
       }
       if (isFastFlow()) {
         if (W.step === 1) { W.step = 0; render(); scrollTo(0,0); return; }
+        if (W.step === 4 && isQuick()) { W.step = 1; render(); scrollTo(0,0); return; }
+        if (W.step === 6 && isQuick()) { W.step = 4; render(); scrollTo(0,0); return; }
         if (W.step === 6) { W.step = 1; render(); scrollTo(0,0); return; }
         return;
       }
@@ -375,11 +407,222 @@
         <h2>What are you running?</h2>
         <p class="desc">This determines the default format and scoring. You can customize everything later.</p>
         <div class="type-grid">${types.map(t=>`
-          <div class="type-card ${W.type===t.id?'selected':''}" onclick="W.type='${t.id}';next()">
+          <div class="type-card ${W.type===t.id?'selected':''}" onclick="${(t.id==='quick'||t.id==='trip')?`showQuickStart('${t.id}')`:`W.type='${t.id}';render();upNav()`}">
             <div class="type-icon">${t.icon}</div>
             <div style="flex:1"><h3>${t.name}${t.badge?` <span style="font-size:10px;font-weight:700;background:var(--gold);color:var(--dark);padding:2px 7px;border-radius:10px;vertical-align:middle;letter-spacing:0.5px">${t.badge}</span>`:''}</h3><p>${t.desc}</p></div>
           </div>`).join('')}
         </div>`;
+    }
+
+    // ── Quick Start overlay ──
+    let _qsType = '';
+    let _qsGames = { skins: true, nassau: true, match_play: true };
+    let _qsError = '';
+    let _qsLaunching = false;
+
+    function showQuickStart(type) {
+      _qsType = type;
+      W.type = type;  // Set wizard type so Continue button enables if overlay is dismissed
+      _qsGames = { skins: true, nassau: true, match_play: true };
+      _qsError = '';
+      _qsLaunching = false;
+      renderQuickStartOverlay();
+      upNav();  // Re-evaluate Continue button state
+    }
+
+    function hideQuickStart() {
+      const el = document.getElementById('qs-overlay');
+      if (el) el.remove();
+    }
+
+    function qsToggleGame(id) {
+      _qsGames[id] = !_qsGames[id];
+      renderQuickStartOverlay();
+    }
+
+    function parseQuickStartRoster(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const players = [];
+      for (const line of lines) {
+        // Try comma-separated first: "Name, 8.2"
+        let parts = line.split(',').map(s => s.trim());
+        if (parts.length >= 2) {
+          const hcp = parseFloat(parts[parts.length - 1]);
+          if (!isNaN(hcp)) {
+            players.push({ name: parts.slice(0, -1).join(', ').trim(), handicap: hcp, handicapIndex: hcp });
+            continue;
+          }
+        }
+        // Try space-separated: "Jake Sullivan 8.2"
+        const words = line.split(/\s+/);
+        const lastWord = words[words.length - 1];
+        const hcp = parseFloat(lastWord);
+        if (!isNaN(hcp) && words.length >= 2) {
+          players.push({ name: words.slice(0, -1).join(' '), handicap: hcp, handicapIndex: hcp });
+        } else {
+          // Just a name, 0 handicap
+          players.push({ name: line.replace(/,\s*$/, ''), handicap: 0, handicapIndex: 0 });
+        }
+      }
+      return players;
+    }
+
+    function renderQuickStartOverlay() {
+      let el = document.getElementById('qs-overlay');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'qs-overlay';
+        el.className = 'qs-overlay';
+        document.body.appendChild(el);
+      }
+      const allGames = [
+        {id:'skins', name:'Skins'}, {id:'nassau', name:'Nassau'}, {id:'match_play', name:'Match Play'},
+        {id:'wolf', name:'Wolf'}, {id:'vegas', name:'Vegas'}, {id:'stroke_play', name:'Stroke Play'},
+        {id:'stableford', name:'Stableford'}, {id:'banker', name:'Banker'}, {id:'bingo', name:'Bingo Bango Bongo'},
+      ];
+      const ta = el.querySelector('.qs-textarea');
+      const curText = ta ? ta.value : '';
+      const players = parseQuickStartRoster(curText);
+      const anyGame = Object.values(_qsGames).some(Boolean);
+      const canGo = players.length >= 2 && anyGame;
+      const today = new Date();
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const dateStr = months[today.getMonth()] + ' ' + today.getDate();
+
+      el.innerHTML = `
+        <div class="qs-inner">
+          <button class="qs-back" onclick="hideQuickStart()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--dark);margin-bottom:4px">Quick Start</h2>
+          <p style="color:var(--muted);font-size:14px;margin-bottom:20px">One screen. 30 seconds. Go play golf.</p>
+
+          <label style="font-size:12px;font-weight:600;letter-spacing:0.3px;margin-bottom:6px;display:block">Who's playing?</label>
+          <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8&#10;&#10;(one per line: Name, Handicap)" oninput="updateQsPreview()">${esc(curText)}</textarea>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">One player per line. Handicap is optional.</div>
+
+          <div id="qs-preview-area">
+          ${players.length > 0 ? `
+          <div class="qs-preview">
+            ${players.map((p,i) => `<div class="qs-preview-row"><span class="nm">${esc(p.name)}</span><span class="hc">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}
+          </div>
+          <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>
+          ` : ''}
+          </div>
+
+          <label style="font-size:12px;font-weight:600;letter-spacing:0.3px;margin-top:20px;margin-bottom:4px;display:block">Games</label>
+          <div class="qs-games">
+            ${allGames.map(g => `<div class="qs-game ${_qsGames[g.id] ? 'on' : ''}" onclick="qsToggleGame('${g.id}')">${g.name}</div>`).join('')}
+          </div>
+
+          ${_qsError ? `<div class="qs-error">${_qsError}</div>` : ''}
+
+          <button class="qs-go" onclick="launchQuickStart()" ${canGo && !_qsLaunching ? '' : 'disabled'}>
+            ${_qsLaunching ? 'Creating...' : '<span class="dot"></span>GO — Start the Game'}
+          </button>
+
+          <button class="qs-advanced" onclick="advancedFromQuickStart()">Advanced setup &rarr;</button>
+        </div>`;
+    }
+
+    function updateQsPreview() {
+      const ta = document.querySelector('.qs-textarea');
+      if (!ta) return;
+      const players = parseQuickStartRoster(ta.value);
+      const anyGame = Object.values(_qsGames).some(Boolean);
+      const canGo = players.length >= 2 && anyGame;
+      // Update preview area only
+      const preview = document.getElementById('qs-preview-area');
+      if (preview) {
+        if (players.length > 0) {
+          preview.innerHTML = `
+            <div class="qs-preview">
+              ${players.map(p => `<div class="qs-preview-row"><span class="nm">${esc(p.name)}</span><span class="hc">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}
+            </div>
+            <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>`;
+        } else {
+          preview.innerHTML = '';
+        }
+      }
+      // Update GO button
+      const goBtn = document.querySelector('.qs-go');
+      if (goBtn) goBtn.disabled = !canGo || _qsLaunching;
+    }
+
+    function advancedFromQuickStart() {
+      // Parse roster from textarea and pre-fill W, then go to full wizard
+      const ta = document.querySelector('.qs-textarea');
+      const players = ta ? parseQuickStartRoster(ta.value) : [];
+      W.type = _qsType;
+      W.roster = players;
+      Object.keys(_qsGames).forEach(g => { W.games[g] = !!_qsGames[g]; });
+      if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+      if (!W.adminPin) W.adminPin = String(1000 + Math.floor(Math.random() * 9000));
+      W.step = 1;
+      hideQuickStart();
+      render();
+      scrollTo(0, 0);
+    }
+
+    async function launchQuickStart() {
+      const ta = document.querySelector('.qs-textarea');
+      const players = ta ? parseQuickStartRoster(ta.value) : [];
+      if (players.length < 2) { _qsError = 'Add at least 2 players'; renderQuickStartOverlay(); return; }
+      if (!Object.values(_qsGames).some(Boolean)) { _qsError = 'Pick at least one game'; renderQuickStartOverlay(); return; }
+
+      _qsError = '';
+      _qsLaunching = true;
+      renderQuickStartOverlay();
+
+      const today = new Date().toISOString().slice(0, 10);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const d = new Date();
+      const autoName = 'Golf Game \u00b7 ' + months[d.getMonth()] + ' ' + d.getDate();
+      const pin = String(1000 + Math.floor(Math.random() * 9000));
+      const eventType = _qsType === 'trip' ? 'buddies_trip' : 'quick';
+
+      // Build teams object
+      const teams = {};
+      players.forEach((p, i) => {
+        teams[i + 1] = { id: i + 1, member: p.name, guest: '', memberHI: p.handicap, guestHI: 0, combined: p.handicap, flight: 'all' };
+      });
+      const flights = { all: { id: 'all', name: 'All Players', tees: '', teamIds: players.map((_, i) => i + 1) } };
+
+      const firstGame = ['nassau','skins','match_play','wolf','vegas','stroke_play','stableford','banker','bingo'].find(g => _qsGames[g]) || 'skins';
+
+      // Read UTM/ref attribution
+      let metaSource = {};
+      try { const raw = sessionStorage.getItem('waggle_source'); if (raw) metaSource = JSON.parse(raw); } catch(e) {}
+      const curParams = new URLSearchParams(window.location.search);
+      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(k => { if (curParams.get(k) && !metaSource[k]) metaSource[k] = curParams.get(k); });
+
+      const config = {
+        event: { name: autoName, shortName: autoName.slice(0, 20), venue: 'On the course', url: '', dates: { day1: today }, format: firstGame, adminPin: pin, adminContact: '', eventType },
+        scoring: { totalPointsPerMatch: 10, capMax: 7, capMin: 3, holesPerMatch: 9, handicapAllowance: 0.85 },
+        structure: { nassauBet: 10, skinsBet: 5, roundsTotal: 1, teamsPerFlight: players.length },
+        flightOrder: ['all'], flights, teams, pairings: {},
+        theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+        features: { betting: true, calcutta: false, shootout: false, shareButtons: true },
+        games: _qsGames,
+        holesPerRound: 18,
+        wolfOrder: players.map(p => p.name),
+        players: players.map(p => ({ name: p.name, handicapIndex: p.handicap, venmo: '' })),
+        roster: players.map(p => ({ name: p.name, handicapIndex: p.handicap })),
+        meta: { source: metaSource },
+      };
+
+      try {
+        const endpoint = eventType === 'quick' ? '/api/create-checkout' : '/api/create-checkout';
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        const data = await res.json();
+        if (!res.ok) { _qsError = data.error || 'Failed to create event'; _qsLaunching = false; renderQuickStartOverlay(); return; }
+        if (data.slug) { window.location.href = '/' + data.slug + '/'; return; }
+        if (data.checkoutUrl) { window.location.href = data.checkoutUrl; return; }
+        _qsError = 'Unexpected response'; _qsLaunching = false; renderQuickStartOverlay();
+      } catch (e) {
+        _qsError = 'Network error — try again'; _qsLaunching = false; renderQuickStartOverlay();
+      }
     }
 
     // Returns array of YYYY-MM-DD strings for every calendar day start→end inclusive
@@ -655,7 +898,7 @@
     }
 
     function renderScoring() {
-      if (W.type==='trip' || W.type==='outing') {
+      if (W.type==='quick' || W.type==='trip' || W.type==='outing') {
         const allGames = [
           {id:'nassau',      name:'Nassau',        desc:'Front 9, back 9, overall — 3 bets per match'},
           {id:'skins',       name:'Skins',         desc:'Per-hole winner takes pot. Ties carry over.'},
@@ -672,9 +915,9 @@
         ];
         const anyGame = Object.values(W.games).some(Boolean);
         const hasRoster = W.roster.length >= 2;
-        return `<div class="step-label">Step 5 of 7</div>
+        return `<div class="step-label">${W.type==='quick' ? 'Games & Course · Step 3 of 4' : 'Step 5 of 7'}</div>
           <h2>Games & Format</h2>
-          <p class="desc">Pick the games your group wants to play. Mix and match — all run simultaneously.</p>
+          <p class="desc">${W.type==='quick' ? 'Pick your games and optionally set your course.' : 'Pick the games your group wants to play. Mix and match — all run simultaneously.'}</p>
           ${hasRoster ? `<div id="advisor-result"></div>
           <button id="advisor-btn" onclick="getAdvisorPick()" style="width:100%;padding:12px 16px;background:var(--dark);color:var(--gold);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px;letter-spacing:0.3px">Ask AI: Best Format for This Group</button>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">
@@ -682,7 +925,6 @@
             <div onclick="if(W.games.hasOwnProperty('${g.id}'))W.games.${g.id}=!W.games.${g.id};else W.games['${g.id}']=true;render()"
               style="border:2px solid ${W.games[g.id]?'var(--green)':'var(--border)'};border-radius:12px;padding:14px;cursor:pointer;background:${W.games[g.id]?'#f0f7f2':'var(--white)'};position:relative">
               ${W.games[g.id]?`<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff">✓</div>`:''}
-              <div style="font-size:22px;margin-bottom:6px">${g.emoji}</div>
               <div style="font-size:14px;font-weight:700;margin-bottom:3px">${g.name}</div>
               <div style="font-size:11px;color:var(--muted);line-height:1.4">${g.desc}</div>
             </div>`).join('')}
@@ -770,12 +1012,14 @@
               oninput="W._courseQuery=this.value;searchCourses(this.value)"
               style="padding-right:40px">
             ${W._courseSearching ? `<div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>` : ''}
-            ${W._courseResults.length > 0 ? `<div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:0 0 10px 10px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
-              ${W._courseResults.map(c => `<div onclick="W.course=${JSON.stringify(c)};W._courseResults=[];W._courseQuery='';render()"
+            <div class="course-results-container" style="position:absolute;top:100%;left:0;right:0;z-index:100">
+              ${W._courseResults.length > 0 ? `<div style="background:#fff;border:1.5px solid var(--border);border-radius:0 0 10px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              ${W._courseResults.map(c => `<div onclick="selectCourse(${JSON.stringify(c).replace(/"/g, '&quot;')})"
                 style="padding:10px 14px;cursor:pointer;border-top:1px solid var(--border);font-size:14px" onmouseenter="this.style.background='#f5f5f5'" onmouseleave="this.style.background=''">
                 <strong>${c.name}</strong><span style="color:var(--muted);font-size:12px;margin-left:8px">${c.city}, ${c.state} · Slope ${c.slope}</span>
               </div>`).join('')}
             </div>` : ''}
+            </div>
           </div>`}
           <div style="margin-top:24px">
             <div class="toggle-row">
@@ -833,6 +1077,10 @@
             <div class="qr-hint">${url.replace('https://','')}</div>
           </div>
 
+          <a href="${url}#dashboard" style="display:block;width:100%;padding:16px;background:#D4AF37;color:#1A472A;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;text-align:center;margin:16px 0;box-sizing:border-box">
+            Open Your Sportsbook &rarr;
+          </a>
+
           <div class="launch-actions">
             <button class="launch-btn primary" onclick="shareUrl('${url}')">Share with Group</button>
             <button class="launch-btn secondary" onclick="copyUrl('${url}')">Copy Link</button>
@@ -847,10 +1095,6 @@
               <div style="color:var(--gold);font-size:14px;margin-top:4px">${esc(W.adminContact)}</div>
               <div class="pin-note">On game day, tap "Send Magic Link" in Admin — no PIN needed.</div>
             </div>` : ''}
-          </div>
-
-          <div style="margin-top:16px;text-align:center">
-            <a href="${url}" style="color:var(--green);font-weight:700;font-size:14px;text-decoration:none">Open your sportsbook &rarr;</a>
           </div>
         </div>`;
       }
@@ -1107,16 +1351,30 @@
     let _courseSearchTimer = null;
     async function searchCourses(q) {
       clearTimeout(_courseSearchTimer);
-      if (!q || q.trim().length < 2) { W._courseResults = []; render(); return; }
+      if (!q || q.trim().length < 2) { W._courseResults = []; renderCourseResults(); return; }
       _courseSearchTimer = setTimeout(async () => {
-        W._courseSearching = true; render();
+        W._courseSearching = true;
         try {
           const res = await fetch('/api/courses/search?q=' + encodeURIComponent(q.trim()));
           const data = await res.json();
           W._courseResults = Array.isArray(data) ? data : [];
         } catch { W._courseResults = []; }
-        W._courseSearching = false; render();
+        W._courseSearching = false;
+        renderCourseResults();
       }, 300);
+    }
+    function renderCourseResults() {
+      // Update ONLY the results dropdown, don't rebuild the whole page (preserves input focus)
+      document.querySelectorAll('.course-results-container').forEach(el => {
+        if (W._courseResults.length === 0) { el.innerHTML = ''; return; }
+        el.innerHTML = W._courseResults.map(c =>
+          `<div onclick="selectCourse(${JSON.stringify(c).replace(/"/g, '&quot;')})"
+            style="padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">
+            <div style="font-weight:600">${c.name || c.club || ''}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.city || ''}, ${c.state || ''}</div>
+          </div>`
+        ).join('');
+      });
     }
 
     // ── GHIN Lookup ──
@@ -1339,10 +1597,11 @@
       if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
       if (!W.adminPin) W.adminPin = String(1000 + Math.floor(Math.random() * 9000));
       if (!W.name) W.name = 'Weekend Warrior';
-      // Default games: skins + nassau (most common casual bets)
+      // Default games: nassau + skins + match_play (core gambling trio)
       if (!W._quickDefaultsSet) {
-        W.games.skins = true;
         W.games.nassau = true;
+        W.games.skins = true;
+        W.games.match_play = true;
         W._quickDefaultsSet = true;
       }
 
@@ -1386,6 +1645,33 @@
           ${!anyGame?`<div style="margin-top:8px;font-size:12px;color:#92400e">Pick at least one</div>`:''}
         </div>
 
+        <div style="margin-top:16px;padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px">
+          <label style="font-size:14px;font-weight:700;color:var(--forest);margin-bottom:8px;display:block">Where are you playing? <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
+          ${W.course ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:2px solid var(--green);border-radius:10px;background:#f0f7f2">
+            <div>
+              <div style="font-size:14px;font-weight:600">${esc(W.course.club_name || W.course.name || '')}</div>
+              <div style="font-size:12px;color:var(--muted)">${esc((W.course.location || (W.course.city ? W.course.city + ', ' + W.course.state : '')))} ${W.course.slope ? '· Slope ' + W.course.slope : ''}</div>
+            </div>
+            <button onclick="W.course=null;W._courseQuery='';W._courseResults=[];render()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:4px">✕</button>
+          </div>` : `<div style="position:relative">
+            <input type="text" placeholder="Search by course name or city..." value="${esc(W._courseQuery||'')}"
+              oninput="W._courseQuery=this.value;searchCourses(this.value)"
+              style="width:100%;padding:13px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit;box-sizing:border-box">
+            ${W._courseSearching ? '<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>' : ''}
+          </div>
+          <div class="course-results-container" style="margin-top:4px">
+          ${W._courseResults.length > 0 ? `
+          <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            ${W._courseResults.map(c => `
+            <button onclick="selectCourse(${JSON.stringify(c).replace(/"/g,'&quot;')})"
+              style="display:block;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit">
+              <div style="font-size:14px;font-weight:600">${esc(c.club_name)}</div>
+              <div style="font-size:12px;color:var(--muted)">${esc(c.course_name||'')} ${c.location?'· '+esc(c.location):''}</div>
+            </button>`).join('')}
+          </div>` : ''}
+          </div>`}
+        </div>
+
         <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
             <label style="font-size:13px">Round name</label>
@@ -1408,6 +1694,13 @@
     // ── Buddies Trip setup (3-step fast flow) ──
     function renderBuddiesTripSetup() {
       if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
+      // Default games: nassau + skins + match_play (core gambling trio)
+      if (!W._buddiesDefaultsSet) {
+        W.games.nassau = true;
+        W.games.skins = true;
+        W.games.match_play = true;
+        W._buddiesDefaultsSet = true;
+      }
       const games = [
         {id:'nassau',      name:'Nassau',         desc:'Front/Back/Total'},
         {id:'skins',       name:'Skins',          desc:'Per-hole pot'},
@@ -1942,7 +2235,22 @@
 
     function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;}
     function copyUrl(u){navigator.clipboard.writeText(u).then(()=>alert('Link copied!')).catch(()=>{});}
-    function shareUrl(u){if(navigator.share)navigator.share({title:W.name,text:`Check out ${W.name} on Waggle!`,url:u}).catch(()=>{});else copyUrl(u);}
+    function shareUrl(u){
+      var parts = [];
+      parts.push('You have been invited to ' + W.name + '.');
+      parts.push('');
+      parts.push('The book is open. Establish your lines and secure your tee time.');
+      parts.push('');
+      if (W.date1) parts.push(fmtDate(W.date1));
+      var stakes = [];
+      if (W.nassauBet) stakes.push('Nassau $' + W.nassauBet);
+      if (W.skinsBet) stakes.push('Skins $' + W.skinsBet);
+      if (stakes.length) parts.push('Stakes: ' + stakes.join(' / '));
+      if (W.date1 || stakes.length) parts.push('');
+      parts.push('Open the sportsbook: ' + u);
+      var text = parts.join('\n');
+      if(navigator.share)navigator.share({title:W.name,text:text,url:u}).catch(()=>{});else{navigator.clipboard.writeText(text).then(()=>alert('Invitation copied!')).catch(()=>{});}
+    }
 
     // Pre-load course from ?course=ID (set by "Play This Tee" on course detail pages)
     (function preloadCourseFromUrl() {
@@ -1980,26 +2288,66 @@
         .catch(() => {});
     })();
 
-    // Check for cloned event config
-    (function checkClone() {
+    // Apply cloned config to wizard state
+    function applyCloneConfig(cloneConfig) {
+      W.name = (cloneConfig.event?.name || '') + ' (Copy)';
+      W.venue = cloneConfig.event?.venue || '';
+      W.games = cloneConfig.games || W.games;
+      W.scoring = cloneConfig.scoring || W.scoring;
+      W.structure = cloneConfig.structure || W.structure;
+      if (cloneConfig.features) W.features = { ...W.features, ...cloneConfig.features };
+      if (cloneConfig.course) {
+        W.course = cloneConfig.course;
+        W._courseQuery = cloneConfig.course.club_name || '';
+      }
+      if (cloneConfig.theme) W.theme = cloneConfig.theme;
+      // Pre-fill roster from players
+      if (cloneConfig.players?.length > 0) {
+        W.roster = cloneConfig.players.map(function(p) { return { name: p.name, handicap: p.handicapIndex || 0, venmo: p.venmo || '' }; });
+        W._rosterRaw = W.roster.map(function(r) { return r.venmo ? r.name + ', ' + r.handicap + ', ' + r.venmo : r.name + ', ' + r.handicap; }).join('\n');
+      }
+      W.type = cloneConfig.event?.eventType || 'trip';
+      W.step = 1;
+    }
+
+    // Show clone banner
+    function showCloneBanner(eventName) {
+      const existing = document.getElementById('clone-banner');
+      if (existing) existing.remove();
+      const banner = document.createElement('div');
+      banner.id = 'clone-banner';
+      banner.style.cssText = 'background:linear-gradient(135deg,#1A472A,#2D6A3E);color:#fff;padding:12px 20px;text-align:center;font-size:14px;font-weight:600;border-bottom:2px solid #D4AF37';
+      banner.innerHTML = '<span style="color:#D4AF37">Cloning from</span> ' + (eventName || 'previous event').replace(/ \(Copy\)$/, '') + ' <button onclick="this.parentElement.remove()" style="border:none;background:none;cursor:pointer;margin-left:12px;font-size:16px;color:rgba(255,255,255,0.7)">&times;</button>';
+      const topbar = document.querySelector('.topbar');
+      if (topbar) topbar.after(banner);
+    }
+
+    // Check for cloned event config — supports ?clone=SLUG (fetch from API) or ?clone=true (sessionStorage)
+    (async function checkClone() {
       const cloneParams = new URLSearchParams(window.location.search);
-      if (cloneParams.get('clone') === 'true') {
+      const cloneSlug = cloneParams.get('clone');
+      if (!cloneSlug) return;
+
+      if (cloneSlug === 'true') {
+        // Legacy: read from sessionStorage
         try {
           const cloneConfig = JSON.parse(sessionStorage.getItem('waggle_clone_config'));
           if (cloneConfig) {
-            W.name = cloneConfig.event?.name || '';
-            W.venue = cloneConfig.event?.venue || '';
-            W.games = cloneConfig.games || W.games;
-            W.scoring = cloneConfig.scoring || W.scoring;
-            W.structure = cloneConfig.structure || W.structure;
-            // Pre-fill roster from players
-            if (cloneConfig.players?.length > 0) {
-              W.roster = cloneConfig.players.map(function(p) { return { name: p.name, handicap: p.handicapIndex || 0, venmo: p.venmo || '' }; });
-              W._rosterRaw = W.roster.map(function(r) { return r.venmo ? r.name + ', ' + r.handicap + ', ' + r.venmo : r.name + ', ' + r.handicap; }).join('\n');
-            }
+            applyCloneConfig(cloneConfig);
+            showCloneBanner(cloneConfig.event?.name);
             sessionStorage.removeItem('waggle_clone_config');
-            W.type = cloneConfig.event?.eventType || 'trip';
-            W.step = 1;
+            render();
+          }
+        } catch(e) {}
+      } else {
+        // New: fetch clone config from API using slug
+        try {
+          const res = await fetch('/' + encodeURIComponent(cloneSlug) + '/api/event/clone-config');
+          const data = await res.json();
+          if (data.ok && data.config) {
+            applyCloneConfig(data.config);
+            showCloneBanner(data.config.event?.name);
+            render();
           }
         } catch(e) {}
       }
