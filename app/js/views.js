@@ -455,7 +455,7 @@ function getCourseHcpIndex(config) {
 // ─── PREMIUM SCORECARD RENDERER ───
 // Renders a trifold-style country club scorecard with yardage, HCP, par, player scores,
 // golf-standard color coding (circles under par, squares over par), and running totals.
-function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble }) {
+function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly }) {
   const isBack9 = currentHole > 9;
   const startHole = isBack9 ? 10 : 1;
   const endHole = isBack9 ? Math.min(18, holesPerRound) : Math.min(9, holesPerRound);
@@ -583,8 +583,8 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
 
       const currentHighlight = isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E;' : 'border-right:1px solid #EEE;';
 
-      if (isCurrent) {
-        // Input cell
+      if (isCurrent && !readOnly) {
+        // Input cell (editable mode)
         const st = displayScore ? scoreStyle(displayScore, par) : null;
         const inputBg = st && st.bg !== 'transparent' ? st.bg : '#FFFEF5';
         const inputColor = st ? st.color : '#1A1A1A';
@@ -598,6 +598,15 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
             oninput="window.MG.inlineScoreType('${escHtml(entityName)}',this.value)"
             placeholder="\u00b7">
         </td>`;
+      } else if (isCurrent && readOnly) {
+        // Current hole in read-only mode — highlight but no input
+        if (displayScore) {
+          html += `<td style="padding:4px 2px;text-align:center;cursor:pointer;${currentHighlight}" onclick="window.MG.inlineScoreSetHole(${h})">
+            ${renderScoreSpan(displayScore, par)}
+          </td>`;
+        } else {
+          html += `<td style="padding:4px 2px;text-align:center;color:#B8962E;font-weight:700;${currentHighlight}" onclick="window.MG.inlineScoreSetHole(${h})">&bull;</td>`;
+        }
       } else if (displayScore) {
         html += `<td style="padding:4px 2px;text-align:center;cursor:pointer;${currentHighlight}" onclick="window.MG.inlineScoreSetHole(${h})">
           ${renderScoreSpan(displayScore, par)}
@@ -638,17 +647,19 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
 
   html += `</table></div>`;
 
-  // Save button
-  const allFilled = entities.length > 0 && entities.every(e => {
-    const n = e.name || e;
-    return inlScores[n] >= 1 && inlScores[n] <= 15;
-  });
-  html += `<div style="padding:12px 16px 14px">`;
-  html += `<button onclick="window.MG.inlineScoreSave()" ${allFilled ? '' : 'disabled'}
-    style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
-    ${allFilled ? 'Save Hole ' + currentHole + ' \u2192' : 'Fill in all scores for Hole ' + currentHole}
-  </button>`;
-  html += `</div>`;
+  // Save button (only in editable mode — not when readOnly with separate keypad below)
+  if (!readOnly) {
+    const allFilled = entities.length > 0 && entities.every(e => {
+      const n = e.name || e;
+      return inlScores[n] >= 1 && inlScores[n] <= 15;
+    });
+    html += `<div style="padding:12px 16px 14px">`;
+    html += `<button onclick="window.MG.inlineScoreSave()" ${allFilled ? '' : 'disabled'}
+      style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
+      ${allFilled ? 'Save Hole ' + currentHole + ' \u2192' : 'Fill in all scores for Hole ' + currentHole}
+    </button>`;
+    html += `</div>`;
+  }
 
   html += `</div>`;
   return html;
@@ -1564,6 +1575,11 @@ export function renderRoundFeed(state) {
       const nextH = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
       const existingScores = holes[nextH]?.scores || {};
       state._inlineScore = { hole: nextH, scores: { ...existingScores } };
+      // Init stats for the current hole
+      const existingStats = holes[nextH]?.stats || {};
+      if (!state._inlineScoreStats || Object.keys(state._inlineScoreStats).length === 0) {
+        state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+      }
     }
     const inl = state._inlineScore;
     const currentHole = inl.hole;
@@ -1724,52 +1740,230 @@ export function renderRoundFeed(state) {
       inlScores,
       holesPerRound,
       courseName,
-      isScramble: false
+      isScramble: false,
+      readOnly: true
     });
 
-    // ── 4. ROUND STATS (estimated, collapsible) ──
+    // ── 3b. KEYPAD SCORE ENTRY SECTION (below read-only scorecard) ──
+    if (!roundComplete && players.length > 0) {
+      const kpHole = currentHole;
+      const kpPar = pars[kpHole - 1] || 4;
+      const kpHcp = resolvedHcp[kpHole - 1] ?? '';
+      const kpYds = yardage ? yardage[kpHole - 1] : null;
+      const kpScores = inlScores;
+      const kpStats = state._inlineScoreStats || {};
+
+      html += `<div style="background:#FFFFFF;border-radius:12px;padding:16px;margin-top:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB">`;
+
+      // Header with hole info + nav arrows
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#0D2818">Hole ${kpHole}</div>
+          <div style="font-size:13px;color:#6B7280">Par ${kpPar}${kpYds ? ' &middot; ' + kpYds + ' yds' : ''}${kpHcp ? ' &middot; HCP ' + kpHcp : ''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="window.MG.inlineScoreNav(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid #D1D5DB;background:white;color:#1A1A1A;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">&#9664;</button>
+          <button onclick="window.MG.inlineScoreNav(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid #D1D5DB;background:white;color:#1A1A1A;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">&#9654;</button>
+        </div>
+      </div>`;
+
+      // Per-player keypad + stat toggles
+      players.forEach(p => {
+        const name = p.name;
+        const firstName = name.split(' ')[0];
+        const currentScore = kpScores[name] ?? null;
+        const playerStats = kpStats[name] || {};
+
+        html += `<div style="padding:10px 0;border-top:1px solid #F0F0F0">`;
+
+        // Player name
+        html += `<div style="font-size:14px;font-weight:700;color:#1A1A1A;margin-bottom:8px">${escHtml(firstName)}</div>`;
+
+        // Score keypad — buttons from par-2 to par+3
+        html += `<div style="display:flex;gap:6px;margin-bottom:8px">`;
+        for (let s = Math.max(1, kpPar - 2); s <= kpPar + 3; s++) {
+          const isSelected = currentScore === s;
+          const diff = s - kpPar;
+          let btnColor = '#1A1A1A';
+          let btnBg = '#F5F5F5';
+          let btnBorder = '#D1D5DB';
+          if (isSelected) {
+            if (diff < 0) { btnBg = '#16A34A'; btnColor = 'white'; btnBorder = '#16A34A'; }
+            else if (diff === 0) { btnBg = '#0D2818'; btnColor = 'white'; btnBorder = '#0D2818'; }
+            else { btnBg = '#DC2626'; btnColor = 'white'; btnBorder = '#DC2626'; }
+          }
+          const label = diff <= -2 ? 'Eagle' : diff === -1 ? 'Birdie' : diff === 0 ? 'Par' : diff === 1 ? 'Bogey' : diff === 2 ? 'Dbl' : '+' + diff;
+
+          html += `<button onclick="window.MG.inlineScoreSet('${escHtml(name)}',${s})"
+            style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${btnBorder};background:${btnBg};color:${btnColor};font-size:16px;font-weight:800;cursor:pointer;text-align:center;min-height:44px;font-family:'SF Mono','Menlo','Courier New',monospace;-webkit-tap-highlight-color:transparent;transition:transform .08s"
+            onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
+            ${s}
+            <div style="font-size:8px;font-weight:500;opacity:0.7;margin-top:1px">${label}</div>
+          </button>`;
+        }
+        // "Other" button for scores outside the range
+        html += `<button onclick="window.MG.inlineScoreType('${escHtml(name)}',prompt('Score for ${escHtml(firstName)}:'))"
+          style="width:44px;padding:8px 4px;border-radius:8px;border:2px solid #D1D5DB;background:#F5F5F5;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">+</button>`;
+        html += `</div>`;
+
+        // Stats row: FIR, GIR, Putts, Penalty
+        html += `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">`;
+
+        // FIR toggle (only on par 4 and par 5)
+        if (kpPar >= 4) {
+          const firChecked = playerStats.fir === true;
+          html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280;cursor:pointer;-webkit-tap-highlight-color:transparent">
+            <input type="checkbox" ${firChecked ? 'checked' : ''}
+              onchange="window.MG.setHoleStat('${escHtml(name)}','fir',this.checked)"
+              style="width:18px;height:18px;accent-color:#0D2818">
+            FIR
+          </label>`;
+        }
+
+        // GIR toggle
+        const girChecked = playerStats.gir === true;
+        html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <input type="checkbox" ${girChecked ? 'checked' : ''}
+            onchange="window.MG.setHoleStat('${escHtml(name)}','gir',this.checked)"
+            style="width:18px;height:18px;accent-color:#0D2818">
+          GIR
+        </label>`;
+
+        // Putts
+        const putts = playerStats.putts ?? '';
+        html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280">
+          Putts
+          <input type="number" inputmode="numeric" value="${putts}" min="0" max="9"
+            onchange="window.MG.setHoleStat('${escHtml(name)}','putts',parseInt(this.value)||0)"
+            style="width:36px;height:28px;text-align:center;border:1px solid #D1D5DB;border-radius:6px;font-size:14px;font-weight:600;color:#1A1A1A;font-family:'SF Mono','Menlo','Courier New',monospace">
+        </label>`;
+
+        // Penalty toggle
+        const penalty = playerStats.penalty === true;
+        html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <input type="checkbox" ${penalty ? 'checked' : ''}
+            onchange="window.MG.setHoleStat('${escHtml(name)}','penalty',this.checked)"
+            style="width:18px;height:18px;accent-color:#DC2626">
+          Pen
+        </label>`;
+
+        html += `</div>`;
+        html += `</div>`;
+      });
+
+      // Save button
+      const kpAllFilled = players.every(p => kpScores[p.name] >= 1);
+      html += `<button onclick="window.MG.inlineScoreSave()"
+        style="width:100%;padding:14px;margin-top:12px;border-radius:10px;border:none;background:${kpAllFilled ? '#0D2818' : '#D1D5DB'};color:${kpAllFilled ? 'white' : '#9CA3AF'};font-size:16px;font-weight:700;cursor:${kpAllFilled ? 'pointer' : 'default'};box-shadow:${kpAllFilled ? '0 3px 12px rgba(13,40,24,0.3)' : 'none'};-webkit-tap-highlight-color:transparent;transition:transform .08s"
+        ${kpAllFilled ? '' : 'disabled'}
+        ${kpAllFilled ? 'onpointerdown="this.style.transform=\'scale(0.97)\'" onpointerup="this.style.transform=\'\'" onpointerleave="this.style.transform=\'\'"' : ''}>
+        ${kpAllFilled ? 'Save Hole ' + kpHole + ' &#8594;' : 'Fill in all scores for Hole ' + kpHole}
+      </button>`;
+
+      html += `</div>`;
+    }
+
+    // ── 4. ROUND STATS (actual + estimated, collapsible) ──
     if (scoredHoles.length > 0 && players.length > 0) {
       const statsData = players.map(p => {
-        let girCount = 0, firCount = 0, puttsEst = 0, holesWithScore = 0;
-        let firEligible = 0; // par 4s and 5s only
+        let girActual = 0, girActualTotal = 0, firActual = 0, firActualTotal = 0;
+        let puttsActual = 0, puttsActualTotal = 0;
+        let girEst = 0, firEst = 0, puttsEst = 0;
+        let holesWithScore = 0, firEligible = 0;
+        let scrambleOpp = 0, scrambleSaved = 0;
+        let penaltyTotal = 0;
+        let par3Scores = [], par4Scores = [], par5Scores = [];
+        let birdieStreak = 0, maxBirdieStreak = 0;
+        let bogeyFreeStreak = 0, maxBogeyFreeStreak = 0;
+
         scoredHoles.forEach(h => {
           const sc = holes[h]?.scores?.[p.name];
           if (sc == null) return;
           holesWithScore++;
           const par = pars[h - 1] || 4;
-          // GIR estimate: score <= par assumes GIR
-          if (sc <= par) girCount++;
-          // FIR estimate: score <= par on par 4/5 assumes FIR
+          const diff = sc - par;
+          const holeStats = holes[h]?.stats?.[p.name];
+
+          // Actual stats from tracked data
+          if (holeStats) {
+            if (holeStats.fir !== undefined && par >= 4) { firActualTotal++; if (holeStats.fir) firActual++; }
+            if (holeStats.gir !== undefined) { girActualTotal++; if (holeStats.gir) girActual++; }
+            if (holeStats.putts !== undefined) { puttsActualTotal++; puttsActual += holeStats.putts; }
+            if (holeStats.penalty) penaltyTotal++;
+
+            // Scrambling: GIR=false but score <= par
+            if (holeStats.gir === false) {
+              scrambleOpp++;
+              if (sc <= par) scrambleSaved++;
+            }
+          }
+
+          // Estimated stats (fallback)
+          if (sc <= par) girEst++;
           if (par >= 4) {
             firEligible++;
-            if (sc <= par) firCount++;
+            if (sc <= par) firEst++;
           }
-          // Putts estimate: baseline 2, -1 for birdie or better, +1 for double+
-          const diff = sc - par;
           if (diff <= -1) puttsEst += 1;
-          else if (diff === 0) puttsEst += 2;
-          else if (diff === 1) puttsEst += 2;
-          else puttsEst += 3; // double bogey+
+          else if (diff <= 1) puttsEst += 2;
+          else puttsEst += 3;
+
+          // Scoring by par
+          if (par === 3) par3Scores.push(sc);
+          else if (par === 4) par4Scores.push(sc);
+          else if (par >= 5) par5Scores.push(sc);
+
+          // Birdie streak
+          if (diff < 0) { birdieStreak++; maxBirdieStreak = Math.max(maxBirdieStreak, birdieStreak); }
+          else { birdieStreak = 0; }
+
+          // Bogey-free streak
+          if (diff <= 0) { bogeyFreeStreak++; maxBogeyFreeStreak = Math.max(maxBogeyFreeStreak, bogeyFreeStreak); }
+          else { bogeyFreeStreak = 0; }
         });
-        const firPct = firEligible > 0 ? Math.round((firCount / firEligible) * 100) : 0;
-        const girPct = holesWithScore > 0 ? Math.round((girCount / holesWithScore) * 100) : 0;
-        const avgPutts = holesWithScore > 0 ? (puttsEst / holesWithScore).toFixed(1) : '--';
-        return { name: p.name, firstName: p.name.split(' ')[0], firPct, girPct, avgPutts, holesWithScore };
+
+        // Use actual stats if available, else estimated
+        const hasActualFir = firActualTotal > 0;
+        const hasActualGir = girActualTotal > 0;
+        const hasActualPutts = puttsActualTotal > 0;
+
+        const firPct = hasActualFir ? Math.round((firActual / firActualTotal) * 100) : (firEligible > 0 ? Math.round((firEst / firEligible) * 100) : 0);
+        const girPct = hasActualGir ? Math.round((girActual / girActualTotal) * 100) : (holesWithScore > 0 ? Math.round((girEst / holesWithScore) * 100) : 0);
+        const avgPutts = hasActualPutts ? (puttsActual / puttsActualTotal).toFixed(1) : (holesWithScore > 0 ? (puttsEst / holesWithScore).toFixed(1) : '--');
+        const scramblePct = scrambleOpp > 0 ? Math.round((scrambleSaved / scrambleOpp) * 100) : null;
+        const isEstimated = !hasActualFir && !hasActualGir && !hasActualPutts;
+
+        const avgPar3 = par3Scores.length > 0 ? (par3Scores.reduce((a, b) => a + b, 0) / par3Scores.length).toFixed(1) : '--';
+        const avgPar4 = par4Scores.length > 0 ? (par4Scores.reduce((a, b) => a + b, 0) / par4Scores.length).toFixed(1) : '--';
+        const avgPar5 = par5Scores.length > 0 ? (par5Scores.reduce((a, b) => a + b, 0) / par5Scores.length).toFixed(1) : '--';
+
+        return {
+          name: p.name, firstName: p.name.split(' ')[0], holesWithScore,
+          firPct, girPct, avgPutts, isEstimated,
+          scramblePct, penaltyTotal, maxBirdieStreak, maxBogeyFreeStreak,
+          avgPar3, avgPar4, avgPar5
+        };
       }).filter(s => s.holesWithScore > 0).sort((a, b) => b.girPct - a.girPct);
+
+      const anyEstimated = statsData.some(s => s.isEstimated);
 
       if (statsData.length > 0) {
         html += `<div style="background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB;overflow:hidden">
           <details>
             <summary style="padding:12px 16px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent">
-              <span style="font-size:9px">&#9654;</span> Round Stats <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:none;letter-spacing:0">(est.) Thru ${scoredHoles.length}</span>
+              <span style="font-size:9px">&#9654;</span> Round Stats ${anyEstimated ? '<span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:none;letter-spacing:0">(est.)</span>' : ''} <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:none;letter-spacing:0">Thru ${scoredHoles.length}</span>
             </summary>
-            <div style="padding:0 16px 14px">
-              <table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px">
+            <div style="padding:0 16px 14px">`;
+
+        // Core stats table: FIR, GIR, Putts, Scramble
+        html += `<table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px">
                 <tr style="border-bottom:2px solid #E8E5DE">
                   <td style="padding:6px 0;font-weight:700;color:#6B7280;font-size:11px"></td>
                   <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">FIR%</td>
                   <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">GIR%</td>
                   <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Putts</td>
+                  <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Scr%</td>
+                  <td style="padding:6px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Pen</td>
                 </tr>`;
         statsData.forEach((s, i) => {
           html += `<tr style="${i < statsData.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
@@ -1777,11 +1971,40 @@ export function renderRoundFeed(state) {
                   <td style="padding:6px 4px;text-align:center;color:#374151">${s.firPct}%</td>
                   <td style="padding:6px 4px;text-align:center;color:#374151">${s.girPct}%</td>
                   <td style="padding:6px 4px;text-align:center;color:#374151">${s.avgPutts}</td>
+                  <td style="padding:6px 4px;text-align:center;color:#374151">${s.scramblePct !== null ? s.scramblePct + '%' : '--'}</td>
+                  <td style="padding:6px 4px;text-align:center;color:${s.penaltyTotal > 0 ? '#DC2626' : '#374151'}">${s.penaltyTotal}</td>
                 </tr>`;
         });
+        html += `</table>`;
+
+        // Advanced stats: scoring by par, streaks
+        html += `<div style="margin-top:10px;border-top:1px solid #E8E5DE;padding-top:8px">
+          <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Scoring by Par</div>
+          <table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px">
+            <tr style="border-bottom:1px solid #F0EDE6">
+              <td style="padding:4px 0;font-weight:700;color:#6B7280;font-size:11px"></td>
+              <td style="padding:4px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Par 3</td>
+              <td style="padding:4px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Par 4</td>
+              <td style="padding:4px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">Par 5</td>
+              <td style="padding:4px 4px;text-align:center;font-weight:700;color:#6B7280;font-size:11px">BF</td>
+            </tr>`;
+        statsData.forEach((s, i) => {
+          html += `<tr style="${i < statsData.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
+              <td style="padding:4px 0;font-weight:600;color:#1A1A1A;font-size:12px">${escHtml(s.firstName)}</td>
+              <td style="padding:4px 4px;text-align:center;color:#374151">${s.avgPar3}</td>
+              <td style="padding:4px 4px;text-align:center;color:#374151">${s.avgPar4}</td>
+              <td style="padding:4px 4px;text-align:center;color:#374151">${s.avgPar5}</td>
+              <td style="padding:4px 4px;text-align:center;color:${s.maxBogeyFreeStreak >= 3 ? '#16A34A' : '#374151'}">${s.maxBogeyFreeStreak}</td>
+            </tr>`;
+        });
         html += `</table>
-              <div style="font-size:10px;color:#9CA3AF;margin-top:6px;font-style:italic">Stats estimated from scores. Actual FIR/GIR/putts tracking coming soon.</div>
-            </div>
+        </div>`;
+
+        if (anyEstimated) {
+          html += `<div style="font-size:10px;color:#9CA3AF;margin-top:6px;font-style:italic">Some stats estimated from scores. Use stat toggles when entering scores for actual tracking.</div>`;
+        }
+
+        html += `</div>
           </details>
         </div>`;
       }

@@ -710,6 +710,7 @@ function persist() {
   delete toSave._boardSubTab;
   delete toSave._oddsBetSlip;
   delete toSave._oddsBetSlipAmount;
+  delete toSave._inlineScoreStats;
   save(toSave);
 
   // Flash save indicator if admin is authed
@@ -2298,6 +2299,14 @@ window.MG = {
     }
   },
 
+  // ── Hole Stat Tracking (FIR/GIR/Putts/Penalty) ──
+  setHoleStat(player, stat, value) {
+    if (!state._inlineScoreStats) state._inlineScoreStats = {};
+    if (!state._inlineScoreStats[player]) state._inlineScoreStats[player] = {};
+    state._inlineScoreStats[player][stat] = value;
+    // Don't re-render — just update the state silently
+  },
+
   // ── Inline Score Card (replaces modal) ──
   inlineScoreNav(dir) {
     if (!state._inlineScore) return;
@@ -2305,6 +2314,9 @@ window.MG = {
     const newHole = Math.max(1, Math.min(holesPerRound, state._inlineScore.hole + dir));
     const existing = (state._holes || {})[newHole]?.scores || {};
     state._inlineScore = { hole: newHole, scores: { ...existing } };
+    // Load existing stats for this hole or clear
+    const existingStats = (state._holes || {})[newHole]?.stats || {};
+    state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     refresh();
   },
   inlineScoreSetHole(h) {
@@ -2313,6 +2325,9 @@ window.MG = {
     if (isNaN(holeNum) || holeNum < 1 || holeNum > holesPerRound) return;
     const existing = (state._holes || {})[holeNum]?.scores || {};
     state._inlineScore = { hole: holeNum, scores: { ...existing } };
+    // Load existing stats for this hole or clear
+    const existingStats = (state._holes || {})[holeNum]?.stats || {};
+    state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     refresh();
   },
   inlineScoreSet(player, val) {
@@ -2349,18 +2364,61 @@ window.MG = {
     }
     const existing = (state._holes || {})[state._inlineScore.hole]?.scores || {};
     state._inlineScore.scores = { ...existing };
+    // Load existing stats for the new hole
+    const existingStats = (state._holes || {})[state._inlineScore.hole]?.stats || {};
+    state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     refresh();
   },
   async inlineScoreSave() {
     if (!state._inlineScore) return;
     const { hole, scores } = state._inlineScore;
     if (Object.keys(scores).length === 0) { toast('Enter at least one score'); return; }
+
+    // Capture stats for this hole before clearing
+    const holeStats = state._inlineScoreStats && Object.keys(state._inlineScoreStats).length > 0
+      ? JSON.parse(JSON.stringify(state._inlineScoreStats))
+      : null;
+
+    // Analytics: track score entry
+    try {
+      const pars = state._config?.coursePars || state._config?.course?.pars || [];
+      const par = pars[hole - 1] || 4;
+      const playerCount = Object.keys(scores).length;
+      const avgScore = playerCount > 0 ? (Object.values(scores).reduce((a, b) => a + b, 0) / playerCount).toFixed(1) : 0;
+      const hasStats = !!holeStats;
+      window._mgAnalytics = window._mgAnalytics || [];
+      window._mgAnalytics.push({
+        event: 'hole_scored',
+        hole,
+        par,
+        avgScore: parseFloat(avgScore),
+        playerCount,
+        hasStats,
+        statsTracked: holeStats ? Object.keys(holeStats).length : 0,
+        timestamp: Date.now()
+      });
+    } catch (_) { /* analytics should never break scoring */ }
+
     try {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
         toast(`Hole ${hole} saved`);
+
+        // Store stats locally alongside hole data
+        if (!state._holes) state._holes = {};
+        if (holeStats) {
+          if (!state._holes[hole]) state._holes[hole] = {};
+          state._holes[hole].stats = holeStats;
+        }
+
         await syncFromServer();
+
+        // Re-attach stats after sync (server may not return them yet)
+        if (holeStats && state._holes && state._holes[hole]) {
+          state._holes[hole].stats = holeStats;
+        }
+
         // Auto-advance to next unscored hole
         const holesPerRound = state._config?.holesPerRound || 18;
         const holes = state._holes || {};
@@ -2374,8 +2432,12 @@ window.MG = {
         if (nextHole) {
           const existingNext = holes[nextHole]?.scores || {};
           state._inlineScore = { hole: nextHole, scores: { ...existingNext } };
+          // Load existing stats for next hole or clear
+          const nextStats = holes[nextHole]?.stats || {};
+          state._inlineScoreStats = Object.keys(nextStats).length > 0 ? JSON.parse(JSON.stringify(nextStats)) : {};
         } else {
           state._inlineScore = null; // round complete
+          state._inlineScoreStats = {};
         }
         refresh();
       } else {
@@ -2386,6 +2448,13 @@ window.MG = {
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
       if (!state._holes) state._holes = {};
       state._holes[hole] = { ...scores };
+      // Store stats locally even when offline
+      if (holeStats) {
+        if (!state._holes[hole] || typeof state._holes[hole] !== 'object') {
+          state._holes[hole] = { scores: { ...scores } };
+        }
+        state._holes[hole].stats = holeStats;
+      }
       if (navigator.vibrate) navigator.vibrate(30);
       toast('Saved offline — will sync when connected');
       // Auto-advance
@@ -2399,8 +2468,10 @@ window.MG = {
       }
       if (nextHole) {
         state._inlineScore = { hole: nextHole, scores: {} };
+        state._inlineScoreStats = {};
       } else {
         state._inlineScore = null;
+        state._inlineScoreStats = {};
       }
       persist();
       updateConnectivityIndicator();
