@@ -1,4 +1,4 @@
-const CACHE_VERSION = 15;
+const CACHE_VERSION = 16;
 const CACHE = `mg-2026-v${CACHE_VERSION}`;
 const ASSETS = [
   "/app/",
@@ -58,16 +58,34 @@ self.addEventListener("notificationclick", e => {
   );
 });
 
-// Network-first for EVERYTHING during tournament — cache is only for offline fallback
+// Cache-first for static assets (fast on spotty golf course WiFi/cellular)
+// Network-first for HTML (ensures fresh config and content)
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (url.pathname.includes('/api/')) return;
 
-  e.respondWith(
-    fetch(e.request).then(r => {
-      const clone = r.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return r;
-    }).catch(() => caches.match(e.request))
-  );
+  const isStatic = /\.(css|js|json|png|jpg|svg|woff2?)$/.test(url.pathname);
+
+  if (isStatic) {
+    // Cache-first: serve instantly from cache, update cache in background
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        const fetchPromise = fetch(e.request).then(r => {
+          const clone = r.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return r;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+  } else {
+    // Network-first for HTML: ensures fresh content, falls back to cache offline
+    e.respondWith(
+      fetch(e.request).then(r => {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return r;
+      }).catch(() => caches.match(e.request))
+    );
+  }
 });
