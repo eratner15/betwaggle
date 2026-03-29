@@ -328,6 +328,24 @@ body {
   justify-content: center;
 }
 
+/* ── AEO Summary Block ── */
+.aeo-summary {
+  background: #fff;
+  border: 1px solid var(--color-rule);
+  border-left: 4px solid var(--color-green-mid);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  font-family: var(--ui-font);
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--color-navy);
+}
+
+.aeo-summary p {
+  margin-bottom: 0;
+}
+
 /* ── Pull Quotes ── */
 .pull-quote {
   border-left: 4px solid var(--color-gold);
