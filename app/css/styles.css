@@ -178,7 +178,7 @@ body {
   padding: 8px 4px 10px;
   color: rgba(255,255,255,0.6);
   text-decoration: none;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   gap: 3px;
   transition: color .12s;
@@ -1001,7 +1001,29 @@ body[data-outdoor="true"] {
 
 /* Outdoor mode overrides — HIGH CONTRAST for sunlight */
 body.outdoor-mode,
-body[data-outdoor="true"],
+body[data-outdoor="true"] {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F5F5F5;
+  --bg-tertiary: #EEEEEE;
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --border: rgba(0,0,0,0.15);
+  --border-strong: rgba(0,0,0,0.3);
+  --mg-bg: #FFFFFF;
+  --mg-surface: #F5F5F5;
+  --mg-text: #000000;
+  --mg-text-secondary: #333333;
+  --mg-text-muted: #555555;
+  --mg-border: rgba(0,0,0,0.15);
+  --mg-green: #0B3D1A;
+  --mg-green-light: #1A5C2E;
+  --mg-gold: #B8860B;
+  --mg-gold-dim: #996F0A;
+  --mg-win: #006B2D;
+  --mg-loss: #CC0000;
+  --mg-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  --mg-shadow-lg: 0 4px 16px rgba(0,0,0,0.25);
+}
 @media (prefers-contrast: more) {
   body {
     --bg-primary: #FFFFFF;
