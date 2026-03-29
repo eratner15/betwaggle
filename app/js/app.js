@@ -658,11 +658,11 @@ function updateNav(view) {
 }
 
 // Toast
-function toast(msg) {
+function toast(msg, duration) {
   const el = document.getElementById("mg-toast");
   el.textContent = msg;
   el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2500);
+  setTimeout(() => el.classList.remove("show"), duration || 2500);
 }
 
 // Save and re-render — auto-saves to localStorage + shows save indicator
@@ -2335,6 +2335,13 @@ window.MG = {
     const n = parseInt(val);
     if (!isNaN(n) && n >= 1 && n <= 15) {
       state._inlineScore.scores[player] = n;
+      // Warn on outlier scores (triple bogey or worse)
+      const hole = state._inlineScore.hole;
+      const pars = state._config?.coursePars || state._config?.course?.pars || [];
+      const par = pars[hole - 1] || 4;
+      if (n >= par + 4) {
+        toast(`${n} on a par ${par}? Tap again to change.`, 2000);
+      }
     } else {
       delete state._inlineScore.scores[player];
     }
@@ -2403,6 +2410,9 @@ window.MG = {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
+
+        // Store undo data before advancing
+        state._lastScoredHole = { hole, scores: { ...scores }, stats: holeStats ? JSON.parse(JSON.stringify(holeStats)) : null };
         toast(`Hole ${hole} saved`);
 
         // Store stats locally alongside hole data
@@ -2476,6 +2486,32 @@ window.MG = {
       persist();
       updateConnectivityIndicator();
       refresh();
+    }
+  },
+
+  // ── Undo Last Hole ──
+  async undoLastHole() {
+    const last = state._lastScoredHole;
+    if (!last) { toast('Nothing to undo'); return; }
+    const hole = last.hole;
+    // Re-submit with empty scores to clear the hole
+    try {
+      const emptyScores = {};
+      const players = state._config?.players || state._config?.roster || [];
+      players.forEach(p => { emptyScores[p.name || p.member] = 0; });
+      const result = await Sync.submitHoleScores(hole, emptyScores);
+      if (result && result.ok) {
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+        toast(`Hole ${hole} undone`);
+        // Navigate back to that hole for re-entry
+        state._inlineScore = { hole, scores: { ...last.scores } };
+        state._inlineScoreStats = last.stats ? JSON.parse(JSON.stringify(last.stats)) : {};
+        state._lastScoredHole = null;
+        await syncFromServer();
+        refresh();
+      }
+    } catch (e) {
+      toast('Could not undo — try again');
     }
   },
 

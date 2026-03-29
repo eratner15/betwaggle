@@ -1490,7 +1490,7 @@ export function renderRoundFeed(state) {
     let detail = '';
     if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
     if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
-    return `<span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${escHtml(g)}${detail}</span>`;
+    return `<span style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}${detail}</span>`;
   }).join('');
 
   let html = '';
@@ -1523,13 +1523,13 @@ export function renderRoundFeed(state) {
     html += `<div style="background:var(--mg-green);color:var(--text-primary);border-radius:10px;padding:12px 16px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:16px;font-weight:700">${escHtml(eventName)}</div>
-          <div style="font-size:11px;opacity:.6">${courseName ? escHtml(courseName) + ' \u00b7 ' : ''}R${roundNum}</div>
+          <div style="font-size:18px;font-weight:700">${escHtml(eventName)}</div>
+          <div style="font-size:13px;opacity:.6">${courseName ? escHtml(courseName) + ' \u00b7 ' : ''}R${roundNum}</div>
           ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
         </div>
         <div style="text-align:right">
-          <div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px">Pot</div>
-          <div style="font-size:20px;font-weight:800;color:var(--gold-bright);font-family:'SF Mono',monospace">$${totalPot}</div>
+          <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:1px">Pot</div>
+          <div style="font-size:24px;font-weight:800;color:var(--gold-bright);font-family:'SF Mono',monospace">$${totalPot}</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">`;
@@ -1643,12 +1643,12 @@ export function renderRoundFeed(state) {
       // Find the leader for gold highlight
       const leaderToPar = standingsData.reduce((best, p) => (p.toPar !== null && (best === null || p.toPar < best)) ? p.toPar : best, null);
 
-      html += `<div style="background:#FAFAF7;border-radius:12px;padding:14px 16px 12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB">`;
+      html += `<div style="background:#FAFAF7;border-radius:12px;padding:16px 18px 14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB">`;
 
       // Header
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:13px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">Running Standings</span>
-        <span style="font-size:11px;color:#6B7280;font-weight:600">Thru ${thruLabel}</span>
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">Running Standings</span>
+        <span style="font-size:13px;color:#374151;font-weight:600">Thru ${thruLabel}</span>
       </div>`;
 
       // Player rows — compact 2-line per player
@@ -1660,15 +1660,15 @@ export function renderRoundFeed(state) {
         const moneyStr = p.money === 0 ? '$0' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
         const moneyColor = p.money > 0 ? '#16A34A' : p.money < 0 ? '#DC2626' : '#6B7280';
 
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;${i < standingsData.length - 1 ? 'border-bottom:1px solid #F0EDE6;' : ''}">
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;${i < standingsData.length - 1 ? 'border-bottom:1px solid #F0EDE6;' : ''}">
           <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-            <span style="font-size:12px;font-weight:700;color:#9CA3AF;width:16px;text-align:right;flex-shrink:0">${i + 1}.</span>
-            <span style="font-size:13px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(firstName)}</span>
+            <span style="font-size:13px;font-weight:700;color:#9CA3AF;width:16px;text-align:right;flex-shrink:0">${i + 1}.</span>
+            <span style="font-size:15px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(firstName)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;font-family:'SF Mono','Menlo','Courier New',monospace">
-            <span style="font-size:14px;font-weight:800;color:${toParColor};${isLeaderScore ? 'text-shadow:0 0 6px rgba(184,150,46,0.3)' : ''}">${toParStr}</span>
-            <span style="font-size:13px;font-weight:700;color:${moneyColor};min-width:50px;text-align:right">${moneyStr}</span>
-            <span style="font-size:11px;color:${p.skins > 0 ? '#B8962E' : '#D1D5DB'};min-width:42px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+            <span style="font-size:16px;font-weight:800;color:${toParColor};${isLeaderScore ? 'text-shadow:0 0 6px rgba(184,150,46,0.3)' : ''}">${toParStr}</span>
+            <span style="font-size:15px;font-weight:700;color:${moneyColor};min-width:50px;text-align:right">${moneyStr}</span>
+            <span style="font-size:13px;font-weight:600;color:${p.skins > 0 ? '#B8962E' : '#9CA3AF'};min-width:42px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
           </div>
         </div>`;
       });
@@ -1909,6 +1909,14 @@ export function renderRoundFeed(state) {
         ${kpAllFilled ? 'Save Hole ' + kpHole + ' &#8594;' : 'Fill in all scores for Hole ' + kpHole}
       </button>`;
 
+      // Undo last hole button (shown when there's a recent submission to undo)
+      if (state._lastScoredHole && state._lastScoredHole.hole !== kpHole) {
+        html += `<button onclick="window.MG.undoLastHole()"
+          style="width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid #D1D5DB;background:transparent;color:#6B7280;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          Undo Hole ${state._lastScoredHole.hole}
+        </button>`;
+      }
+
       html += `</div>`;
     }
 
@@ -2086,8 +2094,8 @@ export function renderRoundFeed(state) {
 
     // Header
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
-      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Leaderboard</span>
-      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">Tap player for detail</span>
+      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Leaderboard</span>
+      <span style="font-size:12px;color:var(--text-secondary);font-family:'SF Mono',monospace">Tap player for detail</span>
     </div>`;
 
     // Player rows — card-based with depth
@@ -2119,25 +2127,25 @@ export function renderRoundFeed(state) {
       // Position badge
       const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
 
-      // To-par size — massive for leader
-      const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
+      // To-par size — massive for leader, large for others
+      const toParSize = isLeader ? 'font-size:32px;font-weight:900' : 'font-size:24px;font-weight:800';
 
       // COLLAPSED: Card per player
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
-            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+            <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+            <span style="font-size:17px;font-weight:${isLeader ? '700' : '600'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
             <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
-            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s;${oddsGlow}" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s;${oddsGlow}" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin-left:32px;margin-top:4px;font-size:12px;font-family:'SF Mono',monospace">
-          <span style="color:${moneyColor};font-weight:700;${moneyGlow}">${moneyStr}</span>
-          <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--border-strong)'}">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
-          <span style="color:var(--text-tertiary)">Thru ${p.thru}</span>
+        <div style="display:flex;gap:12px;margin-left:38px;margin-top:6px;font-size:14px;font-family:'SF Mono',monospace">
+          <span style="color:${moneyColor};font-weight:800;${moneyGlow}">${moneyStr}</span>
+          <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--text-secondary)'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+          <span style="color:var(--text-secondary);font-weight:500">Thru ${p.thru}</span>
         </div>`;
 
       // EXPANDED: Betting detail (only if tapped)
@@ -2228,7 +2236,7 @@ export function renderRoundFeed(state) {
     }
 
     // Footer
-    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+    html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;font-family:'SF Mono',monospace;color:var(--text-secondary)">
       <span>Total: $${totalPot}</span>
       <span>${holesRemaining} holes remaining</span>
     </div>`;
@@ -2378,18 +2386,18 @@ export function renderRoundFeed(state) {
       const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
       html += `<div style="background:linear-gradient(90deg,rgba(212,160,23,0.06),var(--bg-secondary));border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:14px 16px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-bright)">Settlement${roundComplete ? '' : ' (Running)'}</div>
-          ${roundComplete ? `<a href="#settle" style="font-size:11px;font-weight:600;color:var(--mg-gold);text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:10px;color:var(--text-tertiary)">Thru ${scoredHoles.length} holes</span>`}
+          <div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-bright)">Settlement${roundComplete ? '' : ' (Running)'}</div>
+          ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:var(--mg-gold);text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:12px;color:var(--text-secondary);font-weight:600">Thru ${scoredHoles.length} holes</span>`}
         </div>`;
       payPairs.forEach(pair => {
         const toVenmo = venmoHandles[pair.to] || pair.to;
         const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
         const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:14px;color:var(--text-primary)">${escHtml(pair.from.split(' ')[0])} <span style="font-size:12px;color:var(--text-tertiary)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-family:'SF Mono',monospace;font-size:18px;font-weight:800;color:var(--gold-bright)">$${pair.amount}</span>
-            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:5px 12px;background:#3D95CE;color:var(--text-primary);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;min-height:32px;display:flex;align-items:center">Venmo</a>` : ''}
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:16px;font-weight:600;color:var(--text-primary)">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:var(--text-secondary)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:var(--gold-bright)">$${pair.amount}</span>
+            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:#3D95CE;color:var(--text-primary);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
           </div>
         </div>`;
       });
@@ -2408,12 +2416,12 @@ export function renderRoundFeed(state) {
       allTickerItems.unshift({ text: msg, isOddsMove: true });
     });
     if (allTickerItems.length > 0 && scoredHoles.length > 0) {
-      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;overflow:hidden;height:34px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='34px'?'auto':'34px'">`;
       allTickerItems.slice(0, 7).forEach((item, i) => {
         const text = item.text || '';
         const color = item.isOddsMove ? 'var(--gold-bright)' : 'var(--mg-text)';
         const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px">LINE MOVE</span>' : '';
-        html += `<div style="font-size:12px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
+        html += `<div style="font-size:14px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
       });
       html += `</div>`;
     }
