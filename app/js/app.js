@@ -139,7 +139,7 @@ async function bootstrap() {
   // Collapsible section state (survives re-renders, not persisted)
   state._barOpen = false;
   state._gamesOpen = false;
-  state._boardSubTab = null; // mid-round sub-tab: 'score' | 'board' | 'bar' (null = auto)
+  state._boardSubTab = isSpectator ? 'board' : null; // mid-round sub-tab: 'score' | 'board' | 'bar' (null = auto; spectators default to board)
 
   // Restore admin auth from session token
   if (Sync.isAdminAuthed()) {

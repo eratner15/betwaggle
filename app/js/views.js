@@ -989,9 +989,9 @@ export function renderScrambleLeaderboard(state) {
         }
       }
 
-      // Card styles — leader gets gold gradient, others get standard card
+      // Card styles — leader gets gold border only (no gradient for readability)
       const cardBg = isLeader
-        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
         : 'background:var(--bg-secondary);border:1px solid var(--border)';
 
       // Position badge
@@ -1619,23 +1619,28 @@ export function renderRoundFeed(state) {
   // ================================================================
   // SECTION 2: SCORE ENTRY (inline scorecard grid)
   // ================================================================
-  if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && !state._spectatorMode && players.length > 0) {
-    if (!state._inlineScore) {
-      const nextH = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
-      const existingScores = holes[nextH]?.scores || {};
-      state._inlineScore = { hole: nextH, scores: { ...existingScores } };
-      // Init stats for the current hole
-      const existingStats = holes[nextH]?.stats || {};
-      if (!state._inlineScoreStats || Object.keys(state._inlineScoreStats).length === 0) {
-        state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
-      }
-    }
-    const inl = state._inlineScore;
-    const currentHole = inl.hole;
-    const inlScores = inl.scores || {};
+  if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && players.length > 0) {
     const yardage = getCourseYardage(config);
     const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
     const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
+    let currentHole = latestHole || 1;
+    let inlScores = {};
+
+    if (!state._spectatorMode) {
+      if (!state._inlineScore) {
+        const nextH = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+        const existingScores = holes[nextH]?.scores || {};
+        state._inlineScore = { hole: nextH, scores: { ...existingScores } };
+        // Init stats for the current hole
+        const existingStats = holes[nextH]?.stats || {};
+        if (!state._inlineScoreStats || Object.keys(state._inlineScoreStats).length === 0) {
+          state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+        }
+      }
+      const inl = state._inlineScore;
+      currentHole = inl.hole;
+      inlScores = inl.scores || {};
+    }
 
     // ── 1. RUNNING P&L SUMMARY (digital yardage book) ──
     if (scoredHoles.length > 0 && standingsData.length > 0) {
@@ -1794,7 +1799,7 @@ export function renderRoundFeed(state) {
     });
 
     // ── 3b. KEYPAD SCORE ENTRY SECTION (below read-only scorecard) ──
-    if (!roundComplete && players.length > 0) {
+    if (!roundComplete && players.length > 0 && !state._spectatorMode) {
       const kpHole = currentHole;
       const kpPar = pars[kpHole - 1] || 4;
       const kpHcp = resolvedHcp[kpHole - 1] ?? '';
@@ -2067,17 +2072,19 @@ export function renderRoundFeed(state) {
       }
     }
 
-    // Scan scorecard (below the premium card)
-    html += `<div style="display:flex;gap:8px;margin-top:0;margin-bottom:8px">
-      <button onclick="document.getElementById('scorecard-camera').click()"
-        style="flex:1;padding:10px;background:#FAFAF7;border:1.5px solid #D1D5DB;border-radius:10px;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Scan Scorecard
-      </button>
-      <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
-        onchange="window.MG.scanScorecard(this.files[0])">
-    </div>`;
-    html += `<div id="scan-results" style="display:none"></div>`;
+    // Scan scorecard (below the premium card — commissioner only)
+    if (!state._spectatorMode) {
+      html += `<div style="display:flex;gap:8px;margin-top:0;margin-bottom:8px">
+        <button onclick="document.getElementById('scorecard-camera').click()"
+          style="flex:1;padding:10px;background:#FAFAF7;border:1.5px solid #D1D5DB;border-radius:10px;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Scan Scorecard
+        </button>
+        <input type="file" id="scorecard-camera" accept="image/*" capture="environment" style="display:none"
+          onchange="window.MG.scanScorecard(this.files[0])">
+      </div>`;
+      html += `<div id="scan-results" style="display:none"></div>`;
+    }
   } else if (roundComplete && !state._spectatorMode) {
     html += `<div style="border:2px solid var(--mg-gold);border-radius:10px;padding:20px;margin-bottom:8px;text-align:center;background:var(--bg-primary)">
       <div style="font-size:20px;font-weight:700;color:var(--mg-gold);margin-bottom:8px">Round Complete</div>
@@ -2119,9 +2126,9 @@ export function renderRoundFeed(state) {
 
       const expanded = state._expandedPlayer === p.name;
 
-      // Card styles — leader gets gold gradient, others get standard card
+      // Card styles — leader gets gold border only (no gradient for readability)
       const cardBg = isLeader
-        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
         : 'background:var(--bg-secondary);border:1px solid var(--border)';
 
       // Position badge
@@ -7238,9 +7245,9 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
     const moneyColor = p.money > 0 ? 'var(--win)' : p.money < 0 ? 'var(--loss)' : 'var(--text-tertiary)';
     const moneyGlow = p.money > 0 ? 'text-shadow:0 0 8px rgba(63,185,80,0.3)' : p.money < 0 ? 'text-shadow:0 0 8px rgba(248,81,73,0.3)' : '';
 
-    // Card styles — leader gets gold gradient
+    // Card styles — leader gets gold border only (no gradient for readability)
     const cardBg = isLeader
-      ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+      ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
       : 'background:var(--bg-secondary);border:1px solid var(--border)';
 
     // Position badge
