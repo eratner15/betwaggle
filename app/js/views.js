@@ -2345,7 +2345,7 @@ export function renderRoundFeed(state) {
     }
 
     // Footer
-    html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:0.72rem;font-family:'SF Mono',monospace;color:rgba(240,236,227,0.5)">
+    html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:0.72rem;font-family:'SF Mono',monospace;color:#1a1a1a">
       <span>Total: $${totalPot}</span>
       <span>${holesRemaining} holes remaining</span>
     </div>`;
