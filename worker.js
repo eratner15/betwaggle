@@ -818,6 +818,13 @@ export default {
       return response;
     }
 
+    // ===== FRIENDLY REDIRECTS for common dead-end routes =====
+    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/' };
+    const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
+    if (redirectTarget) {
+      return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
+    }
+
     // ===== LEGACY: backward compat for /waggle/ URLs during migration =====
     if (url.pathname.startsWith('/waggle/')) {
       const newPath = url.pathname.replace('/waggle/', '/');
@@ -1265,10 +1272,18 @@ async function seedDemoScramble(env) {
   };
   await env.MG_BOOK.put('demo-scramble:game-state', JSON.stringify(gameState));
 
+  const baseTs = new Date().setHours(10, 15, 0, 0);
   const feed = [
-    { ts: Date.now() - 100000, type: 'score', text: 'Team Delta aces the par 3 7th. Best shot of the day.', player: 'Team Delta' },
-    { ts: Date.now() - 200000, type: 'score', text: 'Team Falcon birdies #6. Tied for the lead at -5.', player: 'Team Falcon' },
-    { ts: Date.now() - 300000, type: 'chirp', text: 'Front 9 complete. Three teams within a shot. Back 9 is going to be a war.', player: 'System' },
+    { ts: baseTs + 87 * 60000, type: 'chirp', text: 'Front 9 complete. Three teams within a shot. Back 9 is going to be a war.', player: 'System' },
+    { ts: baseTs + 82 * 60000, type: 'score', text: 'Team Delta aces the par 3 7th. Best shot of the day. The tent erupted.', player: 'Team Delta' },
+    { ts: baseTs + 75 * 60000, type: 'score', text: 'Team Falcon birdies #6. Tied for the lead at -5. Ice in their veins.', player: 'Team Falcon' },
+    { ts: baseTs + 68 * 60000, type: 'score', text: 'Team Alpha eagles #5. The avalanche has started — they\'re -6 through 5.', player: 'Team Alpha' },
+    { ts: baseTs + 55 * 60000, type: 'score', text: 'Team Grizzly hits it to 4 feet on 7. Birdie inevitable. They\'re lurking.', player: 'Team Grizzly' },
+    { ts: baseTs + 42 * 60000, type: 'chirp', text: 'Three teams deadlocked at -5 heading to the back nine. Buckle up.', player: 'System' },
+    { ts: baseTs + 35 * 60000, type: 'score', text: 'Team Eagle shoots +1 through 6. Bracket busted already. Drinks on them.', player: 'Team Eagle' },
+    { ts: baseTs + 22 * 60000, type: 'score', text: 'Team Falcon\'s birdie putt lips out on 3. The howl heard across the course.', player: 'Team Falcon' },
+    { ts: baseTs + 12 * 60000, type: 'side', text: 'Closest to pin on #4: Team Delta, 6\' 2\". Money on the line.', player: 'Team Delta' },
+    { ts: baseTs, type: 'score', text: 'Team Bravo fires -4 on the front. They\'re coming. Nobody\'s safe.', player: 'Team Bravo' },
   ];
   await env.MG_BOOK.put('demo-scramble:feed', JSON.stringify(feed));
 
@@ -2778,7 +2793,68 @@ async function handleCourseDetailPage(courseId, env) {
   </div>
   <div style="max-width:960px;margin:32px auto 0;padding:0 20px">
     <h2 style="font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:20px">Scorecard</h2>
-    ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : `<p style="color:#7A7A7A;font-size:13px">Par ${refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0)} \u00b7 ${validTees.length} tee${validTees.length !== 1 ? 's' : ''} available</p>`}
+    ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : (() => {
+      const totalPar = refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0);
+      const is18 = refTee.is18;
+      let sc = '<p style="color:#7A7A7A;font-size:13px;margin-bottom:20px">Par ' + totalPar + ' \\u00b7 ' + validTees.length + ' tee' + (validTees.length !== 1 ? 's' : '') + ' available</p>';
+      sc += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px">';
+      sc += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:\\'SF Mono\\',\\'Fira Code\\',monospace;min-width:' + (is18 ? '720' : '420') + 'px">';
+      // FRONT 9 header
+      sc += '<thead><tr style="background:#0D2818;color:#fff">';
+      sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#0D2818;z-index:1">Hole</th>';
+      for (let h = 1; h <= 9; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
+      sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B4332">OUT</th>';
+      if (is18) {
+        for (let h = 10; h <= 18; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B4332">IN</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#C9A84C;color:#0D2818">TOT</th>';
+      }
+      sc += '</tr></thead><tbody>';
+      // Par row
+      const frontPar = refTee.front9.reduce((s,h)=>s+(h.par||0),0);
+      const backPar = refTee.back9.reduce((s,h)=>s+(h.par||0),0);
+      sc += '<tr style="background:#f8f6f0;font-weight:700;color:#1B4332">';
+      sc += '<td style="padding:7px 6px;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#f8f6f0;z-index:1">Par</td>';
+      refTee.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center">' + (h.par||'') + '</td>'; });
+      sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#eae6da">' + frontPar + '</td>';
+      if (is18) {
+        refTee.back9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center">' + (h.par||'') + '</td>'; });
+        sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#eae6da">' + backPar + '</td>';
+        sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#eae6da">' + totalPar + '</td>';
+      }
+      sc += '</tr>';
+      // Handicap row
+      sc += '<tr style="background:#fff;color:#7A7A7A;font-size:11px">';
+      sc += '<td style="padding:6px;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#fff;z-index:1">Hdcp</td>';
+      refTee.front9.forEach(h => { sc += '<td style="padding:6px 4px;text-align:center">' + (h.handicap||'') + '</td>'; });
+      sc += '<td style="padding:6px;background:#f5f3ed"></td>';
+      if (is18) {
+        refTee.back9.forEach(h => { sc += '<td style="padding:6px 4px;text-align:center">' + (h.handicap||'') + '</td>'; });
+        sc += '<td style="padding:6px;background:#f5f3ed"></td><td style="padding:6px;background:#f5f3ed"></td>';
+      }
+      sc += '</tr>';
+      // Tee rows (yardage per tee)
+      validTees.forEach(t => {
+        const bg = t.color === '#e8e8e8' ? '#fafafa' : '#fff';
+        sc += '<tr style="background:' + bg + ';border-top:1px solid #E8E4DC">';
+        sc += '<td style="padding:7px 6px;position:sticky;left:0;background:' + bg + ';z-index:1;white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + t.color + ';border:' + t.dotBorder + ';vertical-align:middle;margin-right:6px"></span><span style="font-size:11px;font-weight:600;color:#3D3D3D">' + t.name + '</span>' + (t.gender === 'female' ? '<span style="font-size:9px;color:#999;margin-left:3px">W</span>' : '') + '</td>';
+        t.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
+        sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B4332">' + t.frontYds + '</td>';
+        if (is18) {
+          t.back9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B4332">' + t.backYds + '</td>';
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#f5f3ed;color:#0D2818">' + t.yds + '</td>';
+        }
+        sc += '</tr>';
+        // Rating/slope sub-row
+        sc += '<tr style="background:' + bg + ';border-bottom:1px solid #E8E4DC">';
+        sc += '<td colspan="' + (is18 ? 22 : 11) + '" style="padding:2px 6px 6px;font-size:10px;color:#999;position:sticky;left:0;background:' + bg + '">';
+        sc += 'Rating: ' + t.rating + ' &middot; Slope: ' + t.slope;
+        sc += '</td></tr>';
+      });
+      sc += '</tbody></table></div>';
+      return sc;
+    })()}
   </div>
   <footer style="text-align:center;padding:48px 20px 32px;color:#7A7A7A;font-size:13px">
     <p>Waggle by <a href="https://betwaggle.com/" style="color:#2D6A4F;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#2D6A4F;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2D6A4F;font-weight:600">Create Event</a></p>
