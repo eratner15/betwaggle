@@ -76,13 +76,30 @@
     .rule .text{font-size:14px;line-height:1.6}
     .rule strong{color:var(--dark)}
 
+    /* ── Print Button ── */
+    .print-btn{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--dark);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;letter-spacing:0.3px;transition:background .15s}
+    .print-btn:hover{background:#c9a132}
+    .print-bar{display:flex;justify-content:flex-end;max-width:860px;margin:16px auto 0;padding:0 32px}
+
     /* ── Print ── */
     @media print{
-      .toc,.header img{display:none}
-      .header{padding:16px;page-break-after:avoid}
+      .toc,.header img,.print-bar{display:none}
+      .header{background:#fff!important;color:#000;padding:16px 0;border-bottom:2px solid #333;page-break-after:avoid}
+      .header h1{color:#000}
+      .header p{color:#555}
       .section{page-break-inside:avoid}
-      body{background:#fff}
-      .box{border:1px solid #ccc}
+      .section h2{page-break-before:always;page-break-after:avoid}
+      #quickstart h2{page-break-before:avoid}
+      body{background:#fff;font-size:12px}
+      .page{padding:24px 0;max-width:100%}
+      .box{border:1px solid #999;background:#f9f9f9!important}
+      .box.tip,.box.warn,.box.danger{border-left:3px solid #555}
+      .steps li{border:1px solid #ccc;background:#fff}
+      .steps li::before{background:#333}
+      th{background:#333!important}
+      a{color:#000;text-decoration:underline}
+      footer{display:none}
+      @page{margin:0.75in;@bottom-center{content:"betwaggle.com/overview/"}}
     }
     @media(max-width:600px){
       .page{padding:24px 16px 60px}
@@ -111,6 +128,10 @@
   <a href="#endofday">End of Tournament</a>
   <a href="#rules">House Rules</a>
 </nav>
+
+<div class="print-bar">
+  <button class="print-btn" onclick="window.print()">🖨️ Print Guide</button>
+</div>
 
 <div class="page">
 
