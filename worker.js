@@ -327,6 +327,13 @@ export default {
       return handleWaggleJoinPage(joinMatch[1], env);
     }
 
+    // ===== FRIENDLY REDIRECTS for common dead-end routes (must be before SPA match) =====
+    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/' };
+    const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
+    if (redirectTarget) {
+      return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
+    }
+
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
     if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b'].includes(waggleSpaMatch[1])) {
@@ -816,13 +823,6 @@ export default {
         return r;
       }
       return response;
-    }
-
-    // ===== FRIENDLY REDIRECTS for common dead-end routes =====
-    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/' };
-    const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
-    if (redirectTarget) {
-      return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
     }
 
     // ===== LEGACY: backward compat for /waggle/ URLs during migration =====
