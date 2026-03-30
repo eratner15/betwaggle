@@ -328,7 +328,7 @@ export default {
     }
 
     // ===== FRIENDLY REDIRECTS for common dead-end routes (must be before SPA match) =====
-    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/' };
+    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/', '/rules': '/games/', '/help': '/overview/' };
     const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
     if (redirectTarget) {
       return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
