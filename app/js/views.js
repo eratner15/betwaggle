@@ -2493,20 +2493,20 @@ export function renderRoundFeed(state) {
         if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
       });
       const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
-      html += `<div style="background:linear-gradient(90deg,rgba(212,160,23,0.06),var(--bg-secondary));border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.12) 0%,rgba(13,40,24,0.95) 100%);color:#f0ece3;border:1px solid rgba(212,160,23,0.3);border-left:3px solid var(--gold-primary,#c9a84c);border-radius:10px;padding:14px 16px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-bright)">Settlement${roundComplete ? '' : ' (Running)'}</div>
-          ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:var(--mg-gold);text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:12px;color:var(--text-secondary);font-weight:600">Thru ${scoredHoles.length} holes</span>`}
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#c9a84c">Settlement${roundComplete ? '' : ' (Running)'}</div>
+          ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:#c9a84c;text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:0.78rem;color:rgba(240,236,227,0.6);font-weight:600">Thru ${scoredHoles.length} holes</span>`}
         </div>`;
       payPairs.forEach(pair => {
         const toVenmo = venmoHandles[pair.to] || pair.to;
         const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
         const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:16px;font-weight:600;color:var(--text-primary)">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:var(--text-secondary)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(212,160,23,0.2)">
+          <div style="font-size:16px;font-weight:600;color:#f0ece3">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:rgba(240,236,227,0.6)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:var(--gold-bright)">$${pair.amount}</span>
-            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:#3D95CE;color:var(--text-primary);border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
+            <span style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:#c9a84c">$${pair.amount}</span>
+            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:#3D95CE;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
           </div>
         </div>`;
       });
