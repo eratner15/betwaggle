@@ -948,8 +948,7 @@ export function renderScrambleLeaderboard(state) {
 
     // Header
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
-      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Leaderboard</span>
-      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">Tap team for detail</span>
+      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Leaderboard</span>
     </div>`;
 
     // Team rows — card-based with depth
@@ -1012,6 +1011,7 @@ export function renderScrambleLeaderboard(state) {
             <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
             ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:var(--gold-bright);${payoutGlow}">$${payout.toLocaleString()}</span>` : ''}
             <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>`;
 
@@ -1239,6 +1239,39 @@ export function renderScrambleLeaderboard(state) {
         ${!roundComplete && holesRemaining > 0 ? `<div style="font-size:11px;color:rgba(245,240,232,0.4);margin-top:10px">${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining &middot; ${holesPlayed} played</div>` : ''}
       </div>`;
     }
+  }
+
+  // ================================================================
+  // SECTION 7D: WHAT'S AT STAKE (BAR tab)
+  // ================================================================
+  if ((scrShowSubTabs === false || scrActiveSubTab === 'bar') && leaderboard.length >= 2 && !roundComplete) {
+    const stakeLeader = leaderboard[0];
+    const stakeRunner = leaderboard[1];
+    const stakeGap = (stakeRunner.total || 0) - (stakeLeader.total || 0);
+    const firstPrize = payoutByPosition[0] || 0;
+    const teamsInContention = leaderboard.filter((t, i) => {
+      if (i === 0) return true;
+      const gap = (t.total || 0) - (stakeLeader.total || 0);
+      return gap <= 4;
+    }).length;
+    const evPerHole = holesRemaining > 0 && firstPrize > 0 ? Math.round(firstPrize / holesRemaining) : 0;
+
+    let stakeText;
+    if (stakeGap === 0) {
+      stakeText = `It's all even. $${firstPrize.toLocaleString()} goes to whoever handles the back ${holesRemaining > 9 ? holesRemaining : 'nine'}.`;
+    } else {
+      stakeText = `${escHtml(stakeLeader.team)} leads by ${stakeGap} with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} left. $${firstPrize.toLocaleString()} first place is within reach for ${teamsInContention} team${teamsInContention !== 1 ? 's' : ''}.`;
+    }
+
+    html += `<div style="padding:20px 16px;background:#1a3a2a;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:48px;opacity:0.07;pointer-events:none">💰</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.6);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+        WHAT'S AT STAKE
+      </div>
+      <div style="font-size:15px;font-weight:600;color:#F5F0E8;line-height:1.5;position:relative;z-index:1">${stakeText}</div>
+      ${evPerHole > 0 ? `<div style="font-size:13px;color:var(--gold-bright);margin-top:8px;font-weight:600;position:relative;z-index:1">Every hole is worth roughly <span style="font-family:'SF Mono',monospace">$${evPerHole}</span> in expected value.</div>` : ''}
+    </div>`;
   }
 
   // ================================================================
@@ -2166,10 +2199,10 @@ export function renderRoundFeed(state) {
     html += `<div style="margin-bottom:8px">`;
 
     // Header
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:0 2px">
       <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Leaderboard</span>
-      <span style="font-size:12px;color:var(--text-secondary);font-family:'SF Mono',monospace">Tap player for detail</span>
     </div>`;
+    html += `<span style="font-size:0.72rem;color:#8a7a5a;font-style:italic;display:block;margin-bottom:8px;padding:0 2px">Odds to win the round outright. Negative = favorite, positive = underdog.</span>`;
 
     // Player rows — card-based with depth
     standingsData.forEach((p, i) => {
@@ -2215,10 +2248,13 @@ export function renderRoundFeed(state) {
             <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s;${oddsGlow}" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin-left:38px;margin-top:6px;font-size:14px;font-family:'SF Mono',monospace">
-          <span style="color:${moneyColor};font-weight:800;${moneyGlow}">${moneyStr}</span>
-          <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--text-secondary)'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
-          <span style="color:var(--text-secondary);font-weight:500">Thru ${p.thru}</span>
+        <div style="display:flex;align-items:center;margin-left:38px;margin-top:6px">
+          <div style="display:flex;gap:12px;flex:1;font-size:14px;font-family:'SF Mono',monospace">
+            <span style="color:${moneyColor};font-weight:800;${moneyGlow}">${moneyStr}</span>
+            <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--text-secondary)'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+            <span style="color:var(--text-secondary);font-weight:500">Thru ${p.thru}</span>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
         </div>`;
 
       // EXPANDED: Betting detail (only if tapped)
@@ -5717,6 +5753,19 @@ export function renderShootout(state) {
 
 // ===== SETTLEMENT CARD =====
 export function renderSettlement(state) {
+  // Spectator mode: show informational message with admin PIN entry
+  if (state._spectatorMode && !state.adminAuthed) {
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:40px 20px;text-align:center">
+      <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:16px">SETTLE</div>
+      <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px;line-height:1.4">This round's settlement is managed by the event organizer.</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:28px">Enter the admin PIN to view or manage settlement.</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="inline-pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" style="width:100px;padding:12px 14px;border:1.5px solid var(--border-strong,var(--border));border-radius:8px;font-size:16px;text-align:center;background:var(--bg-secondary);color:var(--text-primary);letter-spacing:4px" onkeydown="if(event.key==='Enter')window.MG.inlineAuth()">
+        <button onclick="window.MG.inlineAuth()" style="padding:12px 24px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Enter Admin PIN</button>
+      </div>
+    </div>`;
+  }
+
   const gameState = state._gameState;
   const holes = state._holes || {};
   const config = state._config;
@@ -7298,7 +7347,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
   // ── b) Final Leaderboard — card-based rows ──
   html += `<div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
-      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Final Leaderboard</span>
+      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Final Leaderboard</span>
       <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.4);background:rgba(212,160,23,0.08);padding:3px 8px;border-radius:3px">FINAL</span>
     </div>`;
 
