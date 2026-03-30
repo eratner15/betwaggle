@@ -1,4 +1,4 @@
-const CACHE_VERSION = 20;
+const CACHE_VERSION = 21;
 const CACHE = `mg-2026-v${CACHE_VERSION}`;
 const ASSETS = [
   "/app/",
@@ -67,16 +67,21 @@ self.addEventListener("fetch", e => {
   const isStatic = /\.(css|js|json|png|jpg|svg|woff2?)$/.test(url.pathname);
 
   if (isStatic) {
-    // Cache-first: serve instantly from cache, update cache in background
+    // Network-first with 1.5s timeout: prevents stale flash on demo load
+    // Falls back to cache on slow network (golf course cellular) or offline
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        const fetchPromise = fetch(e.request).then(r => {
-          const clone = r.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+      Promise.race([
+        fetch(e.request).then(r => {
+          if (r.ok) {
+            const clone = r.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
           return r;
-        }).catch(() => cached);
-        return cached || fetchPromise;
-      })
+        }),
+        new Promise(resolve =>
+          setTimeout(() => caches.match(e.request).then(resolve), 1500)
+        )
+      ]).then(r => r || caches.match(e.request))
     );
   } else {
     // Network-first for HTML: ensures fresh content, falls back to cache offline
