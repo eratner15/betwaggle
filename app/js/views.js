@@ -2345,7 +2345,7 @@ export function renderRoundFeed(state) {
     }
 
     // Footer
-    html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;font-family:'SF Mono',monospace;color:var(--text-secondary)">
+    html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:0.72rem;font-family:'SF Mono',monospace;color:rgba(240,236,227,0.5)">
       <span>Total: $${totalPot}</span>
       <span>${holesRemaining} holes remaining</span>
     </div>`;
@@ -2493,7 +2493,7 @@ export function renderRoundFeed(state) {
         if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
       });
       const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
-      html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.12) 0%,rgba(13,40,24,0.95) 100%);color:#f0ece3;border:1px solid rgba(212,160,23,0.3);border-left:3px solid var(--gold-primary,#c9a84c);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      html += `<div style="background:var(--bg-secondary,#0d2818);color:#f0ece3;border:1px solid rgba(212,160,23,0.3);border-left:3px solid var(--gold-primary,#c9a84c);border-radius:10px;padding:14px 16px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#c9a84c">Settlement${roundComplete ? '' : ' (Running)'}</div>
           ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:#c9a84c;text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:0.78rem;color:rgba(240,236,227,0.6);font-weight:600">Thru ${scoredHoles.length} holes</span>`}
