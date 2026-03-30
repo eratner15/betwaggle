@@ -1228,15 +1228,15 @@ export function renderScrambleLeaderboard(state) {
         outlookText = `Deadlocked. ${holesRemaining > 0 ? `Back ${holesRemaining > 9 ? holesRemaining : 9} decides it all.` : 'Heading to a playoff.'}`;
       }
 
-      html += `<div style="padding:18px 16px;background:linear-gradient(135deg, rgba(13,40,24,0.04) 0%, rgba(26,71,42,0.08) 100%);border:1px solid rgba(26,71,42,0.12);border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:-20px;right:-10px;font-size:64px;opacity:0.06;pointer-events:none">⛳</div>
-        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+      html += `<div style="padding:20px 16px;background:#1a3a2a;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
+        <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:48px;opacity:0.07;pointer-events:none">⛳</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.6);margin-bottom:12px;display:flex;align-items:center;gap:6px">
           <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
           BACK 9 OUTLOOK
         </div>
-        <div style="font-size:22px;margin-bottom:8px">${outlookEmoji}</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text-primary);line-height:1.5">${outlookText}</div>
-        ${!roundComplete && holesRemaining > 0 ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:8px">${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining &middot; ${holesPlayed} played</div>` : ''}
+        <div style="font-size:28px;margin-bottom:8px;line-height:1">${outlookEmoji}</div>
+        <div style="font-size:15px;font-weight:600;color:#F5F0E8;line-height:1.5;position:relative;z-index:1">${outlookText}</div>
+        ${!roundComplete && holesRemaining > 0 ? `<div style="font-size:11px;color:rgba(245,240,232,0.4);margin-top:10px">${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining &middot; ${holesPlayed} played</div>` : ''}
       </div>`;
     }
   }
