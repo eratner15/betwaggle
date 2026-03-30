@@ -14,53 +14,165 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F0E8; color: #1a1a1a; min-height: 100vh; }
-    .wrap { max-width: 480px; margin: 0 auto; padding: 48px 20px; }
-    h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 700; color: #1A472A; text-align: center; margin-bottom: 8px; }
-    .sub-head { text-align: center; font-size: 15px; color: #6B7280; margin-bottom: 32px; }
-    .demo-card { background: #fff; border: 1.5px solid rgba(26,71,42,0.1); border-radius: 12px; padding: 24px; margin-bottom: 16px; text-decoration: none; display: block; transition: transform 0.15s, box-shadow 0.15s; }
-    .demo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,71,42,0.1); }
-    .demo-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #D4AF37; margin-bottom: 8px; }
-    .demo-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1A472A; margin-bottom: 6px; }
-    .demo-desc { font-size: 14px; color: #6B7280; line-height: 1.5; margin-bottom: 12px; }
-    .demo-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-    .demo-pill { font-size: 11px; font-weight: 600; background: rgba(212,175,55,0.1); color: #B8962E; padding: 4px 10px; border-radius: 6px; }
-    .demo-arrow { display: flex; align-items: center; justify-content: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(26,71,42,0.06); font-size: 14px; font-weight: 700; color: #1A472A; gap: 6px; }
-    .footer { text-align: center; margin-top: 24px; font-size: 13px; color: #6B7280; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 48px 20px 32px; }
+    h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 36px; font-weight: 700; color: #1A472A; text-align: center; margin-bottom: 6px; }
+    .sub-head { text-align: center; font-size: 15px; color: #6B7280; margin-bottom: 36px; line-height: 1.5; }
+
+    .demo-card {
+      background: #fff;
+      border: 1px solid rgba(26,71,42,0.08);
+      border-radius: 14px;
+      padding: 0;
+      margin-bottom: 20px;
+      text-decoration: none;
+      display: block;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      overflow: hidden;
+      border-top: 3px solid transparent;
+    }
+    .demo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(26,71,42,0.12);
+      border-top: 3px solid #1A472A;
+    }
+    .card-body { padding: 24px 24px 20px; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .card-top-left { display: flex; align-items: center; gap: 8px; }
+    .demo-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: #D4AF37; background: rgba(212,175,55,0.1); padding: 4px 10px; border-radius: 6px;
+    }
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      color: #16a34a; background: rgba(22,163,74,0.08); padding: 4px 10px; border-radius: 6px;
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #16a34a;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .demo-title {
+      font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 700;
+      color: #1A472A; margin-bottom: 6px;
+    }
+    .demo-desc { font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 16px; }
+
+    .stat-row {
+      display: flex; gap: 0; margin-bottom: 18px;
+      border: 1px solid rgba(26,71,42,0.08); border-radius: 10px; overflow: hidden;
+    }
+    .stat-item {
+      flex: 1; padding: 12px 14px; text-align: center;
+      border-right: 1px solid rgba(26,71,42,0.08);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #9CA3AF; margin-bottom: 4px; }
+    .stat-value { font-size: 16px; font-weight: 700; color: #1A472A; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .stat-value.gold { color: #D4AF37; }
+
+    .demo-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .demo-pill { font-size: 11px; font-weight: 600; background: #f3f4f6; color: #6B7280; padding: 5px 12px; border-radius: 8px; }
+
+    .cta-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 20px;
+      background: linear-gradient(135deg, #1A472A 0%, #0D2818 100%);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      text-decoration: none;
+    }
+    .cta-btn:hover { opacity: 0.92; }
+    .cta-btn:active { transform: scale(0.98); }
+    .cta-btn svg { flex-shrink: 0; }
+
+    .footer { text-align: center; margin-top: 32px; font-size: 13px; color: #6B7280; }
     .footer a { color: #1A472A; font-weight: 600; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>See Waggle Live</h1>
-    <p class="sub-head">Pick a format. Scores are pre-loaded so you can see the action mid-round.</p>
+    <p class="sub-head">Pick a format. Scores are pre-loaded so you can<br>see the action mid-round.</p>
 
     <a href="/demo-buddies/#dashboard" class="demo-card">
-      <div class="demo-label">Buddies Trip</div>
-      <div class="demo-title">The Dunes Trip 2026</div>
-      <div class="demo-desc">4 players at Streamsong Black. Nassau, Skins, and Wolf with real money on the line. See P&L, presses, and side action.</div>
-      <div class="demo-meta">
-        <span class="demo-pill">4 Players</span>
-        <span class="demo-pill">Nassau $10</span>
-        <span class="demo-pill">Skins $5</span>
-        <span class="demo-pill">Thru 12</span>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-top-left">
+            <span class="demo-label">Buddies Trip</span>
+            <span class="live-badge"><span class="pulse-dot"></span> Live</span>
+          </div>
+        </div>
+        <div class="demo-title">The Dunes Trip 2026</div>
+        <div class="demo-desc">4 players at Streamsong Black. Nassau, Skins, and Wolf with real money on the line. See P&L, presses, and side action.</div>
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-label">Pot Size</div>
+            <div class="stat-value gold">$420</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Leader</div>
+            <div class="stat-value">T. Hartley</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Round</div>
+            <div class="stat-value">Thru 12</div>
+          </div>
+        </div>
+        <div class="demo-meta">
+          <span class="demo-pill">4 Players</span>
+          <span class="demo-pill">Nassau $10</span>
+          <span class="demo-pill">Skins $5</span>
+        </div>
+        <div class="cta-btn">
+          Open The Board
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
       </div>
-      <div class="demo-arrow">Open The Board <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
     </a>
 
     <a href="/demo-scramble/#dashboard" class="demo-card">
-      <div class="demo-label">Charity Scramble</div>
-      <div class="demo-title">Spring Scramble 2026</div>
-      <div class="demo-desc">8 teams at TPC Sawgrass. Two-person scramble with a tight front 9 leaderboard. Three teams within a shot.</div>
-      <div class="demo-meta">
-        <span class="demo-pill">8 Teams</span>
-        <span class="demo-pill">Scramble</span>
-        <span class="demo-pill">Thru 9</span>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-top-left">
+            <span class="demo-label">Charity Scramble</span>
+            <span class="live-badge"><span class="pulse-dot"></span> Live</span>
+          </div>
+        </div>
+        <div class="demo-title">Spring Scramble 2026</div>
+        <div class="demo-desc">8 teams at TPC Sawgrass. Two-person scramble with a tight front 9 leaderboard. Three teams within a shot.</div>
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-label">Pot Size</div>
+            <div class="stat-value gold">$310</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Leader</div>
+            <div class="stat-value">Team Albatross</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Round</div>
+            <div class="stat-value">Thru 9</div>
+          </div>
+        </div>
+        <div class="demo-meta">
+          <span class="demo-pill">8 Teams</span>
+          <span class="demo-pill">Scramble</span>
+        </div>
+        <div class="cta-btn">
+          Open The Board
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
       </div>
-      <div class="demo-arrow">Open The Board <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
     </a>
 
     <div class="footer">
