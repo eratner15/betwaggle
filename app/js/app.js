@@ -429,7 +429,7 @@ function route() {
   const hash = location.hash.slice(1) || "dashboard";
   const [view, param] = hash.split("/");
 
-  // Spectator mode: redirect restricted views to dashboard
+  // Spectator mode: redirect restricted views to dashboard, show message for settle
   if (state._spectatorMode) {
     if (view === 'admin' || view === 'bet' || view === 'mybets') {
       location.hash = '#dashboard';
