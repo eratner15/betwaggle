@@ -1176,6 +1176,72 @@ export function renderScrambleLeaderboard(state) {
   }
 
   // ================================================================
+  // SECTION 7B: LIVE FEED (BAR tab)
+  // ================================================================
+  if (scrShowSubTabs === false || scrActiveSubTab === 'bar') {
+    const feedItems = state._feed || [];
+    if (feedItems.length > 0) {
+      const recentFeed = feedItems.slice(0, 8);
+      html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+          LIVE FEED
+        </div>`;
+      recentFeed.forEach((item, idx) => {
+        const playerName = item.player || item.name || '??';
+        const initials = playerName.split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
+        const msg = item.msg || item.text || '';
+        const ts = item.ts ? new Date(item.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+        html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${idx < recentFeed.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
+          <span style="width:28px;height:28px;border-radius:50%;background:rgba(212,160,23,0.12);color:var(--gold-bright);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;letter-spacing:0.5px">${escHtml(initials)}</span>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.4;overflow:hidden;text-overflow:ellipsis">${escHtml(msg)}</div>
+            ${ts ? `<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">${ts}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
+  // SECTION 7C: BACK 9 OUTLOOK (BAR tab)
+  // ================================================================
+  if (scrShowSubTabs === false || scrActiveSubTab === 'bar') {
+    if (leaderboard.length >= 2) {
+      const leader = leaderboard[0];
+      const runnerUp = leaderboard[1];
+      const leadMargin = (runnerUp.total || 0) - (leader.total || 0);
+      let outlookEmoji, outlookText;
+
+      if (roundComplete) {
+        outlookEmoji = '🏁';
+        outlookText = `Round Complete — ${escHtml(leader.team)} wins${leadMargin > 0 ? ` by ${leadMargin} stroke${leadMargin !== 1 ? 's' : ''}` : leadMargin === 0 ? ' in a tie' : ''}!`;
+      } else if (leadMargin > 3) {
+        outlookEmoji = '🏆';
+        outlookText = `${escHtml(leader.team)} has a commanding ${leadMargin}-stroke lead with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} to play.`;
+      } else if (leadMargin >= 1) {
+        outlookEmoji = '⚔️';
+        outlookText = `Tight race — only ${leadMargin} stroke${leadMargin !== 1 ? 's' : ''} separate the top two with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} left to play.`;
+      } else {
+        outlookEmoji = '🔥';
+        outlookText = `Deadlocked. ${holesRemaining > 0 ? `Back ${holesRemaining > 9 ? holesRemaining : 9} decides it all.` : 'Heading to a playoff.'}`;
+      }
+
+      html += `<div style="padding:18px 16px;background:linear-gradient(135deg, rgba(13,40,24,0.04) 0%, rgba(26,71,42,0.08) 100%);border:1px solid rgba(26,71,42,0.12);border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-10px;font-size:64px;opacity:0.06;pointer-events:none">⛳</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+          BACK 9 OUTLOOK
+        </div>
+        <div style="font-size:22px;margin-bottom:8px">${outlookEmoji}</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);line-height:1.5">${outlookText}</div>
+        ${!roundComplete && holesRemaining > 0 ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:8px">${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining &middot; ${holesPlayed} played</div>` : ''}
+      </div>`;
+    }
+  }
+
+  // ================================================================
   // SECTION 8: SHARE + REGISTRATION LINK (BAR tab)
   // ================================================================
   if (!scrShowSubTabs || scrActiveSubTab === 'bar') {
