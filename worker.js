@@ -2796,9 +2796,9 @@ async function handleCourseDetailPage(courseId, env) {
     ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : (() => {
       const totalPar = refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0);
       const is18 = refTee.is18;
-      let sc = '<p style="color:#7A7A7A;font-size:13px;margin-bottom:20px">Par ' + totalPar + ' \\u00b7 ' + validTees.length + ' tee' + (validTees.length !== 1 ? 's' : '') + ' available</p>';
+      let sc = '<p style="color:#7A7A7A;font-size:13px;margin-bottom:20px">Par ' + totalPar + ' &middot; ' + validTees.length + ' tee' + (validTees.length !== 1 ? 's' : '') + ' available</p>';
       sc += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px">';
-      sc += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:\\'SF Mono\\',\\'Fira Code\\',monospace;min-width:' + (is18 ? '720' : '420') + 'px">';
+      sc += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:&quot;SF Mono&quot;,&quot;Fira Code&quot;,monospace;min-width:' + (is18 ? '720' : '420') + 'px">';
       // FRONT 9 header
       sc += '<thead><tr style="background:#0D2818;color:#fff">';
       sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#0D2818;z-index:1">Hole</th>';
