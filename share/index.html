@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>What is Waggle? — Golf Sportsbook for Your Group</title>
+  <meta name="description" content="Waggle turns your golf trip into a real sportsbook. Live odds, real-time scoring, and automatic settlement — on every phone. No app download.">
+  <link rel="canonical" href="https://betwaggle.com/share/">
+  <meta property="og:title" content="Waggle — The Sportsbook for Your Golf Group">
+  <meta property="og:description" content="Live odds, real-time scoring, automatic settlement. Every phone, no app download. See it in action.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/share/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #F5F0E8;
+      color: #1a1a1a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(170deg, #0D2818 0%, #1A472A 60%, #2D6A3E 100%);
+      color: #fff;
+      text-align: center;
+      padding: 72px 24px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 48px;
+      background: #F5F0E8;
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: #D4AF37;
+      background: rgba(212,175,55,0.12);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 42px; font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      max-width: 600px;
+      margin-left: auto; margin-right: auto;
+    }
+    .hero p {
+      font-size: 17px;
+      color: rgba(255,255,255,0.7);
+      max-width: 480px;
+      margin: 0 auto 28px;
+      line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #D4AF37; color: #0D2818;
+      font-size: 15px; font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .hero-cta:hover { background: #c9a132; }
+    .hero-cta svg { flex-shrink: 0; }
+
+    /* ── Container ── */
+    .wrap { max-width: 680px; margin: 0 auto; padding: 0 20px; }
+
+    /* ── How it Works ── */
+    .how-section { padding: 56px 0 48px; }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: #D4AF37; text-align: center; margin-bottom: 8px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px; font-weight: 700; color: #1A472A;
+      text-align: center; margin-bottom: 40px;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      list-style: none;
+      counter-reset: step;
+    }
+    .step {
+      background: #fff;
+      border: 1px solid #E5E0D8;
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      counter-increment: step;
+    }
+    .step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      background: #1A472A; color: #fff;
+      font-size: 14px; font-weight: 700;
+      border-radius: 50%;
+      margin-bottom: 14px;
+    }
+    .step h3 { font-size: 15px; font-weight: 700; color: #1A472A; margin-bottom: 6px; }
+    .step p { font-size: 13px; color: #6B7280; line-height: 1.5; }
+
+    /* ── Feature Pills ── */
+    .features-section { padding: 0 0 56px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .feature-item {
+      background: #fff;
+      border: 1px solid #E5E0D8;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .feature-icon {
+      width: 40px; height: 40px;
+      background: rgba(26,71,42,0.06);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+    .feature-item h4 { font-size: 14px; font-weight: 700; color: #1A472A; margin-bottom: 3px; }
+    .feature-item p { font-size: 12px; color: #6B7280; line-height: 1.5; }
+
+    /* ── Formats ── */
+    .formats-section { padding: 0 0 56px; }
+    .format-cards { display: flex; flex-direction: column; gap: 14px; }
+    .format-card {
+      background: #fff;
+      border: 1px solid #E5E0D8;
+      border-radius: 14px;
+      padding: 0;
+      overflow: hidden;
+      text-decoration: none;
+      display: block;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      border-left: 3px solid transparent;
+    }
+    .format-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(26,71,42,0.1);
+      border-left-color: #1A472A;
+    }
+    .format-body { padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .format-info { flex: 1; }
+    .format-tag {
+      display: inline-block;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      color: #D4AF37; background: rgba(212,175,55,0.1);
+      padding: 3px 8px; border-radius: 5px;
+      margin-bottom: 6px;
+    }
+    .format-name {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px; font-weight: 700; color: #1A472A;
+      margin-bottom: 4px;
+    }
+    .format-desc { font-size: 13px; color: #6B7280; line-height: 1.5; }
+    .format-meta { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .format-pill {
+      font-size: 10px; font-weight: 600;
+      background: #f3f4f6; color: #6B7280;
+      padding: 3px 10px; border-radius: 6px;
+    }
+    .format-arrow {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      background: rgba(26,71,42,0.06);
+      border-radius: 50%;
+      flex-shrink: 0;
+      color: #1A472A;
+    }
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      color: #16a34a;
+      margin-left: 8px;
+    }
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #16a34a;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── Games ── */
+    .games-section { padding: 0 0 56px; }
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .game-chip {
+      background: #fff;
+      border: 1px solid #E5E0D8;
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .game-chip .icon { font-size: 22px; margin-bottom: 6px; }
+    .game-chip h4 { font-size: 13px; font-weight: 700; color: #1A472A; margin-bottom: 2px; }
+    .game-chip p { font-size: 11px; color: #9CA3AF; }
+
+    /* ── Closing CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, #1A472A 0%, #0D2818 100%);
+      border-radius: 16px;
+      padding: 48px 32px;
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .cta-section h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px; font-weight: 700; color: #fff;
+      margin-bottom: 12px;
+    }
+    .cta-section p { font-size: 15px; color: rgba(255,255,255,0.6); margin-bottom: 24px; line-height: 1.6; }
+    .cta-section .hero-cta { font-size: 16px; padding: 16px 32px; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 24px 20px 40px;
+      font-size: 13px;
+      color: #9CA3AF;
+    }
+    .footer a { color: #1A472A; font-weight: 600; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hero { padding: 56px 20px 48px; }
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 15px; }
+      .steps { grid-template-columns: 1fr; gap: 12px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .games-grid { grid-template-columns: repeat(2, 1fr); }
+      .format-body { flex-direction: column; align-items: flex-start; }
+      .format-arrow { display: none; }
+      .cta-section { padding: 36px 20px; }
+      .cta-section h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-badge">Golf's Sportsbook</div>
+    <h1>Turn Your Golf Trip Into a Real Sportsbook</h1>
+    <p>Live odds, hole-by-hole scoring, and automatic settlement — on every phone. No app download. Takes 2 minutes to set up.</p>
+    <a href="/demo/" class="hero-cta">
+      See It Live
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </section>
+
+  <div class="wrap">
+
+    <!-- ── How it Works ── -->
+    <section class="how-section">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">Three Steps to Game Day</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Create Your Event</h3>
+          <p>Pick your format, add players, set the stakes. Done in 2 minutes.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Share the Link</h3>
+          <p>Text it to the group. Everyone opens it on their phone — no app, no login.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Play &amp; Settle</h3>
+          <p>Scores update live. Bets settle automatically. Cash out at the 19th hole.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Features ── -->
+    <section class="features-section">
+      <div class="section-label">Why Waggle</div>
+      <h2 class="section-title">Everything You Need on the Course</h2>
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <div>
+            <h4>Live Odds</h4>
+            <p>Real moneyline odds that update hole-by-hole based on scores.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <div>
+            <h4>Auto Settlement</h4>
+            <p>Bets settle the second a score is entered. No math, no arguments.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📱</div>
+          <div>
+            <h4>No App Download</h4>
+            <p>Works in any browser. Just share a link — everyone's in.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🏆</div>
+          <div>
+            <h4>Trophy Room</h4>
+            <p>Final standings, P&amp;L, AI recap, and a shareable results page.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">💰</div>
+          <div>
+            <h4>12 Game Types</h4>
+            <p>Nassau, Skins, Wolf, Vegas, Stableford, Stroke Play, and more.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🎯</div>
+          <div>
+            <h4>Side Games</h4>
+            <p>Closest-to-pin, longest drive, and hole-by-hole props built in.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Formats ── -->
+    <section class="formats-section">
+      <div class="section-label">Live Demos</div>
+      <h2 class="section-title">Pick a Format and See It Live</h2>
+      <div class="format-cards">
+        <a href="/demo-buddies/#dashboard" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Buddies Trip</span><span class="live-dot">Live</span></div>
+              <div class="format-name">The Dunes Trip 2026</div>
+              <div class="format-desc">4 players at Streamsong Black. Nassau, Skins, and Wolf with real money on the line. See P&amp;L, presses, and live odds.</div>
+              <div class="format-meta">
+                <span class="format-pill">4 Players</span>
+                <span class="format-pill">Nassau $10</span>
+                <span class="format-pill">Skins $5</span>
+                <span class="format-pill">Mid-Round</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <a href="/demo-buddies-complete/#trophy" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Buddies Trip</span></div>
+              <div class="format-name">Post-Round Trophy Room</div>
+              <div class="format-desc">See what happens after the round: final standings, settlement breakdown, AI-generated recap, and shareable results.</div>
+              <div class="format-meta">
+                <span class="format-pill">4 Players</span>
+                <span class="format-pill">Final Results</span>
+                <span class="format-pill">AI Recap</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <a href="/demo-scramble/#dashboard" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Scramble / Outing</span><span class="live-dot">Live</span></div>
+              <div class="format-name">Spring Scramble 2026</div>
+              <div class="format-desc">8 teams at TPC Sawgrass. Two-person scramble with a tight leaderboard. Three teams within a shot.</div>
+              <div class="format-meta">
+                <span class="format-pill">8 Teams</span>
+                <span class="format-pill">Scramble</span>
+                <span class="format-pill">CTP &amp; LD</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <a href="/demo-scramble-charity/#dashboard" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Charity Outing</span><span class="live-dot">Live</span></div>
+              <div class="format-name">Charity Scramble Classic</div>
+              <div class="format-desc">Sponsor-branded scramble with hole sponsors, team pages, and live leaderboard. Perfect for fundraiser outings.</div>
+              <div class="format-meta">
+                <span class="format-pill">Teams</span>
+                <span class="format-pill">Sponsors</span>
+                <span class="format-pill">Leaderboard</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <a href="/demo-member-guest/#dashboard" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Member-Guest</span><span class="live-dot">Live</span></div>
+              <div class="format-name">The Invitational 2026</div>
+              <div class="format-desc">Flight brackets, match play, live odds, and calcutta. The full member-guest tournament experience.</div>
+              <div class="format-meta">
+                <span class="format-pill">Flights</span>
+                <span class="format-pill">Match Play</span>
+                <span class="format-pill">Calcutta</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <a href="/demo-weekend/#dashboard" class="format-card">
+          <div class="format-body">
+            <div class="format-info">
+              <div><span class="format-tag">Weekend Warrior</span><span class="live-dot">Live</span></div>
+              <div class="format-name">Saturday Morning Game</div>
+              <div class="format-desc">Quick setup for your regular foursome. Pick your games, set the stakes, and go. No tournament needed.</div>
+              <div class="format-meta">
+                <span class="format-pill">4 Players</span>
+                <span class="format-pill">Quick Setup</span>
+                <span class="format-pill">Casual</span>
+              </div>
+            </div>
+            <div class="format-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Game Types ── -->
+    <section class="games-section">
+      <div class="section-label">Supported Games</div>
+      <h2 class="section-title">12 Games Built In</h2>
+      <div class="games-grid">
+        <div class="game-chip">
+          <div class="icon">🏌️</div>
+          <h4>Nassau</h4>
+          <p>Front, Back, Total</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">💀</div>
+          <h4>Skins</h4>
+          <p>Carry or no-carry</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">🐺</div>
+          <h4>Wolf</h4>
+          <p>Pick your partner</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">🎰</div>
+          <h4>Vegas</h4>
+          <p>Team number game</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">🏦</div>
+          <h4>Banker</h4>
+          <p>Rotating bank</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">🩸</div>
+          <h4>Bloodsome</h4>
+          <p>Alternate shot chaos</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">⭐</div>
+          <h4>Stableford</h4>
+          <p>Points per hole</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">📝</div>
+          <h4>Stroke Play</h4>
+          <p>Classic medal</p>
+        </div>
+        <div class="game-chip">
+          <div class="icon">🎯</div>
+          <h4>CTP / LD</h4>
+          <p>Par 3s &amp; par 5s</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="cta-section">
+      <h2>Ready to Run the Book?</h2>
+      <p>Set up your event in 2 minutes. Share a link with your group. Everyone's in — no app, no login, no hassle.</p>
+      <a href="/create/" class="hero-cta">
+        Create Your Event
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </section>
+
+  </div>
+
+  <div class="footer">
+    <a href="/">Waggle</a> &middot; <a href="/demo/">Live Demos</a> &middot; <a href="/create/">Create Event</a>
+  </div>
+
+</body>
+</html>
