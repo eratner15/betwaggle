@@ -1,0 +1,32 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0D2818"/>
+      <stop offset="60%" stop-color="#1A472A"/>
+      <stop offset="100%" stop-color="#2D6A3E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Gold accent line -->
+  <rect x="0" y="620" width="1200" height="10" fill="#D4AF37"/>
+  <!-- Badge -->
+  <rect x="460" y="140" width="280" height="34" rx="17" fill="rgba(212,175,55,0.15)"/>
+  <text x="600" y="163" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5" fill="#D4AF37">GOLF'S SPORTSBOOK</text>
+  <!-- Title -->
+  <text x="600" y="245" text-anchor="middle" font-family="Georgia,Playfair Display,serif" font-size="52" font-weight="700" fill="#FFFFFF">Turn Your Golf Trip</text>
+  <text x="600" y="305" text-anchor="middle" font-family="Georgia,Playfair Display,serif" font-size="52" font-weight="700" fill="#FFFFFF">Into a Real Sportsbook</text>
+  <!-- Subtitle -->
+  <text x="600" y="370" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.6)">Live odds  ·  Real-time scores  ·  Automatic settlement</text>
+  <!-- Pill features -->
+  <rect x="265" y="420" width="130" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="330" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">No App</text>
+  <rect x="415" y="420" width="150" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="490" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">12 Games</text>
+  <rect x="585" y="420" width="150" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="660" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">Every Phone</text>
+  <rect x="755" y="420" width="180" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="845" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">Auto Settlement</text>
+  <!-- Bottom branding -->
+  <text x="600" y="545" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="#D4AF37">WAGGLE</text>
+  <text x="600" y="572" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="rgba(255,255,255,0.4)">betwaggle.com/share</text>
+</svg>
