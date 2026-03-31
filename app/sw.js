@@ -1,4 +1,4 @@
-const CACHE_VERSION = 24;
+const CACHE_VERSION = 25;
 const CACHE = `mg-2026-v${CACHE_VERSION}`;
 const ASSETS = [
   "/app/",

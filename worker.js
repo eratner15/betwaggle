@@ -405,6 +405,7 @@ export default {
             'stag-night': () => seedStagNight(env),
             'augusta-scramble': () => seedAugustaScramble(env),
             'masters-member-guest': () => seedMastersMG(env),
+            'weekend-warrior': () => seedWeekendWarrior(env),
           };
           if (seedMap[slug]) {
             try { await seedMap[slug](); configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text'); } catch {}
@@ -3990,6 +3991,9 @@ async function serveEventHtml(slug, request, env) {
     } else if (slug === 'masters-member-guest') {
       await seedMastersMG(env);
       configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'weekend-warrior') {
+      await seedWeekendWarrior(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     }
   }
 
@@ -4158,7 +4162,7 @@ async function serveEventHtml(slug, request, env) {
 </div>
 <script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
 ` : ''}
-  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || slug.startsWith('demo-')) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
+  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || slug.startsWith('demo-') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
@@ -7199,13 +7203,8 @@ async function seedMastersMG(env) {
   ];
   const pars = [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4]; // Augusta National par 72
 
-  // Event date is tomorrow so the countdown shows "1 day"
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const eventDate = tomorrow.toISOString().split('T')[0];
-
   const config = {
-    event: { name: 'The Masters Member-Guest', shortName: 'Masters M-G', eventType: 'buddies_trip', course: 'Augusta National Golf Club', currentRound: 0, venue: 'Augusta National Golf Club', slug, dates: { day1: eventDate } },
+    event: { name: 'The Masters Member-Guest', shortName: 'Masters M-G', eventType: 'buddies_trip', course: 'Augusta National Golf Club', currentRound: 1, venue: 'Augusta National Golf Club', slug },
     players: players,
     roster: players,
     games: { nassau: true, skins: true, match_play: true },
@@ -7213,19 +7212,132 @@ async function seedMastersMG(env) {
     holesPerRound: 18,
     course: { name: 'Augusta National Golf Club', pars: pars, tees: 'Tournament' },
     rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
+    wolfOrder: players.map(p => p.name),
     adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
-  // No holes — pre-trip. Seed a hype feed instead.
+  // 10 holes scored — Scottie leads, tight race
+  const scoreData = {
+    1:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 4, 'Justin Thomas': 4, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
+    2:  { 'Rory McIlroy': 5, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 5 },
+    3:  { 'Rory McIlroy': 4, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 3, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
+    4:  { 'Rory McIlroy': 3, 'Brooks Koepka': 3, 'Dustin Johnson': 3, 'Bryson DeChambeau': 4, 'Justin Thomas': 3, 'Xander Schauffele': 2, 'Scottie Scheffler': 2, 'Jon Rahm': 3 },
+    5:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
+    6:  { 'Rory McIlroy': 3, 'Brooks Koepka': 3, 'Dustin Johnson': 4, 'Bryson DeChambeau': 3, 'Justin Thomas': 3, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 3 },
+    7:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
+    8:  { 'Rory McIlroy': 5, 'Brooks Koepka': 6, 'Dustin Johnson': 5, 'Bryson DeChambeau': 5, 'Justin Thomas': 5, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 5 },
+    9:  { 'Rory McIlroy': 4, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 4 },
+    10: { 'Rory McIlroy': 3, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 4, 'Justin Thomas': 4, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 3 },
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scoreData)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (10 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Compute skins
+  const skinsBet = 50;
+  const numPlayers = 8;
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 10; h++) {
+    const hScores = scoreData[h];
+    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
+    const minScore = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === minScore);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * (numPlayers - 1) * skinsBet });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
   const feed = [
-    { ts: Date.now() - 30000, type: 'chirp', text: 'Scottie Scheffler is the 2/1 favorite. 0.2 index. Good luck, everyone.', player: 'System' },
-    { ts: Date.now() - 60000, type: 'chirp', text: 'Bryson says he is going to drive the 1st green. Par 4, 445 yards. Sure, Bryson.', player: 'System' },
-    { ts: Date.now() - 90000, type: 'chirp', text: 'Rory vs. Brooks. $100 Nassau. The grudge match is ON.', player: 'System' },
-    { ts: Date.now() - 120000, type: 'chirp', text: 'Jon Rahm flying in from Spain. Says jet lag is his only weakness.', player: 'System' },
-    { ts: Date.now() - 150000, type: 'chirp', text: 'Xander has been quietly grinding at Augusta all week. Dark horse alert.', player: 'System' },
-    { ts: Date.now() - 180000, type: 'chirp', text: 'JT: "If we are playing $50 skins at Augusta, someone is losing a car."', player: 'System' },
-    { ts: Date.now() - 210000, type: 'chirp', text: 'DJ just texted the group: "See you on the range at 7am. Bring cash."', player: 'System' },
+    { ts: Date.now() - 30000, type: 'score', text: 'Scottie birdies #7. Four under through 10. Running away with it.', player: 'Scottie Scheffler' },
+    { ts: Date.now() - 60000, type: 'score', text: 'Xander aces the par-3 4th! Skin won — $350 pot.', player: 'Xander Schauffele' },
+    { ts: Date.now() - 90000, type: 'chirp', text: 'Brooks and Bryson both at +4. The rivalry continues... at the bottom of the board.', player: 'System' },
+    { ts: Date.now() - 120000, type: 'score', text: 'Rory birdies #10 to move to -1. Closing in on Scottie.', player: 'Rory McIlroy' },
+    { ts: Date.now() - 150000, type: 'score', text: 'JT cards a tidy 3 on the par-4 3rd. Tied for 3rd.', player: 'Justin Thomas' },
+    { ts: Date.now() - 180000, type: 'chirp', text: '$50 skins with 8 players. The pot carries are getting dangerous.', player: 'System' },
+  ];
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  return { seeded: true };
+}
+
+// ─── Weekend Warrior — FREE casual match (slug: weekend-warrior) ────────────
+async function seedWeekendWarrior(env) {
+  const slug = 'weekend-warrior';
+  const KEY = `config:${slug}`;
+  const existing = await env.MG_BOOK.get(KEY);
+  if (existing) return { seeded: false };
+
+  const players = [
+    { name: 'Chris', handicapIndex: 14.2 },
+    { name: 'Matt', handicapIndex: 18.5 },
+    { name: 'Jason', handicapIndex: 10.8 },
+    { name: 'Brian', handicapIndex: 22.1 }
+  ];
+  const pars = [4,4,3,5,4,4,3,4,5, 4,3,4,5,4,4,3,4,5]; // Generic muni par 72
+
+  const config = {
+    event: { name: 'Saturday Morning Match', shortName: 'Sat Match', eventType: 'quick', course: 'Bethpage Red', currentRound: 1, venue: 'Bethpage State Park', slug },
+    players: players,
+    roster: players,
+    games: { skins: true, nassau: false, wolf: false },
+    structure: {},
+    holesPerRound: 18,
+    course: { name: 'Bethpage Red', pars: pars, tees: 'White' },
+    rounds: { '1': { course: 'Bethpage Red', tees: 'White' } },
+    adminPin: randomPin()
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  // 8 holes scored — casual Saturday game
+  const scoreData = {
+    1: { 'Chris': 5, 'Matt': 6, 'Jason': 4, 'Brian': 7 },
+    2: { 'Chris': 5, 'Matt': 5, 'Jason': 4, 'Brian': 6 },
+    3: { 'Chris': 3, 'Matt': 4, 'Jason': 3, 'Brian': 4 },
+    4: { 'Chris': 6, 'Matt': 7, 'Jason': 5, 'Brian': 7 },
+    5: { 'Chris': 5, 'Matt': 5, 'Jason': 4, 'Brian': 6 },
+    6: { 'Chris': 4, 'Matt': 5, 'Jason': 4, 'Brian': 5 },
+    7: { 'Chris': 4, 'Matt': 4, 'Jason': 3, 'Brian': 5 },
+    8: { 'Chris': 4, 'Matt': 5, 'Jason': 4, 'Brian': 5 },
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scoreData)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (8 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Compute skins (free game, no money — $0 skins for tracking only)
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 8; h++) {
+    const hScores = scoreData[h];
+    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
+    const minScore = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === minScore);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: 0 });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  const feed = [
+    { ts: Date.now() - 60000, type: 'score', text: 'Jason pars #7 for another skin. Three skins through 8.', player: 'Jason' },
+    { ts: Date.now() - 120000, type: 'score', text: 'Brian triples the par 5. "I found every bunker on that hole."', player: 'Brian' },
+    { ts: Date.now() - 180000, type: 'chirp', text: 'Jason is running away with it. Nobody can touch him today.', player: 'System' },
+    { ts: Date.now() - 240000, type: 'score', text: 'Chris and Matt tie on #3. Skin carries.', player: 'System' },
+    { ts: Date.now() - 300000, type: 'chirp', text: 'Brian says he is "still warming up." It is hole 8.', player: 'System' },
   ];
   await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
 
