@@ -934,9 +934,9 @@ export function renderScrambleLeaderboard(state) {
       isScramble: true
     });
   } else if (roundComplete && state.adminAuthed) {
-    html += `<div style="background:#FAFAF7;border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid #E5E7EB;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-      <div style="font-size:20px;font-weight:700;color:#0D2818;margin-bottom:8px">Round Complete</div>
-      <div style="font-size:13px;color:#6B7280;margin-bottom:14px">All ${holesPerRound} holes scored. Final results below.</div>
+    html += `<div style="background:var(--bg-secondary);border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid var(--border)">
+      <div style="font-size:20px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Round Complete</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">All ${holesPerRound} holes scored. Final results below.</div>
     </div>`;
   }
 
@@ -1062,18 +1062,18 @@ export function renderScrambleLeaderboard(state) {
 
     // Prize pool footer
     if (totalPool > 0) {
-      html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+      html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-family:'SF Mono',monospace;color:#6B7280">
         <span style="font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:10px">Prize Pool: $${totalPool.toLocaleString()}</span>
         <div style="display:flex;gap:12px;font-size:10px">
-          <span style="color:var(--gold-bright)">1st $${first.toLocaleString()}</span>
-          <span style="color:var(--text-secondary)">2nd $${second.toLocaleString()}</span>
-          <span style="color:var(--text-tertiary)">3rd $${third.toLocaleString()}</span>
+          <span style="color:#B8962E">1st $${first.toLocaleString()}</span>
+          <span style="color:#555">2nd $${second.toLocaleString()}</span>
+          <span style="color:#888">3rd $${third.toLocaleString()}</span>
         </div>
       </div>`;
     }
 
     // Footer
-    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:var(--text-tertiary)">
+    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:#6B7280">
       <span>Thru ${holesPlayed}</span>
       <span>${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining</span>
     </div>`;
@@ -1097,10 +1097,10 @@ export function renderScrambleLeaderboard(state) {
     const feedItems = state._feed || [];
     if (feedItems.length > 0 && holesPlayed > 0) {
       const latestFeed = feedItems.slice(0, 5);
-      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      html += `<div id="board-ticker" style="background:var(--bg-secondary);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
       latestFeed.forEach((item, idx) => {
         const text = item.text || '';
-        html += `<div style="font-size:12px;font-style:italic;color:var(--mg-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
+        html += `<div style="font-size:12px;font-style:italic;color:rgba(240,236,227,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
       });
       html += `</div>`;
     }
