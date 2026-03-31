@@ -314,7 +314,7 @@ export default {
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner', 'share', 'inventory'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -336,7 +336,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -5318,6 +5318,41 @@ async function handleEventApi(slug, path, request, env, ctx) {
   if (path === 'game-state' && request.method === 'GET') {
     const [holes, gameState] = await Promise.all([env.MG_BOOK.get(`${K}:holes`, 'json'), env.MG_BOOK.get(`${K}:game-state`, 'json')]);
     return new Response(JSON.stringify({ holes: holes || {}, gameState: gameState || {} }), { headers: EVENT_CORS });
+  }
+
+  // POST /event/press — public auto-press endpoint (no admin auth needed)
+  if (path === 'event/press' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const { player, hole, bet } = body;
+    if (!player || !hole) return new Response(JSON.stringify({ error: 'player and hole required' }), { status: 400, headers: EVENT_CORS });
+
+    // Read game state
+    let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+    if (!gameState.nassau) gameState.nassau = {};
+    if (!gameState.nassau.presses) gameState.nassau.presses = [];
+
+    // Add the press
+    gameState.nassau.presses.push({
+      player,
+      hole: parseInt(hole),
+      bet: parseInt(bet) || 10,
+      timestamp: Date.now(),
+      active: true
+    });
+
+    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+
+    // Add feed entry
+    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+    feed.unshift({
+      ts: Date.now(),
+      type: 'press',
+      text: `${player.split(' ')[0]} presses on hole ${hole}. Stakes doubled!`,
+      player
+    });
+    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 100)));
+
+    return new Response(JSON.stringify({ ok: true, presses: gameState.nassau.presses.length }), { headers: EVENT_CORS });
   }
 
   // POST /nassau-press
