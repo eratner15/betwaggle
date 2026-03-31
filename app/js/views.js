@@ -145,29 +145,29 @@ export function renderDashboard(state) {
 
   // Player welcome / register card
   if (!state.bettorName && !state._spectatorMode) {
-    html += `<div class="mg-card" style="text-align:center;padding:20px">
+    html += `<div class="mg-card-light" style="text-align:center;padding:20px">
       <div style="font-size:32px;margin-bottom:8px">&#9971;</div>
-      <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
-      <p class="text-sm text-muted mb-4">Tap your name below to start betting</p>
+      <div style="font-size:18px;font-weight:700;color:#1B4332;margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
+      <p style="font-size:13px;color:#6B7280;margin-bottom:16px">Tap your name below to start betting</p>
       ${renderPlayerPicker(state)}
     </div>`;
   } else {
     const credits = state._playerCredits;
     const creditsDisplay = credits !== null && credits !== undefined ? `$${credits}` : '...';
-    html += `<div class="mg-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+    html += `<div class="mg-card-light" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
       <div>
-        <div style="font-size:14px;font-weight:600;color:var(--mg-green)">${escHtml(state.bettorName)}</div>
-        <div class="text-xs text-muted">Credits: <strong style="color:var(--mg-gold-dim)">${creditsDisplay}</strong></div>
+        <div style="font-size:14px;font-weight:600;color:#1B4332">${escHtml(state.bettorName)}</div>
+        <div style="font-size:11px;color:#6B7280">Credits: <strong style="color:#B8962E">${creditsDisplay}</strong></div>
       </div>
       <a href="#bet" class="mg-btn mg-btn-primary" style="width:auto;padding:8px 20px;font-size:13px;text-decoration:none">Place Bets</a>
     </div>`;
   }
 
   // Status bar
-  html += `<div class="mg-card" style="text-align:center">
-    <div class="text-xs text-muted" style="text-transform:uppercase;letter-spacing:1px">${_C?.event?.venue || ''} &bull; ${_C?.event?.dates?.day1 || ''}</div>
-    <div style="font-size:16px;font-weight:700;margin-top:4px;color:var(--mg-green)">${statusText}</div>
-    <div class="text-xs text-muted mt-2">${finalMatches.length} of ${totalMatches} matches final</div>
+  html += `<div class="mg-card-light" style="text-align:center">
+    <div style="font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:1px">${_C?.event?.venue || ''} &bull; ${_C?.event?.dates?.day1 || ''}</div>
+    <div style="font-size:16px;font-weight:700;margin-top:4px;color:#1B4332">${statusText}</div>
+    <div style="font-size:11px;color:#9CA3AF;margin-top:8px">${finalMatches.length} of ${totalMatches} matches final</div>
   </div>`;
 
   // Hot matches ticker
@@ -948,29 +948,26 @@ export function renderScrambleLeaderboard(state) {
 
     // Header
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
-      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Leaderboard</span>
+      <span style="font-size:16px;font-weight:800;color:#1B4332">Leaderboard</span>
     </div>`;
 
-    // Team rows — card-based with depth
+    // Team rows — light theme cards on cream background
     leaderboard.forEach((entry, i) => {
       const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
       const toPar = entry.total - parForPlayed;
       const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
       const isLeader = i === 0;
       const isTop3 = i < 3;
-      const toParColor = toPar < 0 ? 'var(--gold-bright)' : toPar > 0 ? 'var(--loss)' : 'var(--text-primary)';
+      const toParColor = toPar < 0 ? '#B8962E' : toPar > 0 ? '#DC2626' : '#374151';
 
       // Implied odds based on position
       const oddsArr = ['+150', '+225', '+350', '+500', '+700', '+900', '+1200', '+1500'];
       const odds = oddsArr[i] || '+' + (1500 + (i - 7) * 500);
       const oddsNum = parseFloat(odds.replace('+', ''));
       const isFavorite = odds.startsWith('-');
-      const oddsColor = isFavorite ? 'white' : 'var(--text-secondary)';
-      const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
 
       // Projected payout
       const payout = payoutByPosition[i] || 0;
-      const payoutGlow = isLeader && payout > 0 ? 'text-shadow:0 0 8px rgba(212,160,23,0.4)' : '';
 
       const expanded = state._expandedPlayer === entry.team;
       const cOwner = calcuttaTeams[entry.team];
@@ -988,36 +985,36 @@ export function renderScrambleLeaderboard(state) {
         }
       }
 
-      // Card styles — leader gets gold border only (no gradient for readability)
+      // Card styles — light theme
       const cardBg = isLeader
-        ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
-        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+        ? 'background:#FFFFFF;border:1.5px solid #B8962E'
+        : 'background:#FFFFFF;border:1px solid #E5E0D8';
 
       // Position badge
-      const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+      const badgeBg = isLeader ? 'background:#B8962E;color:#FFFFFF' : isTop3 ? 'background:transparent;border:1.5px solid #B8962E;color:#B8962E' : 'background:transparent;border:1.5px solid #D1D5DB;color:#6B7280';
 
       // To-par size — massive for leader
       const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
 
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">`;
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,0.06)">`;
 
       // Main row
       html += `<div style="display:flex;justify-content:space-between;align-items:center">
           <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
             <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${entry.position || (i + 1)}</span>
-            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</span>
+            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
             <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
-            ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:var(--gold-bright);${payoutGlow}">$${payout.toLocaleString()}</span>` : ''}
-            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
+            ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:#B8962E">$${payout.toLocaleString()}</span>` : ''}
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${isFavorite ? '#B8962E' : '#D1D5DB'};background:${isFavorite ? 'rgba(184,150,46,0.08)' : '#F9FAFB'};color:${isFavorite ? '#1A1A1A' : '#6B7280'};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>`;
 
       // Expanded detail
       if (expanded) {
-        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bg-tertiary);margin-left:32px">`;
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #F0EDE6;margin-left:32px">`;
 
         // Hole-by-hole
         if (holesPlayed > 0) {
@@ -1025,12 +1022,12 @@ export function renderScrambleLeaderboard(state) {
           const backScores = holesPerRound > 9 ? teamHoleScores.slice(9, holesPerRound) : [];
           const frontStr = frontScores.map(s => s !== null ? String(s) : '-').join(' ');
           const backStr = backScores.map(s => s !== null ? String(s) : '-').join(' ');
-          html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:var(--text-secondary);margin-bottom:6px">
-            <span style="color:var(--text-tertiary);font-size:10px">OUT:</span> ${frontStr}${teamFront > 0 ? ` <span style="color:var(--text-secondary)">= ${teamFront}</span>` : ''}
+          html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#374151;margin-bottom:6px">
+            <span style="color:#9CA3AF;font-size:10px">OUT:</span> ${frontStr}${teamFront > 0 ? ` <span style="color:#6B7280">= ${teamFront}</span>` : ''}
           </div>`;
           if (backScores.length > 0) {
-            html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:var(--text-secondary);margin-bottom:6px">
-              <span style="color:var(--text-tertiary);font-size:10px">IN:</span>&nbsp; ${backStr}${teamBack > 0 ? ` <span style="color:var(--text-secondary)">= ${teamBack}</span>` : ''}
+            html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#374151;margin-bottom:6px">
+              <span style="color:#9CA3AF;font-size:10px">IN:</span>&nbsp; ${backStr}${teamBack > 0 ? ` <span style="color:#6B7280">= ${teamBack}</span>` : ''}
             </div>`;
           }
         }
@@ -1040,21 +1037,21 @@ export function renderScrambleLeaderboard(state) {
           const pace = Math.round((entry.total / holesPlayed) * holesPerRound);
           const projPar = pace - totalPar;
           const projStr = projPar === 0 ? 'E' : projPar > 0 ? '+' + projPar : String(projPar);
-          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Pace: ${pace} gross (proj final ${projStr})</div>`;
+          html += `<div style="font-size:12px;color:#6B7280;margin-bottom:6px">Pace: ${pace} gross (proj final ${projStr})</div>`;
         }
 
         // Calcutta owner
         if (ownerStr) {
-          html += `<div style="font-size:12px;color:rgba(212,160,23,0.6);margin-bottom:6px">Calcutta: Owned by ${escHtml(ownerStr)} ($${cOwner.amount})</div>`;
+          html += `<div style="font-size:12px;color:#B8962E;margin-bottom:6px">Calcutta: Owned by ${escHtml(ownerStr)} ($${cOwner.amount})</div>`;
         }
 
         // Lay action button
-        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(212,160,23,0.3);border-radius:6px;color:var(--gold-bright);font-size:12px;font-weight:600;cursor:pointer;min-height:44px">Lay Action on ${escHtml(entry.team)}</button>`;
+        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(184,150,46,0.3);border-radius:6px;color:#B8962E;font-size:12px;font-weight:600;cursor:pointer;min-height:44px">Lay Action on ${escHtml(entry.team)}</button>`;
 
         html += `</div>`;
       } else if (ownerStr) {
         // Show Calcutta owner in collapsed view too
-        html += `<div style="margin-left:32px;margin-top:2px"><span style="font-size:10px;color:rgba(212,160,23,0.4)">Calcutta: ${escHtml(ownerStr)} ($${cOwner.amount})</span></div>`;
+        html += `<div style="margin-left:32px;margin-top:2px"><span style="font-size:10px;color:#B8962E;opacity:0.6">Calcutta: ${escHtml(ownerStr)} ($${cOwner.amount})</span></div>`;
       }
 
       html += `</div>`;
@@ -1081,12 +1078,12 @@ export function renderScrambleLeaderboard(state) {
     html += `</div>`;
   } else if (scoredHoles.length === 0) {
     // No scores yet — waiting state
-    html += `<div style="background:var(--bg-secondary);border-radius:10px;overflow:hidden;margin-bottom:8px;text-align:center;padding:40px 20px">
-      <div style="font-size:18px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Waiting for Scores</div>
-      <div style="font-size:13px;color:var(--text-secondary)">
+    html += `<div style="background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;overflow:hidden;margin-bottom:8px;text-align:center;padding:40px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <div style="font-size:18px;font-weight:700;color:#1B4332;margin-bottom:8px">Waiting for Scores</div>
+      <div style="font-size:13px;color:#6B7280">
         ${state.adminAuthed ? 'Use the scorecard above to enter hole 1.' : 'The commissioner will enter scores as teams play.'}
       </div>
-      ${totalTeams > 0 ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:8px">${totalTeams} team${totalTeams !== 1 ? 's' : ''} registered</div>` : ''}
+      ${totalTeams > 0 ? `<div style="font-size:12px;color:#9CA3AF;margin-top:8px">${totalTeams} team${totalTeams !== 1 ? 's' : ''} registered</div>` : ''}
     </div>`;
   }
 
@@ -1097,10 +1094,10 @@ export function renderScrambleLeaderboard(state) {
     const feedItems = state._feed || [];
     if (feedItems.length > 0 && holesPlayed > 0) {
       const latestFeed = feedItems.slice(0, 5);
-      html += `<div id="board-ticker" style="background:var(--bg-secondary);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      html += `<div id="board-ticker" style="background:#FFFFFF;border-left:3px solid #B8962E;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;border:1px solid #E5E0D8;border-left:3px solid #B8962E;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
       latestFeed.forEach((item, idx) => {
         const text = item.text || '';
-        html += `<div style="font-size:12px;font-style:italic;color:rgba(240,236,227,0.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
+        html += `<div style="font-size:12px;font-style:italic;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
       });
       html += `</div>`;
     }
@@ -1112,33 +1109,33 @@ export function renderScrambleLeaderboard(state) {
   const sideGames = config?.scrambleSideGames;
   if ((!scrShowSubTabs || scrActiveSubTab === 'bar') && sideGames) {
     if (sideGames.closestToPin?.length > 0) {
-      html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
-          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+      html += `<div style="padding:16px;background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:#B8962E;border-radius:2px;display:inline-block"></span>
           CLOSEST TO PIN
         </div>`;
       sideGames.closestToPin.forEach((hole, idx) => {
         const winner = gameState?.sideGames?.ctp?.[hole];
         const played = scoredHoles.includes(hole);
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.closestToPin.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-          <span style="font-size:15px;font-weight:600;color:var(--mg-text)">Hole ${hole}</span>
-          <span style="font-size:15px;font-weight:700;color:${winner ? 'var(--gold-bright)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.closestToPin.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
+          <span style="font-size:15px;font-weight:600;color:#1A1A1A">Hole ${hole}</span>
+          <span style="font-size:15px;font-weight:700;color:${winner ? '#B8962E' : '#9CA3AF'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
         </div>`;
       });
       html += `</div>`;
     }
     if (sideGames.longestDrive?.length > 0) {
-      html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
-          <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+      html += `<div style="padding:16px;background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <span style="width:3px;height:14px;background:#B8962E;border-radius:2px;display:inline-block"></span>
           LONGEST DRIVE
         </div>`;
       sideGames.longestDrive.forEach((hole, idx) => {
         const winner = gameState?.sideGames?.ld?.[hole];
         const played = scoredHoles.includes(hole);
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.longestDrive.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-          <span style="font-size:15px;font-weight:600;color:var(--mg-text)">Hole ${hole}</span>
-          <span style="font-size:15px;font-weight:700;color:${winner ? 'var(--gold-bright)' : 'var(--mg-text-muted)'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.longestDrive.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
+          <span style="font-size:15px;font-weight:600;color:#1A1A1A">Hole ${hole}</span>
+          <span style="font-size:15px;font-weight:700;color:${winner ? '#B8962E' : '#9CA3AF'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
         </div>`;
       });
       html += `</div>`;
@@ -1157,17 +1154,17 @@ export function renderScrambleLeaderboard(state) {
   // ================================================================
   const sponsors = config?.sponsors;
   if ((!scrShowSubTabs || scrActiveSubTab === 'bar') && sponsors && Object.keys(sponsors).length > 0) {
-    html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px">
-        <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
+    html += `<div style="padding:16px;background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <span style="width:3px;height:14px;background:#B8962E;border-radius:2px;display:inline-block"></span>
         HOLE SPONSORS
       </div>`;
     Object.keys(sponsors).sort((a, b) => parseInt(a) - parseInt(b)).forEach((hole, idx, arr) => {
       const s = sponsors[hole];
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < arr.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-        <span style="font-size:13px;font-weight:700;color:var(--mg-text-muted);text-transform:uppercase;letter-spacing:0.5px">Hole ${hole}</span>
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < arr.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
+        <span style="font-size:13px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px">Hole ${hole}</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:15px;font-weight:600;color:var(--gold-bright)">${escHtml(s.name)}</span>
+          <span style="font-size:15px;font-weight:600;color:#B8962E">${escHtml(s.name)}</span>
           ${s.logo ? `<img src="${escHtml(s.logo)}" style="height:24px;border-radius:3px" alt="${escHtml(s.name)}">` : ''}
         </div>
       </div>`;
@@ -2200,9 +2197,9 @@ export function renderRoundFeed(state) {
 
     // Header
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:0 2px">
-      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Leaderboard</span>
+      <span style="font-size:16px;font-weight:800;color:#1B4332">Leaderboard</span>
     </div>`;
-    html += `<span style="font-size:0.72rem;color:#8a7a5a;font-style:italic;display:block;margin-bottom:8px;padding:0 2px">Odds to win the round outright. Negative = favorite, positive = underdog.</span>`;
+    html += `<span style="font-size:0.72rem;color:#6B7280;font-style:italic;display:block;margin-bottom:8px;padding:0 2px">Odds to win the round outright. Negative = favorite, positive = underdog.</span>`;
 
     // Player rows — card-based with depth
     standingsData.forEach((p, i) => {
@@ -2225,47 +2222,51 @@ export function renderRoundFeed(state) {
 
       const expanded = state._expandedPlayer === p.name;
 
-      // Card styles — leader gets gold border only (no gradient for readability)
+      // Card styles — light theme: white cards on cream background
       const cardBg = isLeader
-        ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
-        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+        ? 'background:#FFFFFF;border:1.5px solid #B8962E'
+        : 'background:#FFFFFF;border:1px solid #E5E0D8';
 
       // Position badge
-      const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+      const badgeBg = isLeader ? 'background:#B8962E;color:#FFFFFF' : isTop3 ? 'background:transparent;border:1.5px solid #B8962E;color:#B8962E' : 'background:transparent;border:1.5px solid #D1D5DB;color:#6B7280';
 
       // To-par size — massive for leader, large for others
       const toParSize = isLeader ? 'font-size:32px;font-weight:900' : 'font-size:24px;font-weight:800';
 
+      // Light theme score colors
+      const ltToParColor = p.toPar === null ? '#9CA3AF' : p.toPar < 0 ? '#B8962E' : p.toPar > 0 ? '#DC2626' : '#374151';
+      const ltMoneyColor = p.money > 0 ? '#16A34A' : p.money < 0 ? '#DC2626' : '#9CA3AF';
+
       // COLLAPSED: Card per player
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:10px;padding:14px 16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
             <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
-            <span style="font-size:17px;font-weight:${isLeader ? '700' : '600'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
+            <span style="font-size:17px;font-weight:${isLeader ? '700' : '600'};color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-            <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
-            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s;${oddsGlow}" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+            <span style="font-family:'SF Mono',monospace;${toParSize};color:${ltToParColor}">${toParStr}</span>
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${isFavorite ? '#B8962E' : '#D1D5DB'};background:${isFavorite ? 'rgba(184,150,46,0.08)' : '#F9FAFB'};color:${isHeavyFav ? '#B8962E' : isFavorite ? '#1A1A1A' : '#6B7280'};font-family:'SF Mono',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
           </div>
         </div>
         <div style="display:flex;align-items:center;margin-left:38px;margin-top:6px">
           <div style="display:flex;gap:12px;flex:1;font-size:14px;font-family:'SF Mono',monospace">
-            <span style="color:${moneyColor};font-weight:800;${moneyGlow}">${moneyStr}</span>
-            <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--text-secondary)'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
-            <span style="color:var(--text-secondary);font-weight:500">Thru ${p.thru}</span>
+            <span style="color:${ltMoneyColor};font-weight:800">${moneyStr}</span>
+            <span style="color:${p.skins > 0 ? '#B8962E' : '#9CA3AF'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+            <span style="color:#6B7280;font-weight:500">Thru ${p.thru}</span>
           </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
         </div>`;
 
       // EXPANDED: Betting detail (only if tapped)
       if (expanded) {
-        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bg-tertiary);margin-left:30px">`;
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #F0EDE6;margin-left:30px">`;
 
         // Nassau detail
         if (games.nassau) {
           const nassauFStr2 = p.nassauFront !== null ? (p.nassauFront <= 0 ? String(p.nassauFront === 0 ? 'E' : p.nassauFront) : '+' + p.nassauFront) : '--';
           const nassauBStr2 = p.nassauBack !== null ? (p.nassauBack <= 0 ? String(p.nassauBack === 0 ? 'E' : p.nassauBack) : '+' + p.nassauBack) : '--';
-          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Nassau: Front ${nassauFStr2} | Back ${nassauBStr2}</div>`;
+          html += `<div style="font-size:12px;color:#6B7280;margin-bottom:4px">Nassau: Front ${nassauFStr2} | Back ${nassauBStr2}</div>`;
         }
 
         // Press button (if behind leader)
@@ -2282,7 +2283,7 @@ export function renderRoundFeed(state) {
             const leaderTotal2 = typeof leaderNassau === 'object' ? leaderNassau.total : leaderNassau;
             const playerTotal = typeof playerNassau === 'object' ? playerNassau.total : playerNassau;
             if (playerTotal && leaderTotal2 && (playerTotal - leaderTotal2) >= autoPress.threshold) {
-              html += `<button onclick="event.stopPropagation();window.MG.pressNassau('${escHtml(p.name)}')" style="width:100%;padding:10px;margin:6px 0;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Press \u2014 Double to $${nassauBetAmt * 2}</button>`;
+              html += `<button onclick="event.stopPropagation();window.MG.pressNassau('${escHtml(p.name)}')" style="width:100%;padding:10px;margin:6px 0;background:#B8962E;color:#FFFFFF;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">Press \u2014 Double to $${nassauBetAmt * 2}</button>`;
             }
           }
         }
@@ -2291,31 +2292,31 @@ export function renderRoundFeed(state) {
         if (scoredHoles.length > 0 && p.gross !== null) {
           const pace = Math.round((p.gross / scoredHoles.length) * holesPerRound);
           const ouLine = Math.round(72 + (p.hi || 0) + 0.5);
-          html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">O/U ${ouLine}.5 gross (pace: ${pace})</div>`;
+          html += `<div style="font-size:12px;color:#6B7280;margin-bottom:4px">O/U ${ouLine}.5 gross (pace: ${pace})</div>`;
         }
 
         // H2H moneylines vs each other player (real ML table)
         if (standingsData.length >= 2) {
           html += `<div style="margin-top:4px;margin-bottom:4px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:4px">H2H Moneylines</div>`;
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#B8962E;margin-bottom:4px">H2H Moneylines</div>`;
           standingsData.forEach((opp, j) => {
             if (j === i) return;
             const myHcp = p.hi ?? 0;
             const oppHcp = opp.hi ?? 0;
             const h2h = h2hOdds(myHcp, oppHcp);
             const h2hFav = h2h.startsWith('-');
-            const h2hColor = h2hFav ? 'var(--gold-bright)' : 'var(--text-secondary)';
+            const h2hColor = h2hFav ? '#B8962E' : '#6B7280';
             const label = h2hFav ? 'fav' : 'dog';
             html += `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:'SF Mono',monospace;padding:1px 0">
-              <span style="color:var(--text-secondary)">vs ${escHtml(opp.name.split(' ')[0])}</span>
-              <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)} vs ${escHtml(opp.name.split(' ')[0])}','h2h','${h2h}')" style="padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-tertiary);color:${h2hColor};font-family:'SF Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${h2h} <span style="font-size:10px;opacity:0.6">(${label})</span></button>
+              <span style="color:#6B7280">vs ${escHtml(opp.name.split(' ')[0])}</span>
+              <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)} vs ${escHtml(opp.name.split(' ')[0])}','h2h','${h2h}')" style="padding:2px 6px;border-radius:4px;border:1px solid #E5E0D8;background:#F9FAFB;color:${h2hColor};font-family:'SF Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${h2h} <span style="font-size:10px;opacity:0.6">(${label})</span></button>
             </div>`;
           });
           html += `</div>`;
         }
 
         // Lay Action button
-        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(p.name)}')" style="width:100%;padding:8px;margin-top:4px;background:transparent;border:1.5px solid rgba(212,160,23,0.3);border-radius:6px;color:var(--gold-bright);font-size:12px;font-weight:600;cursor:pointer">Lay Action on ${escHtml(p.name.split(' ')[0])}</button>`;
+        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(p.name)}')" style="width:100%;padding:8px;margin-top:4px;background:transparent;border:1.5px solid rgba(184,150,46,0.3);border-radius:6px;color:#B8962E;font-size:12px;font-weight:600;cursor:pointer">Lay Action on ${escHtml(p.name.split(' ')[0])}</button>`;
 
         html += `</div>`;
       }
@@ -2325,19 +2326,19 @@ export function renderRoundFeed(state) {
 
     // Add Player inline (admin only)
     if (state.adminAuthed) {
-      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:6px">
+      html += `<div style="background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;padding:10px 16px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
         <div style="display:flex;gap:6px">
-          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
-          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
-          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:14px;background:#FAFAF7;color:#1A1A1A">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:14px;text-align:center;background:#FAFAF7;color:#1A1A1A">
+          <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:#B8962E;color:#FFFFFF;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
         </div>
         <details style="margin-top:8px">
-          <summary style="font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:4px 0">Paste multiple players</summary>
+          <summary style="font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;padding:4px 0">Paste multiple players</summary>
           <div style="margin-top:6px">
-            <textarea id="paste-players-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:transparent;color:var(--text-primary)" placeholder="One per line, or CSV: Name, HCP, @Venmo&#10;Tiger Woods, 0.6, @tigerwoods&#10;Rory McIlroy, -1.2"></textarea>
+            <textarea id="paste-players-input" rows="4" style="width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;background:#FAFAF7;color:#1A1A1A" placeholder="One per line, or CSV: Name, HCP, @Venmo&#10;Tiger Woods, 0.6, @tigerwoods&#10;Rory McIlroy, -1.2"></textarea>
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-              <button onclick="window.MG.pasteImportPlayers()" style="padding:6px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Import</button>
-              <span id="paste-import-status" style="font-size:12px;color:var(--text-secondary)"></span>
+              <button onclick="window.MG.pasteImportPlayers()" style="padding:6px 14px;background:#B8962E;color:#FFFFFF;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Import</button>
+              <span id="paste-import-status" style="font-size:12px;color:#6B7280"></span>
             </div>
           </div>
         </details>
@@ -2493,19 +2494,19 @@ export function renderRoundFeed(state) {
         if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
       });
       const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle`);
-      html += `<div style="background:var(--bg-secondary,#0d2818);color:#f0ece3;border:1px solid rgba(212,160,23,0.3);border-left:3px solid var(--gold-primary,#c9a84c);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      html += `<div style="background:#FFFFFF;border:1px solid #E5E0D8;border-left:3px solid #B8962E;border-radius:10px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#c9a84c">Settlement${roundComplete ? '' : ' (Running)'}</div>
-          ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:#c9a84c;text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:0.78rem;color:rgba(240,236,227,0.6);font-weight:600">Thru ${scoredHoles.length} holes</span>`}
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1B4332">Settlement${roundComplete ? '' : ' (Running)'}</div>
+          ${roundComplete ? `<a href="#settle" style="font-size:13px;font-weight:600;color:#B8962E;text-decoration:none">Full Card &rarr;</a>` : `<span style="font-size:0.78rem;color:#6B7280;font-weight:600">Thru ${scoredHoles.length} holes</span>`}
         </div>`;
       payPairs.forEach(pair => {
         const toVenmo = venmoHandles[pair.to] || pair.to;
         const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
         const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${pair.amount}&note=${noteText}`;
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(212,160,23,0.2)">
-          <div style="font-size:16px;font-weight:600;color:#f0ece3">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:rgba(240,236,227,0.6)">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F0EDE6">
+          <div style="font-size:16px;font-weight:600;color:#1A1A1A">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:#9CA3AF">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:#c9a84c">$${pair.amount}</span>
+            <span style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:#B8962E">$${pair.amount}</span>
             ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:#3D95CE;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
           </div>
         </div>`;
@@ -2525,11 +2526,11 @@ export function renderRoundFeed(state) {
       allTickerItems.unshift({ text: msg, isOddsMove: true });
     });
     if (allTickerItems.length > 0 && scoredHoles.length > 0) {
-      html += `<div id="board-ticker" style="background:rgba(212,160,23,0.06);border-left:3px solid var(--mg-gold);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;overflow:hidden;height:34px;cursor:pointer;animation:tickerBorderPulse 2s ease-in-out infinite" onclick="this.style.height=this.style.height==='34px'?'auto':'34px'">`;
+      html += `<div id="board-ticker" style="background:#FFFFFF;border:1px solid #E5E0D8;border-left:3px solid #B8962E;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;overflow:hidden;height:34px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onclick="this.style.height=this.style.height==='34px'?'auto':'34px'">`;
       allTickerItems.slice(0, 7).forEach((item, i) => {
         const text = item.text || '';
-        const color = item.isOddsMove ? 'var(--gold-bright)' : 'var(--mg-text)';
-        const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px">LINE MOVE</span>' : '';
+        const color = item.isOddsMove ? '#B8962E' : '#374151';
+        const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px;color:#B8962E">LINE MOVE</span>' : '';
         html += `<div style="font-size:14px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
       });
       html += `</div>`;
@@ -3102,8 +3103,8 @@ export function renderFlightsList(state) {
     const flight = F(fId);
     const standings = calcStandings(fId, state.matches);
 
-    html += `<div class="mg-card" style="cursor:pointer" onclick="window.MG.nav('#flight/${fId}')">
-      <div class="mg-card-header">${flight.name} <span class="text-xs text-muted">(${flight.tees} Tees)</span></div>
+    html += `<div class="mg-card-light" style="cursor:pointer" onclick="window.MG.nav('#flight/${fId}')">
+      <div class="mg-card-header-light">${flight.name} <span style="font-weight:400;color:#6B7280;letter-spacing:0;text-transform:none;font-size:12px">(${flight.tees} Tees)</span></div>
       <table class="mg-standings"><thead><tr><th>#</th><th>Team</th><th>Pts</th></tr></thead><tbody>`;
     standings.forEach((s, i) => {
       const t = T(s.teamId);
@@ -3125,8 +3126,8 @@ export function renderFlight(state, flightId) {
   let html = `<div class="mg-section-title">${flight.name}</div>
     <div class="text-xs text-muted mb-4">${flight.tees} Tees</div>
 
-    <div class="mg-card">
-      <div class="mg-card-header">Standings</div>
+    <div class="mg-card-light">
+      <div class="mg-card-header-light">Standings</div>
       <div class="mg-standings-wrap">
       <table class="mg-standings">
         <thead><tr><th>#</th><th>Team</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th>Tot</th></tr></thead>
@@ -4328,21 +4329,27 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
     const pot = s.pot || 1;
     const won = Object.values(sHolesDetail).filter(h => h.winner).length;
     const carried = Object.values(sHolesDetail).filter(h => h.carried).length;
-    html += `<div class="mg-card" style="padding:12px">
-      <div class="mg-card-header" style="margin-bottom:8px">SKINS <span style="font-weight:400;color:var(--mg-text-muted)">${holesPlayed} holes</span></div>
-      <div style="display:flex;gap:16px;margin-bottom:8px">
-        <div><div style="font-size:11px;color:var(--mg-text-muted)">Pot</div><div style="font-size:20px;font-weight:700;color:var(--mg-gold)">×${pot}</div></div>
-        <div><div style="font-size:11px;color:var(--mg-text-muted)">Won</div><div style="font-size:20px;font-weight:700;color:var(--mg-green)">${won}</div></div>
-        <div><div style="font-size:11px;color:var(--mg-text-muted)">Carried</div><div style="font-size:20px;font-weight:700">${carried}</div></div>
+    html += `<div class="mg-card-light">
+      <div class="mg-card-header-light">SKINS <span style="font-weight:400;color:#9CA3AF;letter-spacing:0;text-transform:none;font-size:12px">${holesPlayed} holes</span></div>
+      <div style="display:flex;gap:20px;margin-bottom:12px">
+        <div><div style="font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:2px">Pot</div><div style="font-size:28px;font-weight:800;color:#B8962E;font-family:'SF Mono',monospace">×${pot}</div></div>
+        <div><div style="font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:2px">Won</div><div style="font-size:28px;font-weight:800;color:#1B4332;font-family:'SF Mono',monospace">${won}</div></div>
+        <div><div style="font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:2px">Carried</div><div style="font-size:28px;font-weight:800;color:#1A1A1A;font-family:'SF Mono',monospace">${carried}</div></div>
       </div>`;
     const holeEntries = Object.entries(sHolesDetail);
     if (holeEntries.length > 0) {
-      html += `<div style="display:flex;flex-direction:column;gap:4px">`;
+      html += `<div style="display:flex;flex-direction:column">`;
       holeEntries.forEach(([h, data]) => {
         if (data.winner) {
-          html += `<div style="font-size:12px;display:flex;justify-content:space-between"><span>Hole ${h}</span><span style="color:var(--mg-green);font-weight:600">${escHtml(data.winner)} ×${data.potWon||1}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0EDE6;font-size:13px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#16A34A;flex-shrink:0"></span><span style="color:#374151">Hole ${h}</span></div>
+            <span style="color:#16A34A;font-weight:700;font-family:'SF Mono',monospace">${escHtml(data.winner)} ×${data.potWon||1}</span>
+          </div>`;
         } else if (data.carried) {
-          html += `<div style="font-size:12px;display:flex;justify-content:space-between"><span>Hole ${h}</span><span style="color:var(--mg-text-muted)">Carried →</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0EDE6;font-size:13px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span><span style="color:#374151">Hole ${h}</span></div>
+            <span style="color:#9CA3AF;font-weight:500">Carried →</span>
+          </div>`;
         }
       });
       html += `</div>`;
@@ -4355,16 +4362,14 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
     const r = gameState.nassau.running;
     const players = Object.keys(r);
     const holesPlayedCount = Object.keys(holes || {}).length;
-    // Find best (lowest) total to compute who is 2+ down
     const bestTotal = Math.min(...players.map(n => r[n].total || 0));
     const bestFront = Math.min(...players.map(n => r[n].front || 0));
     const bestBack  = Math.min(...players.map(n => r[n].back  || 0));
-    // Active presses
     const activePresses = (gameState.nassau.presses || []).filter(p => p.active);
 
-    html += `<div class="mg-card" style="padding:12px">
-      <div class="mg-card-header" style="margin-bottom:8px">NASSAU</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${isAdmin?' 1fr':''};gap:4px;font-size:11px;font-weight:600;color:var(--mg-text-muted);margin-bottom:4px;padding:0 4px">
+    html += `<div class="mg-card-light">
+      <div class="mg-card-header-light">NASSAU</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${isAdmin?' 1fr':''};gap:4px;font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:4px;padding:0 4px">
         <span>Player</span><span style="text-align:center">Front</span><span style="text-align:center">Back</span><span style="text-align:center">Total</span>${isAdmin?'<span></span>':''}
       </div>`;
     players.sort((a, b) => (r[a].total||0) - (r[b].total||0)).forEach(name => {
@@ -4377,29 +4382,31 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
       const canPressTotal = isAdmin && totalDown >= 2;
       const hasPress = activePresses.some(p => p.player === name);
 
-      html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${isAdmin?' 1fr':''};gap:4px;font-size:13px;padding:6px 4px;border-top:1px solid var(--mg-border);align-items:center">
-        <span style="font-weight:500">${escHtml(name.split(' ').pop())}${hasPress?` <span style="font-size:9px;background:var(--gold-bright);color:var(--text-primary);border-radius:3px;padding:1px 4px">PRESS</span>`:''}
+      const nassauScoreColor = (val) => val < 0 ? '#16A34A' : val > 0 ? '#DC2626' : '#374151';
+
+      html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${isAdmin?' 1fr':''};gap:4px;font-size:14px;padding:8px 4px;border-top:1px solid #F0EDE6;align-items:center">
+        <span style="font-weight:600;color:#1A1A1A">${escHtml(name.split(' ').pop())}${hasPress?` <span style="font-size:9px;background:#B8962E;color:white;border-radius:3px;padding:1px 4px;font-weight:700">PRESS</span>`:''}
         </span>
-        <span style="text-align:center;color:${(s.front||0)<0?'var(--mg-green)':(s.front||0)>0?'var(--loss)':'var(--mg-text)'}">${s.front||0}</span>
-        <span style="text-align:center;color:${(s.back||0)<0?'var(--mg-green)':(s.back||0)>0?'var(--loss)':'var(--mg-text)'}">${s.back||0}</span>
-        <span style="text-align:center;font-weight:700;color:${(s.total||0)<0?'var(--mg-green)':(s.total||0)>0?'var(--loss)':'var(--mg-text)'}">${s.total||0}</span>
+        <span style="text-align:center;font-family:'SF Mono',monospace;font-weight:600;color:${nassauScoreColor(s.front||0)}">${s.front||0}</span>
+        <span style="text-align:center;font-family:'SF Mono',monospace;font-weight:600;color:${nassauScoreColor(s.back||0)}">${s.back||0}</span>
+        <span style="text-align:center;font-family:'SF Mono',monospace;font-weight:800;color:${nassauScoreColor(s.total||0)}">${s.total||0}</span>
         ${isAdmin ? `<span style="text-align:right">
-          ${canPressFront ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','front',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press F</button>` : ''}
-          ${canPressBack  ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','back',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press B</button>` : ''}
-          ${!canPressFront && !canPressBack && canPressTotal ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','full',${holesPlayedCount+1})" style="font-size:10px;padding:3px 6px;border:1px solid var(--gold-bright);border-radius:4px;background:rgba(240,192,64,0.1);color:var(--gold-bright);cursor:pointer;white-space:nowrap">Press</button>` : ''}
+          ${canPressFront ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','front',${holesPlayedCount+1})" style="font-size:10px;padding:4px 8px;border:1px solid #B8962E;border-radius:6px;background:rgba(184,150,46,0.08);color:#B8962E;cursor:pointer;white-space:nowrap;font-weight:600">Press F</button>` : ''}
+          ${canPressBack  ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','back',${holesPlayedCount+1})" style="font-size:10px;padding:4px 8px;border:1px solid #B8962E;border-radius:6px;background:rgba(184,150,46,0.08);color:#B8962E;cursor:pointer;white-space:nowrap;font-weight:600">Press B</button>` : ''}
+          ${!canPressFront && !canPressBack && canPressTotal ? `<button onclick="window.MG.pressNassau('${escHtml(name)}','full',${holesPlayedCount+1})" style="font-size:10px;padding:4px 8px;border:1px solid #B8962E;border-radius:6px;background:rgba(184,150,46,0.08);color:#B8962E;cursor:pointer;white-space:nowrap;font-weight:600">Press</button>` : ''}
         </span>` : ''}
       </div>`;
     });
 
     // Show active presses
     if (activePresses.length > 0) {
-      html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--mg-border)">
-        <div style="font-size:11px;color:var(--mg-text-muted);font-weight:600;margin-bottom:4px">ACTIVE PRESSES</div>`;
+      html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #E5E0D8">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:6px">ACTIVE PRESSES</div>`;
       activePresses.forEach(p => {
         const pressLeader = Object.entries(p.running || {}).sort((a,b)=>a[1]-b[1])[0];
-        html += `<div style="font-size:12px;display:flex;justify-content:space-between;padding:3px 0">
+        html += `<div style="font-size:13px;display:flex;justify-content:space-between;padding:4px 0;color:#374151">
           <span><strong>${escHtml(p.player)}</strong> pressed ${p.segment} from H${p.startHole}</span>
-          <span style="color:var(--mg-text-muted)">${pressLeader ? `Leader: ${escHtml(pressLeader[0].split(' ').pop())} (${pressLeader[1]})` : 'No scores yet'}</span>
+          <span style="color:#6B7280">${pressLeader ? `Leader: ${escHtml(pressLeader[0].split(' ').pop())} (${pressLeader[1]})` : 'No scores yet'}</span>
         </div>`;
       });
       html += `</div>`;
@@ -4412,12 +4419,13 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
     const entries = Object.entries(gameState.stroke.running)
       .map(([name, net]) => ({ name, net }))
       .sort((a, b) => a.net - b.net);
-    html += `<div class="mg-card" style="padding:12px">
-      <div class="mg-card-header" style="margin-bottom:8px">STROKE PLAY (NET)</div>`;
+    html += `<div class="mg-card-light">
+      <div class="mg-card-header-light">STROKE PLAY (NET)</div>`;
     entries.forEach((e, i) => {
-      html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-top:${i>0?'1px solid var(--mg-border)':'none'};font-size:13px">
-        <span><span style="color:var(--mg-text-muted);margin-right:6px">${i+1}</span>${escHtml(e.name.split(' ').pop())}</span>
-        <span style="font-weight:700;color:${e.net<0?'var(--mg-green)':e.net>0?'var(--loss)':'var(--mg-text)'}">${e.net===0?'E':e.net>0?'+'+e.net:e.net}</span>
+      const scoreColor = e.net < 0 ? '#16A34A' : e.net > 0 ? '#DC2626' : '#374151';
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:${i>0?'1px solid #F0EDE6':'none'};font-size:14px">
+        <span style="color:#1A1A1A"><span style="color:#9CA3AF;margin-right:8px;font-weight:700;font-size:13px">${i+1}</span><span style="font-weight:600">${escHtml(e.name.split(' ').pop())}</span></span>
+        <span style="font-weight:800;font-family:'SF Mono',monospace;color:${scoreColor}">${e.net===0?'E':e.net>0?'+'+e.net:e.net}</span>
       </div>`;
     });
     html += `</div>`;
@@ -4427,17 +4435,21 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
   if (games.vegas && gameState.vegas) {
     const v = gameState.vegas;
     const score = v.score || { A: 0, B: 0 };
-    html += `<div class="mg-card" style="padding:12px">
-      <div class="mg-card-header" style="margin-bottom:8px">VEGAS</div>
-      <div style="display:flex;justify-content:space-around;text-align:center">
-        <div><div style="font-size:12px;color:var(--mg-text-muted)">Team A</div>
-          <div style="font-size:11px;color:var(--mg-text-muted)">${(v.teamA||[]).map(n=>n.split(' ').pop()).join(' / ')}</div>
-          <div style="font-size:24px;font-weight:700;color:${score.A>score.B?'var(--mg-green)':'var(--mg-text)'}">${score.A}</div>
+    const aLeading = score.A > score.B;
+    const bLeading = score.B > score.A;
+    html += `<div class="mg-card-light">
+      <div class="mg-card-header-light">VEGAS</div>
+      <div style="display:flex;justify-content:space-around;text-align:center;padding:8px 0">
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:4px">Team A</div>
+          <div style="font-size:12px;color:#6B7280;margin-bottom:4px">${(v.teamA||[]).map(n=>n.split(' ').pop()).join(' / ')}</div>
+          <div style="font-size:36px;font-weight:800;color:${aLeading?'#1B4332':'#1A1A1A'};font-family:'SF Mono',monospace">${score.A}</div>
         </div>
-        <div style="font-size:14px;color:var(--mg-text-muted);align-self:center">vs</div>
-        <div><div style="font-size:12px;color:var(--mg-text-muted)">Team B</div>
-          <div style="font-size:11px;color:var(--mg-text-muted)">${(v.teamB||[]).map(n=>n.split(' ').pop()).join(' / ')}</div>
-          <div style="font-size:24px;font-weight:700;color:${score.B>score.A?'var(--mg-green)':'var(--mg-text)'}">${score.B}</div>
+        <div style="font-size:14px;color:#9CA3AF;align-self:center;font-weight:600">vs</div>
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:#6B7280;margin-bottom:4px">Team B</div>
+          <div style="font-size:12px;color:#6B7280;margin-bottom:4px">${(v.teamB||[]).map(n=>n.split(' ').pop()).join(' / ')}</div>
+          <div style="font-size:36px;font-weight:800;color:${bLeading?'#1B4332':'#1A1A1A'};font-family:'SF Mono',monospace">${score.B}</div>
         </div>
       </div>
     </div>`;
@@ -4458,12 +4470,12 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false) {
       }
     });
     if (Object.keys(score).length > 0) {
-      html += `<div class="mg-card" style="padding:12px">
-        <div class="mg-card-header" style="margin-bottom:8px">WOLF — Holes Won</div>`;
-      Object.entries(score).sort((a,b) => b[1]-a[1]).forEach(([name, n]) => {
-        html += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--mg-border)">
-          <span>${escHtml(name.split(' ').pop())}</span>
-          <span style="font-weight:700;color:var(--mg-gold)">${n} hole${n!==1?'s':''}</span>
+      html += `<div class="mg-card-light">
+        <div class="mg-card-header-light">WOLF — Holes Won</div>`;
+      Object.entries(score).sort((a,b) => b[1]-a[1]).forEach(([name, n], i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:8px 0;border-top:${i>0?'1px solid #F0EDE6':'none'}">
+          <span style="font-weight:600;color:#1A1A1A">${escHtml(name.split(' ').pop())}</span>
+          <span style="font-weight:800;color:#B8962E;font-family:'SF Mono',monospace">${n} hole${n!==1?'s':''}</span>
         </div>`;
       });
       html += `</div>`;
@@ -7324,65 +7336,64 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
 
   let html = '';
 
-  // ── a) Trophy Header — gold gradient glow ──
-  html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.08) 0%,var(--bg-secondary) 30%,var(--green-muted) 60%,rgba(212,160,23,0.06) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 0 24px rgba(212,160,23,0.15)">
-    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-conic-gradient(rgba(212,160,23,0.03) 0% 25%,transparent 0% 50%) 0 0/40px 40px;pointer-events:none"></div>
+  // ── a) Trophy Header — light theme with gold accents ──
+  html += `<div style="background:#FFFFFF;border:1.5px solid #B8962E;border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(184,150,46,0.12)">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-conic-gradient(rgba(184,150,46,0.03) 0% 25%,transparent 0% 50%) 0 0/40px 40px;pointer-events:none"></div>
     <div style="position:relative;z-index:1">
       <div style="font-size:56px;margin-bottom:8px">&#127942;</div>
-      <div style="font-size:26px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${escHtml(eventName)}</div>
-      <div style="display:inline-block;padding:4px 14px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.4);border-radius:4px;margin-bottom:10px">
-        <span style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright)">Final Results</span>
+      <div style="font-size:26px;font-weight:700;color:#1A1A1A;margin-bottom:4px">${escHtml(eventName)}</div>
+      <div style="display:inline-block;padding:4px 14px;background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.3);border-radius:4px;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#B8962E">Final Results</span>
       </div>
-      ${courseName ? `<div style="font-size:13px;color:var(--text-secondary)">${escHtml(courseName)}</div>` : ''}
-      ${eventDate ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${escHtml(eventDate)}</div>` : ''}
-      ${state.bettorName ? `<div style="margin-top:8px"><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:11px;font-weight:600;color:var(--gold-bright)"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+      ${courseName ? `<div style="font-size:13px;color:#6B7280">${escHtml(courseName)}</div>` : ''}
+      ${eventDate ? `<div style="font-size:12px;color:#9CA3AF;margin-top:2px">${escHtml(eventDate)}</div>` : ''}
+      ${state.bettorName ? `<div style="margin-top:8px"><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.3);border-radius:12px;font-size:11px;font-weight:600;color:#B8962E"><span style="width:5px;height:5px;border-radius:50%;background:#B8962E"></span>${escHtml(state.bettorName)}</span></div>` : ''}
       ${winner ? `<div style="margin-top:16px">
-        <div style="font-size:11px;color:rgba(212,160,23,0.5);text-transform:uppercase;letter-spacing:1.5px;font-weight:700">Champion</div>
-        <div style="font-size:24px;font-weight:700;color:var(--gold-bright);margin-top:4px;text-shadow:0 0 16px rgba(212,160,23,0.4)">${escHtml(winner.name)}</div>
-        ${winner.money > 0 ? `<div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:var(--win);margin-top:4px;text-shadow:0 0 8px rgba(63,185,80,0.3)">+$${winner.money}</div>` : ''}
+        <div style="font-size:11px;color:#B8962E;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;opacity:0.7">Champion</div>
+        <div style="font-size:24px;font-weight:700;color:#1B4332;margin-top:4px">${escHtml(winner.name)}</div>
+        ${winner.money > 0 ? `<div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:#16A34A;margin-top:4px">+$${winner.money}</div>` : ''}
       </div>` : ''}
     </div>
   </div>`;
 
-  // ── b) Final Leaderboard — card-based rows ──
+  // ── b) Final Leaderboard — light theme card-based rows ──
   html += `<div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
-      <span style="font-size:16px;font-weight:800;color:var(--gold-bright)">Final Leaderboard</span>
-      <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.4);background:rgba(212,160,23,0.08);padding:3px 8px;border-radius:3px">FINAL</span>
+      <span style="font-size:16px;font-weight:800;color:#1B4332">Final Leaderboard</span>
+      <span style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#B8962E;background:rgba(184,150,46,0.1);padding:3px 8px;border-radius:3px">FINAL</span>
     </div>`;
 
   standingsData.forEach((p, i) => {
     const isLeader = i === 0;
     const isTop3 = i < 3;
     const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
-    const toParColor = p.toPar === null ? 'var(--text-tertiary)' : p.toPar < 0 ? 'var(--gold-bright)' : p.toPar > 0 ? 'var(--loss)' : 'white';
+    const toParColor = p.toPar === null ? '#9CA3AF' : p.toPar < 0 ? '#B8962E' : p.toPar > 0 ? '#DC2626' : '#374151';
     const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
-    const moneyColor = p.money > 0 ? 'var(--win)' : p.money < 0 ? 'var(--loss)' : 'var(--text-tertiary)';
-    const moneyGlow = p.money > 0 ? 'text-shadow:0 0 8px rgba(63,185,80,0.3)' : p.money < 0 ? 'text-shadow:0 0 8px rgba(248,81,73,0.3)' : '';
+    const moneyColor = p.money > 0 ? '#16A34A' : p.money < 0 ? '#DC2626' : '#9CA3AF';
 
-    // Card styles — leader gets gold border only (no gradient for readability)
+    // Card styles — light theme
     const cardBg = isLeader
-      ? 'background:var(--bg-secondary);border:1.5px solid var(--gold-primary,var(--mg-gold))'
-      : 'background:var(--bg-secondary);border:1px solid var(--border)';
+      ? 'background:#FFFFFF;border:1.5px solid #B8962E'
+      : 'background:#FFFFFF;border:1px solid #E5E0D8';
 
     // Position badge
-    const badgeBg = isLeader ? 'background:var(--gold-bright);color:var(--bg-secondary)' : isTop3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+    const badgeBg = isLeader ? 'background:#B8962E;color:#FFFFFF' : isTop3 ? 'background:transparent;border:1.5px solid #B8962E;color:#B8962E' : 'background:transparent;border:1.5px solid #D1D5DB;color:#6B7280';
 
     // To-par size
     const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
 
-    html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px">
+    html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
           <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${isLeader ? '&#127942;' : i + 1}</span>
-          <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:var(--text-primary)">${escHtml(p.name)}</span>
+          <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:#1A1A1A">${escHtml(p.name)}</span>
         </div>
         <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor};flex-shrink:0;margin-left:8px">${toParStr}</span>
       </div>
       <div style="display:flex;gap:12px;margin-left:32px;margin-top:4px;font-size:12px;font-family:'SF Mono',monospace">
-        <span style="color:${moneyColor};font-weight:700;${moneyGlow}">${moneyStr}</span>
-        <span style="color:${p.skins > 0 ? 'var(--gold-bright)' : 'var(--border-strong)'}">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
-        ${p.gross !== null ? `<span style="color:var(--text-tertiary)">${p.gross} gross</span>` : ''}
+        <span style="color:${moneyColor};font-weight:700">${moneyStr}</span>
+        <span style="color:${p.skins > 0 ? '#B8962E' : '#D1D5DB'}">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
+        ${p.gross !== null ? `<span style="color:#9CA3AF">${p.gross} gross</span>` : ''}
       </div>
     </div>`;
   });
@@ -7396,8 +7407,8 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
       if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
     });
 
-    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:16px;margin-bottom:10px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:12px">Who Pays Who</div>`;
+    html += `<div style="background:#FFFFFF;border:1px solid #E5E0D8;border-left:3px solid #B8962E;border-radius:10px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;margin-bottom:12px">Who Pays Who</div>`;
 
     payPairs.forEach(({ from, to, amount }) => {
       const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle Settlement`);
@@ -7405,10 +7416,10 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
       const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
       const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
 
-      html += `<div style="background:var(--bg-tertiary);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      html += `<div style="background:#FAFAF7;border:1px solid #E5E0D8;border-radius:10px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:15px;font-weight:700"><span style="color:var(--loss)">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--text-tertiary)">pays</span> <span style="color:var(--win)">${escHtml(to)}</span></div>
-          <div style="font-size:24px;font-weight:900;color:var(--text-primary)">$${amount}</div>
+          <div style="font-size:15px;font-weight:700"><span style="color:#DC2626">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:#9CA3AF">pays</span> <span style="color:#16A34A">${escHtml(to)}</span></div>
+          <div style="font-size:24px;font-weight:900;color:#1A1A1A">$${amount}</div>
         </div>
         <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
           style="display:flex;align-items:center;justify-content:center;gap:8px;background:#008CFF;color:white;padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:44px;box-shadow:0 2px 8px rgba(0,140,255,0.3)">
@@ -7425,13 +7436,13 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
   {
     const recap = state._lastRecap;
     if (recap) {
-      html += `<div style="background:linear-gradient(135deg,rgba(212,160,23,0.06),rgba(212,160,23,0.02));border:1.5px solid var(--mg-gold);border-radius:10px;padding:16px;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:10px">AI Recap</div>
-        <div style="font-size:14px;line-height:1.6;color:var(--mg-text);font-style:italic;white-space:pre-wrap">${escHtml(recap)}</div>
+      html += `<div style="background:#FFFFFF;border:1.5px solid #B8962E;border-radius:10px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;margin-bottom:10px">AI Recap</div>
+        <div style="font-size:14px;line-height:1.6;color:#374151;font-style:italic;white-space:pre-wrap">${escHtml(recap)}</div>
       </div>`;
     } else {
       html += `<div style="margin-bottom:10px">
-        <button onclick="window.MG.getRecap()" style="width:100%;padding:14px;background:var(--mg-surface);border:1.5px solid var(--mg-gold);border-radius:10px;color:var(--mg-gold-dim);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px">
+        <button onclick="window.MG.getRecap()" style="width:100%;padding:14px;background:#FFFFFF;border:1.5px solid #B8962E;border-radius:10px;color:#B8962E;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Generate AI Recap
         </button>
@@ -7503,21 +7514,21 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
 
     if (moments.length > 0) {
       html += `<div style="margin-bottom:10px">
-        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-bright);padding:0 2px 10px">Memorable Moments</div>`;
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1B4332;padding:0 2px 10px">Memorable Moments</div>`;
       const momentIcons = ['&#127942;', '&#127775;', '&#128165;', '&#128170;'];
       moments.forEach((m, mi) => {
-        html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
+        html += `<div style="background:#FFFFFF;border:1px solid #E5E0D8;border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
           <div style="font-size:20px;flex-shrink:0">${momentIcons[mi % momentIcons.length]}</div>
-          <div style="font-size:13px;color:var(--text-primary);line-height:1.4">${escHtml(m)}</div>
+          <div style="font-size:13px;color:#374151;line-height:1.4">${escHtml(m)}</div>
         </div>`;
       });
       html += `</div>`;
     }
   }
 
-  // ── f) Run It Back Button — gold CTA, most prominent ──
+  // ── f) Run It Back Button — gold CTA ──
   html += `<div style="display:flex;gap:8px;margin-bottom:10px">
-    <a href="/app/?create=1&clone=${encodeURIComponent(slug)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:var(--gold-bright,var(--mg-gold));color:var(--bg-primary,var(--mg-green));border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;min-height:52px;box-shadow:0 3px 12px rgba(212,160,23,0.3)">
+    <a href="/app/?create=1&clone=${encodeURIComponent(slug)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:#1B4332;color:#FFFFFF;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;min-height:52px;box-shadow:0 3px 12px rgba(27,67,50,0.3)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
       Run It Back
     </a>
@@ -7533,7 +7544,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
 
     html += `<div style="margin-bottom:10px">
       <button onclick="(function(){var t='${escHtml(shareText).replace(/'/g, "\\'")}\\n'+location.href;if(navigator.share){navigator.share({title:'${escHtml(eventName).replace(/'/g, "\\'")} - Results',text:t,url:location.href}).catch(function(){})}else{navigator.clipboard.writeText(t).then(function(){alert('Results copied!')})}})()"
-        style="width:100%;padding:14px;background:transparent;border:2px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:var(--gold-bright)">
+        style="width:100%;padding:14px;background:transparent;border:2px solid #B8962E;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:#B8962E">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share Results
       </button>
