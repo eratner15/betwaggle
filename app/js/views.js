@@ -1702,12 +1702,10 @@ export function renderRoundFeed(state) {
       { key: 'board', icon: '\uD83C\uDFC6', label: 'Board' },
       { key: 'bar',   icon: '\uD83C\uDF7A', label: 'The Bar' }
     ];
-    html += `<div style="display:flex;gap:4px;margin-bottom:12px;padding:3px;border-radius:10px;background:var(--bg-secondary);border:1px solid rgba(197,160,89,0.15)">`;
+    html += `<div style="display:flex;justify-content:center;gap:24px;padding:12px 0;margin-bottom:12px">`;
     tabItems.forEach(t => {
       const isActive = activeSubTab === t.key;
-      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="flex:1;padding:10px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-radius:8px;transition:all .15s;${isActive ? 'background:#1B3022;color:#FFFFFF;box-shadow:0 2px 8px rgba(27,48,34,0.12)' : 'background:transparent;color:#4A4A45'}">
-        <span style="margin-right:4px;font-size:12px">${t.icon}</span>${t.label}
-      </button>`;
+      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:${isActive ? '700' : '500'};color:${isActive ? '#1C1C19' : '#8A8A85'};text-transform:uppercase;letter-spacing:1px;padding:4px 0;border-bottom:${isActive ? '2px solid #1C1C19' : '2px solid transparent'}">${t.label}</button>`;
     });
     html += `</div>`;
   }
@@ -2193,136 +2191,41 @@ export function renderRoundFeed(state) {
   // SECTION 3: LEADERBOARD + BOOK (THE CORE)
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0 && standingsData.length > 0) {
-    html += `<div style="margin-bottom:12px">`;
 
-    // Header
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px">
-      <span style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:700;color:#1C1C19">Leaderboard</span>
-    </div>`;
-    html += `<span style="font-size:0.72rem;color:#8A8A85;font-style:italic;display:block;margin-bottom:12px;padding:0 2px;font-family:'Inter',sans-serif">Odds to win the round outright. Negative = favorite, positive = underdog.</span>`;
+    // Leaderboard — clean rows, not cards
+    html += `<div style="background:white;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.15);margin-bottom:12px">`;
 
-    // Player rows — card-based with depth
     standingsData.forEach((p, i) => {
       const isLeader = i === 0;
-      const isTop3 = i < 3;
-      const isLast = i === standingsData.length - 1 && standingsData.length > 1;
+      const rowBg = i % 2 === 0 ? '#FFFFFF' : '#FCF9F4';
+      const toParColor = (p.toPar ?? 0) < 0 ? '#16A34A' : (p.toPar ?? 0) > 0 ? '#DC2626' : '#1C1C19';
+      const moneyColor = (p.money || 0) > 0 ? '#16A34A' : (p.money || 0) < 0 ? '#DC2626' : '#8A8A85';
+      const moneyStr = (p.money || 0) === 0 ? '$0' : (p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money));
       const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
-      const toParColor = p.toPar === null ? 'var(--text-tertiary)' : p.toPar < 0 ? 'var(--gold-bright)' : p.toPar > 0 ? 'var(--loss)' : 'white';
-      const moneyStr = p.money === 0 ? '--' : p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money);
-      const moneyColor = p.money > 0 ? 'var(--win)' : p.money < 0 ? 'var(--loss)' : 'var(--text-tertiary)';
-      const moneyGlow = p.money > 0 ? 'text-shadow:0 0 8px rgba(63,185,80,0.3)' : p.money < 0 ? 'text-shadow:0 0 8px rgba(248,81,73,0.3)' : '';
-
       const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
-      const oddsNum = parseFloat(odds.replace('+', ''));
-      const isFavorite = odds.startsWith('-');
-      const isHeavyFav = isFavorite && Math.abs(oddsNum) >= 500;
-      const oddsColor = isHeavyFav ? 'var(--gold-bright)' : isFavorite ? 'white' : 'var(--text-secondary)';
-      const oddsGlow = isHeavyFav ? 'text-shadow:0 0 8px rgba(212,160,23,0.4)' : '';
-      const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
 
-      const expanded = state._expandedPlayer === p.name;
+      html += `<div style="display:flex;align-items:center;padding:14px 16px;background:${rowBg};border-left:3px solid ${isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)'};border-bottom:1px solid rgba(197,160,89,0.08)">
 
-      // Card styles — Heritage Sporting Ethos: ivory cards with gold ghost borders
-      const cardBg = isLeader
-        ? 'background:#FFFFFF;border:1px solid rgba(197,160,89,0.3);border-top:3px solid #C5A059;box-shadow:0 4px 16px rgba(197,160,89,0.1)'
-        : 'background:#FFFFFF;border:1px solid rgba(197,160,89,0.15);border-top:2px solid #C5A059;box-shadow:0 4px 16px rgba(27,48,34,0.06)';
-
-      // Position badge
-      const badgeBg = isLeader ? 'background:#C5A059;color:#FFFFFF' : isTop3 ? 'background:transparent;border:1.5px solid #C5A059;color:#C5A059' : 'background:transparent;border:1.5px solid rgba(197,160,89,0.3);color:#8A8A85';
-
-      // To-par size — massive for leader, large for others
-      const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
-
-      // Heritage theme score colors — dark text on ivory
-      const ltToParColor = p.toPar === null ? '#8A8A85' : p.toPar < 0 ? '#C5A059' : p.toPar > 0 ? '#DC2626' : '#1C1C19';
-      const ltMoneyColor = p.money > 0 ? '#16A34A' : p.money < 0 ? '#DC2626' : '#8A8A85';
-
-      // COLLAPSED: Card per player — Heritage ivory card
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(p.name)}')" style="${cardBg};border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
-            <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
-            <span style="font-family:'Playfair Display',Georgia,serif;font-size:${isLeader ? '18px' : '17px'};font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-            <span style="font-family:'SF Mono','Fira Code',monospace;${toParSize};color:${ltToParColor}">${toParStr}</span>
-            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${isFavorite ? '#C5A059' : 'rgba(197,160,89,0.3)'};background:${isFavorite ? 'rgba(197,160,89,0.08)' : '#FDFCF9'};color:${isHeavyFav ? '#C5A059' : isFavorite ? '#1C1C19' : '#8A8A85'};font-family:'SF Mono','Fira Code',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
-          </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
         </div>
-        <div style="display:flex;align-items:center;margin-left:38px;margin-top:6px">
-          <div style="display:flex;gap:12px;flex:1;font-size:13px;font-family:'SF Mono','Fira Code',monospace">
-            <span style="color:${ltMoneyColor};font-weight:800">${moneyStr}</span>
-            <span style="color:${p.skins > 0 ? '#C5A059' : '#8A8A85'};font-weight:600">${p.skins} skin${p.skins !== 1 ? 's' : ''}</span>
-            <span style="color:#4A4A45;font-weight:500">Thru ${p.thru}</span>
-          </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A8A85" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>`;
 
-      // EXPANDED: Betting detail (only if tapped)
-      if (expanded) {
-        html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(197,160,89,0.15);margin-left:30px">`;
+        <div style="min-width:40px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:20px;font-weight:800;color:${toParColor};margin-right:12px">${toParStr}</div>
 
-        // Nassau detail
-        if (games.nassau) {
-          const nassauFStr2 = p.nassauFront !== null ? (p.nassauFront <= 0 ? String(p.nassauFront === 0 ? 'E' : p.nassauFront) : '+' + p.nassauFront) : '--';
-          const nassauBStr2 = p.nassauBack !== null ? (p.nassauBack <= 0 ? String(p.nassauBack === 0 ? 'E' : p.nassauBack) : '+' + p.nassauBack) : '--';
-          html += `<div style="font-size:12px;color:#4A4A45;margin-bottom:4px;font-family:'Inter',sans-serif">Nassau: Front ${nassauFStr2} | Back ${nassauBStr2}</div>`;
-        }
+        <div style="min-width:45px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:13px;color:#8A8A85;margin-right:12px">${odds}</div>
 
-        // Press button (if behind leader)
-        const autoPress = config?.structure?.autoPress;
-        if (autoPress?.enabled && games.nassau && !isLeader) {
-          const nassauState = gameState?.nassau?.running;
-          if (nassauState) {
-            const playerNassau = nassauState[p.name];
-            const leaderNassau = Object.values(nassauState).sort((a, b) => {
-              const aT = typeof a === 'object' ? a.total : a;
-              const bT = typeof b === 'object' ? b.total : b;
-              return (aT || 0) - (bT || 0);
-            })[0];
-            const leaderTotal2 = typeof leaderNassau === 'object' ? leaderNassau.total : leaderNassau;
-            const playerTotal = typeof playerNassau === 'object' ? playerNassau.total : playerNassau;
-            if (playerTotal && leaderTotal2 && (playerTotal - leaderTotal2) >= autoPress.threshold) {
-              html += `<button onclick="event.stopPropagation();window.MG.pressNassau('${escHtml(p.name)}')" style="width:100%;padding:10px;margin:6px 0;background:#C5A059;color:#FFFFFF;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Press \u2014 Double to $${nassauBetAmt * 2}</button>`;
-            }
-          }
-        }
+        <div style="min-width:55px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:15px;font-weight:700;color:${moneyColor};margin-right:12px">${moneyStr}</div>
 
-        // Over/Under for this player
-        if (scoredHoles.length > 0 && p.gross !== null) {
-          const pace = Math.round((p.gross / scoredHoles.length) * holesPerRound);
-          const ouLine = Math.round(72 + (p.hi || 0) + 0.5);
-          html += `<div style="font-size:12px;color:#4A4A45;margin-bottom:4px;font-family:'Inter',sans-serif">O/U ${ouLine}.5 gross (pace: ${pace})</div>`;
-        }
+        <div style="min-width:50px;text-align:center">
+          <div style="font-size:16px;font-weight:700;color:#1C1C19">${p.skins}</div>
+          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase;letter-spacing:0.5px">${p.skins === 1 ? 'skin' : 'skins'}</div>
+        </div>
 
-        // H2H moneylines vs each other player (real ML table)
-        if (standingsData.length >= 2) {
-          html += `<div style="margin-top:6px;margin-bottom:4px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C5A059;margin-bottom:4px;font-family:'Inter',sans-serif">H2H Moneylines</div>`;
-          standingsData.forEach((opp, j) => {
-            if (j === i) return;
-            const myHcp = p.hi ?? 0;
-            const oppHcp = opp.hi ?? 0;
-            const h2h = h2hOdds(myHcp, oppHcp);
-            const h2hFav = h2h.startsWith('-');
-            const h2hColor = h2hFav ? '#C5A059' : '#8A8A85';
-            const label = h2hFav ? 'fav' : 'dog';
-            html += `<div style="display:flex;justify-content:space-between;font-size:12px;font-family:'SF Mono','Fira Code',monospace;padding:1px 0">
-              <span style="color:#4A4A45">vs ${escHtml(opp.name.split(' ')[0])}</span>
-              <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(p.name)} vs ${escHtml(opp.name.split(' ')[0])}','h2h','${h2h}')" style="padding:2px 6px;border-radius:4px;border:1px solid rgba(197,160,89,0.15);background:#FDFCF9;color:${h2hColor};font-family:'SF Mono','Fira Code',monospace;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${h2h} <span style="font-size:10px;opacity:0.6">(${label})</span></button>
-            </div>`;
-          });
-          html += `</div>`;
-        }
-
-        // Lay Action button
-        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(p.name)}')" style="width:100%;padding:8px;margin-top:6px;background:transparent;border:1.5px solid rgba(197,160,89,0.3);border-radius:8px;color:#C5A059;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Lay Action on ${escHtml(p.name.split(' ')[0])}</button>`;
-
-        html += `</div>`;
-      }
-
-      html += `</div>`;
+        <div style="min-width:50px;text-align:right;font-size:12px;color:#8A8A85">Thru ${p.thru}</div>
+      </div>`;
     });
+
+    html += `</div>`;
 
     // Add Player inline (admin only)
     if (state.adminAuthed) {
@@ -2350,8 +2253,6 @@ export function renderRoundFeed(state) {
       <span>Total: $${totalPot}</span>
       <span>${holesRemaining} holes remaining</span>
     </div>`;
-
-    html += `</div>`;
   } else if (scoredHoles.length === 0 && players.length >= 2) {
     // ================================================================
     // SECTION 7: PRE-MATCH ACTION (when scoredHoles === 0)
