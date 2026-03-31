@@ -211,7 +211,7 @@
       roster: [], teamsPerFlight: 6, flights: [], pairings: {},
       dayRounds: {}, // { 'YYYY-MM-DD': [{time:'9:00 AM'}], ... } — keyed by actual date
       scoring: { totalPointsPerMatch:10, capMax:7, capMin:3, holesPerMatch:9, handicapAllowance:0.85 },
-      structure: { nassauBet: 10, skinsBet: 5 }, // per-game stakes
+      structure: { nassauBet: 10, skinsBet: 5, stablefordBet: 5, matchPlayBet: 10, bankerBet: 5, bingoBet: 5, wolfBet: 5 }, // per-game stakes
       autoPress: { enabled: false, threshold: 2 }, // auto-press when N-down in Nassau
       features: { betting:true, calcutta:false, shootout:false, shareButtons:true },
       games: { skins:false, nassau:false, wolf:false, vegas:false, stableford:false, match_play:false, stroke_play:false, banker:false, bloodsome:false, bingo:false, nines:false, scramble:false },
@@ -974,6 +974,61 @@
           </div>
           ` : ''}
 
+          ${W.games.stableford ? `
+          <div style="margin-top:8px;padding:12px;background:#f9f9f9;border-radius:8px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">Stableford — per point difference</div>
+            <div style="display:flex;gap:8px">
+              ${[2,5,10,25].map(n => `
+              <button onclick="W.structure.stablefordBet=${n};render()"
+                style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.stablefordBet===n?'var(--green)':'var(--border)'};background:${W.structure.stablefordBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.stablefordBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${W.games.match_play ? `
+          <div style="margin-top:8px;padding:12px;background:#f9f9f9;border-radius:8px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">Match Play — per point</div>
+            <div style="display:flex;gap:8px">
+              ${[5,10,20,50].map(n => `
+              <button onclick="W.structure.matchPlayBet=${n};render()"
+                style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.matchPlayBet===n?'var(--green)':'var(--border)'};background:${W.structure.matchPlayBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.matchPlayBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${W.games.banker ? `
+          <div style="margin-top:8px;padding:12px;background:#f9f9f9;border-radius:8px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">Banker — per unit</div>
+            <div style="display:flex;gap:8px">
+              ${[2,5,10,25].map(n => `
+              <button onclick="W.structure.bankerBet=${n};render()"
+                style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.bankerBet===n?'var(--green)':'var(--border)'};background:${W.structure.bankerBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.bankerBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${W.games.bingo ? `
+          <div style="margin-top:8px;padding:12px;background:#f9f9f9;border-radius:8px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">Bingo Bango Bongo — per point</div>
+            <div style="display:flex;gap:8px">
+              ${[2,5,10].map(n => `
+              <button onclick="W.structure.bingoBet=${n};render()"
+                style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.bingoBet===n?'var(--green)':'var(--border)'};background:${W.structure.bingoBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.bingoBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${W.games.wolf ? `
+          <div style="margin-top:8px;padding:12px;background:#f9f9f9;border-radius:8px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">Wolf — per point</div>
+            <div style="display:flex;gap:8px">
+              ${[2,5,10,25].map(n => `
+              <button onclick="W.structure.wolfBet=${n};render()"
+                style="flex:1;padding:10px 4px;border-radius:8px;border:2px solid ${W.structure.wolfBet===n?'var(--green)':'var(--border)'};background:${W.structure.wolfBet===n?'#f0f7f2':'var(--white)'};font-size:14px;font-weight:700;color:${W.structure.wolfBet===n?'var(--green)':'var(--text)'};cursor:pointer">$${n}</button>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
           ${W.games.scramble ? `
           <div style="margin-top:16px;margin-bottom:16px;padding:16px;background:var(--white);border:1.5px solid var(--green);border-radius:12px">
             <label style="margin-bottom:4px">Scramble Teams</label>
@@ -1309,6 +1364,11 @@
           roundDays:buildRoundDays(),roundTimes:buildRoundTimes(),
           nassauBet: isBuddiesTrip() ? (W.structure?.nassauBet || 10) : undefined,
           skinsBet: isBuddiesTrip() ? (W.structure?.skinsBet || 5) : undefined,
+          stablefordBet: (isBuddiesTrip() && W.games.stableford) ? (W.structure?.stablefordBet || 5) : undefined,
+          matchPlayBet: (isBuddiesTrip() && W.games.match_play) ? (W.structure?.matchPlayBet || 10) : undefined,
+          bankerBet: (isBuddiesTrip() && W.games.banker) ? (W.structure?.bankerBet || 5) : undefined,
+          bingoBet: (isBuddiesTrip() && W.games.bingo) ? (W.structure?.bingoBet || 5) : undefined,
+          wolfBet: (isBuddiesTrip() && W.games.wolf) ? (W.structure?.wolfBet || 5) : undefined,
           autoPress: W.autoPress.enabled ? { enabled: true, threshold: W.autoPress.threshold } : undefined,
         },
         flightOrder,flights,teams,pairings:W.pairings,
@@ -1762,7 +1822,7 @@
         </div>
         ${!anyGame?`<div style="padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;margin-top:4px">Pick at least one game to continue</div>`:''}
 
-        ${nassauOn || skinsOn ? `
+        ${anyGame ? `
         <div style="margin-top:20px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px">
           <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Stakes per game</div>
           ${nassauOn ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1774,12 +1834,57 @@
                 style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
             </div>
           </div>` : ''}
-          ${skinsOn ? `<div style="display:flex;align-items:center;justify-content:space-between">
+          ${skinsOn ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div><div style="font-size:14px;font-weight:600">Skins</div><div style="font-size:11px;color:var(--muted)">Per skin (carries over on ties)</div></div>
             <div style="display:flex;align-items:center;gap:6px">
               <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
               <input type="number" min="1" max="500" value="${W.structure.skinsBet||5}"
                 oninput="W.structure.skinsBet=parseInt(this.value)||5"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${W.games.stableford ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Stableford</div><div style="font-size:11px;color:var(--muted)">Per point difference</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.stablefordBet||5}"
+                oninput="W.structure.stablefordBet=parseInt(this.value)||5"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${W.games.match_play ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Match Play</div><div style="font-size:11px;color:var(--muted)">Per point</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.matchPlayBet||10}"
+                oninput="W.structure.matchPlayBet=parseInt(this.value)||10"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${W.games.banker ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Banker</div><div style="font-size:11px;color:var(--muted)">Per unit</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.bankerBet||5}"
+                oninput="W.structure.bankerBet=parseInt(this.value)||5"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${W.games.bingo ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Bingo Bango Bongo</div><div style="font-size:11px;color:var(--muted)">Per point</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.bingoBet||5}"
+                oninput="W.structure.bingoBet=parseInt(this.value)||5"
+                style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
+            </div>
+          </div>` : ''}
+          ${W.games.wolf ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div><div style="font-size:14px;font-weight:600">Wolf</div><div style="font-size:11px;color:var(--muted)">Per point</div></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:16px;font-weight:700;color:var(--muted)">$</span>
+              <input type="number" min="1" max="500" value="${W.structure.wolfBet||5}"
+                oninput="W.structure.wolfBet=parseInt(this.value)||5"
                 style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
             </div>
           </div>` : ''}

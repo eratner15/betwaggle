@@ -708,8 +708,7 @@ function persist() {
   delete toSave._barOpen;
   delete toSave._gamesOpen;
   delete toSave._boardSubTab;
-  delete toSave._oddsBetSlip;
-  delete toSave._oddsBetSlipAmount;
+  // _oddsBetSlip removed
   delete toSave._inlineScoreStats;
   save(toSave);
 
@@ -1809,27 +1808,58 @@ window.MG = {
     refresh();
   },
 
-  async pressNassau(playerName) {
+  async autoPress(playerName) {
     if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-    const config = state._config;
-    const structure = config?.structure || {};
-    const nassauBet = parseInt(structure?.nassauBet) || 10;
 
-    // Create a prop for the press
+    const config = state._config;
+    const nassauBet = parseInt(config?.structure?.nassauBet) || 10;
+
+    // Auto-press: just record it, no acceptance needed
+    try {
+      const result = await Sync.apiFetch('event/press', 'POST', {
+        player: playerName,
+        hole: state._inlineScore?.hole || 1,
+        bet: nassauBet
+      });
+
+      if (result?.ok) {
+        window.MG.toast(`${playerName.split(' ')[0]} pressed! Stakes doubled.`);
+        await syncFromServer();
+      } else {
+        window.MG.toast('Press failed');
+      }
+    } catch(e) {
+      window.MG.toast('Press failed');
+    }
+    route();
+  },
+
+  async quickSideBet(type, hole, player, amount) {
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    const descriptions = {
+      birdie_streak: `${player.split(' ')[0]} birdies #${hole} — back-to-back`,
+      par3_green: `Green hit on par 3 #${hole}`,
+      skin_streak: `${player.split(' ')[0]} wins skin on #${hole}`,
+    };
+
     try {
       await Sync.createProp({
-        type: 'press',
-        description: `${playerName} presses — Nassau doubles to $${nassauBet * 2}`,
-        amount: nassauBet * 2,
-        creator: playerName,
-        parties: [],
-        roundNumber: config?.event?.currentRound || 1
+        type: 'side_bet',
+        description: descriptions[type] || `Side bet: ${type} on #${hole}`,
+        amount,
+        creator: state.bettorName || 'Anonymous',
+        parties: player ? [player] : [],
+        roundNumber: state._config?.event?.currentRound || 1,
+        settlementHole: hole,
+        betType: type
       });
-      window.MG.toast(`${playerName} pressed! Stakes doubled.`);
+      window.MG.toast(`Side bet posted: $${amount}`);
       await syncFromServer();
     } catch(e) {
-      window.MG.toast('Press failed — try again');
+      window.MG.toast('Failed');
     }
+    route();
   },
 
   async saveVegasTeams() {
@@ -3511,51 +3541,7 @@ window.MG = {
     }
   },
 
-  // ── Odds Bet Slip (DraftKings-style) ──
-  openOddsBetSlip(player, betType, odds) {
-    state._oddsBetSlip = { player, betType, odds };
-    state._oddsBetSlipAmount = '';
-    if (navigator.vibrate) navigator.vibrate(30);
-    route();
-  },
-
-  closeOddsBetSlip() {
-    state._oddsBetSlip = null;
-    state._oddsBetSlipAmount = '';
-    route();
-  },
-
-  setOddsBetAmount(amount) {
-    state._oddsBetSlipAmount = amount;
-    route();
-  },
-
-  async placeOddsBet() {
-    if (!state._oddsBetSlip || !state._oddsBetSlipAmount) return;
-    const { player, betType, odds } = state._oddsBetSlip;
-    const amount = parseInt(state._oddsBetSlipAmount);
-    if (!amount || amount <= 0) return;
-
-    if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-
-    try {
-      await Sync.createProp({
-        type: 'side_bet',
-        description: `${player} ${betType === 'to_win' ? 'to win' : 'H2H'} at ${odds} — $${amount}`,
-        amount: amount,
-        creator: state.bettorName || 'Anonymous',
-        parties: [player],
-        roundNumber: state._config?.event?.currentRound || 1
-      });
-      toast(`Locked in: $${amount} on ${player.split(' ')[0]} at ${odds}`);
-      state._oddsBetSlip = null;
-      state._oddsBetSlipAmount = '';
-      await syncFromServer();
-    } catch(e) {
-      toast('Failed to place bet');
-    }
-    route();
-  },
+  // Odds bet slip removed — use quickSideBet instead
 
   // ── Calcutta Auction ──
   async calcuttaStart() {
