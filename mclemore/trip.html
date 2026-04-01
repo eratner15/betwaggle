@@ -171,46 +171,69 @@
       <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133 · $1,611/person</div>
     </div>
 
-    <!-- PER-ROUND NAVIGATION -->
+    <!-- PER-ROUND SCORECARDS (expandable) -->
     <div class="section-head">
       <h2>Scorecards</h2>
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+
+    <!-- Day 1 Scorecard — The Keep -->
+    <details class="round-card" style="cursor:pointer">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
         <div>
-          <div style="font-size:14px;font-weight:700">Day 1 · Best Ball</div>
-          <div style="font-size:11px;color:var(--muted)">The Keep · Match Play Card</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dk)">Day 1 · Best Ball</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Keep</div>
+          <div style="font-size:11px;color:var(--muted)">Par 72 · 6,343 yds · White tees</div>
         </div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
         </div>
-      </a>
-      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r1"></div>
+    </details>
+
+    <!-- Day 2 Scorecard — Highlands -->
+    <details class="round-card" style="cursor:pointer;margin-top:10px">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
         <div>
-          <div style="font-size:14px;font-weight:700">Day 2 · Scramble</div>
-          <div style="font-size:11px;color:var(--muted)">Highlands · Team Scorecard</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green-mid)">Day 2 · Scramble</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Highlands</div>
+          <div style="font-size:11px;color:var(--muted)">Par 71 · 6,238 yds · White tees</div>
         </div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
         </div>
-      </a>
-      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r2"></div>
+    </details>
+
+    <!-- Day 3 Scorecard — The Keep -->
+    <details class="round-card" style="cursor:pointer;margin-top:10px">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
         <div>
-          <div style="font-size:14px;font-weight:700">Day 3 · Wolf + Skins</div>
-          <div style="font-size:11px;color:var(--muted)">The Keep · Modified Format</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#2563EB">Day 3 · Wolf + Skins</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Keep</div>
+          <div style="font-size:11px;color:var(--muted)">Par 72 · 6,343 yds · White tees</div>
         </div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:4px;align-items:center">
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
           <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
         </div>
-      </a>
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r3"></div>
+    </details>
+
+    <div style="margin-top:16px;text-align:center">
+      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:inline-block;padding:12px 24px;background:var(--green);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">Open Live Board →</a>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">Live scoring starts Thursday at 2:30 · PIN: 2026</div>
     </div>
-    <div style="text-align:center;font-size:12px;color:var(--muted)">Live scoring starts Thursday at 2:30 · PIN: 2026</div>
   </div>
 
   <button class="btn-share" onclick="shareTrip()">Share with the Group</button>
@@ -381,6 +404,97 @@
         <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">Wolf Hammer on holes 17 & 18 (4x stakes)</div>`;
     }
     renderR3();
+
+    // ── Scorecards (rendered on expand) ──
+    function renderScorecard(containerId, courseKey, teeKey) {
+      const el = document.getElementById(containerId);
+      if (el.dataset.rendered) return;
+      el.dataset.rendered = '1';
+
+      const course = COURSES[courseKey];
+      const tee = course.tees[teeKey] || course.tees['White'] || course.tees['Blue'];
+      const pars = course.pars;
+      const yards = tee.yardage;
+      const hcp = course.hcpIndex;
+
+      function parColor(p) { return p === 3 ? 'color:var(--loss)' : p === 5 ? 'color:var(--green)' : ''; }
+
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono);min-width:460px">`;
+
+      // Front 9
+      html += `<tr style="background:var(--green);color:#fff">
+        <td style="padding:6px 8px;font-weight:800;font-size:10px;letter-spacing:0.5px">HOLE</td>
+        ${pars.slice(0,9).map((_,i) => `<td style="padding:6px 4px;text-align:center;font-weight:700">${i+1}</td>`).join('')}
+        <td style="padding:6px 4px;text-align:center;font-weight:800;background:rgba(0,0,0,0.15)">OUT</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">PAR</td>
+        ${pars.slice(0,9).map(p => `<td style="padding:5px 4px;text-align:center;font-weight:700;${parColor(p)}">${p}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:800">${pars.slice(0,9).reduce((s,p)=>s+p,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--white)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">YDS</td>
+        ${yards.slice(0,9).map(y => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${y}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:700">${yards.slice(0,9).reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">HCP</td>
+        ${hcp.slice(0,9).map(h => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${h}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center"></td>
+      </tr>`;
+
+      // Back 9
+      html += `<tr style="background:var(--green);color:#fff;border-top:2px solid var(--gold)">
+        <td style="padding:6px 8px;font-weight:800;font-size:10px;letter-spacing:0.5px">HOLE</td>
+        ${pars.slice(9,18).map((_,i) => `<td style="padding:6px 4px;text-align:center;font-weight:700">${i+10}</td>`).join('')}
+        <td style="padding:6px 4px;text-align:center;font-weight:800;background:rgba(0,0,0,0.15)">IN</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">PAR</td>
+        ${pars.slice(9,18).map(p => `<td style="padding:5px 4px;text-align:center;font-weight:700;${parColor(p)}">${p}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:800">${pars.slice(9,18).reduce((s,p)=>s+p,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--white)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">YDS</td>
+        ${yards.slice(9,18).map(y => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${y}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:700">${yards.slice(9,18).reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">HCP</td>
+        ${hcp.slice(9,18).map(h => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${h}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center"></td>
+      </tr>`;
+
+      // Total row
+      html += `<tr style="background:var(--green);color:var(--gold)">
+        <td style="padding:8px;font-weight:800;font-size:11px">TOTAL</td>
+        <td colspan="9" style="text-align:right;padding:8px;font-weight:800;font-size:14px">Par ${pars.reduce((s,p)=>s+p,0)}</td>
+        <td style="text-align:center;padding:8px;font-weight:800;font-size:14px">${yards.reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+
+      html += '</table>';
+
+      // Course info
+      html += `<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted)">
+        <span>Rating: ${tee.rating} · Slope: ${tee.slope}</span>
+        <span>${teeKey} Tees</span>
+      </div>`;
+
+      el.innerHTML = html;
+    }
+
+    // Lazy-render scorecards on expand
+    document.querySelectorAll('details').forEach((d, i) => {
+      d.addEventListener('toggle', () => {
+        if (!d.open) return;
+        const map = [
+          ['scorecard-r1', 'keep', 'White'],
+          ['scorecard-r2', 'highlands', 'Member'],  // Highlands White = Member tees
+          ['scorecard-r3', 'keep', 'White']
+        ];
+        if (map[i]) renderScorecard(...map[i]);
+      });
+    });
 
     // ── Share ──
     function shareTrip() {
