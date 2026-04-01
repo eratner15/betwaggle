@@ -3736,6 +3736,16 @@ async function serveEventHtml(slug, request, env) {
 </body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
+  // McLemore trip hub redirect — in pre-trip mode, redirect to the premium trip page
+  // Once scoring starts (holes exist), fall through to normal SPA
+  if (slug.startsWith('mclemore-2026')) {
+    const holesRaw = await env.MG_BOOK.get(`${slug}:holes`, 'text');
+    const hasScores = holesRaw && holesRaw !== '{}' && holesRaw !== 'null';
+    if (!hasScores) {
+      return Response.redirect('https://betwaggle.com/mclemore/trip.html', 302);
+    }
+  }
+
   const reqUrl = new URL(request.url);
   const isPaid = reqUrl.searchParams.get('paid') === '1';
   const gadsId = env.WAGGLE_GADS_ID || '';
