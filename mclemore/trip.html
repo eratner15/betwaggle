@@ -460,50 +460,58 @@
     }
     renderRoster();
 
-    // ── Head-to-Head Odds for a 2-team matchup ──
-    // Lower combined HCP = favorite. Odds based on HCP difference.
-    // Favorite pays odds to dog. Dog risks $100 to win.
-    function h2hOdds(teamA, teamB) {
+    // ── Head-to-Head Matchup with clear settlement ──
+    // The bet is $20/person. Odds determine WHO pays WHAT.
+    function renderMatchup(teamA, teamB) {
       const avgA = teamA.players.reduce((s, p) => s + p.hcp, 0) / teamA.players.length;
       const avgB = teamB.players.reduce((s, p) => s + p.hcp, 0) / teamB.players.length;
       const diff = Math.abs(avgA - avgB);
-      const aIsFav = avgA < avgB;
+      const aIsFav = avgA <= avgB;
+      const fav = aIsFav ? { ...teamA, avgHcp: avgA } : { ...teamB, avgHcp: avgB };
+      const dog = aIsFav ? { ...teamB, avgHcp: avgB } : { ...teamA, avgHcp: avgA };
 
-      // Convert HCP difference to moneyline
-      // 0 diff = pick'em (-110), 1-2 diff = small fav, 3-5 = moderate, 6+ = heavy
-      let favML, dogML;
-      if (diff < 0.5) { favML = '-110'; dogML = '-110'; } // pick'em
-      else if (diff < 1.5) { favML = '-130'; dogML = '+110'; }
-      else if (diff < 3) { favML = '-160'; dogML = '+140'; }
-      else if (diff < 5) { favML = '-200'; dogML = '+170'; }
-      else { favML = '-250'; dogML = '+210'; }
+      // Bet amount per person
+      const bet = 20;
+      // Favorite pays MORE if they lose (they're expected to win)
+      // Dog pays LESS if they lose (they're the underdog)
+      let favPays, dogPays;
+      if (diff < 0.5) { favPays = bet; dogPays = bet; } // even
+      else if (diff < 1.5) { favPays = 25; dogPays = 15; }
+      else if (diff < 3) { favPays = 30; dogPays = 15; }
+      else if (diff < 5) { favPays = 35; dogPays = 10; }
+      else { favPays = 40; dogPays = 10; }
 
-      return {
-        a: { ...teamA, avgHcp: avgA, ml: aIsFav ? favML : dogML, isFav: aIsFav },
-        b: { ...teamB, avgHcp: avgB, ml: aIsFav ? dogML : favML, isFav: !aIsFav }
-      };
-    }
-
-    function renderMatchup(teamA, teamB) {
-      const { a, b } = h2hOdds(teamA, teamB);
-      return [a, b].map(t => {
-        const mlNum = parseInt(t.ml);
-        // Explain the payout: fav pays odds on $100, dog risks $100
-        const payout = t.isFav
-          ? `Risk $${Math.abs(mlNum)} to win $100`
-          : `Risk $100 to win $${mlNum > 0 ? mlNum : Math.abs(mlNum)}`;
-        return `<div class="team-row ${t.isFav ? 'favored' : ''}">
+      return `
+        <div class="team-row favored">
           <div>
-            <div class="team-name">${t.isFav ? '⭐ ' : ''}${t.name}</div>
-            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+            <div class="team-name">⭐ ${fav.name} <span style="font-size:11px;font-weight:500;color:var(--muted)">(favorite)</span></div>
+            <div class="team-players">${fav.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
           </div>
-          <div style="text-align:right">
-            <div class="team-odds ${t.isFav ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
-            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px">${payout}</div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="team-hcp">avg ${fav.avgHcp.toFixed(1)}</div>
           </div>
+        </div>
+        <div class="team-row">
+          <div>
+            <div class="team-name">${dog.name} <span style="font-size:11px;font-weight:500;color:var(--muted)">(underdog)</span></div>
+            <div class="team-players">${dog.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="team-hcp">avg ${dog.avgHcp.toFixed(1)}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6">
+          <div style="font-weight:700;color:var(--dark);margin-bottom:4px">💰 Settlement</div>
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>If <strong>${fav.name.split(' / ')[0]}'s team</strong> wins:</span>
+            <span style="font-family:var(--mono);font-weight:700;color:var(--win)">Dog pays $${dogPays}/person</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>If <strong>${dog.name.split(' / ')[0]}'s team</strong> wins:</span>
+            <span style="font-family:var(--mono);font-weight:700;color:var(--win)">Fav pays $${favPays}/person</span>
+          </div>
+          ${diff < 0.5 ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Pick\'em — even money, no edge.</div>' : `<div style="font-size:11px;color:var(--muted);margin-top:2px">Favorite risks more ($${favPays}) because they have the better team.</div>`}
         </div>`;
-      }).join('');
     }
 
     // ── Round 1: Best Ball (shuffle-able) ──
