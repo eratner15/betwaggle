@@ -4979,6 +4979,20 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const existing = (await env.MG_BOOK.get(`${K}:settings`, 'json')) || {};
     const merged = { ...existing, ...body };
     await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(merged));
+
+    // If players/roster updated, also update the base config so config.json reflects changes
+    if (body.players || body.roster) {
+      try {
+        const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+        if (cfgRaw) {
+          const cfg = JSON.parse(cfgRaw);
+          if (body.players) cfg.players = body.players;
+          if (body.roster) cfg.roster = body.roster;
+          await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
+        }
+      } catch {}
+    }
+
     return new Response(JSON.stringify({ ok: true, settings: merged }), { headers: EVENT_CORS });
   }
 
