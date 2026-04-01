@@ -2458,6 +2458,28 @@
       }
     })();
 
+    // Auto-select format from URL params (e.g., ?format=skins&tier=free)
+    (function autoSelectFormat() {
+      const params = new URLSearchParams(window.location.search);
+      const fmt = params.get('format');
+      const tier = params.get('tier');
+      if (!fmt) return;
+      const formatMap = { skins: 'quick', nassau: 'quick', wolf: 'quick', 'match-play': 'quick', scramble: 'scramble' };
+      const gameMap = { skins: 'skins', nassau: 'nassau', wolf: 'wolf', 'match-play': 'match_play' };
+      const type = formatMap[fmt];
+      if (type === 'quick') {
+        // Auto-launch Quick Start with the right game pre-selected
+        _qsType = 'quick';
+        _qsGames = { skins: false, nassau: false, match_play: false, wolf: false };
+        if (gameMap[fmt]) _qsGames[gameMap[fmt]] = true;
+        W.type = 'quick';
+        W.step = 0;
+      } else if (type === 'scramble') {
+        W.type = 'scramble';
+        W.step = 0;
+      }
+    })();
+
     render();
   </script>
 </body>

@@ -101,6 +101,57 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ============================================================
+   OUTDOOR MODE — High contrast for bright sunlight
+   Activated by .outdoor on <body>, toggled via header sun/moon icon
+   ============================================================ */
+body.outdoor {
+  --bg-primary: #0E1A12;
+  --bg-secondary: #162419;
+  --bg-tertiary: #1B3022;
+  --bg-hover: #1B3022;
+  --text-primary: #F5F5F0;
+  --text-secondary: #D4D0C8;
+  --text-tertiary: #A8A498;
+  --page-text: #F5F5F0;
+  --page-text-secondary: #D4D0C8;
+  --page-text-muted: #A8A498;
+  --gold-primary: #E8C55A;
+  --gold-bright: #FFD54F;
+  --gold-muted: rgba(232,197,90,0.2);
+  --border: rgba(232,197,90,0.15);
+  --border-strong: rgba(232,197,90,0.35);
+  --win: #4ADE80;
+  --loss: #FB7185;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
+  --mg-bg: var(--bg-primary);
+  --mg-card-bg: var(--bg-secondary);
+  --mg-surface: var(--bg-secondary);
+  --mg-text: var(--text-primary);
+  --mg-text-secondary: var(--text-secondary);
+  --mg-text-muted: var(--text-tertiary);
+  --mg-border: var(--border);
+  --mg-gold: var(--gold-primary);
+  --mg-gold-dim: var(--gold-muted);
+  --mg-shadow: var(--shadow-sm);
+  --mg-shadow-lg: var(--shadow-lg);
+  --mg-odds-bg: var(--bg-tertiary);
+}
+body.outdoor .mg-header { background: #0A120D; }
+body.outdoor .mg-nav { background: #0A120D; }
+body.outdoor .mg-content { color: var(--text-primary); }
+
+/* Outdoor mode toggle button in header */
+.outdoor-toggle {
+  background: none; border: none; cursor: pointer; padding: 6px;
+  color: rgba(255,255,255,0.6); font-size: 20px; line-height: 1;
+  transition: color 0.2s;
+}
+.outdoor-toggle:hover { color: #C5A059; }
+body.outdoor .outdoor-toggle { color: #FFD54F; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {

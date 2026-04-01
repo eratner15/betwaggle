@@ -329,37 +329,20 @@
 </div>
 </div>
 </section>
-<!-- Bottom Action Bar -->
-<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-[390px] bg-surface-container-lowest/90 backdrop-blur-lg z-[60] border-t border-outline-variant/20 p-4 pb-8">
-<!-- Wolf Hammer Countdown -->
-<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-tertiary-container text-secondary-fixed-dim px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em] shadow-lg flex items-center gap-1.5 whitespace-nowrap">
-<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">gavel</span>
-                WOLF HAMMER in 11 holes
-            </div>
-<button class="w-full bg-primary text-white py-4 rounded-sm font-label text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all">
-                Danny: Make Your Pick
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</button>
+<!-- Bottom CTA Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-[#FCF9F4]/95 backdrop-blur-md z-50 border-t border-[#C5A059]/15" style="padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))">
+<div class="max-w-[420px] mx-auto flex flex-col gap-2">
+<a href="/create/?format=wolf&tier=free" class="w-full h-14 bg-gradient-to-br from-[#1B3022] to-[#304D39] text-white font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 rounded-lg shadow-xl active:scale-95 transition-transform no-underline">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+Play Wolf Free
+</a>
+<div class="flex items-center justify-center gap-4">
+<a href="/demo-buddies/#dashboard" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">See Live Demo</a>
+<span class="text-[#1B3022]/20">|</span>
+<a href="/games/wolf/" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">Read Rules</a>
 </div>
-<!-- Shared Component: BottomNavBar -->
-<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 bg-[#fcf9f4]/85 backdrop-blur-md z-50 border-t border-[#c5a059]/30 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] hidden">
-<div class="flex flex-col items-center justify-center text-[#1b3022] border-t-2 border-[#1b3022] pt-2">
-<span class="material-symbols-outlined" data-icon="leaderboard" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
-<span class="font-sans uppercase tracking-[0.05rem] text-[10px] font-bold">The Board</span>
 </div>
-<div class="flex flex-col items-center justify-center text-stone-400 pt-2">
-<span class="material-symbols-outlined" data-icon="description">description</span>
-<span class="font-sans uppercase tracking-[0.05rem] text-[10px] font-bold">Scorecard</span>
 </div>
-<div class="flex flex-col items-center justify-center text-stone-400 pt-2">
-<span class="material-symbols-outlined" data-icon="local_bar">local_bar</span>
-<span class="font-sans uppercase tracking-[0.05rem] text-[10px] font-bold">The Bar</span>
-</div>
-<div class="flex flex-col items-center justify-center text-stone-400 pt-2">
-<span class="material-symbols-outlined" data-icon="person">person</span>
-<span class="font-sans uppercase tracking-[0.05rem] text-[10px] font-bold">Profile</span>
-</div>
-</nav>
 </main>
 <style>
         .no-scrollbar::-webkit-scrollbar {

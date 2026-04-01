@@ -42,10 +42,12 @@
   </style>
 </head>
 <body>
+  <script>if(localStorage.getItem('waggle-outdoor')==='1')document.body.classList.add('outdoor')</script>
   <header class="mg-header">
     <h1>betwaggle <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;vertical-align:middle;margin-left:6px;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span></h1>
     <div class="mg-subtitle">Turnberry Isle &bull; Soffer Course</div>
     <div id="mg-header-tabs" class="mg-header-tabs"></div>
+    <button class="outdoor-toggle" id="outdoor-toggle" title="Toggle Outdoor Mode" onclick="document.body.classList.toggle('outdoor');localStorage.setItem('waggle-outdoor',document.body.classList.contains('outdoor')?'1':'0')">☀️</button>
   </header>
   <div id="mg-gold-rule-top" style="height:1px;background:linear-gradient(90deg,transparent,#C5A059,transparent)"></div>
 

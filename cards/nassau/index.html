@@ -289,33 +289,18 @@
 </div>
 </section>
 </main>
-<!-- Fixed Bottom Action & NavBar -->
-<div class="fixed bottom-0 left-0 w-full z-50">
-<!-- Floating Action Button -->
-<div class="px-4 pb-4">
-<button class="w-full h-14 bg-tertiary-fixed hover:bg-tertiary-fixed-dim text-on-tertiary-fixed font-label font-bold text-sm tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-<span class="material-symbols-outlined">edit_square</span>
-                ENTER HOLE 7 SCORES
-            </button>
+<!-- Bottom CTA Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-[#FCF9F4]/95 backdrop-blur-md z-50 border-t border-[#C5A059]/15" style="padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))">
+<div class="max-w-[420px] mx-auto flex flex-col gap-2">
+<a href="/create/?format=nassau&tier=free" class="w-full h-14 bg-gradient-to-br from-[#1B3022] to-[#304D39] text-white font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 rounded-lg shadow-xl active:scale-95 transition-transform no-underline">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+Play Nassau Free
+</a>
+<div class="flex items-center justify-center gap-4">
+<a href="/demo-buddies/#dashboard" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">See Live Demo</a>
+<span class="text-[#1B3022]/20">|</span>
+<a href="/games/nassau/" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">Read Rules</a>
 </div>
-<!-- Bottom NavBar (from JSON) -->
-<nav class="w-full h-20 bg-[#FCF9F4] dark:bg-[#1B3022] flex justify-around items-center px-4 pb-safe border-t border-[#C5A059]/15 shadow-[0_-4px_20px_rgba(27,48,34,0.06)]">
-<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-white/60 active:scale-90 transition-all" href="#">
-<span class="material-symbols-outlined">grid_view</span>
-<span class="font-sans text-[10px] font-bold uppercase tracking-wider mt-1">Lobby</span>
-</a>
-<a class="flex flex-col items-center justify-center text-[#1B3022] dark:text-[#39FF14] bg-[#C5A059]/10 rounded-xl px-3 py-1 active:scale-90 transition-all" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sensors</span>
-<span class="font-sans text-[10px] font-bold uppercase tracking-wider mt-1">Live</span>
-</a>
-<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-white/60 active:scale-90 transition-all" href="#">
-<span class="material-symbols-outlined">history</span>
-<span class="font-sans text-[10px] font-bold uppercase tracking-wider mt-1">History</span>
-</a>
-<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-white/60 active:scale-90 transition-all" href="#">
-<span class="material-symbols-outlined">person</span>
-<span class="font-sans text-[10px] font-bold uppercase tracking-wider mt-1">Profile</span>
-</a>
-</nav>
+</div>
 </div>
 </body></html>
