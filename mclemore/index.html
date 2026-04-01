@@ -151,16 +151,36 @@
       <div class="tee-select" id="tee-select"></div>
     </div>
 
-    <!-- SECTION 3: Players -->
+    <!-- SECTION 3: Players (GHIN lookup + manual) -->
     <div class="section">
       <div class="section-label">Step 3</div>
       <h3>Add Players</h3>
-      <p class="desc">One player per line. Format: Name, Handicap, @Venmo (optional)</p>
+
+      <!-- GHIN Lookup -->
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dk);margin-bottom:8px">GHIN Auto-Lookup</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" id="ghin-num" inputmode="numeric" placeholder="GHIN #" style="flex:1;padding:10px 12px;font-size:14px">
+          <input type="text" id="ghin-last" placeholder="Last name" style="flex:1;padding:10px 12px;font-size:14px">
+          <button onclick="lookupGhin()" style="padding:10px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Look Up</button>
+        </div>
+        <div id="ghin-result" style="font-size:13px;min-height:20px"></div>
+      </div>
+
+      <p class="desc">Or paste players manually. Format: Name, Handicap, @Venmo</p>
       <textarea id="players" placeholder="Brian Kunis, 14.2, @briankunis
 Mike Smith, 8.5, @mikesmith
 John Doe, 18.0
 Dave Wilson, 12.3, @davewilson"></textarea>
       <div class="player-preview" id="player-preview" style="display:none"></div>
+    </div>
+
+    <!-- SECTION 3.5: AI Recommendations -->
+    <div class="section" id="ai-recs" style="display:none">
+      <div class="section-label">AI Assistant</div>
+      <h3>Recommended Setup</h3>
+      <p class="desc">Based on your group's handicaps, here's what we suggest.</p>
+      <div id="ai-recs-content"></div>
     </div>
 
     <!-- SECTION 4: Games & Stakes -->
@@ -427,6 +447,119 @@ Dave Wilson, 12.3, @davewilson"></textarea>
       btn.disabled = false;
       btn.textContent = 'Create Event →';
     }
+
+    // ── GHIN Lookup ──
+    async function lookupGhin() {
+      const num = document.getElementById('ghin-num').value.trim();
+      const last = document.getElementById('ghin-last').value.trim();
+      const resultEl = document.getElementById('ghin-result');
+      if (!num) { resultEl.innerHTML = '<span style="color:var(--loss)">Enter a GHIN number</span>'; return; }
+      resultEl.innerHTML = '<span style="color:var(--muted)">Looking up...</span>';
+      try {
+        const res = await fetch(`/api/ghin-lookup?ghin=${encodeURIComponent(num)}&last_name=${encodeURIComponent(last)}`);
+        const data = await res.json();
+        if (data.error) { resultEl.innerHTML = `<span style="color:var(--loss)">${data.error}</span>`; return; }
+        resultEl.innerHTML = `<span style="color:var(--win);font-weight:700">${data.name} &middot; HI: ${data.handicapIndex}${data.club ? ' &middot; ' + data.club : ''}</span>
+          <button onclick="addGhinPlayer('${data.name.replace(/'/g,"\\'")}',${data.handicapIndex})" style="margin-left:8px;padding:4px 12px;background:var(--gold);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>`;
+      } catch(e) {
+        resultEl.innerHTML = '<span style="color:var(--loss)">Lookup failed — try manually</span>';
+      }
+    }
+
+    function addGhinPlayer(name, hcp) {
+      const ta = document.getElementById('players');
+      const current = ta.value.trim();
+      const newLine = `${name}, ${hcp}`;
+      ta.value = current ? current + '\n' + newLine : newLine;
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      document.getElementById('ghin-num').value = '';
+      document.getElementById('ghin-last').value = '';
+      document.getElementById('ghin-result').innerHTML = '<span style="color:var(--win)">Added!</span>';
+      // Trigger AI recs after adding players
+      setTimeout(generateAIRecs, 300);
+    }
+
+    // ── AI Recommendations ──
+    function generateAIRecs() {
+      const players = parsePlayers(document.getElementById('players').value);
+      if (players.length < 2) { document.getElementById('ai-recs').style.display = 'none'; return; }
+
+      const hcps = players.map(p => p.handicapIndex);
+      const avgHcp = hcps.reduce((s, h) => s + h, 0) / hcps.length;
+      const maxHcp = Math.max(...hcps);
+      const minHcp = Math.min(...hcps);
+      const spread = maxHcp - minHcp;
+
+      // Tee recommendation based on average handicap
+      let recTee, teeReason;
+      if (avgHcp <= 5) { recTee = 'Blue'; teeReason = 'Low handicap group — tips will challenge everyone'; }
+      else if (avgHcp <= 12) { recTee = 'White'; teeReason = 'Mid-handicap group — White tees keep it competitive without being punishing'; }
+      else if (avgHcp <= 20) { recTee = 'Green'; teeReason = 'Higher handicaps — Green tees make the course more enjoyable'; }
+      else { recTee = 'Forward'; teeReason = 'Keep it fun — Forward tees let everyone reach greens in regulation'; }
+
+      // Game recommendations based on spread and group size
+      let recGames = [];
+      // Skins — always fun with any group
+      recGames.push({ game: 'Skins', reason: 'Always exciting — carryovers create drama on every hole', rec: true });
+
+      // Nassau — great when handicaps are close
+      if (spread <= 10) {
+        recGames.push({ game: 'Nassau', reason: `Handicap spread is only ${spread.toFixed(1)} — Nassau will be competitive`, rec: true });
+      } else {
+        recGames.push({ game: 'Nassau', reason: `Handicap spread is ${spread.toFixed(1)} — Nassau may be one-sided. Consider adding strokes.`, rec: false });
+      }
+
+      // Wolf — best with exactly 4 players
+      if (players.length === 4) {
+        recGames.push({ game: 'Wolf', reason: 'Perfect for 4 players — pick your partner or go Lone Wolf', rec: true });
+      } else if (players.length === 3) {
+        recGames.push({ game: 'Wolf', reason: 'Works with 3 but designed for 4', rec: false });
+      }
+
+      // Vegas — fun with even-skill pairs
+      if (players.length >= 4 && players.length % 2 === 0) {
+        recGames.push({ game: 'Vegas', reason: `${players.length} players = ${players.length/2} teams. Vegas is wild with similar handicaps.`, rec: spread <= 8 });
+      }
+
+      // Stableford — great for mixed skill levels
+      if (spread > 10) {
+        recGames.push({ game: 'Stableford', reason: 'Best format for mixed handicaps — rewards good holes, limits blowup damage', rec: true });
+      }
+
+      let html = '';
+
+      // Tee recommendation
+      html += `<div style="background:var(--white);border:1.5px solid ${recTee === selectedTee ? 'var(--win)' : 'var(--border)'};border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--dark)">Tees: <span style="color:var(--gold-dk)">${recTee}</span></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${teeReason}</div>
+          </div>
+          ${recTee !== selectedTee ? `<button onclick="selectTee('${recTee}');renderTees();generateAIRecs()" style="padding:6px 14px;background:var(--gold);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Apply</button>` : `<span style="font-size:11px;font-weight:700;color:var(--win)">Selected</span>`}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Group avg: ${avgHcp.toFixed(1)} HCP &middot; Range: ${minHcp.toFixed(1)} – ${maxHcp.toFixed(1)} &middot; Spread: ${spread.toFixed(1)}</div>
+      </div>`;
+
+      // Game recommendations
+      html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;margin-top:16px">Recommended Games</div>`;
+      recGames.forEach(g => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--dark)">${g.rec ? '✓' : '⚠️'} ${g.game}</div>
+            <div style="font-size:11px;color:var(--muted)">${g.reason}</div>
+          </div>
+        </div>`;
+      });
+
+      document.getElementById('ai-recs-content').innerHTML = html;
+      document.getElementById('ai-recs').style.display = 'block';
+    }
+
+    // Trigger AI recs when players change
+    document.getElementById('players').addEventListener('input', function() {
+      // existing preview logic runs via the other listener
+      setTimeout(generateAIRecs, 300);
+    });
 
     // Init
     renderTees();
