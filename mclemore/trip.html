@@ -171,11 +171,46 @@
       <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133 · $1,611/person</div>
     </div>
 
-    <!-- LINK TO LIVE EVENT -->
-    <div style="margin-top:20px;text-align:center">
-      <a href="/mclemore-2026-e2d420/#dashboard" style="display:inline-block;padding:14px 28px;background:var(--green);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Open The Board →</a>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Live scoring starts Thursday at 2:30</div>
+    <!-- PER-ROUND NAVIGATION -->
+    <div class="section-head">
+      <h2>Scorecards</h2>
     </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+        <div>
+          <div style="font-size:14px;font-weight:700">Day 1 · Best Ball</div>
+          <div style="font-size:11px;color:var(--muted)">The Keep · Match Play Card</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+        </div>
+      </a>
+      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+        <div>
+          <div style="font-size:14px;font-weight:700">Day 2 · Scramble</div>
+          <div style="font-size:11px;color:var(--muted)">Highlands · Team Scorecard</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+        </div>
+      </a>
+      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:var(--dark)">
+        <div>
+          <div style="font-size:14px;font-weight:700">Day 3 · Wolf + Skins</div>
+          <div style="font-size:11px;color:var(--muted)">The Keep · Modified Format</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+        </div>
+      </a>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--muted)">Live scoring starts Thursday at 2:30 · PIN: 2026</div>
   </div>
 
   <button class="btn-share" onclick="shareTrip()">Share with the Group</button>
@@ -318,8 +353,8 @@
             <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
           </div>
         </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center">
-          4-man team gets more shots but 3-man team gets handicap strokes to compensate
+        <div style="margin-top:10px;padding:10px 12px;background:rgba(27,48,34,0.04);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5">
+          <strong style="color:var(--dark)">Scramble rules:</strong> 3-man team gets <strong>1 extra shot per hole</strong> (rotating who takes it). No handicap strokes — pure scramble, just an extra shot to compensate for the missing player.
         </div>`;
     }
     renderR2();
