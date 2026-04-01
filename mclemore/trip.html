@@ -485,51 +485,71 @@
     renderR1();
 
     // ── Round 2: Scramble 4v3 ──
+    // R2: Scramble — shuffleable 4v3
+    let r2TeamA, r2TeamB;
+    function initR2Teams() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r2TeamA = shuffled.slice(0, 4);
+      r2TeamB = shuffled.slice(4, 7);
+    }
+    // Start with a balanced split
+    r2TeamA = [R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[4], R2_PLAYERS[6]]; // Bartlett, Scott K, Becker, Schue
+    r2TeamB = [R2_PLAYERS[0], R2_PLAYERS[3], R2_PLAYERS[5]]; // Brian, Ratner, Fund
+
     function renderR2() {
-      // R2_PLAYERS (Colby gone): Brian(8), Bartlett(9), Scott K(12), Ratner(13), Becker(14.3), Fund(15), Schue(15.1)
-      // Team A (4): Bartlett(9) + Scott K(12) + Becker(14.3) + Schue(15.1) = avg 12.6
-      // Team B (3): Brian(8) + Ratner(13) + Fund(15) = avg 12.0 + 1 extra shot/hole
-      const teamA = [R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[4], R2_PLAYERS[6]]; // Bartlett, Scott K, Becker, Schue
-      const teamB = [R2_PLAYERS[0], R2_PLAYERS[3], R2_PLAYERS[5]]; // Brian, Ratner, Fund
-      const avgA = teamA.reduce((s, p) => s + p.hcp, 0) / teamA.length;
-      const avgB = teamB.reduce((s, p) => s + p.hcp, 0) / teamB.length;
+      const avgA = r2TeamA.reduce((s, p) => s + p.hcp, 0) / r2TeamA.length;
+      const avgB = r2TeamB.reduce((s, p) => s + p.hcp, 0) / r2TeamB.length;
+      // Odds: 4-man team has inherent advantage, adjust by avg HCP diff
+      const diff = avgB - avgA;
+      const favA = diff >= 0; // If Team A has lower avg OR equal (4-man advantage)
+      const spread = Math.abs(diff);
+      const favMl = spread > 3 ? -220 : spread > 1.5 ? -180 : -140;
+      const dogMl = spread > 3 ? '+200' : spread > 1.5 ? '+160' : '+120';
 
       document.getElementById('r2-teams').innerHTML = `
-        <div class="team-row favored">
+        <div class="team-row ${favA ? 'favored' : ''}">
           <div>
             <div class="team-name">Team Alpha (4)</div>
-            <div class="team-players">${teamA.map(p => p.name.split(' ')[0]).join(', ')}</div>
+            <div class="team-players">${r2TeamA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
           </div>
           <div style="text-align:right">
-            <div class="team-odds odds-fav">-180</div>
+            <div class="team-odds ${favA ? 'odds-fav' : 'odds-dog'}">${favA ? favMl : dogMl}</div>
             <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
           </div>
         </div>
-        <div class="team-row">
+        <div class="team-row ${!favA ? 'favored' : ''}">
           <div>
             <div class="team-name">Team Bravo (3)</div>
-            <div class="team-players">${teamB.map(p => p.name.split(' ')[0]).join(', ')}</div>
+            <div class="team-players">${r2TeamB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
           </div>
           <div style="text-align:right">
-            <div class="team-odds odds-dog">+160</div>
-            <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
+            <div class="team-odds ${!favA ? 'odds-fav' : 'odds-dog'}">${!favA ? favMl : dogMl}</div>
+            <div class="team-hcp">avg ${avgB.toFixed(1)} + extra shot</div>
           </div>
         </div>
+        <button class="btn-shuffle" onclick="shuffleR2()">🔀 Shuffle Scramble Teams</button>
         <div style="margin-top:10px;padding:10px 12px;background:rgba(27,48,34,0.04);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5">
-          <strong style="color:var(--dark)">Scramble rules:</strong> 3-man team gets <strong>1 extra shot per hole</strong> (rotating who takes it). No handicap strokes — pure scramble, just an extra shot to compensate for the missing player.
+          <strong style="color:var(--dark)">Scramble rules:</strong> 3-man team gets <strong>1 extra shot per hole</strong> (rotating who takes it). No handicap strokes — pure scramble, just an extra shot to compensate.
         </div>`;
+    }
+    function shuffleR2() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r2TeamA = shuffled.slice(0, 4);
+      r2TeamB = shuffled.slice(4, 7);
+      renderR2();
     }
     renderR2();
 
-    // ── Round 3: AI Pick ──
+    // ── Round 3: Stableford — shuffleable groups ──
+    let r3GroupA, r3GroupB;
+    // Start balanced
+    const sorted3 = [...R2_PLAYERS].sort((a, b) => a.hcp - b.hcp);
+    r3GroupA = [sorted3[0], sorted3[3], sorted3[4], sorted3[6]];
+    r3GroupB = [sorted3[1], sorted3[2], sorted3[5]];
+
     function renderR3() {
-      // 7 players → Group A (4) and Group B (3)
-      // Balance by alternating handicaps: best + worst pairs
-      const sorted = [...R2_PLAYERS].sort((a, b) => a.hcp - b.hcp);
-      const groupA = [sorted[0], sorted[3], sorted[4], sorted[6]]; // Brian(8), Scott K(12), Ratner(13), Schue(15.1)
-      const groupB = [sorted[1], sorted[2], sorted[5]]; // Bartlett(9), Becker(14.3), Fund(15)
-      const avgA = groupA.reduce((s, p) => s + p.hcp, 0) / groupA.length;
-      const avgB = groupB.reduce((s, p) => s + p.hcp, 0) / groupB.length;
+      const avgA = r3GroupA.reduce((s, p) => s + p.hcp, 0) / r3GroupA.length;
+      const avgB = r3GroupB.reduce((s, p) => s + p.hcp, 0) / r3GroupB.length;
 
       document.getElementById('r3-format').innerHTML = `
         <div class="ai-box">
@@ -549,7 +569,7 @@
         <div class="team-row favored">
           <div>
             <div class="team-name">Group A (4)</div>
-            <div class="team-players">${groupA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+            <div class="team-players">${r3GroupA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
           </div>
           <div style="text-align:right">
             <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
@@ -558,18 +578,27 @@
         <div class="team-row">
           <div>
             <div class="team-name">Group B (3)</div>
-            <div class="team-players">${groupB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+            <div class="team-players">${r3GroupB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
           </div>
           <div style="text-align:right">
             <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
           </div>
         </div>
 
+        <button class="btn-shuffle" onclick="shuffleR3()">🔀 Shuffle Stableford Groups</button>
+
         <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5">
-          Individual Stableford — highest total points wins. Each player competes individually within their group. Skins + Nassau still running on top.
+          Individual Stableford — highest total points wins. Each player competes within their group. Skins + Nassau still running on top.
         </div>`;
     }
     renderR3();
+
+    function shuffleR3() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r3GroupA = shuffled.slice(0, 4);
+      r3GroupB = shuffled.slice(4, 7);
+      renderR3();
+    }
 
     // ── Scorecards (rendered on expand) ──
     function renderScorecard(containerId, courseKey, teeKey) {
