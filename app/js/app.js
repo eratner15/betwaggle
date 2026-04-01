@@ -584,20 +584,15 @@ function updateNav(view) {
   const headerTabsEl = document.getElementById('mg-header-tabs');
   if (headerTabsEl) {
     if ((isRoundMode || isScrambleMode) && view === 'dashboard') {
-      // Always show tabs for round/scramble mode — the views handle pre-match/trophy states internally
-      {
-        const activeSubTab = state._boardSubTab || 'score';
-        const tabs = [
-          { key: 'score', label: 'SCORE' },
-          { key: 'board', label: 'BOARD' },
-          { key: 'bar', label: 'THE BAR' }
-        ];
-        headerTabsEl.innerHTML = tabs.map(t =>
-          `<button class="${activeSubTab === t.key ? 'active' : ''}" onclick="window.MG.setBoardTab('${t.key}')">${t.label}</button>`
-        ).join('');
-      } else {
-        headerTabsEl.innerHTML = '';
-      }
+      const activeSubTab = state._boardSubTab || 'score';
+      const tabs = [
+        { key: 'score', label: 'SCORE' },
+        { key: 'board', label: 'BOARD' },
+        { key: 'bar', label: 'THE BAR' }
+      ];
+      headerTabsEl.innerHTML = tabs.map(t =>
+        `<button class="${activeSubTab === t.key ? 'active' : ''}" onclick="window.MG.setBoardTab('${t.key}')">${t.label}</button>`
+      ).join('');
     } else {
       headerTabsEl.innerHTML = '';
     }
