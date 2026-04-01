@@ -1074,6 +1074,135 @@ export function renderScrambleLeaderboard(state) {
   }
 
   // ================================================================
+  // SECTION 3.5: SCRAMBLE-SPECIFIC PANELS (BOARD tab)
+  // Skins overlay, CTP/LD preview, pot summary
+  // ================================================================
+  if ((!scrShowSubTabs || scrActiveSubTab === 'board') && holesPlayed > 0) {
+
+    // ── SCRAMBLE SKINS OVERLAY ──
+    const scrSkins = gameState?.skins;
+    const scrSkinsHoles = getSkinsHoles(gameState, holes, leaderboard.map(e => ({ name: e.team })));
+    if (scrSkins && Object.keys(scrSkinsHoles).length > 0) {
+      const skinsBetVal = parseInt(config?.structure?.skinsBet) || 0;
+      if (skinsBetVal > 0) {
+        let currentCarry = 1;
+        let skinsAwarded = 0;
+        let totalSkinsPot = 0;
+
+        html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,#E5E0D8);border-left:3px solid var(--gold-primary,#C5A059);border-radius:10px;padding:14px 16px;margin-bottom:8px">`;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--page-text)">Team Skins</span>
+          <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
+        </div>`;
+
+        const recentSkins = scoredHoles.slice(-6);
+        recentSkins.forEach(h => {
+          const sk = scrSkinsHoles[h];
+          if (!sk) return;
+          if (sk.winner) {
+            const val = (sk.potWon || 1) * skinsBetVal;
+            skinsAwarded++;
+            totalSkinsPot += val;
+            const isCarry = (sk.potWon || 1) > 1;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:11px;font-weight:700;color:var(--page-text-muted);width:24px">H${h}</span>
+                <span style="font-size:12px;font-weight:600;color:var(--win)">${escHtml(String(sk.winner).split(' ').slice(0,2).join(' '))}</span>
+                ${isCarry ? `<span style="font-size:9px;font-weight:700;background:var(--gold-primary);color:white;padding:1px 5px;border-radius:3px">${sk.potWon}x</span>` : ''}
+              </div>
+              <span style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--gold-primary)">$${val}</span>
+            </div>`;
+            currentCarry = 1;
+          } else if (sk.carried) {
+            currentCarry = (sk.potBefore || currentCarry) + 1;
+          }
+        });
+
+        // Carry status
+        if (currentCarry > 1) {
+          html += `<div style="margin-top:6px;text-align:center;font-size:11px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:5px;border-radius:5px">
+            ${currentCarry}x carry active
+          </div>`;
+        }
+
+        const unclaimed = scoredHoles.length - skinsAwarded;
+        html += `<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--page-text-muted)">
+          <span>${skinsAwarded} awarded</span>
+          <span>${unclaimed} unclaimed (carried)</span>
+        </div>`;
+        html += `</div>`;
+      }
+    }
+
+    // ── CTP / LONG DRIVE PREVIEW (compact, on Board tab) ──
+    const sideGamesBoard = config?.scrambleSideGames;
+    if (sideGamesBoard) {
+      const ctpHoles = sideGamesBoard.closestToPin || [];
+      const ldHoles = sideGamesBoard.longestDrive || [];
+      const hasAnySide = ctpHoles.length > 0 || ldHoles.length > 0;
+
+      if (hasAnySide) {
+        html += `<div style="display:flex;gap:8px;margin-bottom:8px">`;
+
+        if (ctpHoles.length > 0) {
+          html += `<div style="flex:1;background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:6px">CTP</div>`;
+          ctpHoles.forEach(hole => {
+            const winner = gameState?.sideGames?.ctp?.[hole];
+            html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+              <span style="color:var(--page-text-muted)">H${hole}</span>
+              <span style="font-weight:600;color:${winner ? 'var(--gold-primary)' : 'var(--page-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        if (ldHoles.length > 0) {
+          html += `<div style="flex:1;background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:6px">Long Drive</div>`;
+          ldHoles.forEach(hole => {
+            const winner = gameState?.sideGames?.ld?.[hole];
+            html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+              <span style="color:var(--page-text-muted)">H${hole}</span>
+              <span style="font-weight:600;color:${winner ? 'var(--gold-primary)' : 'var(--page-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+    }
+
+    // ── POT SUMMARY BAR ──
+    const entryFee = parseInt(config?.structure?.entryFee) || 0;
+    const totalTeamsForPot = leaderboard.length || 0;
+    const totalPotCalc = entryFee * totalTeamsForPot;
+    if (totalPotCalc > 0) {
+      const prizes = config?.structure?.prizes || {};
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--page-text-muted)">Prize Pool</span>
+          <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--gold-primary)">$${totalPotCalc.toLocaleString()}</span>
+        </div>
+        <div style="font-size:11px;color:var(--page-text-muted)">
+          $${entryFee}/team &bull; ${totalTeamsForPot} teams
+          ${prizes.first ? ` &bull; 1st: $${prizes.first}` : ''}
+          ${prizes.second ? ` / 2nd: $${prizes.second}` : ''}
+          ${prizes.third ? ` / 3rd: $${prizes.third}` : ''}
+        </div>
+      </div>`;
+    }
+
+    // ── HOLES REMAINING ──
+    const holesLeft = holesPerRound - holesPlayed;
+    if (holesLeft > 0) {
+      html += `<div style="text-align:center;padding:8px 0;font-size:12px;color:var(--page-text-muted);font-weight:600">
+        ${holesLeft} hole${holesLeft !== 1 ? 's' : ''} remaining &bull; Thru ${holesPlayed}
+      </div>`;
+    }
+  }
+
+  // ================================================================
   // SECTION 4: LIVE TICKER (BOARD tab)
   // ================================================================
   if (!scrShowSubTabs || scrActiveSubTab === 'board') {
