@@ -1603,18 +1603,14 @@ export function renderRoundFeed(state) {
     const activeRound = config?.event?.currentRound || currentRound || 1;
 
     html += `<div style="background:linear-gradient(135deg,#1B3022,#304D39);color:#FFFFFF;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 4px 16px rgba(27,48,34,0.06)">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:700">${escHtml(eventName)}</div>
-          <div style="font-size:13px;opacity:.6;font-family:'Inter',sans-serif">${courseName ? escHtml(courseName) + ' \u00b7 ' : ''}R${roundNum}</div>
-          ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif">Pot</div>
-          <div style="font-size:32px;font-weight:800;color:#C5A059;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
-        </div>
+      <div style="text-align:center">
+        <div style="font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:700">${escHtml(eventName)}</div>
+        <div style="font-size:13px;opacity:.6;font-family:'Inter',sans-serif;margin-top:2px">${courseName ? escHtml(courseName) + ' \u00b7 ' : ''}R${roundNum}</div>
+        ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+        <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif;margin-top:8px">Total pot</div>
+        <div style="font-size:36px;font-weight:800;color:#C5A059;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">`;
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;justify-content:center">`;
 
     // Round pills
     for (let r = 1; r <= totalRounds; r++) {
@@ -2166,37 +2162,36 @@ export function renderRoundFeed(state) {
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0 && standingsData.length > 0) {
 
-    // Leaderboard — clean rows, not cards
-    html += `<div style="background:white;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.15);margin-bottom:12px">`;
-
+    // Leaderboard — 2-line card layout per player
     standingsData.forEach((p, i) => {
       const isLeader = i === 0;
-      const rowBg = i % 2 === 0 ? '#FFFFFF' : '#FCF9F4';
-      const toParColor = (p.toPar ?? 0) < 0 ? '#16A34A' : (p.toPar ?? 0) > 0 ? '#DC2626' : '#1C1C19';
-      const moneyColor = (p.money || 0) > 0 ? '#16A34A' : (p.money || 0) < 0 ? '#DC2626' : '#8A8A85';
-      const moneyStr = (p.money || 0) === 0 ? '$0' : (p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money));
       const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
+      const toParColor = (p.toPar ?? 0) < 0 ? '#1C1C19' : (p.toPar ?? 0) > 0 ? '#DC2626' : '#1C1C19';
+      const moneyStr = (p.money || 0) === 0 ? '$0' : (p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money));
+      const moneyColor = (p.money || 0) > 0 ? '#16A34A' : (p.money || 0) < 0 ? '#DC2626' : '#8A8A85';
       const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
 
-      const borderColor = isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)';
-      const moneyLabel = (p.money||0) > 0 ? 'skins won' : (p.money||0) < 0 ? 'skins' : '';
-      html += `<div style="display:grid;grid-template-columns:1fr 50px 55px 75px 55px 60px;align-items:center;padding:14px 20px;background:${rowBg};border-left:3px solid ${borderColor};border-bottom:1px solid rgba(197,160,89,0.06)">
-        <div style="font-size:17px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
-        <div style="text-align:right;font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:${toParColor}">${toParStr}</div>
-        <div style="text-align:right;font-family:'SF Mono',monospace;font-size:13px;color:#8A8A85">${odds}</div>
-        <div style="text-align:right">
-          <div style="font-family:'SF Mono',monospace;font-size:15px;font-weight:700;color:${moneyColor}">${moneyStr}</div>
-          <div style="font-size:9px;color:#8A8A85">${moneyLabel}</div>
+      html += `<div style="background:#FFFFFF;border:1px solid rgba(197,160,89,0.12);border-radius:10px;padding:16px 20px;margin-bottom:10px">
+        <!-- Line 1: dot + name + P&L + skins count -->
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
+            <div style="width:8px;height:8px;border-radius:50%;background:${isLeader ? '#C5A059' : '#D1D5DB'};flex-shrink:0"></div>
+            <div style="font-size:18px;font-weight:700;color:#1C1C19">${escHtml(p.name)}</div>
+          </div>
+          <div style="font-family:'SF Mono',monospace;font-size:18px;font-weight:700;color:${moneyColor};margin-right:16px">${moneyStr}</div>
+          <div style="font-size:20px;font-weight:700;color:#1C1C19;min-width:24px;text-align:right">${p.skins}</div>
         </div>
-        <div style="text-align:center">
-          <div style="font-size:17px;font-weight:700;color:#1C1C19">${p.skins}</div>
-          <div style="font-size:9px;color:#8A8A85">${p.skins === 1 ? 'skin' : 'skins'}</div>
+        <!-- Line 2: to-par + odds + "Skins Won" + "N skins" -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-left:18px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex:1">
+            <div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:${toParColor}">${toParStr}</div>
+            <div style="font-family:'SF Mono',monospace;font-size:13px;color:#8A8A85">${odds}</div>
+          </div>
+          <div style="font-size:11px;color:#8A8A85;margin-right:16px">Skins Won</div>
+          <div style="font-size:11px;color:#8A8A85;min-width:24px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</div>
         </div>
-        <div style="text-align:right;font-size:12px;color:#8A8A85">Thru ${p.thru}</div>
       </div>`;
     });
-
-    html += `</div>`;
 
     // Add Player inline (admin only)
     if (state.adminAuthed) {
