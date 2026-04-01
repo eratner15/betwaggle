@@ -17,7 +17,7 @@
 - [ ] Verify welcome email actually delivers (send test)
 - [ ] Verify Stripe webhook fires on real payment (test mode checkout)
 - [ ] hello@betwaggle.com email routing configured in CF dashboard
-- [ ] Test full flow: create outing → pay → get success page → share link → player joins → score holes → settle
+- [x] Test full flow: create outing → pay → get success page → share link → player joins → score holes → settle — **Partially completed v0.20.0 (2026-04-01)**: free tier E2E tested (create → score → skins → settle). Found/fixed P0 generateMatches crash. Paid tier (Stripe) not yet tested.
 
 ---
 
@@ -30,7 +30,7 @@
 - [x] Live odds engine — getLiveMatchMoneyline() adjusts odds mid-round based on holes played + score differential
 - [x] Pricing page (/pricing) — 3-tier comparison (Weekend Warrior / Buddies / Member-Guest)
 - [x] Affiliate dashboard UI (/affiliate/dashboard) — stats, referral history, payout requests
-- [ ] Worker.js modularization (5500 lines → lib/ modules) — in progress
+- [x] Worker.js modularization (5500 lines → lib/ modules) — **Completed v0.20.0 (2026-04-01)**: extracted worker-seeds.js (1,059 lines, 13 seed functions), reduced worker.js to 6,828 lines
 
 ---
 
