@@ -157,48 +157,103 @@
       <div class="round-body" id="r3-format"></div>
     </div>
 
-    <!-- BETTING SUMMARY -->
+    <!-- BETTING SUMMARY — Day-by-Day Breakdown -->
     <div class="section-head">
       <h2>The Action</h2>
     </div>
-    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
-      <div style="padding:14px 16px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff">
-        <div style="font-family:var(--serif);font-size:16px;font-weight:700">Per-Person Ante · Each Round</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">Everyone puts in the same amount each round</div>
+
+    <!-- DAY 1 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 1 · Thursday · The Keep</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">8 players</div>
       </div>
-      <div style="padding:4px 16px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Skins</div><div style="font-size:11px;color:var(--muted)">Win a hole outright, win the skin. Ties carry over.</div></div>
-          <div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$10</div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · Everyone antes $10. Win a hole outright, win the pot. Ties carry — a 3-hole carry is worth $30.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$80 pot</div></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Nassau</div><div style="font-size:11px;color:var(--muted)">3 bets: front 9 + back 9 + overall. Each worth $20.</div></div>
-          <div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$60</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. You're betting $20 on the front 9, $20 on the back 9, $20 on overall. Lose all 3 = you owe $60 to the winner.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div><div style="font-size:11px;color:var(--muted)">per matchup</div></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Auto-Press</div><div style="font-size:11px;color:var(--muted)">Down 2 in Nassau? Automatic press — new $20 bet from that hole.</div></div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted)">2 down</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Auto-Press</div><div style="font-size:11px;color:var(--muted)">Down 2 holes in any Nassau bet? New $20 side bet starts automatically. Can stack — 2 presses = $60 more at risk.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-size:11px;font-weight:700;color:var(--loss)">+$20 each</div></div>
         </div>
-      </div>
-      <div style="padding:0 16px 12px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:8px 0 6px">Round-Specific</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R1: Best Ball</div><div style="font-size:11px;color:var(--muted)">Team bet — your 2-man team vs the other pair in your foursome</div></div>
-          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$20</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R2: Scramble</div><div style="font-size:11px;color:var(--muted)">Team bet — 4-man vs 3-man (3-man gets 1 extra shot/hole)</div></div>
-          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$30</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
-          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R3: Stableford</div><div style="font-size:11px;color:var(--muted)">Points game — reward birdies (+2), eagles (+5), limit bogey damage (−1)</div></div>
-          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$5/pt</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Best Ball Team Bet</div><div style="font-size:11px;color:var(--muted)">Your 2-man team vs the other pair in your foursome. Losing team pays winning team $20/person.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$20 risk</div><div style="font-size:11px;color:var(--muted)">$40/foursome</div></div>
         </div>
       </div>
-      <div style="padding:12px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px;font-weight:700;color:var(--dark)">Min ante per round</span>
-        <span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--gold-dk)">~$100</span>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 1 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$90 – $150+</span>
       </div>
+    </div>
+
+    <!-- DAY 2 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 2 · Friday · Highlands</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">7 players (Colby out)</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · 7 players ante $10 each.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$70 pot</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. Same as Day 1 — individual matchups within your team.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Scramble Team Bet</div><div style="font-size:11px;color:var(--muted)">Team of 4 vs team of 3. Losing team pays $30/person to the winners. 3-man team gets 1 extra shot per hole.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$30 risk</div><div style="font-size:11px;color:var(--muted)">$210 pot</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 2 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$100 – $160+</span>
+      </div>
+    </div>
+
+    <!-- DAY 3 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 3 · Saturday · The Keep</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">7 players</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · 7 players ante $10 each.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$70 pot</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. Individual matchups.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Stableford Points</div><div style="font-size:11px;color:var(--muted)">$5/point. Eagle (+5) = $25. Birdie (+2) = $10. Bogey (−1) = lose $5. Highest total points wins the pot.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$5/pt</div><div style="font-size:11px;color:var(--muted)">~$50–100</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 3 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$120 – $200+</span>
+      </div>
+    </div>
+
+    <!-- TRIP TOTAL -->
+    <div style="background:linear-gradient(135deg,var(--green),var(--dark));border-radius:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:#fff">3-Day Total Risk</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">Before presses. Presses add $20 each.</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:24px;font-weight:800;color:var(--gold)">$310–$500+</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:8px;padding:4px 0">
+      Worst case with 3 presses per round: ~$680. Best case: you win it all back and then some.
     </div>
 
     <!-- LODGING -->
