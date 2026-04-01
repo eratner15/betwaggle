@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McLemore Buddies Trip — BetWaggle</title>
+  <meta name="description" content="Set up your McLemore buddies trip. Add players, pick courses, choose games and stakes. One link for the whole group.">
+  <meta name="theme-color" content="#1B3022">
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:#1B3022; --green-light:#304D39; --gold:#C5A059; --gold-dk:#9A7A2E;
+      --ivory:#FCF9F4; --white:#FAFAF7; --dark:#0D2818; --text:#1C1C19;
+      --muted:#6B7280; --border:#E5E1D8; --win:#16A34A; --loss:#DC2626;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--dark);color:var(--text);min-height:100vh}
+
+    .hero{background:linear-gradient(135deg,#1B3022 0%,#0D2818 100%);padding:40px 20px 32px;text-align:center}
+    .hero-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+    .hero h1{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:#fff;margin-bottom:6px}
+    .hero h1 em{color:var(--gold);font-style:italic}
+    .hero p{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.5}
+
+    .content{background:var(--ivory);border-radius:20px 20px 0 0;min-height:60vh;padding:28px 20px 140px;max-width:560px;margin:0 auto}
+    .section{margin-bottom:28px}
+    .section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .section h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--dark);margin-bottom:4px}
+    .section .desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+
+    label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;margin-top:16px;letter-spacing:0.3px}
+    label:first-of-type{margin-top:0}
+    input,select,textarea{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--white);color:var(--text);transition:border .2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(27,48,34,0.08)}
+    textarea{min-height:120px;font-family:'SF Mono','Menlo',monospace;font-size:13px;line-height:1.6;resize:vertical}
+
+    .course-card{border:2px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;background:var(--white);transition:border .2s,box-shadow .2s;margin-bottom:10px}
+    .course-card:hover{border-color:var(--green)}
+    .course-card.selected{border-color:var(--green);background:#f0f7f2;box-shadow:0 0 0 3px rgba(27,48,34,0.08)}
+    .course-card h4{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:2px}
+    .course-card .meta{font-size:12px;color:var(--muted)}
+    .course-card .meta span{margin-right:12px}
+
+    .game-chips{display:flex;flex-wrap:wrap;gap:8px}
+    .game-chip{padding:10px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:var(--white);transition:all .15s;-webkit-tap-highlight-color:transparent}
+    .game-chip.selected{border-color:var(--gold);background:rgba(197,160,89,0.08);color:var(--dark)}
+    .game-chip:hover{border-color:var(--gold)}
+
+    .stakes-row{display:flex;gap:10px;margin-top:8px}
+    .stakes-row label{flex:1;margin-top:0}
+    .stakes-row input{text-align:center;font-weight:600}
+
+    .player-preview{margin-top:12px;padding:12px;background:var(--white);border:1px solid var(--border);border-radius:10px}
+    .player-preview .count{font-size:13px;font-weight:700;color:var(--win);margin-bottom:6px}
+    .player-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04)}
+    .player-row:last-child{border-bottom:none}
+    .player-row .name{font-weight:600;color:var(--dark)}
+    .player-row .hcp{color:var(--muted);font-family:'SF Mono',monospace;font-size:12px}
+
+    .btn-go{display:block;width:100%;padding:18px;background:linear-gradient(135deg,var(--green) 0%,var(--dark) 100%);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;text-align:center;letter-spacing:0.3px;min-height:56px;transition:transform .1s;-webkit-tap-highlight-color:transparent;position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;border-radius:0;z-index:50}
+    .btn-go:disabled{opacity:0.4;cursor:default}
+    .btn-go:not(:disabled):active{transform:scale(0.98)}
+
+    .error-msg{color:var(--loss);font-size:13px;font-weight:600;margin-top:8px;min-height:20px}
+    .success-box{background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:20px;text-align:center;margin-top:20px}
+    .success-box h3{color:var(--win);font-size:18px;margin-bottom:8px}
+    .success-box a{color:var(--green);font-weight:700;text-decoration:none;font-size:16px}
+
+    .tee-select{display:flex;gap:8px;margin-top:8px}
+    .tee-btn{flex:1;padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;text-align:center;cursor:pointer;background:var(--white);transition:all .15s}
+    .tee-btn.selected{border-color:var(--green);background:#f0f7f2}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-badge">Commissioner Setup</div>
+    <h1>McLemore <em>Buddies Trip</em></h1>
+    <p>Lookout Mountain, Georgia<br>Set up your trip in 60 seconds. One link for the group.</p>
+  </div>
+
+  <div class="content" id="intake">
+    <!-- SECTION 1: Event Details -->
+    <div class="section">
+      <div class="section-label">Step 1</div>
+      <h3>Trip Details</h3>
+      <p class="desc">Name your event and pick dates.</p>
+      <label>Event Name</label>
+      <input type="text" id="event-name" value="McLemore Buddies Trip" placeholder="McLemore Buddies Trip">
+      <label>Start Date</label>
+      <input type="date" id="date-start">
+      <label>End Date (optional)</label>
+      <input type="date" id="date-end">
+    </div>
+
+    <!-- SECTION 2: Course Selection -->
+    <div class="section">
+      <div class="section-label">Step 2</div>
+      <h3>Choose Your Course</h3>
+      <p class="desc">Both McLemore courses are pre-loaded with full scorecards.</p>
+
+      <div class="course-card selected" onclick="selectCourse('highlands')" id="card-highlands">
+        <h4>The Highlands</h4>
+        <div class="meta">
+          <span>Par 71</span>
+          <span>6,908 yds (Blue)</span>
+          <span>Slope 140</span>
+          <span>Rees Jones</span>
+        </div>
+      </div>
+      <div class="course-card" onclick="selectCourse('keep')" id="card-keep">
+        <h4>The Keep</h4>
+        <div class="meta">
+          <span>Par 72</span>
+          <span>7,067 yds (Blue)</span>
+          <span>Slope 140</span>
+          <span>Bergin & Jones</span>
+        </div>
+      </div>
+
+      <label>Tees</label>
+      <div class="tee-select" id="tee-select"></div>
+    </div>
+
+    <!-- SECTION 3: Players -->
+    <div class="section">
+      <div class="section-label">Step 3</div>
+      <h3>Add Players</h3>
+      <p class="desc">One player per line. Format: Name, Handicap, @Venmo (optional)</p>
+      <textarea id="players" placeholder="Brian Kunis, 14.2, @briankunis
+Mike Smith, 8.5, @mikesmith
+John Doe, 18.0
+Dave Wilson, 12.3, @davewilson"></textarea>
+      <div class="player-preview" id="player-preview" style="display:none"></div>
+    </div>
+
+    <!-- SECTION 4: Games & Stakes -->
+    <div class="section">
+      <div class="section-label">Step 4</div>
+      <h3>Games & Stakes</h3>
+      <p class="desc">Pick your action. You can run multiple games at once.</p>
+      <div class="game-chips" id="game-chips">
+        <div class="game-chip selected" onclick="toggleGame('skins')">Skins</div>
+        <div class="game-chip selected" onclick="toggleGame('nassau')">Nassau</div>
+        <div class="game-chip" onclick="toggleGame('wolf')">Wolf</div>
+        <div class="game-chip" onclick="toggleGame('match_play')">Match Play</div>
+        <div class="game-chip" onclick="toggleGame('vegas')">Vegas</div>
+        <div class="game-chip" onclick="toggleGame('stableford')">Stableford</div>
+      </div>
+
+      <div class="stakes-row">
+        <div>
+          <label>Skins ($)</label>
+          <input type="number" id="stakes-skins" value="10" min="0" step="5">
+        </div>
+        <div>
+          <label>Nassau ($)</label>
+          <input type="number" id="stakes-nassau" value="20" min="0" step="5">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: Commissioner -->
+    <div class="section">
+      <div class="section-label">Step 5</div>
+      <h3>Commissioner</h3>
+      <p class="desc">Who's running this show? They'll get the admin PIN.</p>
+      <label>Commissioner Name</label>
+      <input type="text" id="commissioner" value="Brian Kunis" placeholder="Brian Kunis">
+      <label>Email (for admin link)</label>
+      <input type="email" id="commissioner-email" placeholder="brian@example.com">
+    </div>
+
+    <div class="error-msg" id="error"></div>
+    <div id="success" style="display:none"></div>
+  </div>
+
+  <button class="btn-go" id="btn-go" onclick="createEvent()">Create Event &rarr;</button>
+
+  <script>
+    // ── Course Data ──
+    const COURSES = {
+      highlands: {
+        name: 'McLemore - Highlands',
+        par: 71,
+        pars: [5,4,3,4,3,5,3,4,4, 4,3,5,3,4,4,4,5,4],
+        tees: {
+          'Blue': { yardage: [576,449,143,357,194,535,188,458,435, 356,212,561,166,406,423,452,564,433], total: 6908, rating: 74.0, slope: 140 },
+          'White': { yardage: [532,409,137,296,178,515,182,352,388, 350,159,482,147,382,390,404,542,393], total: 6238, rating: 70.7, slope: 136 },
+          'Member': { yardage: [514,409,122,296,152,482,167,352,388, 330,159,482,138,382,363,404,505,393], total: 6038, rating: 69.6, slope: 130 },
+          'Green': { yardage: [503,380,115,268,124,440,157,318,376, 293,153,436,126,366,317,363,476,366], total: 5577, rating: 67.6, slope: 127 },
+          'Forward': { yardage: [463,325,96,223,118,422,112,295,212, 266,132,401,120,352,295,309,437,334], total: 4912, rating: 64.4, slope: 121 }
+        },
+        hcpIndex: [5,1,17,13,11,9,15,7,3, 16,10,2,18,8,12,6,14,4]
+      },
+      keep: {
+        name: 'McLemore - The Keep',
+        par: 72,
+        pars: [4,5,3,4,4,4,5,3,4, 5,3,4,4,3,5,4,4,4],
+        tees: {
+          'Blue': { yardage: [461,532,213,412,400,333,541,186,432, 576,169,357,455,199,540,485,348,428], total: 7067, rating: 73.7, slope: 140 },
+          'White': { yardage: [369,513,193,394,386,318,499,161,381, 494,139,298,408,168,515,425,293,389], total: 6343, rating: 71.2, slope: 135 },
+          'Green': { yardage: [343,438,155,365,336,275,435,136,350, 447,105,271,350,127,435,405,285,345], total: 5603, rating: 68.4, slope: 128 },
+          'Forward': { yardage: [309,375,110,338,259,237,385,111,296, 396,78,212,323,110,380,320,230,289], total: 4758, rating: 65.0, slope: 120 }
+        },
+        hcpIndex: [1,11,9,3,13,17,15,7,5, 10,8,18,4,6,12,2,16,14]
+      }
+    };
+
+    let selectedCourse = 'highlands';
+    let selectedTee = 'Blue';
+    let games = { skins: true, nassau: true, wolf: false, match_play: false, vegas: false, stableford: false };
+
+    function selectCourse(id) {
+      selectedCourse = id;
+      document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('card-' + id).classList.add('selected');
+      renderTees();
+    }
+
+    function renderTees() {
+      const tees = Object.keys(COURSES[selectedCourse].tees);
+      const el = document.getElementById('tee-select');
+      el.innerHTML = tees.map(t => {
+        const data = COURSES[selectedCourse].tees[t];
+        return `<div class="tee-btn ${selectedTee === t ? 'selected' : ''}" onclick="selectTee('${t}')">${t}<br><span style="font-size:10px;color:var(--muted)">${data.total} yds</span></div>`;
+      }).join('');
+    }
+
+    function selectTee(t) {
+      selectedTee = t;
+      renderTees();
+    }
+
+    function toggleGame(g) {
+      games[g] = !games[g];
+      document.querySelectorAll('.game-chip').forEach(chip => {
+        const game = chip.textContent.trim().toLowerCase().replace(/ /g, '_');
+        chip.classList.toggle('selected', games[game]);
+      });
+    }
+
+    function parsePlayers(text) {
+      return text.trim().split('\n').filter(l => l.trim()).map(line => {
+        const parts = line.split(',').map(s => s.trim());
+        return {
+          name: parts[0] || '',
+          handicapIndex: parseFloat(parts[1]) || 0,
+          venmo: parts[2] || ''
+        };
+      }).filter(p => p.name);
+    }
+
+    // Live player preview
+    document.getElementById('players').addEventListener('input', function() {
+      const players = parsePlayers(this.value);
+      const preview = document.getElementById('player-preview');
+      if (players.length === 0) { preview.style.display = 'none'; return; }
+      preview.style.display = 'block';
+      preview.innerHTML = `<div class="count">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>` +
+        players.map(p => `<div class="player-row"><span class="name">${p.name}</span><span class="hcp">${p.handicapIndex} HCP${p.venmo ? ' &middot; ' + p.venmo : ''}</span></div>`).join('');
+    });
+
+    async function createEvent() {
+      const btn = document.getElementById('btn-go');
+      const errEl = document.getElementById('error');
+      errEl.textContent = '';
+
+      const name = document.getElementById('event-name').value.trim();
+      const dateStart = document.getElementById('date-start').value;
+      const dateEnd = document.getElementById('date-end').value;
+      const commissioner = document.getElementById('commissioner').value.trim();
+      const commEmail = document.getElementById('commissioner-email').value.trim();
+      const players = parsePlayers(document.getElementById('players').value);
+
+      if (!name) { errEl.textContent = 'Give your event a name'; return; }
+      if (players.length < 2) { errEl.textContent = 'Add at least 2 players'; return; }
+      if (!Object.values(games).some(Boolean)) { errEl.textContent = 'Pick at least one game'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+
+      const course = COURSES[selectedCourse];
+      const teeData = course.tees[selectedTee];
+      const pin = String(1000 + Math.floor(Math.random() * 9000));
+
+      const teams = {};
+      players.forEach((p, i) => {
+        teams[i + 1] = { id: i + 1, member: p.name, guest: '', memberHI: p.handicapIndex, guestHI: 0, combined: p.handicapIndex, flight: 'all' };
+      });
+
+      const config = {
+        event: {
+          name, shortName: name.slice(0, 20),
+          venue: course.name,
+          course: course.name,
+          url: '',
+          dates: { day1: dateStart || new Date().toISOString().slice(0, 10), ...(dateEnd ? { day2: dateEnd } : {}) },
+          format: Object.keys(games).find(g => games[g]) || 'skins',
+          adminPin: pin,
+          adminContact: commEmail,
+          eventType: 'buddies_trip',
+          commissioner: commissioner
+        },
+        scoring: { totalPointsPerMatch: 10, capMax: 7, capMin: 3, holesPerMatch: 9, handicapAllowance: 0.85 },
+        structure: {
+          nassauBet: parseInt(document.getElementById('stakes-nassau').value) || 20,
+          skinsBet: parseInt(document.getElementById('stakes-skins').value) || 10,
+          roundsTotal: 1,
+          teamsPerFlight: players.length,
+          autoPress: { enabled: true, threshold: 2 }
+        },
+        flightOrder: ['all'],
+        flights: { all: { id: 'all', name: 'All Players', tees: selectedTee, teamIds: players.map((_, i) => i + 1) } },
+        teams, pairings: {},
+        theme: { primary: '#1B3022', accent: '#C5A059', bg: '#FCF9F4', headerFont: 'Playfair Display', bodyFont: 'Inter' },
+        features: { betting: true, calcutta: false, shootout: false, shareButtons: true },
+        games,
+        holesPerRound: 18,
+        course: {
+          name: course.name,
+          pars: course.pars,
+          yardage: teeData.yardage,
+          tees: selectedTee,
+          rating: teeData.rating,
+          slope: teeData.slope,
+          hcpIndex: course.hcpIndex
+        },
+        wolfOrder: players.map(p => p.name),
+        players: players.map(p => ({ name: p.name, handicapIndex: p.handicapIndex, venmo: p.venmo })),
+        roster: players.map(p => ({ name: p.name, handicapIndex: p.handicapIndex, venmo: p.venmo })),
+      };
+
+      try {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+
+        if (data.slug) {
+          // Store admin PIN
+          try { localStorage.setItem('waggle-admin-pin-' + data.slug, pin); } catch(e) {}
+
+          // Show success
+          document.getElementById('intake').innerHTML = `
+            <div class="success-box">
+              <h3>Event Created!</h3>
+              <p style="color:var(--muted);font-size:14px;margin-bottom:12px">Share this link with your group:</p>
+              <a href="/${data.slug}/" id="event-link">betwaggle.com/${data.slug}/</a>
+              <p style="margin-top:16px;font-size:13px;color:var(--muted)">Admin PIN: <strong style="color:var(--dark);font-family:'SF Mono',monospace;font-size:16px">${pin}</strong></p>
+              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Commissioner: ${commissioner}</p>
+              <p style="margin-top:16px"><a href="/${data.slug}/" style="display:inline-block;padding:14px 28px;background:var(--green);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Open The Board &rarr;</a></p>
+            </div>`;
+          btn.style.display = 'none';
+          return;
+        }
+
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
+        errEl.textContent = data.error || 'Something went wrong';
+      } catch (e) {
+        errEl.textContent = 'Network error — try again';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Create Event →';
+    }
+
+    // Init
+    renderTees();
+    // Set default date to tomorrow
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    document.getElementById('date-start').value = tomorrow;
+  </script>
+</body>
+</html>
