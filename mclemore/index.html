@@ -151,28 +151,45 @@
       <div class="tee-select" id="tee-select"></div>
     </div>
 
-    <!-- SECTION 3: Players (GHIN lookup + manual) -->
+    <!-- SECTION 3: Players (name search → GHIN auto-pull) -->
     <div class="section">
       <div class="section-label">Step 3</div>
       <h3>Add Players</h3>
+      <p class="desc">Search by name — we'll pull their GHIN handicap automatically.</p>
 
-      <!-- GHIN Lookup -->
+      <!-- Name Search -->
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dk);margin-bottom:8px">GHIN Auto-Lookup</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input type="text" id="ghin-num" inputmode="numeric" placeholder="GHIN #" style="flex:1;padding:10px 12px;font-size:14px">
-          <input type="text" id="ghin-last" placeholder="Last name" style="flex:1;padding:10px 12px;font-size:14px">
-          <button onclick="lookupGhin()" style="padding:10px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Look Up</button>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <input type="text" id="player-search" placeholder="Type a name (e.g., Brian Kunis)" style="flex:1;padding:12px 14px;font-size:15px" autocomplete="off" oninput="debounceSearch()">
+          <button onclick="searchGhin()" id="search-btn" style="padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:80px">Search</button>
         </div>
-        <div id="ghin-result" style="font-size:13px;min-height:20px"></div>
+        <div id="search-results" style="max-height:240px;overflow-y:auto"></div>
       </div>
 
-      <p class="desc">Or paste players manually. Format: Name, Handicap, @Venmo</p>
-      <textarea id="players" placeholder="Brian Kunis, 14.2, @briankunis
-Mike Smith, 8.5, @mikesmith
-John Doe, 18.0
-Dave Wilson, 12.3, @davewilson"></textarea>
-      <div class="player-preview" id="player-preview" style="display:none"></div>
+      <!-- Current Roster -->
+      <div id="roster-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)">Your Roster</span>
+          <span id="roster-count" style="font-size:12px;font-weight:700;color:var(--win)"></span>
+        </div>
+        <div id="roster-list"></div>
+      </div>
+
+      <!-- Manual Add (collapsed) -->
+      <details style="margin-top:12px">
+        <summary style="font-size:12px;font-weight:600;color:var(--gold-dk);cursor:pointer;padding:6px 0">Don't have GHIN? Add manually</summary>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input type="text" id="manual-name" placeholder="Name" style="flex:2;padding:10px 12px;font-size:14px">
+          <input type="number" id="manual-hcp" placeholder="HCP" step="0.1" style="width:70px;padding:10px 8px;font-size:14px;text-align:center">
+          <button onclick="addManualPlayer()" style="padding:10px 14px;background:var(--gold);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Add</button>
+        </div>
+        <div style="margin-top:8px">
+          <input type="text" id="manual-venmo" placeholder="@venmo (optional)" style="padding:10px 12px;font-size:13px">
+        </div>
+      </details>
+
+      <!-- Hidden textarea for backward compat with createEvent -->
+      <textarea id="players" style="display:none"></textarea>
     </div>
 
     <!-- SECTION 3.5: AI Recommendations -->
@@ -448,35 +465,112 @@ Dave Wilson, 12.3, @davewilson"></textarea>
       btn.textContent = 'Create Event →';
     }
 
-    // ── GHIN Lookup ──
-    async function lookupGhin() {
-      const num = document.getElementById('ghin-num').value.trim();
-      const last = document.getElementById('ghin-last').value.trim();
-      const resultEl = document.getElementById('ghin-result');
-      if (!num) { resultEl.innerHTML = '<span style="color:var(--loss)">Enter a GHIN number</span>'; return; }
-      resultEl.innerHTML = '<span style="color:var(--muted)">Looking up...</span>';
+    // ── Player Roster (in-memory) ──
+    let roster = [];
+
+    function renderRoster() {
+      const listEl = document.getElementById('roster-list');
+      const countEl = document.getElementById('roster-count');
+      countEl.textContent = roster.length > 0 ? `${roster.length} player${roster.length !== 1 ? 's' : ''}` : '';
+
+      if (roster.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No players yet. Search by name above.</div>';
+        return;
+      }
+
+      listEl.innerHTML = roster.map((p, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--dark)">${p.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${p.handicapIndex != null ? 'HI: ' + p.handicapIndex : 'No HCP'}${p.club ? ' · ' + p.club : ''}${p.venmo ? ' · ' + p.venmo : ''}</div>
+          </div>
+          <button onclick="removePlayer(${i})" style="width:28px;height:28px;border:none;background:rgba(220,38,38,0.08);color:var(--loss);border-radius:6px;cursor:pointer;font-size:14px;font-weight:700">×</button>
+        </div>`).join('');
+
+      // Sync to hidden textarea for createEvent compatibility
+      document.getElementById('players').value = roster.map(p =>
+        `${p.name}, ${p.handicapIndex || 0}${p.venmo ? ', ' + p.venmo : ''}`
+      ).join('\n');
+
+      generateAIRecs();
+    }
+
+    function addPlayerToRoster(name, handicapIndex, club, ghin, venmo) {
+      // Prevent duplicates
+      if (roster.some(p => p.name.toLowerCase() === name.toLowerCase())) return;
+      roster.push({ name, handicapIndex: handicapIndex || 0, club: club || '', ghin: ghin || '', venmo: venmo || '' });
+      renderRoster();
+    }
+
+    function removePlayer(idx) {
+      roster.splice(idx, 1);
+      renderRoster();
+    }
+
+    function addManualPlayer() {
+      const name = document.getElementById('manual-name').value.trim();
+      const hcp = parseFloat(document.getElementById('manual-hcp').value) || 0;
+      const venmo = document.getElementById('manual-venmo').value.trim();
+      if (!name) return;
+      addPlayerToRoster(name, hcp, '', '', venmo);
+      document.getElementById('manual-name').value = '';
+      document.getElementById('manual-hcp').value = '';
+      document.getElementById('manual-venmo').value = '';
+    }
+
+    // ── GHIN Name Search ──
+    let _searchTimer = null;
+    function debounceSearch() {
+      clearTimeout(_searchTimer);
+      _searchTimer = setTimeout(searchGhin, 400);
+    }
+
+    async function searchGhin() {
+      const q = document.getElementById('player-search').value.trim();
+      const resultsEl = document.getElementById('search-results');
+      const btn = document.getElementById('search-btn');
+      if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+
+      btn.textContent = '...';
+      resultsEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--muted);font-size:13px">Searching GHIN...</div>';
+
       try {
-        const res = await fetch(`/api/ghin-lookup?ghin=${encodeURIComponent(num)}&last_name=${encodeURIComponent(last)}`);
-        const data = await res.json();
-        if (data.error) { resultEl.innerHTML = `<span style="color:var(--loss)">${data.error}</span>`; return; }
-        resultEl.innerHTML = `<span style="color:var(--win);font-weight:700">${data.name} &middot; HI: ${data.handicapIndex}${data.club ? ' &middot; ' + data.club : ''}</span>
-          <button onclick="addGhinPlayer('${data.name.replace(/'/g,"\\'")}',${data.handicapIndex})" style="margin-left:8px;padding:4px 12px;background:var(--gold);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>`;
-      } catch(e) {
-        resultEl.innerHTML = '<span style="color:var(--loss)">Lookup failed — try manually</span>';
+        const res = await fetch(`/api/ghin/search?q=${encodeURIComponent(q)}`);
+        const golfers = await res.json();
+        btn.textContent = 'Search';
+
+        if (!Array.isArray(golfers) || golfers.length === 0) {
+          resultsEl.innerHTML = `<div style="padding:12px;text-align:center;font-size:13px">
+            <span style="color:var(--muted)">No GHIN results for "${q}"</span><br>
+            <button onclick="document.querySelector('details').open=true;document.getElementById('manual-name').value='${q.replace(/'/g,"\\'")}';document.getElementById('manual-name').focus()" style="margin-top:6px;padding:6px 14px;background:var(--gold);color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Add manually</button>
+          </div>`;
+          return;
+        }
+
+        resultsEl.innerHTML = golfers.map(g => {
+          const alreadyAdded = roster.some(p => p.name.toLowerCase() === g.name.toLowerCase());
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);${alreadyAdded ? 'opacity:0.4' : 'cursor:pointer'}" ${alreadyAdded ? '' : `onclick="pickSearchResult('${g.name.replace(/'/g,"\\'")}',${g.handicapIndex || 0},'${(g.club||'').replace(/'/g,"\\'")}','${g.ghin||''}')"`}>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--dark)">${g.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${g.club || 'No club'}${g.state ? ', ' + g.state : ''}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:16px;font-weight:800;color:${g.handicapIndex != null ? 'var(--dark)' : 'var(--muted)'};font-family:'SF Mono',monospace">${g.handicapIndex != null ? g.handicapIndex : 'N/A'}</div>
+              <div style="font-size:10px;color:var(--muted)">${alreadyAdded ? 'Added' : 'Tap to add'}</div>
+            </div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        btn.textContent = 'Search';
+        resultsEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--loss);font-size:13px">Search failed — try again or add manually</div>';
       }
     }
 
-    function addGhinPlayer(name, hcp) {
-      const ta = document.getElementById('players');
-      const current = ta.value.trim();
-      const newLine = `${name}, ${hcp}`;
-      ta.value = current ? current + '\n' + newLine : newLine;
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      document.getElementById('ghin-num').value = '';
-      document.getElementById('ghin-last').value = '';
-      document.getElementById('ghin-result').innerHTML = '<span style="color:var(--win)">Added!</span>';
-      // Trigger AI recs after adding players
-      setTimeout(generateAIRecs, 300);
+    function pickSearchResult(name, hcp, club, ghin) {
+      addPlayerToRoster(name, hcp, club, ghin);
+      document.getElementById('player-search').value = '';
+      document.getElementById('search-results').innerHTML = '';
+      document.getElementById('player-search').focus();
     }
 
     // ── AI Recommendations ──
