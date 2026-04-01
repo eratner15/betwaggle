@@ -152,6 +152,31 @@ body.outdoor .mg-content { color: var(--text-primary); }
 .outdoor-toggle:hover { color: #C5A059; }
 body.outdoor .outdoor-toggle { color: #FFD54F; }
 
+/* Score change animations */
+@keyframes score-flash-green {
+  0% { background: rgba(22,163,74,0.25); }
+  100% { background: transparent; }
+}
+@keyframes score-flash-red {
+  0% { background: rgba(220,38,38,0.2); }
+  100% { background: transparent; }
+}
+@keyframes score-flash-gold {
+  0% { background: rgba(197,160,89,0.25); }
+  100% { background: transparent; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.flash-green { animation: score-flash-green 1.2s ease-out; }
+.flash-red { animation: score-flash-red 1.2s ease-out; }
+.flash-gold { animation: score-flash-gold 1.2s ease-out; }
+.slide-up { animation: slide-up 0.3s ease-out; }
+
+/* Leaderboard position change transitions */
+.mg-leaderboard-row { transition: transform 0.4s ease-out, opacity 0.3s; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {

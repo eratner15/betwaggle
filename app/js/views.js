@@ -56,6 +56,74 @@ function getSkinsHoles(gameState, holes, players) {
   return {};
 }
 
+// ─── SHARED: Skins Panel Renderer ───
+// Used by both buddies and scramble Board tabs
+function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVal, maxHoles }) {
+  let html = '';
+  const numP = entities.length;
+  let currentPot = 1;
+  const skinsWon = {};
+  entities.forEach(e => { skinsWon[e.name] = { count: 0, value: 0 }; });
+
+  html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-top:2px solid var(--gold-primary,#C5A059);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">${title}</span>
+    <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
+  </div>`;
+
+  const holesToShow = maxHoles ? scoredHoles.slice(-maxHoles) : scoredHoles;
+  holesToShow.forEach(h => {
+    const sk = skinsHoles[h];
+    if (!sk) return;
+    if (sk.winner) {
+      const val = (sk.potWon || 1) * (numP - 1) * skinsBetVal;
+      if (skinsWon[sk.winner]) { skinsWon[sk.winner].count++; skinsWon[sk.winner].value += val; }
+      const isCarryWin = (sk.potWon || 1) > 1;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${h < Math.max(...scoredHoles) ? 'border-bottom:1px solid var(--border)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--win,#16A34A)">${escHtml(String(sk.winner).split(' ')[0])}</span>
+          ${isCarryWin ? `<span style="font-size:10px;font-weight:700;background:var(--gold-primary,#C5A059);color:white;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
+        </div>
+        <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--gold-primary,#C5A059)">$${val}</span>
+      </div>`;
+      currentPot = 1;
+    } else if (sk.carried) {
+      currentPot = (sk.potBefore || currentPot) + 1;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--page-text-muted)">Tied</span>
+        </div>
+        <span style="font-size:11px;font-weight:700;background:rgba(197,160,89,0.15);color:var(--gold-primary);padding:3px 8px;border-radius:4px">CARRY \u2192 ${currentPot}x</span>
+      </div>`;
+    }
+  });
+
+  const skinsRanked = Object.entries(skinsWon).sort((a, b) => b[1].value - a[1].value);
+  if (skinsRanked.some(([, v]) => v.count > 0)) {
+    html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
+    skinsRanked.forEach(([name, data]) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+        <span style="font-size:13px;font-weight:600;color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+        <div style="display:flex;gap:12px;align-items:center">
+          <span style="font-size:12px;color:var(--page-text-muted)">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--gold-primary)">$${data.value}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (currentPot > 1) {
+    html += `<div style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:6px;border-radius:6px">
+      ${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 // Module-level config ref — set by initViews(config) at bootstrap
 let _C = null;
 
@@ -1085,52 +1153,7 @@ export function renderScrambleLeaderboard(state) {
     if (scrSkins && Object.keys(scrSkinsHoles).length > 0) {
       const skinsBetVal = parseInt(config?.structure?.skinsBet) || 0;
       if (skinsBetVal > 0) {
-        let currentCarry = 1;
-        let skinsAwarded = 0;
-        let totalSkinsPot = 0;
-
-        html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,#E5E0D8);border-top:2px solid var(--gold-primary,#C5A059);border-radius:10px;padding:14px 16px;margin-bottom:8px">`;
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--page-text)">Team Skins</span>
-          <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
-        </div>`;
-
-        const recentSkins = scoredHoles.slice(-6);
-        recentSkins.forEach(h => {
-          const sk = scrSkinsHoles[h];
-          if (!sk) return;
-          if (sk.winner) {
-            const val = (sk.potWon || 1) * skinsBetVal;
-            skinsAwarded++;
-            totalSkinsPot += val;
-            const isCarry = (sk.potWon || 1) > 1;
-            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="font-size:11px;font-weight:700;color:var(--page-text-muted);width:24px">H${h}</span>
-                <span style="font-size:12px;font-weight:600;color:var(--win)">${escHtml(String(sk.winner).split(' ').slice(0,2).join(' '))}</span>
-                ${isCarry ? `<span style="font-size:9px;font-weight:700;background:var(--gold-primary);color:white;padding:1px 5px;border-radius:3px">${sk.potWon}x</span>` : ''}
-              </div>
-              <span style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--gold-primary)">$${val}</span>
-            </div>`;
-            currentCarry = 1;
-          } else if (sk.carried) {
-            currentCarry = (sk.potBefore || currentCarry) + 1;
-          }
-        });
-
-        // Carry status
-        if (currentCarry > 1) {
-          html += `<div style="margin-top:6px;text-align:center;font-size:11px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:5px;border-radius:5px">
-            ${currentCarry}x carry active
-          </div>`;
-        }
-
-        const unclaimed = scoredHoles.length - skinsAwarded;
-        html += `<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--page-text-muted)">
-          <span>${skinsAwarded} awarded</span>
-          <span>${unclaimed} unclaimed (carried)</span>
-        </div>`;
-        html += `</div>`;
+        html += renderSkinsPanel({ title: 'Team Skins', skinsHoles: scrSkinsHoles, scoredHoles, entities: leaderboard.map(e => ({ name: e.team })), skinsBetVal, maxHoles: 6 });
       }
     }
 
@@ -2495,70 +2518,7 @@ export function renderRoundFeed(state) {
     // ── SKINS TRACKER ──
     if (games.skins && Object.keys(skinsHoles).length > 0) {
       const skinsBetVal = parseInt(config?.structure?.skinsBet) || 5;
-      const numP = players.length;
-      let currentPot = 1;
-      const skinsWon = {};
-      players.forEach(p => { skinsWon[p.name] = { count: 0, value: 0 }; });
-
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-top:2px solid var(--gold-primary,#C5A059);border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Skins Tracker</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
-      </div>`;
-
-      // Hole-by-hole skins results
-      scoredHoles.forEach(h => {
-        const sk = skinsHoles[h];
-        if (!sk) return;
-        const par = pars[h - 1] || 4;
-        if (sk.winner) {
-          const val = (sk.potWon || 1) * (numP - 1) * skinsBetVal;
-          if (skinsWon[sk.winner]) { skinsWon[sk.winner].count++; skinsWon[sk.winner].value += val; }
-          const isCarryWin = (sk.potWon || 1) > 1;
-          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${h < Math.max(...scoredHoles) ? 'border-bottom:1px solid var(--border)' : ''}">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
-              <span style="font-size:13px;font-weight:600;color:var(--win,#16A34A)">${escHtml(sk.winner.split(' ')[0])}</span>
-              ${isCarryWin ? `<span style="font-size:10px;font-weight:700;background:var(--gold-primary,#C5A059);color:white;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
-            </div>
-            <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--gold-primary,#C5A059)">$${val}</span>
-          </div>`;
-          currentPot = 1;
-        } else if (sk.carried) {
-          currentPot = (sk.potBefore || currentPot) + 1;
-          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
-              <span style="font-size:12px;font-weight:600;color:var(--page-text-muted)">Tied</span>
-            </div>
-            <span style="font-size:11px;font-weight:700;background:rgba(197,160,89,0.15);color:var(--gold-primary);padding:3px 8px;border-radius:4px">CARRY \u2192 ${currentPot}x</span>
-          </div>`;
-        }
-      });
-
-      // Skins leaderboard
-      const skinsRanked = Object.entries(skinsWon).sort((a, b) => b[1].value - a[1].value);
-      if (skinsRanked.some(([, v]) => v.count > 0)) {
-        html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
-        skinsRanked.forEach(([name, data]) => {
-          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-            <span style="font-size:13px;font-weight:600;color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
-            <div style="display:flex;gap:12px;align-items:center">
-              <span style="font-size:12px;color:var(--page-text-muted)">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
-              <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--gold-primary)">$${data.value}</span>
-            </div>
-          </div>`;
-        });
-        html += `</div>`;
-      }
-
-      // Current pot status
-      if (currentPot > 1) {
-        html += `<div style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:6px;border-radius:6px">
-          ${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}
-        </div>`;
-      }
-      html += `</div>`;
+      html += renderSkinsPanel({ title: 'Skins Tracker', skinsHoles, scoredHoles, entities: players, skinsBetVal });
     }
 
     // ── NASSAU STATUS ──
@@ -2568,7 +2528,7 @@ export function renderRoundFeed(state) {
       const frontHoles = scoredHoles.filter(h => h <= 9);
       const backHoles = scoredHoles.filter(h => h > 9);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid var(--green-primary,#1B3022);border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid var(--green-primary,#1B3022);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Nassau</span>
         <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${nassauBetVal}/side</span>
@@ -2639,7 +2599,7 @@ export function renderRoundFeed(state) {
       const currentWolf = wolfOrder[(nextHoleNum - 1) % wolfOrder.length];
       const wolfPointsPerHole = parseInt(config?.structure?.wolfPoints) || 1;
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #8B6914;border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #8B6914;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Wolf</span>
         <span style="font-size:12px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.1);padding:3px 8px;border-radius:4px">Hole ${nextHoleNum}: ${escHtml(currentWolf.split(' ')[0])} is Wolf</span>
@@ -7432,7 +7392,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   // ── e) Trash Talk Feed — dark card with gold left border ──
   {
     const feed = state._feed || [];
-    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:14px 16px;margin-bottom:10px">
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">
       <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px;display:flex;align-items:center;gap:6px">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--win);animation:wg-pulse 2s infinite"></span> Trash Talk
       </div>`;
