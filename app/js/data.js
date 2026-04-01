@@ -15,9 +15,12 @@ export async function loadConfig(slug, basePath) {
 export function generateMatches(config) {
   const matches = {};
   if (!config.flightOrder || !Array.isArray(config.flightOrder)) return matches;
+  if (!config.pairings || Object.keys(config.pairings).length === 0) return matches;
   for (const flightId of config.flightOrder) {
+    if (!config.pairings[flightId]) continue;
     for (let round = 1; round <= config.structure.roundsTotal; round++) {
-      const pairings = config.pairings[flightId][round];
+      const pairings = config.pairings[flightId]?.[round];
+      if (!pairings || !Array.isArray(pairings)) continue;
       for (let p = 0; p < pairings.length; p++) {
         const [a, b] = pairings[p];
         const matchId = `${flightId}-R${round}-P${p + 1}`;

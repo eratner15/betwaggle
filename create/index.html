@@ -423,7 +423,11 @@
     function showQuickStart(type) {
       _qsType = type;
       W.type = type;  // Set wizard type so Continue button enables if overlay is dismissed
-      _qsGames = { skins: true, nassau: true, match_play: true };
+      // Only reset games if not pre-set by URL ?format= param
+      const hasUrlFormat = new URLSearchParams(window.location.search).get('format');
+      if (!hasUrlFormat || !Object.values(_qsGames).some(Boolean)) {
+        _qsGames = { skins: true, nassau: true, match_play: true };
+      }
       _qsError = '';
       _qsLaunching = false;
       renderQuickStartOverlay();
@@ -617,7 +621,11 @@
         const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
         const data = await res.json();
         if (!res.ok) { _qsError = data.error || 'Failed to create event'; _qsLaunching = false; renderQuickStartOverlay(); return; }
-        if (data.slug) { window.location.href = '/' + data.slug + '/'; return; }
+        if (data.slug) {
+          // Store admin PIN so the event page can auto-authenticate
+          try { localStorage.setItem('waggle-admin-pin-' + data.slug, pin); } catch(e) {}
+          window.location.href = '/' + data.slug + '/'; return;
+        }
         if (data.checkoutUrl) { window.location.href = data.checkoutUrl; return; }
         _qsError = 'Unexpected response'; _qsLaunching = false; renderQuickStartOverlay();
       } catch (e) {
@@ -2462,18 +2470,15 @@
     (function autoSelectFormat() {
       const params = new URLSearchParams(window.location.search);
       const fmt = params.get('format');
-      const tier = params.get('tier');
       if (!fmt) return;
       const formatMap = { skins: 'quick', nassau: 'quick', wolf: 'quick', 'match-play': 'quick', scramble: 'scramble' };
       const gameMap = { skins: 'skins', nassau: 'nassau', wolf: 'wolf', 'match-play': 'match_play' };
       const type = formatMap[fmt];
       if (type === 'quick') {
-        // Auto-launch Quick Start with the right game pre-selected
-        _qsType = 'quick';
+        // Pre-select only the requested game, then auto-open Quick Start
         _qsGames = { skins: false, nassau: false, match_play: false, wolf: false };
         if (gameMap[fmt]) _qsGames[gameMap[fmt]] = true;
-        W.type = 'quick';
-        W.step = 0;
+        setTimeout(() => showQuickStart('quick'), 100);
       } else if (type === 'scramble') {
         W.type = 'scramble';
         W.step = 0;
