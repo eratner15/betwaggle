@@ -1871,17 +1871,17 @@ export function renderRoundFeed(state) {
       const kpScores = inlScores;
       const kpStats = state._inlineScoreStats || {};
 
-      html += `<div style="background:#FFFFFF;border-radius:12px;padding:16px;margin-top:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #E5E7EB">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border-radius:12px;padding:16px;margin-top:8px;box-shadow:var(--shadow-sm,0 2px 8px rgba(0,0,0,0.08));border:1px solid var(--mg-border,#E5E7EB)">`;
 
-      // Header with hole info + nav arrows
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      // Header with hole info + nav arrows (large, thumb-friendly)
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div>
-          <div style="font-size:20px;font-weight:800;color:#0D2818">Hole ${kpHole}</div>
-          <div style="font-size:13px;color:#6B7280">Par ${kpPar}${kpYds ? ' &middot; ' + kpYds + ' yds' : ''}${kpHcp ? ' &middot; HCP ' + kpHcp : ''}</div>
+          <div style="font-size:28px;font-weight:800;color:var(--mg-green,#0D2818);font-family:var(--font-display,'Playfair Display',serif);letter-spacing:-0.5px">Hole ${kpHole}</div>
+          <div style="font-size:15px;color:var(--page-text-muted,#6B7280);font-weight:600">Par ${kpPar}${kpYds ? ' &middot; ' + kpYds + ' yds' : ''}${kpHcp ? ' &middot; SI ' + kpHcp : ''}</div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="window.MG.inlineScoreNav(-1)" style="width:36px;height:36px;border-radius:50%;border:1px solid #D1D5DB;background:white;color:#1A1A1A;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">&#9664;</button>
-          <button onclick="window.MG.inlineScoreNav(1)" style="width:36px;height:36px;border-radius:50%;border:1px solid #D1D5DB;background:white;color:#1A1A1A;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">&#9654;</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="window.MG.inlineScoreNav(-1)" style="width:48px;height:48px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9664;</button>
+          <button onclick="window.MG.inlineScoreNav(1)" style="width:48px;height:48px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9654;</button>
         </div>
       </div>`;
 
@@ -1894,38 +1894,42 @@ export function renderRoundFeed(state) {
 
         html += `<div style="padding:10px 0;border-top:1px solid #F0F0F0">`;
 
-        // Player name
-        html += `<div style="font-size:14px;font-weight:700;color:#1A1A1A;margin-bottom:8px">${escHtml(firstName)}</div>`;
+        // Player name — large and bold for outdoor readability
+        html += `<div style="font-size:17px;font-weight:800;color:var(--page-text,#1A1A1A);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          ${escHtml(firstName)}
+          ${currentScore !== null ? `<span style="font-size:13px;font-weight:600;color:var(--page-text-muted,#9CA3AF);font-family:var(--font-mono,'SF Mono',monospace)">${currentScore}</span>` : ''}
+        </div>`;
 
-        // Score keypad — buttons from par-2 to par+3
+        // Score keypad — large thumb-friendly buttons (52px min, 20px font)
         html += `<div style="display:flex;gap:6px;margin-bottom:8px">`;
         for (let s = Math.max(1, kpPar - 2); s <= kpPar + 3; s++) {
           const isSelected = currentScore === s;
           const diff = s - kpPar;
-          let btnColor = '#1A1A1A';
-          let btnBg = '#F5F5F5';
-          let btnBorder = '#D1D5DB';
+          let btnColor = 'var(--page-text,#1A1A1A)';
+          let btnBg = 'var(--bg-secondary,#F5F5F5)';
+          let btnBorder = 'var(--mg-border,#D1D5DB)';
           if (isSelected) {
-            if (diff < 0) { btnBg = '#16A34A'; btnColor = 'white'; btnBorder = '#16A34A'; }
-            else if (diff === 0) { btnBg = '#0D2818'; btnColor = 'white'; btnBorder = '#0D2818'; }
-            else { btnBg = '#DC2626'; btnColor = 'white'; btnBorder = '#DC2626'; }
+            if (diff < 0) { btnBg = 'var(--win,#16A34A)'; btnColor = 'white'; btnBorder = 'var(--win,#16A34A)'; }
+            else if (diff === 0) { btnBg = 'var(--mg-green,#0D2818)'; btnColor = 'white'; btnBorder = 'var(--mg-green,#0D2818)'; }
+            else { btnBg = 'var(--loss,#DC2626)'; btnColor = 'white'; btnBorder = 'var(--loss,#DC2626)'; }
           }
           const label = diff <= -2 ? 'Eagle' : diff === -1 ? 'Birdie' : diff === 0 ? 'Par' : diff === 1 ? 'Bogey' : diff === 2 ? 'Dbl' : '+' + diff;
 
           html += `<button onclick="window.MG.inlineScoreSet('${escHtml(name)}',${s})"
-            style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid ${btnBorder};background:${btnBg};color:${btnColor};font-size:16px;font-weight:800;cursor:pointer;text-align:center;min-height:44px;font-family:'SF Mono','Menlo','Courier New',monospace;-webkit-tap-highlight-color:transparent;transition:transform .08s"
-            onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
+            style="flex:1;padding:6px 2px;border-radius:10px;border:2.5px solid ${btnBorder};background:${btnBg};color:${btnColor};font-size:20px;font-weight:800;cursor:pointer;text-align:center;min-height:52px;font-family:var(--font-mono,'SF Mono','Menlo',monospace);-webkit-tap-highlight-color:transparent;transition:transform .08s,background .1s"
+            onpointerdown="this.style.transform='scale(0.93)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
             ${s}
-            <div style="font-size:8px;font-weight:500;opacity:0.7;margin-top:1px">${label}</div>
+            <div style="font-size:9px;font-weight:600;opacity:0.7;margin-top:2px;letter-spacing:0.3px">${label}</div>
           </button>`;
         }
         // "Other" button for scores outside the range
         html += `<button onclick="window.MG.inlineScoreType('${escHtml(name)}',prompt('Score for ${escHtml(firstName)}:'))"
-          style="width:44px;padding:8px 4px;border-radius:8px;border:2px solid #D1D5DB;background:#F5F5F5;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">+</button>`;
+          style="width:52px;padding:6px 2px;border-radius:10px;border:2.5px solid var(--mg-border,#D1D5DB);background:var(--bg-secondary,#F5F5F5);color:var(--page-text-muted,#6B7280);font-size:14px;font-weight:700;cursor:pointer;min-height:52px;-webkit-tap-highlight-color:transparent">+</button>`;
         html += `</div>`;
 
-        // Stats row: FIR, GIR, Putts, Penalty
-        html += `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">`;
+        // Stats row: FIR, GIR, Putts, Penalty (collapsed by default for fast scoring)
+        html += `<details style="margin-top:2px"><summary style="font-size:11px;font-weight:600;color:var(--page-text-muted,#9CA3AF);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent;padding:2px 0"><span style="font-size:8px;transition:transform .2s">&#9654;</span> Stats</summary>`;
+        html += `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px">`;
 
         // FIR toggle (only on par 4 and par 5)
         if (kpPar >= 4) {
@@ -1966,16 +1970,17 @@ export function renderRoundFeed(state) {
         </label>`;
 
         html += `</div>`;
+        html += `</details>`;
         html += `</div>`;
       });
 
-      // Save button
+      // Save button — large, thumb-friendly
       const kpAllFilled = players.every(p => kpScores[p.name] >= 1);
       html += `<button onclick="window.MG.inlineScoreSave()"
-        style="width:100%;padding:14px;margin-top:12px;border-radius:10px;border:none;background:${kpAllFilled ? '#0D2818' : '#D1D5DB'};color:${kpAllFilled ? 'white' : '#9CA3AF'};font-size:16px;font-weight:700;cursor:${kpAllFilled ? 'pointer' : 'default'};box-shadow:${kpAllFilled ? '0 3px 12px rgba(13,40,24,0.3)' : 'none'};-webkit-tap-highlight-color:transparent;transition:transform .08s"
+        style="width:100%;padding:18px;margin-top:14px;border-radius:12px;border:none;background:${kpAllFilled ? 'var(--mg-green,#0D2818)' : 'var(--mg-border,#D1D5DB)'};color:${kpAllFilled ? 'white' : 'var(--page-text-muted,#9CA3AF)'};font-size:18px;font-weight:800;cursor:${kpAllFilled ? 'pointer' : 'default'};box-shadow:${kpAllFilled ? '0 4px 16px rgba(13,40,24,0.3)' : 'none'};-webkit-tap-highlight-color:transparent;transition:transform .08s;min-height:56px;letter-spacing:0.3px"
         ${kpAllFilled ? '' : 'disabled'}
         ${kpAllFilled ? 'onpointerdown="this.style.transform=\'scale(0.97)\'" onpointerup="this.style.transform=\'\'" onpointerleave="this.style.transform=\'\'"' : ''}>
-        ${kpAllFilled ? 'Save Hole ' + kpHole + ' &#8594;' : 'Fill in all scores for Hole ' + kpHole}
+        ${kpAllFilled ? 'Save Hole ' + kpHole + ' &#8594;' : 'Tap scores for Hole ' + kpHole}
       </button>`;
 
       // Undo last hole button (shown when there's a recent submission to undo)
