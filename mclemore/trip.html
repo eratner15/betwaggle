@@ -139,13 +139,13 @@
     <!-- ROUND 3: AI PICK -->
     <div class="section-head">
       <h2>Round 3</h2>
-      <span class="badge badge-blue">AI Pick</span>
+      <span class="badge badge-blue">Modified Stableford</span>
     </div>
     <div class="round-card">
       <div class="round-top">
         <div class="round-label">Saturday · May 2</div>
         <div class="round-title">The Keep</div>
-        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>8:40 AM</span><span>7 players</span></div>
+        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>8:40 AM</span><span>7 players · 2 groups</span></div>
       </div>
       <div class="round-body" id="r3-format"></div>
     </div>
@@ -153,22 +153,52 @@
     <!-- BETTING SUMMARY -->
     <div class="section-head">
       <h2>The Action</h2>
-      <span class="badge badge-gold">$840+ in play</span>
     </div>
-    <div class="bet-grid">
-      <div class="bet-item"><div class="label">Skins (3 rounds)</div><div class="value">$10/skin</div></div>
-      <div class="bet-item"><div class="label">Nassau (3 rounds)</div><div class="value">$20/side</div></div>
-      <div class="bet-item"><div class="label">Best Ball (R1)</div><div class="value">$20/team</div></div>
-      <div class="bet-item"><div class="label">Scramble (R2)</div><div class="value">$30/team</div></div>
-      <div class="bet-item"><div class="label">Wolf (R3)</div><div class="value">$5/point</div></div>
-      <div class="bet-item"><div class="label">Auto-Press</div><div class="value">2 down</div></div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:14px 16px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff">
+        <div style="font-family:var(--serif);font-size:16px;font-weight:700">Per-Person Ante · Each Round</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">Everyone puts in the same amount each round</div>
+      </div>
+      <div style="padding:4px 16px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Skins</div><div style="font-size:11px;color:var(--muted)">Win a hole outright, win the skin. Ties carry over.</div></div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$10</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Nassau</div><div style="font-size:11px;color:var(--muted)">3 bets: front 9 + back 9 + overall. Each worth $20.</div></div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$60</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:14px;font-weight:700;color:var(--dark)">Auto-Press</div><div style="font-size:11px;color:var(--muted)">Down 2 in Nassau? Automatic press — new $20 bet from that hole.</div></div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted)">2 down</div>
+        </div>
+      </div>
+      <div style="padding:0 16px 12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:8px 0 6px">Round-Specific</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R1: Best Ball</div><div style="font-size:11px;color:var(--muted)">Team bet — your 2-man team vs the other pair in your foursome</div></div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$20</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R2: Scramble</div><div style="font-size:11px;color:var(--muted)">Team bet — 4-man vs 3-man (3-man gets 1 extra shot/hole)</div></div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$30</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">R3: Stableford</div><div style="font-size:11px;color:var(--muted)">Points game — reward birdies (+2), eagles (+5), limit bogey damage (−1)</div></div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold-dk)">$5/pt</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:700;color:var(--dark)">Min ante per round</span>
+        <span style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--gold-dk)">~$100</span>
+      </div>
     </div>
 
     <!-- LODGING -->
     <div class="lodging">
       <div class="label">Lodging · 2 Nights</div>
       <div class="addr">856 Canyon Ridge Road</div>
-      <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133 · $1,611/person</div>
+      <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133</div>
     </div>
 
     <!-- PER-ROUND SCORECARDS (expandable) -->
@@ -405,18 +435,51 @@
 
     // ── Round 3: AI Pick ──
     function renderR3() {
-      const avgHcp = R2_PLAYERS.reduce((s, p) => s + p.hcp, 0) / R2_PLAYERS.length;
+      // 7 players → Group A (4) and Group B (3)
+      // Balance by alternating handicaps: best + worst pairs
+      const sorted = [...R2_PLAYERS].sort((a, b) => a.hcp - b.hcp);
+      const groupA = [sorted[0], sorted[3], sorted[4], sorted[6]]; // Brian(8), Scott K(12), Ratner(13), Schue(15.1)
+      const groupB = [sorted[1], sorted[2], sorted[5]]; // Bartlett(9), Becker(14.3), Fund(15)
+      const avgA = groupA.reduce((s, p) => s + p.hcp, 0) / groupA.length;
+      const avgB = groupB.reduce((s, p) => s + p.hcp, 0) / groupB.length;
+
       document.getElementById('r3-format').innerHTML = `
         <div class="ai-box">
-          <div class="ai-label">AI Recommendation</div>
-          <p><strong>Wolf + Skins + Nassau.</strong> With 7 players averaging ${avgHcp.toFixed(1)} HCP and a tight spread (9.0 – 15.1), Wolf maximizes drama — every hole forces a decision: pick your partner or go Lone Wolf for double stakes. Skins keeps individual action alive. Nassau adds the front/back/overall structure to keep the pressure on all 18.</p>
-          <p style="margin-top:8px;font-size:12px;color:var(--gold)">Alt: Modified Stableford (+5 eagle, +2 birdie, 0 par, −1 bogey, −3 double) rewards aggressive play on a course you've already seen.</p>
+          <div class="ai-label">Modified Stableford</div>
+          <p>Points-based scoring rewards aggressive play. You already know The Keep from Day 1 — now go for pins.</p>
+          <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(197,160,89,0.2);color:var(--gold)">Eagle +5</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(22,163,74,0.15);color:#16A34A">Birdie +2</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6)">Par 0</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(220,38,38,0.15);color:#FB7185">Bogey −1</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(220,38,38,0.25);color:#FB7185">Double −3</span>
+          </div>
         </div>
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin:12px 0 6px">WOLF ROTATION</div>
-        <div class="wolf-order">
-          ${R2_PLAYERS.map((p, i) => `<div class="wolf-slot" ${i === 0 ? 'style="background:var(--green);color:#fff;border-color:var(--green)"' : ''}>${p.name.split(' ')[0]}</div>`).join('')}
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:14px 0 8px">Two Groups</div>
+
+        <div class="team-row favored">
+          <div>
+            <div class="team-name">Group A (4)</div>
+            <div class="team-players">${groupA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
+          </div>
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">Wolf Hammer on holes 17 & 18 (4x stakes)</div>`;
+        <div class="team-row">
+          <div>
+            <div class="team-name">Group B (3)</div>
+            <div class="team-players">${groupB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5">
+          Individual Stableford — highest total points wins. Each player competes individually within their group. Skins + Nassau still running on top.
+        </div>`;
     }
     renderR3();
 
