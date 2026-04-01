@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>McLemore 2026 — BetWaggle</title>
+  <meta name="description" content="McLemore Buddies Trip · Apr 30 – May 2, 2026 · 8 players, 3 rounds, 2 courses. Live odds, groupings, and action.">
+  <meta property="og:title" content="McLemore 2026 — Buddies Trip">
+  <meta property="og:description" content="8 players. 3 rounds. Lookout Mountain. Who's taking the money home?">
+  <meta name="theme-color" content="#1B3022">
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#1B3022;--green-mid:#304D39;--gold:#C5A059;--gold-dk:#9A7A2E;--gold-dim:rgba(197,160,89,0.15);--ivory:#FCF9F4;--white:#FAFAF7;--dark:#0D2818;--text:#1C1C19;--muted:#6B7280;--border:rgba(197,160,89,0.15);--win:#16A34A;--loss:#DC2626;--mono:'SF Mono','Fira Code',monospace;--serif:'Playfair Display',Georgia,serif;--sans:'Inter',-apple-system,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:var(--sans);background:var(--ivory);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.02'/%3E%3C/svg%3E");background-size:256px}
+
+    .header{background:var(--green);padding:20px 20px 24px;text-align:center;position:relative}
+    .header-logo{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--gold);font-weight:700;letter-spacing:0.5px;margin-bottom:4px}
+    .header h1{font-family:var(--serif);font-size:36px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:4px}
+    .header h1 em{color:var(--gold);font-style:italic}
+    .header-sub{font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.3px}
+    .countdown{display:inline-block;margin-top:10px;background:rgba(197,160,89,0.15);border:1px solid rgba(197,160,89,0.3);color:var(--gold);font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:6px 16px;border-radius:6px}
+    .gold-rule{height:1px;background:linear-gradient(90deg,transparent,#C5A059,transparent)}
+
+    .wrap{max-width:480px;margin:0 auto;padding:0 16px 100px}
+
+    /* Player roster */
+    .roster{display:flex;gap:10px;overflow-x:auto;padding:20px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .roster::-webkit-scrollbar{display:none}
+    .player-chip{flex-shrink:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;min-width:90px;position:relative}
+    .player-chip.leader{border-color:var(--gold);background:rgba(197,160,89,0.05)}
+    .player-chip .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:14px}
+    .player-chip .name{font-size:12px;font-weight:700;color:var(--dark);white-space:nowrap}
+    .player-chip .hcp{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--green);margin-top:2px}
+
+    /* Section headers */
+    .section-head{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 12px}
+    .section-head h2{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--dark)}
+    .section-head .badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:5px}
+    .badge-gold{background:rgba(197,160,89,0.12);color:var(--gold-dk)}
+    .badge-green{background:rgba(27,48,34,0.08);color:var(--green)}
+    .badge-blue{background:rgba(37,99,235,0.08);color:#2563EB}
+
+    /* Round cards */
+    .round-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:0;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 12px rgba(27,48,34,0.04)}
+    .round-top{padding:16px 18px 14px;border-bottom:1px solid var(--border)}
+    .round-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-dk);margin-bottom:4px}
+    .round-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--dark)}
+    .round-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .round-meta span{margin-right:10px}
+    .round-body{padding:14px 18px 16px}
+
+    /* Team cards */
+    .team-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+    .team-row.favored{border-left:3px solid var(--gold)}
+    .team-name{font-size:14px;font-weight:700;color:var(--dark)}
+    .team-players{font-size:11px;color:var(--muted);margin-top:1px}
+    .team-odds{font-family:var(--mono);font-size:18px;font-weight:800}
+    .odds-fav{color:var(--green)}
+    .odds-dog{color:var(--muted)}
+    .team-hcp{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+    /* AI box */
+    .ai-box{background:linear-gradient(135deg,var(--green),var(--dark));border-radius:10px;padding:16px;color:#fff;margin-top:10px}
+    .ai-box .ai-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+    .ai-box p{font-size:13px;line-height:1.5;color:rgba(255,255,255,0.85)}
+
+    /* Betting summary */
+    .bet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .bet-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+    .bet-item .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)}
+    .bet-item .value{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--gold-dk);margin-top:2px}
+
+    /* Shuffle button */
+    .btn-shuffle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:var(--ivory);border:1.5px solid var(--gold);border-radius:8px;color:var(--gold-dk);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+    .btn-shuffle:active{transform:scale(0.97);background:rgba(197,160,89,0.08)}
+
+    /* Share CTA */
+    .btn-share{display:block;width:100%;padding:18px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;text-align:center;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:50;letter-spacing:0.3px}
+    .btn-share:active{transform:scale(0.98)}
+
+    /* Lodging */
+    .lodging{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
+    .lodging .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px}
+    .lodging .addr{font-size:14px;font-weight:600;color:var(--dark)}
+    .lodging .details{font-size:12px;color:var(--muted);margin-top:2px}
+
+    /* Wolf rotation */
+    .wolf-order{display:flex;gap:4px;margin-top:8px}
+    .wolf-slot{flex:1;text-align:center;padding:6px 2px;border-radius:6px;font-size:10px;font-weight:700;background:var(--ivory);color:var(--muted);border:1px solid var(--border)}
+    .wolf-slot:first-child{background:var(--green);color:#fff;border-color:var(--green)}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">betwaggle</div>
+    <h1>McLemore <em>2026</em></h1>
+    <div class="header-sub">Lookout Mountain, GA · Apr 30 – May 2</div>
+    <div class="countdown" id="countdown"></div>
+  </div>
+  <div class="gold-rule"></div>
+
+  <div class="wrap">
+    <!-- PLAYER ROSTER -->
+    <div class="roster" id="roster"></div>
+
+    <!-- ROUND 1: BEST BALL -->
+    <div class="section-head">
+      <h2>Round 1</h2>
+      <span class="badge badge-gold">Best Ball</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Thursday · Apr 30</div>
+        <div class="round-title">The Keep</div>
+        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>2:30 PM</span><span>8 players</span></div>
+      </div>
+      <div class="round-body" id="r1-teams"></div>
+    </div>
+
+    <!-- ROUND 2: SCRAMBLE -->
+    <div class="section-head">
+      <h2>Round 2</h2>
+      <span class="badge badge-green">Scramble</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Friday · May 1 · Colby departs</div>
+        <div class="round-title">The Highlands</div>
+        <div class="round-meta"><span>Par 71</span><span>6,238 yds</span><span>12:20 PM</span><span>7 players</span></div>
+      </div>
+      <div class="round-body" id="r2-teams"></div>
+    </div>
+
+    <!-- ROUND 3: AI PICK -->
+    <div class="section-head">
+      <h2>Round 3</h2>
+      <span class="badge badge-blue">AI Pick</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Saturday · May 2</div>
+        <div class="round-title">The Keep</div>
+        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>8:40 AM</span><span>7 players</span></div>
+      </div>
+      <div class="round-body" id="r3-format"></div>
+    </div>
+
+    <!-- BETTING SUMMARY -->
+    <div class="section-head">
+      <h2>The Action</h2>
+      <span class="badge badge-gold">$840+ in play</span>
+    </div>
+    <div class="bet-grid">
+      <div class="bet-item"><div class="label">Skins (3 rounds)</div><div class="value">$10/skin</div></div>
+      <div class="bet-item"><div class="label">Nassau (3 rounds)</div><div class="value">$20/side</div></div>
+      <div class="bet-item"><div class="label">Best Ball (R1)</div><div class="value">$20/team</div></div>
+      <div class="bet-item"><div class="label">Scramble (R2)</div><div class="value">$30/team</div></div>
+      <div class="bet-item"><div class="label">Wolf (R3)</div><div class="value">$5/point</div></div>
+      <div class="bet-item"><div class="label">Auto-Press</div><div class="value">2 down</div></div>
+    </div>
+
+    <!-- LODGING -->
+    <div class="lodging">
+      <div class="label">Lodging · 2 Nights</div>
+      <div class="addr">856 Canyon Ridge Road</div>
+      <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133 · $1,611/person</div>
+    </div>
+
+    <!-- LINK TO LIVE EVENT -->
+    <div style="margin-top:20px;text-align:center">
+      <a href="/mclemore-2026-e2d420/#dashboard" style="display:inline-block;padding:14px 28px;background:var(--green);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Open The Board →</a>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Live scoring starts Thursday at 2:30</div>
+    </div>
+  </div>
+
+  <button class="btn-share" onclick="shareTrip()">Share with the Group</button>
+
+  <script>
+    // ── Players ──
+    const ALL_PLAYERS = [
+      { name: 'Colby Kittrell', hcp: 8.8 },
+      { name: 'Scott Bartlett', hcp: 9.0 },
+      { name: 'Scott Kittrell', hcp: 12.0 },
+      { name: 'David Becker', hcp: 14.3 },
+      { name: 'Ben Fund', hcp: 15.0 },
+      { name: 'Brian Kunis', hcp: 15.0 },
+      { name: 'Evan Ratner', hcp: 15.0 },
+      { name: 'Aaron Schue', hcp: 15.1 }
+    ];
+    const R2_PLAYERS = ALL_PLAYERS.filter(p => p.name !== 'Colby Kittrell'); // 7 players
+
+    // ── Countdown ──
+    function updateCountdown() {
+      const trip = new Date('2026-04-30T14:30:00');
+      const now = new Date();
+      const days = Math.ceil((trip - now) / 86400000);
+      document.getElementById('countdown').textContent = days > 0 ? `${days} days away` : days === 0 ? 'TODAY' : 'IN PROGRESS';
+    }
+    updateCountdown();
+
+    // ── Roster ──
+    function renderRoster() {
+      document.getElementById('roster').innerHTML = ALL_PLAYERS.map((p, i) => `
+        <div class="player-chip ${i === 0 ? 'leader' : ''}">
+          ${i === 0 ? '<div class="crown">👑</div>' : ''}
+          <div class="hcp">${p.hcp}</div>
+          <div class="name">${p.name.split(' ')[0]}</div>
+        </div>`).join('');
+    }
+    renderRoster();
+
+    // ── Best Ball Odds (combined team HCP → implied probability) ──
+    function teamOdds(teams) {
+      // Lower combined HCP = better odds
+      const avgHcps = teams.map(t => t.players.reduce((s, p) => s + p.hcp, 0) / t.players.length);
+      const minAvg = Math.min(...avgHcps);
+      const maxAvg = Math.max(...avgHcps);
+      const range = maxAvg - minAvg || 1;
+      return teams.map((t, i) => {
+        const advantage = (maxAvg - avgHcps[i]) / range; // 0 = worst, 1 = best
+        const prob = 0.15 + advantage * 0.35; // 15% to 50%
+        const ml = prob > 0.5 ? Math.round(-100 * prob / (1 - prob)) : Math.round(100 * (1 - prob) / prob);
+        return { ...t, avgHcp: avgHcps[i], ml: ml > 0 ? '+' + ml : String(ml), prob };
+      });
+    }
+
+    // ── Round 1: Best Ball (shuffle-able) ──
+    let r1Teams = [
+      { name: 'Kittrell Bros', players: [ALL_PLAYERS[0], ALL_PLAYERS[2]] },
+      { name: 'Becker/Bartlett', players: [ALL_PLAYERS[3], ALL_PLAYERS[1]] },
+      { name: 'Fund/Kunis', players: [ALL_PLAYERS[4], ALL_PLAYERS[5]] },
+      { name: 'Ratner/Schue', players: [ALL_PLAYERS[6], ALL_PLAYERS[7]] }
+    ];
+
+    function renderR1() {
+      const teams = teamOdds(r1Teams);
+      let html = '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">FOURSOME 1</div>';
+      teams.slice(0, 2).forEach(t => {
+        const isFav = t.prob === Math.max(...teams.slice(0, 2).map(x => x.prob));
+        html += `<div class="team-row ${isFav ? 'favored' : ''}">
+          <div>
+            <div class="team-name">${t.name}</div>
+            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds ${t.ml.startsWith('-') ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
+            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
+          </div>
+        </div>`;
+      });
+      html += '<div style="font-size:11px;font-weight:600;color:var(--muted);margin:10px 0 8px">FOURSOME 2</div>';
+      teams.slice(2, 4).forEach(t => {
+        const isFav = t.prob === Math.max(...teams.slice(2, 4).map(x => x.prob));
+        html += `<div class="team-row ${isFav ? 'favored' : ''}">
+          <div>
+            <div class="team-name">${t.name}</div>
+            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds ${t.ml.startsWith('-') ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
+            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
+          </div>
+        </div>`;
+      });
+      html += '<button class="btn-shuffle" onclick="shuffleR1()">🔀 Shuffle Teams — See New Odds</button>';
+      document.getElementById('r1-teams').innerHTML = html;
+    }
+
+    function shuffleR1() {
+      // Random 2-man teams from 8 players
+      const shuffled = [...ALL_PLAYERS].sort(() => Math.random() - 0.5);
+      const names = [
+        shuffled[0].name.split(' ')[1] + '/' + shuffled[1].name.split(' ')[1],
+        shuffled[2].name.split(' ')[1] + '/' + shuffled[3].name.split(' ')[1],
+        shuffled[4].name.split(' ')[1] + '/' + shuffled[5].name.split(' ')[1],
+        shuffled[6].name.split(' ')[1] + '/' + shuffled[7].name.split(' ')[1]
+      ];
+      r1Teams = [
+        { name: names[0], players: [shuffled[0], shuffled[1]] },
+        { name: names[1], players: [shuffled[2], shuffled[3]] },
+        { name: names[2], players: [shuffled[4], shuffled[5]] },
+        { name: names[3], players: [shuffled[6], shuffled[7]] }
+      ];
+      renderR1();
+    }
+    renderR1();
+
+    // ── Round 2: Scramble 4v3 ──
+    function renderR2() {
+      const teamA = [R2_PLAYERS[0], R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[3]]; // Bartlett, Scott K, Becker, Fund
+      const teamB = [R2_PLAYERS[4], R2_PLAYERS[5], R2_PLAYERS[6]]; // Kunis, Ratner, Schue
+      const avgA = teamA.reduce((s, p) => s + p.hcp, 0) / teamA.length;
+      const avgB = teamB.reduce((s, p) => s + p.hcp, 0) / teamB.length;
+
+      document.getElementById('r2-teams').innerHTML = `
+        <div class="team-row favored">
+          <div>
+            <div class="team-name">Team Alpha (4)</div>
+            <div class="team-players">${teamA.map(p => p.name.split(' ')[0]).join(', ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds odds-fav">-180</div>
+            <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
+          </div>
+        </div>
+        <div class="team-row">
+          <div>
+            <div class="team-name">Team Bravo (3)</div>
+            <div class="team-players">${teamB.map(p => p.name.split(' ')[0]).join(', ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds odds-dog">+160</div>
+            <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center">
+          4-man team gets more shots but 3-man team gets handicap strokes to compensate
+        </div>`;
+    }
+    renderR2();
+
+    // ── Round 3: AI Pick ──
+    function renderR3() {
+      const avgHcp = R2_PLAYERS.reduce((s, p) => s + p.hcp, 0) / R2_PLAYERS.length;
+      document.getElementById('r3-format').innerHTML = `
+        <div class="ai-box">
+          <div class="ai-label">AI Recommendation</div>
+          <p><strong>Wolf + Skins + Nassau.</strong> With 7 players averaging ${avgHcp.toFixed(1)} HCP and a tight spread (9.0 – 15.1), Wolf maximizes drama — every hole forces a decision: pick your partner or go Lone Wolf for double stakes. Skins keeps individual action alive. Nassau adds the front/back/overall structure to keep the pressure on all 18.</p>
+          <p style="margin-top:8px;font-size:12px;color:var(--gold)">Alt: Modified Stableford (+5 eagle, +2 birdie, 0 par, −1 bogey, −3 double) rewards aggressive play on a course you've already seen.</p>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin:12px 0 6px">WOLF ROTATION</div>
+        <div class="wolf-order">
+          ${R2_PLAYERS.map((p, i) => `<div class="wolf-slot" ${i === 0 ? 'style="background:var(--green);color:#fff;border-color:var(--green)"' : ''}>${p.name.split(' ')[0]}</div>`).join('')}
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">Wolf Hammer on holes 17 & 18 (4x stakes)</div>`;
+    }
+    renderR3();
+
+    // ── Share ──
+    function shareTrip() {
+      const url = window.location.href;
+      const text = 'McLemore 2026 — Buddies Trip. 8 players, 3 rounds, Lookout Mountain. Check the odds and groupings:';
+      if (navigator.share) {
+        navigator.share({ title: 'McLemore 2026', text, url });
+      } else {
+        navigator.clipboard.writeText(url).then(() => {
+          const btn = document.querySelector('.btn-share');
+          btn.textContent = 'Link Copied!';
+          setTimeout(() => { btn.textContent = 'Share with the Group'; }, 2000);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
