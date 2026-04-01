@@ -580,6 +580,33 @@ function updateNav(view) {
   const games = state?._config?.games || {};
   const hasGames = Object.values(games).some(Boolean);
 
+  // Populate header tabs for round/scramble mode
+  const headerTabsEl = document.getElementById('mg-header-tabs');
+  if (headerTabsEl) {
+    if ((isRoundMode || isScrambleMode) && view === 'dashboard') {
+      const holes = state._holes || {};
+      const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0);
+      const holesPerRound = state._config?.holesPerRound || 18;
+      const roundComplete = scoredHoles.length >= holesPerRound;
+      const showSubTabs = scoredHoles.length > 0 && !roundComplete;
+      if (showSubTabs) {
+        const activeSubTab = state._boardSubTab || 'score';
+        const tabs = [
+          { key: 'score', label: 'SCORE' },
+          { key: 'board', label: 'BOARD' },
+          { key: 'bar', label: 'THE BAR' }
+        ];
+        headerTabsEl.innerHTML = tabs.map(t =>
+          `<button class="${activeSubTab === t.key ? 'active' : ''}" onclick="window.MG.setBoardTab('${t.key}')">${t.label}</button>`
+        ).join('');
+      } else {
+        headerTabsEl.innerHTML = '';
+      }
+    } else {
+      headerTabsEl.innerHTML = '';
+    }
+  }
+
   document.querySelectorAll(".mg-nav a").forEach(a => {
     const tab = a.dataset.tab;
     const label = a.querySelector('.nav-label');

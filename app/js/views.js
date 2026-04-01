@@ -881,25 +881,11 @@ export function renderScrambleLeaderboard(state) {
   }
 
   // ================================================================
-  // SUB-TAB BAR (scramble mid-round)
+  // SUB-TAB BAR (scramble) — now rendered in the sticky header (mg-header-tabs)
+  // These variables are still needed for conditional rendering below
   // ================================================================
   const scrShowSubTabs = holesPlayed > 0 && !roundComplete;
   const scrActiveSubTab = scrShowSubTabs ? (state._boardSubTab || 'score') : null;
-  if (scrShowSubTabs) {
-    const scrTabItems = [
-      { key: 'score', icon: '\u25A6', label: 'Score' },
-      { key: 'board', icon: '\uD83C\uDFC6', label: 'Board' },
-      { key: 'bar',   icon: '\uD83C\uDF7A', label: 'The Bar' }
-    ];
-    html += `<div style="display:flex;gap:4px;margin-bottom:8px;padding:3px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border)">`;
-    scrTabItems.forEach(t => {
-      const isActive = scrActiveSubTab === t.key;
-      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="flex:1;padding:10px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-radius:8px;transition:all .15s;${isActive ? 'background:var(--gold-primary,var(--mg-gold));color:var(--bg-primary,var(--mg-green));box-shadow:0 2px 8px rgba(212,160,23,0.3)' : 'background:transparent;color:var(--text-secondary)'}">
-        <span style="margin-right:4px;font-size:12px">${t.icon}</span>${t.label}
-      </button>`;
-    });
-    html += `</div>`;
-  }
 
   // ================================================================
   // SECTION 2: INLINE SCORE ENTRY (admin/scorer only)
@@ -1094,12 +1080,13 @@ export function renderScrambleLeaderboard(state) {
     const feedItems = state._feed || [];
     if (feedItems.length > 0 && holesPlayed > 0) {
       const latestFeed = feedItems.slice(0, 5);
-      html += `<div id="board-ticker" style="background:#FFFFFF;border-left:3px solid #B8962E;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;border:1px solid #E5E0D8;border-left:3px solid #B8962E;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
+      html += `<div style="border-top:1px solid rgba(197,160,89,0.15);border-bottom:1px solid rgba(197,160,89,0.15)">`;
+      html += `<div id="board-ticker" style="overflow:hidden;height:38px;cursor:pointer" onclick="this.style.height=this.style.height==='38px'?'auto':'38px'">`;
       latestFeed.forEach((item, idx) => {
         const text = item.text || '';
-        html += `<div style="font-size:14px;font-style:italic;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
+        html += `<div style="text-align:center;padding:8px 20px;font-style:italic;font-size:14px;color:#4A4A45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'border-top:1px solid rgba(197,160,89,0.08)' : ''}">${escHtml(text)}</div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
   }
 
@@ -1586,7 +1573,7 @@ export function renderRoundFeed(state) {
     let detail = '';
     if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
     if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
-    return `<span style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}${detail}</span>`;
+    return `<span style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;background:rgba(197,160,89,0.12);color:#C5A059;padding:5px 12px;border-radius:4px;border:1px solid rgba(197,160,89,0.2)">${escHtml(g)}${detail}</span>`;
   }).join('');
 
   let html = '';
@@ -1624,7 +1611,7 @@ export function renderRoundFeed(state) {
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif">Pot</div>
-          <div style="font-size:28px;font-weight:800;color:#C5A059;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
+          <div style="font-size:32px;font-weight:800;color:#C5A059;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">`;
@@ -1691,23 +1678,11 @@ export function renderRoundFeed(state) {
   }
 
   // ================================================================
-  // SUB-TAB BAR (mid-round only: when scores exist and round not complete)
+  // SUB-TAB BAR — now rendered in the sticky header (mg-header-tabs)
+  // These variables are still needed for conditional rendering below
   // ================================================================
   const showSubTabs = scoredHoles.length > 0 && !roundComplete;
   const activeSubTab = showSubTabs ? (state._boardSubTab || 'score') : null;
-  if (showSubTabs) {
-    const tabItems = [
-      { key: 'score', icon: '\u25A6', label: 'Score' },
-      { key: 'board', icon: '\uD83C\uDFC6', label: 'Board' },
-      { key: 'bar',   icon: '\uD83C\uDF7A', label: 'The Bar' }
-    ];
-    html += `<div style="display:flex;justify-content:center;gap:24px;padding:12px 0;margin-bottom:12px">`;
-    tabItems.forEach(t => {
-      const isActive = activeSubTab === t.key;
-      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="background:none;border:none;cursor:pointer;font-size:14px;font-weight:${isActive ? '700' : '500'};color:${isActive ? '#1C1C19' : '#8A8A85'};text-transform:uppercase;letter-spacing:1px;padding:4px 0;border-bottom:${isActive ? '2px solid #1C1C19' : '2px solid transparent'}">${t.label}</button>`;
-    });
-    html += `</div>`;
-  }
 
   // ================================================================
   // SECTION 2: SCORE ENTRY (inline scorecard grid)
@@ -2203,27 +2178,21 @@ export function renderRoundFeed(state) {
       const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
       const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
 
-      html += `<div style="display:flex;align-items:center;padding:16px 20px;background:${rowBg};border-left:3px solid ${isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)'};border-bottom:1px solid rgba(197,160,89,0.08)">
-
-        <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+      const borderColor = isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)';
+      const moneyLabel = (p.money||0) > 0 ? 'skins won' : (p.money||0) < 0 ? 'skins' : '';
+      html += `<div style="display:grid;grid-template-columns:1fr 50px 55px 75px 55px 60px;align-items:center;padding:14px 20px;background:${rowBg};border-left:3px solid ${borderColor};border-bottom:1px solid rgba(197,160,89,0.06)">
+        <div style="font-size:17px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+        <div style="text-align:right;font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:${toParColor}">${toParStr}</div>
+        <div style="text-align:right;font-family:'SF Mono',monospace;font-size:13px;color:#8A8A85">${odds}</div>
+        <div style="text-align:right">
+          <div style="font-family:'SF Mono',monospace;font-size:15px;font-weight:700;color:${moneyColor}">${moneyStr}</div>
+          <div style="font-size:9px;color:#8A8A85">${moneyLabel}</div>
         </div>
-
-        <div style="min-width:40px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:22px;font-weight:800;color:${toParColor};margin-right:12px">${toParStr}</div>
-
-        <div style="min-width:45px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:13px;color:#6B7280;margin-right:12px">${odds}</div>
-
-        <div style="min-width:65px;text-align:right;margin-right:12px">
-          <div style="font-family:'SF Mono','Fira Code',monospace;font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</div>
-          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase">${(p.money||0) > 0 ? 'skins won' : (p.money||0) < 0 ? 'skins' : ''}</div>
+        <div style="text-align:center">
+          <div style="font-size:17px;font-weight:700;color:#1C1C19">${p.skins}</div>
+          <div style="font-size:9px;color:#8A8A85">${p.skins === 1 ? 'skin' : 'skins'}</div>
         </div>
-
-        <div style="min-width:45px;text-align:center;margin-right:8px">
-          <div style="font-size:18px;font-weight:700;color:#1C1C19">${p.skins}</div>
-          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase">${p.skins === 1 ? 'skin' : 'skins'}</div>
-        </div>
-
-        <div style="min-width:50px;text-align:right;font-size:12px;color:#8A8A85">Thru ${p.thru}</div>
+        <div style="text-align:right;font-size:12px;color:#8A8A85">Thru ${p.thru}</div>
       </div>`;
     });
 
@@ -2410,7 +2379,7 @@ export function renderRoundFeed(state) {
           <div style="font-size:16px;font-weight:600;color:#1C1C19;font-family:'Inter',sans-serif">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:#8A8A85">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-family:'SF Mono','Fira Code',monospace;font-size:22px;font-weight:800;color:#C5A059">$${pair.amount}</span>
-            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:transparent;color:#C5A059;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
+            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="color:#C5A059;font-style:italic;font-weight:600;font-size:13px;text-decoration:none;cursor:pointer">venmo</a>` : ''}
           </div>
         </div>`;
       });
@@ -2429,14 +2398,15 @@ export function renderRoundFeed(state) {
       allTickerItems.unshift({ text: msg, isOddsMove: true });
     });
     if (allTickerItems.length > 0 && scoredHoles.length > 0) {
-      html += `<div id="board-ticker" style="background:#F5F1EA;border:1px solid rgba(197,160,89,0.15);border-left:3px solid #C5A059;border-radius:0 12px 12px 0;padding:10px 14px;margin-bottom:12px;overflow:hidden;height:34px;cursor:pointer;box-shadow:0 2px 8px rgba(27,48,34,0.04)" onclick="this.style.height=this.style.height==='34px'?'auto':'34px'">`;
+      html += `<div style="border-top:1px solid rgba(197,160,89,0.15);border-bottom:1px solid rgba(197,160,89,0.15)">`;
+      html += `<div id="board-ticker" style="overflow:hidden;height:38px;cursor:pointer" onclick="this.style.height=this.style.height==='38px'?'auto':'38px'">`;
       allTickerItems.slice(0, 7).forEach((item, i) => {
         const text = item.text || '';
-        const color = item.isOddsMove ? '#C5A059' : '#1C1C19';
+        const color = item.isOddsMove ? '#C5A059' : '#4A4A45';
         const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px;color:#C5A059">LINE MOVE</span>' : '';
-        html += `<div style="font-family:'Playfair Display',Georgia,serif;font-size:14px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
+        html += `<div style="text-align:center;padding:8px 20px;font-style:italic;font-size:14px;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;${i > 0 ? 'border-top:1px solid rgba(197,160,89,0.08)' : ''}">${prefix}${escHtml(text)}</div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
   }
 
