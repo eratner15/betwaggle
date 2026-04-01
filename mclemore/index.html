@@ -76,9 +76,9 @@
 </head>
 <body>
   <div class="hero">
-    <div class="hero-badge">Commissioner Setup</div>
+    <div class="hero-badge">Commissioner Setup &middot; Itinerary #46060</div>
     <h1>McLemore <em>Buddies Trip</em></h1>
-    <p>Lookout Mountain, Georgia<br>Set up your trip in 60 seconds. One link for the group.</p>
+    <p>Lookout Mountain, Georgia &middot; Apr 30 – May 2, 2026<br>856 Canyon Ridge Road &middot; 3 rounds, 2 courses</p>
   </div>
 
   <div class="content" id="intake">
@@ -89,38 +89,65 @@
       <p class="desc">Name your event and pick dates.</p>
       <label>Event Name</label>
       <input type="text" id="event-name" value="McLemore Buddies Trip" placeholder="McLemore Buddies Trip">
-      <label>Start Date</label>
-      <input type="date" id="date-start">
-      <label>End Date (optional)</label>
-      <input type="date" id="date-end">
+      <label>Arrival</label>
+      <input type="date" id="date-start" value="2026-04-30">
+      <label>Departure</label>
+      <input type="date" id="date-end" value="2026-05-02">
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(197,160,89,0.08);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5">
+        <strong style="color:var(--gold-dk)">Lodging:</strong> 856 Canyon Ridge Rd &middot; 2 nights &middot; Res #12133<br>
+        <strong style="color:var(--gold-dk)">Package:</strong> $1,610.69/person &middot; $11,485.40 total
+      </div>
     </div>
 
-    <!-- SECTION 2: Course Selection -->
+    <!-- SECTION 2: Trip Schedule (pre-filled from itinerary) -->
     <div class="section">
-      <div class="section-label">Step 2</div>
-      <h3>Choose Your Course</h3>
-      <p class="desc">Both McLemore courses are pre-loaded with full scorecards.</p>
+      <div class="section-label">Step 2 &middot; Confirmed Tee Times</div>
+      <h3>Your 3-Round Schedule</h3>
+      <p class="desc">Pre-loaded from McLemore itinerary. Full scorecards for each course.</p>
 
-      <div class="course-card selected" onclick="selectCourse('highlands')" id="card-highlands">
-        <h4>The Highlands</h4>
-        <div class="meta">
-          <span>Par 71</span>
-          <span>6,908 yds (Blue)</span>
-          <span>Slope 140</span>
-          <span>Rees Jones</span>
-        </div>
-      </div>
-      <div class="course-card" onclick="selectCourse('keep')" id="card-keep">
-        <h4>The Keep</h4>
-        <div class="meta">
-          <span>Par 72</span>
-          <span>7,067 yds (Blue)</span>
-          <span>Slope 140</span>
-          <span>Bergin & Jones</span>
+      <div class="course-card selected" style="border-left:3px solid var(--gold);cursor:default">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)">Round 1 &middot; Thursday</div>
+            <h4>The Keep</h4>
+            <div class="meta"><span>Par 72</span><span>7,067 yds</span><span>Slope 140</span></div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:var(--dark)">2:30</div>
+            <div style="font-size:11px;color:var(--muted)">Apr 30 &middot; 8 players</div>
+          </div>
         </div>
       </div>
 
-      <label>Tees</label>
+      <div class="course-card selected" style="border-left:3px solid var(--green);cursor:default">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green-light)">Round 2 &middot; Friday</div>
+            <h4>The Highlands</h4>
+            <div class="meta"><span>Par 71</span><span>6,908 yds</span><span>Slope 140</span></div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:var(--dark)">12:20</div>
+            <div style="font-size:11px;color:var(--muted)">May 1 &middot; 7 players</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="course-card selected" style="border-left:3px solid var(--gold);cursor:default">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold)">Round 3 &middot; Saturday</div>
+            <h4>The Keep</h4>
+            <div class="meta"><span>Par 72</span><span>7,067 yds</span><span>Slope 140</span></div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:var(--dark)">8:40</div>
+            <div style="font-size:11px;color:var(--muted)">May 2 &middot; 7 players</div>
+          </div>
+        </div>
+      </div>
+
+      <label>Tees (all rounds)</label>
       <div class="tee-select" id="tee-select"></div>
     </div>
 
@@ -209,23 +236,24 @@ Dave Wilson, 12.3, @davewilson"></textarea>
       }
     };
 
-    let selectedCourse = 'highlands';
-    let selectedTee = 'Blue';
+    // Multi-round trip schedule (pre-filled from McLemore itinerary #46060)
+    const ROUNDS = [
+      { day: 'Thu, Apr 30', course: 'keep', teeTime: '2:30 PM', players: 8 },
+      { day: 'Fri, May 1', course: 'highlands', teeTime: '12:20 PM', players: 7 },
+      { day: 'Sat, May 2', course: 'keep', teeTime: '8:40 AM', players: 7 }
+    ];
+
+    let selectedTee = 'White'; // Default to White tees for buddies trip
     let games = { skins: true, nassau: true, wolf: false, match_play: false, vegas: false, stableford: false };
 
-    function selectCourse(id) {
-      selectedCourse = id;
-      document.querySelectorAll('.course-card').forEach(c => c.classList.remove('selected'));
-      document.getElementById('card-' + id).classList.add('selected');
-      renderTees();
-    }
-
     function renderTees() {
-      const tees = Object.keys(COURSES[selectedCourse].tees);
+      // Show tees from The Keep (superset) — both courses have Blue/White/Green/Forward
+      const allTees = ['Blue', 'White', 'Green', 'Forward'];
       const el = document.getElementById('tee-select');
-      el.innerHTML = tees.map(t => {
-        const data = COURSES[selectedCourse].tees[t];
-        return `<div class="tee-btn ${selectedTee === t ? 'selected' : ''}" onclick="selectTee('${t}')">${t}<br><span style="font-size:10px;color:var(--muted)">${data.total} yds</span></div>`;
+      el.innerHTML = allTees.map(t => {
+        const keepYds = COURSES.keep.tees[t]?.total || '';
+        const highYds = COURSES.highlands.tees[t]?.total || COURSES.highlands.tees['Member']?.total || '';
+        return `<div class="tee-btn ${selectedTee === t ? 'selected' : ''}" onclick="selectTee('${t}')">${t}<br><span style="font-size:10px;color:var(--muted)">Keep ${keepYds}<br>High ${highYds}</span></div>`;
       }).join('');
     }
 
@@ -282,8 +310,6 @@ Dave Wilson, 12.3, @davewilson"></textarea>
       btn.disabled = true;
       btn.textContent = 'Creating...';
 
-      const course = COURSES[selectedCourse];
-      const teeData = course.tees[selectedTee];
       const pin = String(1000 + Math.floor(Math.random() * 9000));
 
       const teams = {};
@@ -291,42 +317,71 @@ Dave Wilson, 12.3, @davewilson"></textarea>
         teams[i + 1] = { id: i + 1, member: p.name, guest: '', memberHI: p.handicapIndex, guestHI: 0, combined: p.handicapIndex, flight: 'all' };
       });
 
+      // Build per-round course data
+      const rounds = {};
+      ROUNDS.forEach((r, i) => {
+        const course = COURSES[r.course];
+        const tee = selectedTee;
+        // Map tee name — Highlands uses 'Member' instead of 'White'
+        const teeName = (r.course === 'highlands' && tee === 'White') ? 'Member' : tee;
+        const teeData = course.tees[teeName] || course.tees['White'] || course.tees['Blue'];
+        rounds[i + 1] = {
+          course: course.name,
+          tees: tee,
+          teeTime: r.teeTime,
+          date: r.day,
+          pars: course.pars,
+          yardage: teeData.yardage,
+          rating: teeData.rating,
+          slope: teeData.slope,
+          hcpIndex: course.hcpIndex
+        };
+      });
+
+      // Use Round 1 course as default
+      const r1Course = COURSES[ROUNDS[0].course];
+      const r1Tee = (ROUNDS[0].course === 'highlands' && selectedTee === 'White') ? 'Member' : selectedTee;
+      const r1TeeData = r1Course.tees[r1Tee] || r1Course.tees['Blue'];
+
       const config = {
         event: {
           name, shortName: name.slice(0, 20),
-          venue: course.name,
-          course: course.name,
+          venue: 'McLemore Resort · Lookout Mountain',
+          course: r1Course.name,
           url: '',
-          dates: { day1: dateStart || new Date().toISOString().slice(0, 10), ...(dateEnd ? { day2: dateEnd } : {}) },
+          dates: { day1: '2026-04-30', day2: '2026-05-01', day3: '2026-05-02' },
           format: Object.keys(games).find(g => games[g]) || 'skins',
           adminPin: pin,
           adminContact: commEmail,
           eventType: 'buddies_trip',
-          commissioner: commissioner
+          commissioner: commissioner,
+          lodging: '856 Canyon Ridge Road · Res #12133',
+          itineraryId: '46060'
         },
         scoring: { totalPointsPerMatch: 10, capMax: 7, capMin: 3, holesPerMatch: 9, handicapAllowance: 0.85 },
         structure: {
           nassauBet: parseInt(document.getElementById('stakes-nassau').value) || 20,
           skinsBet: parseInt(document.getElementById('stakes-skins').value) || 10,
-          roundsTotal: 1,
+          roundsTotal: 3,
           teamsPerFlight: players.length,
           autoPress: { enabled: true, threshold: 2 }
         },
         flightOrder: ['all'],
         flights: { all: { id: 'all', name: 'All Players', tees: selectedTee, teamIds: players.map((_, i) => i + 1) } },
         teams, pairings: {},
+        rounds,
         theme: { primary: '#1B3022', accent: '#C5A059', bg: '#FCF9F4', headerFont: 'Playfair Display', bodyFont: 'Inter' },
         features: { betting: true, calcutta: false, shootout: false, shareButtons: true },
         games,
         holesPerRound: 18,
         course: {
-          name: course.name,
-          pars: course.pars,
-          yardage: teeData.yardage,
+          name: r1Course.name,
+          pars: r1Course.pars,
+          yardage: r1TeeData.yardage,
           tees: selectedTee,
-          rating: teeData.rating,
-          slope: teeData.slope,
-          hcpIndex: course.hcpIndex
+          rating: r1TeeData.rating,
+          slope: r1TeeData.slope,
+          hcpIndex: r1Course.hcpIndex
         },
         wolfOrder: players.map(p => p.name),
         players: players.map(p => ({ name: p.name, handicapIndex: p.handicapIndex, venmo: p.venmo })),
@@ -375,9 +430,6 @@ Dave Wilson, 12.3, @davewilson"></textarea>
 
     // Init
     renderTees();
-    // Set default date to tomorrow
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    document.getElementById('date-start').value = tomorrow;
   </script>
 </body>
 </html>
