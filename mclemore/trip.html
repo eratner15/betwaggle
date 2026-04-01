@@ -460,62 +460,68 @@
     }
     renderRoster();
 
-    // ── Best Ball Odds (combined team HCP → implied probability) ──
-    function teamOdds(teams) {
-      // Lower combined HCP = better odds
-      const avgHcps = teams.map(t => t.players.reduce((s, p) => s + p.hcp, 0) / t.players.length);
-      const minAvg = Math.min(...avgHcps);
-      const maxAvg = Math.max(...avgHcps);
-      const range = maxAvg - minAvg || 1;
-      return teams.map((t, i) => {
-        const advantage = (maxAvg - avgHcps[i]) / range; // 0 = worst, 1 = best
-        const prob = 0.15 + advantage * 0.35; // 15% to 50%
-        const ml = prob > 0.5 ? Math.round(-100 * prob / (1 - prob)) : Math.round(100 * (1 - prob) / prob);
-        return { ...t, avgHcp: avgHcps[i], ml: ml > 0 ? '+' + ml : String(ml), prob };
-      });
+    // ── Head-to-Head Odds for a 2-team matchup ──
+    // Lower combined HCP = favorite. Odds based on HCP difference.
+    // Favorite pays odds to dog. Dog risks $100 to win.
+    function h2hOdds(teamA, teamB) {
+      const avgA = teamA.players.reduce((s, p) => s + p.hcp, 0) / teamA.players.length;
+      const avgB = teamB.players.reduce((s, p) => s + p.hcp, 0) / teamB.players.length;
+      const diff = Math.abs(avgA - avgB);
+      const aIsFav = avgA < avgB;
+
+      // Convert HCP difference to moneyline
+      // 0 diff = pick'em (-110), 1-2 diff = small fav, 3-5 = moderate, 6+ = heavy
+      let favML, dogML;
+      if (diff < 0.5) { favML = '-110'; dogML = '-110'; } // pick'em
+      else if (diff < 1.5) { favML = '-130'; dogML = '+110'; }
+      else if (diff < 3) { favML = '-160'; dogML = '+140'; }
+      else if (diff < 5) { favML = '-200'; dogML = '+170'; }
+      else { favML = '-250'; dogML = '+210'; }
+
+      return {
+        a: { ...teamA, avgHcp: avgA, ml: aIsFav ? favML : dogML, isFav: aIsFav },
+        b: { ...teamB, avgHcp: avgB, ml: aIsFav ? dogML : favML, isFav: !aIsFav }
+      };
+    }
+
+    function renderMatchup(teamA, teamB) {
+      const { a, b } = h2hOdds(teamA, teamB);
+      return [a, b].map(t => {
+        const mlNum = parseInt(t.ml);
+        // Explain the payout: fav pays odds on $100, dog risks $100
+        const payout = t.isFav
+          ? `Risk $${Math.abs(mlNum)} to win $100`
+          : `Risk $100 to win $${mlNum > 0 ? mlNum : Math.abs(mlNum)}`;
+        return `<div class="team-row ${t.isFav ? 'favored' : ''}">
+          <div>
+            <div class="team-name">${t.isFav ? '⭐ ' : ''}${t.name}</div>
+            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds ${t.isFav ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
+            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">${payout}</div>
+          </div>
+        </div>`;
+      }).join('');
     }
 
     // ── Round 1: Best Ball (shuffle-able) ──
-    // Initial Best Ball teams — balanced by combined handicap
-    // Kunis(8) + Schue(15.1) = 23.1, Colby(8.8) + Fund(15) = 23.8
-    // Bartlett(9) + Becker(14.3) = 23.3, Scott K(12) + Ratner(13) = 25
+    // Balanced teams: pair low HCP with high HCP
+    // Kunis(8) + Schue(15.1) = 23.1, Colby(8.8) + Scott K(15) = 23.8
+    // Bartlett(9) + Fund(15) = 24, Ratner(13) + Becker(14.3) = 27.3
     let r1Teams = [
       { name: 'Kunis / Schue', players: [ALL_PLAYERS[0], ALL_PLAYERS[7]] },
-      { name: 'Colby / Fund', players: [ALL_PLAYERS[1], ALL_PLAYERS[6]] },
-      { name: 'Bartlett / Becker', players: [ALL_PLAYERS[2], ALL_PLAYERS[5]] },
-      { name: 'Scott K / Ratner', players: [ALL_PLAYERS[3], ALL_PLAYERS[4]] }
+      { name: 'Colby / Scott K', players: [ALL_PLAYERS[1], ALL_PLAYERS[3]] },
+      { name: 'Bartlett / Fund', players: [ALL_PLAYERS[2], ALL_PLAYERS[6]] },
+      { name: 'Ratner / Becker', players: [ALL_PLAYERS[4], ALL_PLAYERS[5]] }
     ];
 
     function renderR1() {
-      const teams = teamOdds(r1Teams);
       let html = '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">FOURSOME 1</div>';
-      teams.slice(0, 2).forEach(t => {
-        const isFav = t.prob === Math.max(...teams.slice(0, 2).map(x => x.prob));
-        html += `<div class="team-row ${isFav ? 'favored' : ''}">
-          <div>
-            <div class="team-name">${t.name}</div>
-            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="team-odds ${t.ml.startsWith('-') ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
-            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
-          </div>
-        </div>`;
-      });
-      html += '<div style="font-size:11px;font-weight:600;color:var(--muted);margin:10px 0 8px">FOURSOME 2</div>';
-      teams.slice(2, 4).forEach(t => {
-        const isFav = t.prob === Math.max(...teams.slice(2, 4).map(x => x.prob));
-        html += `<div class="team-row ${isFav ? 'favored' : ''}">
-          <div>
-            <div class="team-name">${t.name}</div>
-            <div class="team-players">${t.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="team-odds ${t.ml.startsWith('-') ? 'odds-fav' : 'odds-dog'}">${t.ml}</div>
-            <div class="team-hcp">avg ${t.avgHcp.toFixed(1)}</div>
-          </div>
-        </div>`;
-      });
+      html += renderMatchup(r1Teams[0], r1Teams[1]);
+      html += '<div style="font-size:11px;font-weight:600;color:var(--muted);margin:12px 0 8px">FOURSOME 2</div>';
+      html += renderMatchup(r1Teams[2], r1Teams[3]);
       html += '<button class="btn-shuffle" onclick="shuffleR1()">🔀 Shuffle Teams — See New Odds</button>';
       document.getElementById('r1-teams').innerHTML = html;
     }
