@@ -1,7 +1,9 @@
 // All views for the Golf Event SPA — config-driven, no hardcoded tournament data
+// Shared utilities extracted to views-shared.js for modularity
 import { applyCapRule } from './data.js';
 import { flightWinnerOdds, matchOdds, marginOdds, probToAmerican, probToDecimal, mlToDecimal, placeBet, settleBets, getMatchMoneyline, getLiveMatchMoneyline, isMatchLocked, interpolateProb, mlToProb, fmtML } from './betting.js';
 import { getFlightScenarioData, getRemainingMatches } from './scenarios.js';
+import { escHtml as _escHtml, getSkinsHoles as _getSkinsHoles, renderSkinsPanel as _renderSkinsPanel, getCoursePars as _getCoursePars, getCourseYardage as _getCourseYardage, getCourseHcpIndex as _getCourseHcpIndex, getPlayersFromConfig as _getPlayersFromConfig } from './views-shared.js';
 
 // ─── SKINS FORMAT NORMALIZER ───
 // Seed data may store skins as either:

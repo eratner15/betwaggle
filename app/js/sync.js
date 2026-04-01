@@ -20,10 +20,69 @@ async function offlineAwareFetch(url, options) {
   return fetch(url, options);
 }
 
+// ── WebSocket support (upgrade from polling when server supports it) ──
+let _ws = null;
+let _wsSlug = null;
+let _wsReconnectTimer = null;
+let _wsOnMessage = null; // callback set by app.js
+const WS_RECONNECT_DELAY = 5000;
+
+export function setWebSocketHandler(onMessage) {
+  _wsOnMessage = onMessage;
+}
+
+export function isWebSocketConnected() {
+  return _ws && _ws.readyState === WebSocket.OPEN;
+}
+
+function connectWebSocket(slug) {
+  if (_ws) return; // already connecting/connected
+  try {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${proto}//${location.host}/${slug}/ws`;
+    _ws = new WebSocket(wsUrl);
+    _wsSlug = slug;
+
+    _ws.onopen = () => {
+      console.info('[waggle-ws] Connected');
+      if (_wsReconnectTimer) { clearTimeout(_wsReconnectTimer); _wsReconnectTimer = null; }
+    };
+
+    _ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (_wsOnMessage) _wsOnMessage(data);
+      } catch (e) { /* ignore malformed messages */ }
+    };
+
+    _ws.onclose = (event) => {
+      console.info('[waggle-ws] Disconnected:', event.code);
+      _ws = null;
+      // Auto-reconnect after delay (unless intentional close)
+      if (event.code !== 1000) {
+        _wsReconnectTimer = setTimeout(() => connectWebSocket(slug), WS_RECONNECT_DELAY);
+      }
+    };
+
+    _ws.onerror = () => {
+      // Server doesn't support WebSocket yet — fall back to polling silently
+      console.info('[waggle-ws] Not available — using polling');
+      _ws = null;
+    };
+  } catch (e) {
+    // WebSocket not supported or connection failed — polling fallback
+    _ws = null;
+  }
+}
+
 export function initSync(slug, basePath) {
   API = basePath ? `${basePath}/api` : `/${slug}/api`;
   // Restore admin token from sessionStorage
   ADMIN_TOKEN = sessionStorage.getItem('mg_admin_token');
+  // Attempt WebSocket upgrade (gracefully falls back to polling if server doesn't support it)
+  if (typeof WebSocket !== 'undefined') {
+    connectWebSocket(slug);
+  }
 }
 
 // ── Admin authentication (PIN → session token) ──
