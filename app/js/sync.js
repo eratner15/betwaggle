@@ -31,6 +31,13 @@ export function setWebSocketHandler(onMessage) {
   _wsOnMessage = onMessage;
 }
 
+// Call this after config is loaded — only connects if server advertises realtime support
+export function enableRealtimeIfSupported(slug, config) {
+  if (config?.features?.realtime && typeof WebSocket !== 'undefined') {
+    connectWebSocket(slug);
+  }
+}
+
 export function isWebSocketConnected() {
   return _ws && _ws.readyState === WebSocket.OPEN;
 }
@@ -79,10 +86,10 @@ export function initSync(slug, basePath) {
   API = basePath ? `${basePath}/api` : `/${slug}/api`;
   // Restore admin token from sessionStorage
   ADMIN_TOKEN = sessionStorage.getItem('mg_admin_token');
-  // Attempt WebSocket upgrade (gracefully falls back to polling if server doesn't support it)
-  if (typeof WebSocket !== 'undefined') {
-    connectWebSocket(slug);
-  }
+  // WebSocket upgrade — gated behind server feature flag
+  // Only attempt connection if server advertises WS support via config
+  // Enable by setting config.features.realtime = true when Durable Objects are deployed
+  // Until then, this is a no-op and polling continues as normal
 }
 
 // ── Admin authentication (PIN → session token) ──
