@@ -31,11 +31,11 @@
     /* Player roster */
     .roster{display:flex;gap:10px;overflow-x:auto;padding:20px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .roster::-webkit-scrollbar{display:none}
-    .player-chip{flex-shrink:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center;min-width:90px;position:relative}
+    .player-chip{flex-shrink:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;min-width:80px;position:relative;box-shadow:0 1px 4px rgba(27,48,34,0.04)}
     .player-chip.leader{border-color:var(--gold);background:rgba(197,160,89,0.05)}
-    .player-chip .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:14px}
-    .player-chip .name{font-size:12px;font-weight:700;color:var(--dark);white-space:nowrap}
-    .player-chip .hcp{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--green);margin-top:2px}
+    .player-chip .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:12px}
+    .player-chip .name{font-size:11px;font-weight:700;color:var(--dark);white-space:nowrap}
+    .player-chip .hcp{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);margin-top:1px}
 
     /* Section headers */
     .section-head{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 12px}
@@ -55,13 +55,13 @@
     .round-body{padding:14px 18px 16px}
 
     /* Team cards */
-    .team-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
-    .team-row.favored{border-left:3px solid var(--gold)}
-    .team-name{font-size:14px;font-weight:700;color:var(--dark)}
-    .team-players{font-size:11px;color:var(--muted);margin-top:1px}
-    .team-odds{font-family:var(--mono);font-size:18px;font-weight:800}
+    .team-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(27,48,34,0.04)}
+    .team-row.favored{border-top:2px solid var(--gold);background:rgba(197,160,89,0.03)}
+    .team-name{font-size:15px;font-weight:700;color:var(--dark)}
+    .team-players{font-size:12px;color:var(--text);margin-top:2px;opacity:0.7}
+    .team-odds{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-0.5px}
     .odds-fav{color:var(--green)}
-    .odds-dog{color:var(--muted)}
+    .odds-dog{color:var(--dark)}
     .team-hcp{font-size:11px;color:var(--muted);font-family:var(--mono)}
 
     /* AI box */
@@ -218,13 +218,13 @@
   <script>
     // ── Players ──
     const ALL_PLAYERS = [
+      { name: 'Brian Kunis', hcp: 8.0 },
       { name: 'Colby Kittrell', hcp: 8.8 },
       { name: 'Scott Bartlett', hcp: 9.0 },
       { name: 'Scott Kittrell', hcp: 12.0 },
+      { name: 'Evan Ratner', hcp: 13.0 },
       { name: 'David Becker', hcp: 14.3 },
       { name: 'Ben Fund', hcp: 15.0 },
-      { name: 'Brian Kunis', hcp: 15.0 },
-      { name: 'Evan Ratner', hcp: 15.0 },
       { name: 'Aaron Schue', hcp: 15.1 }
     ];
     const R2_PLAYERS = ALL_PLAYERS.filter(p => p.name !== 'Colby Kittrell'); // 7 players
@@ -265,11 +265,14 @@
     }
 
     // ── Round 1: Best Ball (shuffle-able) ──
+    // Initial Best Ball teams — balanced by combined handicap
+    // Kunis(8) + Schue(15.1) = 23.1, Colby(8.8) + Fund(15) = 23.8
+    // Bartlett(9) + Becker(14.3) = 23.3, Scott K(12) + Ratner(13) = 25
     let r1Teams = [
-      { name: 'Kittrell Bros', players: [ALL_PLAYERS[0], ALL_PLAYERS[2]] },
-      { name: 'Becker/Bartlett', players: [ALL_PLAYERS[3], ALL_PLAYERS[1]] },
-      { name: 'Fund/Kunis', players: [ALL_PLAYERS[4], ALL_PLAYERS[5]] },
-      { name: 'Ratner/Schue', players: [ALL_PLAYERS[6], ALL_PLAYERS[7]] }
+      { name: 'Kunis / Schue', players: [ALL_PLAYERS[0], ALL_PLAYERS[7]] },
+      { name: 'Colby / Fund', players: [ALL_PLAYERS[1], ALL_PLAYERS[6]] },
+      { name: 'Bartlett / Becker', players: [ALL_PLAYERS[2], ALL_PLAYERS[5]] },
+      { name: 'Scott K / Ratner', players: [ALL_PLAYERS[3], ALL_PLAYERS[4]] }
     ];
 
     function renderR1() {
@@ -327,8 +330,11 @@
 
     // ── Round 2: Scramble 4v3 ──
     function renderR2() {
-      const teamA = [R2_PLAYERS[0], R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[3]]; // Bartlett, Scott K, Becker, Fund
-      const teamB = [R2_PLAYERS[4], R2_PLAYERS[5], R2_PLAYERS[6]]; // Kunis, Ratner, Schue
+      // R2_PLAYERS (Colby gone): Brian(8), Bartlett(9), Scott K(12), Ratner(13), Becker(14.3), Fund(15), Schue(15.1)
+      // Team A (4): Bartlett(9) + Scott K(12) + Becker(14.3) + Schue(15.1) = avg 12.6
+      // Team B (3): Brian(8) + Ratner(13) + Fund(15) = avg 12.0 + 1 extra shot/hole
+      const teamA = [R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[4], R2_PLAYERS[6]]; // Bartlett, Scott K, Becker, Schue
+      const teamB = [R2_PLAYERS[0], R2_PLAYERS[3], R2_PLAYERS[5]]; // Brian, Ratner, Fund
       const avgA = teamA.reduce((s, p) => s + p.hcp, 0) / teamA.length;
       const avgB = teamB.reduce((s, p) => s + p.hcp, 0) / teamB.length;
 

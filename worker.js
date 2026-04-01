@@ -5992,6 +5992,32 @@ Match player names to rows. Only include holes with scores written.`;
       }
     }
 
+    // Generic multi-round course switching — load from rounds config
+    const nextRoundConfig = config.rounds?.[roundNumber || (currentRound + 1)];
+    if (nextRoundConfig) {
+      if (nextRoundConfig.pars) {
+        config.course = config.course || {};
+        config.course.name = nextRoundConfig.course || config.course.name;
+        config.course.pars = nextRoundConfig.pars;
+        config.course.yardage = nextRoundConfig.yardage || config.course.yardage;
+        config.course.hcpIndex = nextRoundConfig.hcpIndex || config.course.hcpIndex;
+        config.course.rating = nextRoundConfig.rating || config.course.rating;
+        config.course.slope = nextRoundConfig.slope || config.course.slope;
+        config.course.tees = nextRoundConfig.tees || config.course.tees;
+        // Also update legacy fields
+        config.coursePars = nextRoundConfig.pars;
+        config.courseYardage = nextRoundConfig.yardage;
+        config.courseHcpIndex = nextRoundConfig.hcpIndex;
+      }
+      if (nextRoundConfig.course) {
+        config.event.venue = nextRoundConfig.course;
+        config.event.course = nextRoundConfig.course;
+      }
+      if (nextRoundConfig.format) {
+        config.event.roundFormat = nextRoundConfig.format;
+      }
+    }
+
     await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
 
     // Add feed item
