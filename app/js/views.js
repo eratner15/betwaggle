@@ -1097,7 +1097,7 @@ export function renderScrambleLeaderboard(state) {
       html += `<div id="board-ticker" style="background:#FFFFFF;border-left:3px solid #B8962E;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:8px;overflow:hidden;height:28px;cursor:pointer;border:1px solid #E5E0D8;border-left:3px solid #B8962E;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onclick="this.style.height=this.style.height==='28px'?'auto':'28px'">`;
       latestFeed.forEach((item, idx) => {
         const text = item.text || '';
-        html += `<div style="font-size:12px;font-style:italic;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
+        html += `<div style="font-size:14px;font-style:italic;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${idx > 0 ? 'margin-top:6px' : ''}">${escHtml(text)}</div>`;
       });
       html += `</div>`;
     }
@@ -1593,9 +1593,8 @@ export function renderRoundFeed(state) {
 
   // ── Spectator mode banner ──
   if (state._spectatorMode) {
-    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:var(--text-primary);padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:8px;text-align:center">
-      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
-      <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
+    html += `<div style="background:#39FF14;color:#1B3022;text-align:center;font-size:12px;font-weight:700;padding:8px;text-transform:uppercase;letter-spacing:1px;border-radius:var(--mg-radius);margin-bottom:8px">
+      Spectator Mode &mdash; Watching Live
     </div>`;
   }
 
@@ -1625,7 +1624,7 @@ export function renderRoundFeed(state) {
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:1px;font-family:'Inter',sans-serif">Pot</div>
-          <div style="font-size:24px;font-weight:800;color:#D4AF37;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
+          <div style="font-size:28px;font-weight:800;color:#C5A059;font-family:'SF Mono','Fira Code',monospace">$${totalPot}</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">`;
@@ -1705,7 +1704,7 @@ export function renderRoundFeed(state) {
     html += `<div style="display:flex;justify-content:center;gap:24px;padding:12px 0;margin-bottom:12px">`;
     tabItems.forEach(t => {
       const isActive = activeSubTab === t.key;
-      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="background:none;border:none;cursor:pointer;font-size:13px;font-weight:${isActive ? '700' : '500'};color:${isActive ? '#1C1C19' : '#8A8A85'};text-transform:uppercase;letter-spacing:1px;padding:4px 0;border-bottom:${isActive ? '2px solid #1C1C19' : '2px solid transparent'}">${t.label}</button>`;
+      html += `<button onclick="window.MG.setBoardTab('${t.key}')" style="background:none;border:none;cursor:pointer;font-size:14px;font-weight:${isActive ? '700' : '500'};color:${isActive ? '#1C1C19' : '#8A8A85'};text-transform:uppercase;letter-spacing:1px;padding:4px 0;border-bottom:${isActive ? '2px solid #1C1C19' : '2px solid transparent'}">${t.label}</button>`;
     });
     html += `</div>`;
   }
@@ -2204,21 +2203,24 @@ export function renderRoundFeed(state) {
       const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
       const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
 
-      html += `<div style="display:flex;align-items:center;padding:14px 16px;background:${rowBg};border-left:3px solid ${isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)'};border-bottom:1px solid rgba(197,160,89,0.08)">
+      html += `<div style="display:flex;align-items:center;padding:16px 20px;background:${rowBg};border-left:3px solid ${isLeader ? '#C5A059' : 'rgba(197,160,89,0.3)'};border-bottom:1px solid rgba(197,160,89,0.08)">
 
         <div style="flex:1;min-width:0">
-          <div style="font-size:16px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+          <div style="font-size:17px;font-weight:700;color:#1C1C19;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
         </div>
 
-        <div style="min-width:40px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:20px;font-weight:800;color:${toParColor};margin-right:12px">${toParStr}</div>
+        <div style="min-width:40px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:22px;font-weight:800;color:${toParColor};margin-right:12px">${toParStr}</div>
 
-        <div style="min-width:45px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:13px;color:#8A8A85;margin-right:12px">${odds}</div>
+        <div style="min-width:45px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:13px;color:#6B7280;margin-right:12px">${odds}</div>
 
-        <div style="min-width:55px;text-align:right;font-family:'SF Mono','Fira Code',monospace;font-size:15px;font-weight:700;color:${moneyColor};margin-right:12px">${moneyStr}</div>
+        <div style="min-width:65px;text-align:right;margin-right:12px">
+          <div style="font-family:'SF Mono','Fira Code',monospace;font-size:16px;font-weight:700;color:${moneyColor}">${moneyStr}</div>
+          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase">${(p.money||0) > 0 ? 'skins won' : (p.money||0) < 0 ? 'skins' : ''}</div>
+        </div>
 
-        <div style="min-width:50px;text-align:center">
-          <div style="font-size:16px;font-weight:700;color:#1C1C19">${p.skins}</div>
-          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase;letter-spacing:0.5px">${p.skins === 1 ? 'skin' : 'skins'}</div>
+        <div style="min-width:45px;text-align:center;margin-right:8px">
+          <div style="font-size:18px;font-weight:700;color:#1C1C19">${p.skins}</div>
+          <div style="font-size:9px;color:#8A8A85;text-transform:uppercase">${p.skins === 1 ? 'skin' : 'skins'}</div>
         </div>
 
         <div style="min-width:50px;text-align:right;font-size:12px;color:#8A8A85">Thru ${p.thru}</div>
@@ -2408,7 +2410,7 @@ export function renderRoundFeed(state) {
           <div style="font-size:16px;font-weight:600;color:#1C1C19;font-family:'Inter',sans-serif">${escHtml(pair.from.split(' ')[0])} <span style="font-size:14px;color:#8A8A85">\u2192</span> ${escHtml(pair.to.split(' ')[0])}</div>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-family:'SF Mono','Fira Code',monospace;font-size:22px;font-weight:800;color:#C5A059">$${pair.amount}</span>
-            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:#3D95CE;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
+            ${venmoHandles[pair.to] ? `<a href="${venmoUrl}" onclick="event.preventDefault();window.location.href='${venmoUrl}';setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)" style="padding:8px 16px;background:transparent;color:#C5A059;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;min-height:40px;display:flex;align-items:center">Venmo</a>` : ''}
           </div>
         </div>`;
       });
@@ -2432,7 +2434,7 @@ export function renderRoundFeed(state) {
         const text = item.text || '';
         const color = item.isOddsMove ? '#C5A059' : '#1C1C19';
         const prefix = item.isOddsMove ? '<span style="font-weight:700;margin-right:4px;color:#C5A059">LINE MOVE</span>' : '';
-        html += `<div style="font-family:'Playfair Display',Georgia,serif;font-size:14px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
+        html += `<div style="font-family:'Playfair Display',Georgia,serif;font-size:14px;font-style:italic;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;${i > 0 ? 'margin-top:6px' : ''}">${prefix}${escHtml(text)}</div>`;
       });
       html += `</div>`;
     }
@@ -5769,7 +5771,7 @@ export function renderSettlement(state) {
           </div>
           <div style="display:flex;gap:8px">
             <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#3D95CE;color:var(--text-primary);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#FFFFFF;color:#C5A059;border:1.5px solid rgba(197,160,89,0.3);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
               Venmo $${amount}</a>
             <a href="${cashappUrl}" target="_blank" rel="noopener"
@@ -7323,7 +7325,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
           <div style="font-size:24px;font-weight:900;color:#1A1A1A">$${amount}</div>
         </div>
         <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-          style="display:flex;align-items:center;justify-content:center;gap:8px;background:#008CFF;color:white;padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:44px;box-shadow:0 2px 8px rgba(0,140,255,0.3)">
+          style="display:flex;align-items:center;justify-content:center;gap:8px;background:#FFFFFF;color:#C5A059;border:1.5px solid rgba(197,160,89,0.3);padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:44px">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
           Venmo $${amount}
         </a>
