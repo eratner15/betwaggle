@@ -470,16 +470,14 @@
       const fav = aIsFav ? { ...teamA, avgHcp: avgA } : { ...teamB, avgHcp: avgB };
       const dog = aIsFav ? { ...teamB, avgHcp: avgB } : { ...teamA, avgHcp: avgA };
 
-      // Bet amount per person
-      const bet = 20;
-      // Favorite pays MORE if they lose (they're expected to win)
-      // Dog pays LESS if they lose (they're the underdog)
+      // $100 base bet per person
+      // Favorite pays MORE if they lose, dog pays LESS
       let favPays, dogPays;
-      if (diff < 0.5) { favPays = bet; dogPays = bet; } // even
-      else if (diff < 1.5) { favPays = 25; dogPays = 15; }
-      else if (diff < 3) { favPays = 30; dogPays = 15; }
-      else if (diff < 5) { favPays = 35; dogPays = 10; }
-      else { favPays = 40; dogPays = 10; }
+      if (diff < 0.5) { favPays = 100; dogPays = 100; } // even
+      else if (diff < 1.5) { favPays = 130; dogPays = 100; }
+      else if (diff < 3) { favPays = 160; dogPays = 100; }
+      else if (diff < 5) { favPays = 200; dogPays = 100; }
+      else { favPays = 250; dogPays = 100; }
 
       return `
         <div class="team-row favored">
