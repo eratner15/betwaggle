@@ -406,6 +406,10 @@ export default {
             'augusta-scramble': () => seedAugustaScramble(env),
             'masters-member-guest': () => seedMastersMG(env),
             'weekend-warrior': () => seedWeekendWarrior(env),
+            'demo-skins': () => seedDemoSkins(env),
+            'demo-nassau': () => seedDemoNassau(env),
+            'demo-wolf': () => seedDemoWolf(env),
+            'demo-match-play': () => seedDemoMatchPlay(env),
           };
           if (seedMap[slug]) {
             try { await seedMap[slug](); configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text'); } catch {}
@@ -3993,6 +3997,18 @@ async function serveEventHtml(slug, request, env) {
       configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     } else if (slug === 'weekend-warrior') {
       await seedWeekendWarrior(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-skins') {
+      await seedDemoSkins(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-nassau') {
+      await seedDemoNassau(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-wolf') {
+      await seedDemoWolf(env);
+      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    } else if (slug === 'demo-match-play') {
+      await seedDemoMatchPlay(env);
       configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
     }
   }
@@ -7600,4 +7616,260 @@ async function processDripEmails(env) {
   } catch (e) {
     console.error('processDripEmails error:', e.message);
   }
+}
+
+// ─── Demo Skins — Pure skins game at Pinehurst No. 2 (slug: demo-skins) ─────
+async function seedDemoSkins(env) {
+  const slug = 'demo-skins';
+  const KEY = `config:${slug}`;
+  if (await env.MG_BOOK.get(KEY)) return { seeded: false };
+
+  const players = [
+    { name: 'Mike Reynolds', handicapIndex: 12.0, venmo: '@mikereynolds' },
+    { name: 'Danny Torres', handicapIndex: 8.4, venmo: '@dannytorres' },
+    { name: 'Chris Lane', handicapIndex: 15.2, venmo: '@chrislane' },
+    { name: 'Jake Walsh', handicapIndex: 6.1, venmo: '@jakewalsh' }
+  ];
+  const pars = [4,5,4,4,3,5,3,4,4, 4,4,3,4,5,4,3,4,5];
+
+  const config = {
+    event: { name: 'Saturday Skins', shortName: 'Skins', eventType: 'buddies_trip', course: 'Pinehurst No. 2', currentRound: 1, venue: 'Pinehurst Resort', slug },
+    players, roster: players,
+    games: { skins: true },
+    structure: { skinsBet: '10' },
+    holesPerRound: 18,
+    course: { name: 'Pinehurst No. 2', pars, tees: 'Blue' },
+    adminPin: randomPin()
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  const scores = {
+    1: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 5, 'Jake Walsh': 4 },
+    2: { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 6, 'Jake Walsh': 5 },
+    3: { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 4 },
+    4: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 5, 'Jake Walsh': 4 },
+    5: { 'Mike Reynolds': 3, 'Danny Torres': 3, 'Chris Lane': 4, 'Jake Walsh': 2 },
+    6: { 'Mike Reynolds': 5, 'Danny Torres': 6, 'Chris Lane': 5, 'Jake Walsh': 5 },
+    7: { 'Mike Reynolds': 3, 'Danny Torres': 3, 'Chris Lane': 3, 'Jake Walsh': 2 },
+    8: { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 4 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (8 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 8; h++) {
+    const entries = players.map(p => ({ name: p.name, score: scores[h][p.name] }));
+    const min = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === min);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * 3 * 10 });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify([
+    { ts: Date.now() - 60000, type: 'score', text: 'Jake birdies the par-3 7th! Wins the skin ($30).', player: 'Jake Walsh' },
+    { ts: Date.now() - 180000, type: 'score', text: 'Jake birdies #5 — breaks a 2-hole carry for $60!', player: 'Jake Walsh' },
+    { ts: Date.now() - 300000, type: 'score', text: 'Mike wins #3 with a par. Only clean card on the hole.', player: 'Mike Reynolds' },
+    { ts: Date.now() - 420000, type: 'chirp', text: 'Chris is 0-for-8 on skins. The well is dry.', player: 'System' },
+  ]));
+  return { seeded: true };
+}
+
+// ─── Demo Nassau — Pure nassau at Baltusrol Lower (slug: demo-nassau) ────────
+async function seedDemoNassau(env) {
+  const slug = 'demo-nassau';
+  const KEY = `config:${slug}`;
+  if (await env.MG_BOOK.get(KEY)) return { seeded: false };
+
+  const players = [
+    { name: 'Mike Reynolds', handicapIndex: 8.0, venmo: '@mikereynolds' },
+    { name: 'Danny Torres', handicapIndex: 12.4, venmo: '@dannytorres' },
+    { name: 'Chris Lane', handicapIndex: 6.2, venmo: '@chrislane' },
+    { name: 'Jake Walsh', handicapIndex: 14.8, venmo: '@jakewalsh' }
+  ];
+  const pars = [4,4,5,3,4,4,4,3,5, 4,3,4,5,4,4,3,5,4];
+
+  const config = {
+    event: { name: 'Sunday Nassau', shortName: 'Nassau', eventType: 'buddies_trip', course: 'Baltusrol Lower', currentRound: 1, venue: 'Baltusrol Golf Club', slug },
+    players, roster: players,
+    games: { nassau: true },
+    structure: { nassauBet: '20', autoPress: { enabled: true, threshold: 2 } },
+    holesPerRound: 18,
+    course: { name: 'Baltusrol Lower', pars, tees: 'Championship' },
+    adminPin: randomPin()
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  const scores = {
+    1: { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    2: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 5 },
+    3: { 'Mike Reynolds': 5, 'Danny Torres': 6, 'Chris Lane': 5, 'Jake Walsh': 6 },
+    4: { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 3 },
+    5: { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    6: { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 4 },
+    7: { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (7 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify({
+    nassau: { frontWinner: null, backWinner: null, overallWinner: null, presses: [
+      { by: 'Danny Torres', hole: 5, amount: 20 }
+    ]}
+  }));
+
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify([
+    { ts: Date.now() - 60000, type: 'score', text: 'Mike 2 UP thru 7 on the front. Danny presses.', player: 'Mike Reynolds' },
+    { ts: Date.now() - 180000, type: 'score', text: 'Chris birdies #2 to grab the early front 9 lead.', player: 'Chris Lane' },
+    { ts: Date.now() - 300000, type: 'chirp', text: 'Danny pressed on 5. The back pocket is getting lighter.', player: 'System' },
+  ]));
+  return { seeded: true };
+}
+
+// ─── Demo Wolf — Pure wolf at Merion (slug: demo-wolf) ──────────────────────
+async function seedDemoWolf(env) {
+  const slug = 'demo-wolf';
+  const KEY = `config:${slug}`;
+  if (await env.MG_BOOK.get(KEY)) return { seeded: false };
+
+  const players = [
+    { name: 'Mike Reynolds', handicapIndex: 10.0, venmo: '@mikereynolds' },
+    { name: 'Danny Torres', handicapIndex: 7.5, venmo: '@dannytorres' },
+    { name: 'Chris Lane', handicapIndex: 13.0, venmo: '@chrislane' },
+    { name: 'Jake Walsh', handicapIndex: 5.8, venmo: '@jakewalsh' }
+  ];
+  const pars = [4,3,4,5,4,4,3,4,4, 4,4,3,4,5,3,4,4,5];
+
+  const config = {
+    event: { name: 'Wolf Pack Wednesday', shortName: 'Wolf', eventType: 'buddies_trip', course: 'Merion Golf Club', currentRound: 1, venue: 'Merion Golf Club', slug },
+    players, roster: players,
+    games: { wolf: true },
+    structure: { wolfPoints: '5' },
+    holesPerRound: 18,
+    course: { name: 'Merion Golf Club', pars, tees: 'East' },
+    wolfOrder: ['Mike Reynolds', 'Danny Torres', 'Chris Lane', 'Jake Walsh'],
+    adminPin: randomPin()
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  const scores = {
+    1: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 5, 'Jake Walsh': 3 },
+    2: { 'Mike Reynolds': 3, 'Danny Torres': 2, 'Chris Lane': 4, 'Jake Walsh': 3 },
+    3: { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 4 },
+    4: { 'Mike Reynolds': 5, 'Danny Torres': 5, 'Chris Lane': 6, 'Jake Walsh': 4 },
+    5: { 'Mike Reynolds': 4, 'Danny Torres': 3, 'Chris Lane': 5, 'Jake Walsh': 4 },
+    6: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 5, 'Jake Walsh': 3 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (6 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify({
+    wolf: {
+      picks: {
+        1: 'Danny Torres',
+        2: 'lone',
+        3: 'Jake Walsh',
+        4: 'Mike Reynolds',
+        5: 'lone',
+        6: 'Jake Walsh'
+      }
+    }
+  }));
+
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify([
+    { ts: Date.now() - 60000, type: 'score', text: 'Jake birdies #6 with his Wolf partner. Team wins.', player: 'Jake Walsh' },
+    { ts: Date.now() - 180000, type: 'score', text: 'Danny goes LONE WOLF on #2 and birdies! +3 points!', player: 'Danny Torres' },
+    { ts: Date.now() - 300000, type: 'score', text: 'Danny goes LONE WOLF on #5 — birdies again! Fearless.', player: 'Danny Torres' },
+    { ts: Date.now() - 420000, type: 'chirp', text: 'Chris has been picked 0 times. Nobody wants him.', player: 'System' },
+  ]));
+  return { seeded: true };
+}
+
+// ─── Demo Match Play — Pure match play at Oakmont (slug: demo-match-play) ───
+async function seedDemoMatchPlay(env) {
+  const slug = 'demo-match-play';
+  const KEY = `config:${slug}`;
+  if (await env.MG_BOOK.get(KEY)) return { seeded: false };
+
+  const players = [
+    { name: 'Mike Reynolds', handicapIndex: 8.0, venmo: '@mikereynolds' },
+    { name: 'Danny Torres', handicapIndex: 12.0, venmo: '@dannytorres' },
+    { name: 'Chris Lane', handicapIndex: 6.5, venmo: '@chrislane' },
+    { name: 'Jake Walsh', handicapIndex: 15.0, venmo: '@jakewalsh' }
+  ];
+  const pars = [4,4,5,3,4,4,3,4,5, 4,3,5,4,4,4,3,4,5];
+
+  const config = {
+    event: { name: 'Sunday Match Play', shortName: 'Match', eventType: 'buddies_trip', course: 'Oakmont CC', currentRound: 1, venue: 'Oakmont Country Club', slug },
+    players, roster: players,
+    games: { match_play: true, skins: true },
+    structure: { nassauBet: '50', skinsBet: '10' },
+    holesPerRound: 18,
+    course: { name: 'Oakmont CC', pars, tees: 'Championship' },
+    adminPin: randomPin()
+  };
+  await env.MG_BOOK.put(KEY, JSON.stringify(config));
+
+  const scores = {
+    1:  { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    2:  { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 5 },
+    3:  { 'Mike Reynolds': 5, 'Danny Torres': 6, 'Chris Lane': 5, 'Jake Walsh': 6 },
+    4:  { 'Mike Reynolds': 3, 'Danny Torres': 3, 'Chris Lane': 2, 'Jake Walsh': 4 },
+    5:  { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 4 },
+    6:  { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    7:  { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 3 },
+    8:  { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    9:  { 'Mike Reynolds': 5, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 6 },
+    10: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 5 },
+    11: { 'Mike Reynolds': 3, 'Danny Torres': 4, 'Chris Lane': 3, 'Jake Walsh': 3 },
+    12: { 'Mike Reynolds': 5, 'Danny Torres': 6, 'Chris Lane': 4, 'Jake Walsh': 5 },
+    13: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 }
+  };
+
+  const holes = {};
+  for (const [h, s] of Object.entries(scores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (13 - parseInt(h)) * 600000 };
+  }
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
+
+  // Compute skins
+  const gameState = { skins: { history: [], pot: 1 } };
+  for (let h = 1; h <= 13; h++) {
+    const entries = players.map(p => ({ name: p.name, score: scores[h][p.name] }));
+    const min = Math.min(...entries.map(e => e.score));
+    const winners = entries.filter(e => e.score === min);
+    if (winners.length === 1) {
+      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * 3 * 10 });
+      gameState.skins.pot = 1;
+    } else {
+      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
+      gameState.skins.pot++;
+    }
+  }
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
+
+  await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify([
+    { ts: Date.now() - 60000, type: 'score', text: 'Chris is -3 thru 13. Running away with it.', player: 'Chris Lane' },
+    { ts: Date.now() - 180000, type: 'score', text: 'Chris eagles the par-3 4th! Skin worth $30.', player: 'Chris Lane' },
+    { ts: Date.now() - 300000, type: 'score', text: 'Mike birdies #6. Keeps the pressure on Chris.', player: 'Mike Reynolds' },
+    { ts: Date.now() - 420000, type: 'chirp', text: 'Jake is +7 thru 13. The wheels came off on the back.', player: 'System' },
+  ]));
+  return { seeded: true };
 }
