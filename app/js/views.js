@@ -2356,6 +2356,206 @@ export function renderRoundFeed(state) {
   }
 
   // ================================================================
+  // SECTION 3.25: FORMAT-SPECIFIC GAME PANELS (BOARD tab)
+  // Renders Skins tracker, Nassau status, Wolf rotation, Match Play status
+  // based on which games are active. Stitch card designs as reference.
+  // ================================================================
+  if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0) {
+    const skinsHoles = getSkinsHoles(gameState, holes, players);
+
+    // ── SKINS TRACKER ──
+    if (games.skins && Object.keys(skinsHoles).length > 0) {
+      const skinsBetVal = parseInt(config?.structure?.skinsBet) || 5;
+      const numP = players.length;
+      let currentPot = 1;
+      const skinsWon = {};
+      players.forEach(p => { skinsWon[p.name] = { count: 0, value: 0 }; });
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-left:3px solid var(--gold-primary,#C5A059);border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--page-text)">Skins Tracker</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
+      </div>`;
+
+      // Hole-by-hole skins results
+      scoredHoles.forEach(h => {
+        const sk = skinsHoles[h];
+        if (!sk) return;
+        const par = pars[h - 1] || 4;
+        if (sk.winner) {
+          const val = (sk.potWon || 1) * (numP - 1) * skinsBetVal;
+          if (skinsWon[sk.winner]) { skinsWon[sk.winner].count++; skinsWon[sk.winner].value += val; }
+          const isCarryWin = (sk.potWon || 1) > 1;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${h < Math.max(...scoredHoles) ? 'border-bottom:1px solid var(--border)' : ''}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+              <span style="font-size:13px;font-weight:600;color:var(--win,#16A34A)">${escHtml(sk.winner.split(' ')[0])}</span>
+              ${isCarryWin ? `<span style="font-size:10px;font-weight:700;background:var(--gold-primary,#C5A059);color:white;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
+            </div>
+            <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--gold-primary,#C5A059)">$${val}</span>
+          </div>`;
+          currentPot = 1;
+        } else if (sk.carried) {
+          currentPot = (sk.potBefore || currentPot) + 1;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+              <span style="font-size:12px;font-weight:600;color:var(--page-text-muted)">Tied</span>
+            </div>
+            <span style="font-size:11px;font-weight:700;background:rgba(197,160,89,0.15);color:var(--gold-primary);padding:3px 8px;border-radius:4px">CARRY \u2192 ${currentPot}x</span>
+          </div>`;
+        }
+      });
+
+      // Skins leaderboard
+      const skinsRanked = Object.entries(skinsWon).sort((a, b) => b[1].value - a[1].value);
+      if (skinsRanked.some(([, v]) => v.count > 0)) {
+        html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
+        skinsRanked.forEach(([name, data]) => {
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+            <span style="font-size:13px;font-weight:600;color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+            <div style="display:flex;gap:12px;align-items:center">
+              <span style="font-size:12px;color:var(--page-text-muted)">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
+              <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--gold-primary)">$${data.value}</span>
+            </div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+
+      // Current pot status
+      if (currentPot > 1) {
+        html += `<div style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:6px;border-radius:6px">
+          ${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // ── NASSAU STATUS ──
+    if (games.nassau) {
+      const nassauBetVal = parseInt(config?.structure?.nassauBet) || 10;
+      const nassauState = gameState?.nassau || {};
+      const frontHoles = scoredHoles.filter(h => h <= 9);
+      const backHoles = scoredHoles.filter(h => h > 9);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-left:3px solid var(--green-primary,#1B3022);border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--page-text)">Nassau</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${nassauBetVal}/side</span>
+      </div>`;
+
+      // Three bets as compact cards
+      const bets = [
+        { label: 'Front 9', holes: frontHoles, thru: frontHoles.length, of: 9, winner: nassauState.frontWinner },
+        { label: 'Back 9', holes: backHoles, thru: backHoles.length, of: 9, winner: nassauState.backWinner },
+        { label: 'Overall', holes: scoredHoles, thru: scoredHoles.length, of: holesPerRound, winner: nassauState.overallWinner }
+      ];
+
+      bets.forEach(bet => {
+        const started = bet.thru > 0;
+        const complete = bet.thru >= bet.of;
+        // Find leader for this segment
+        let leaderName = bet.winner || null;
+        let leaderMargin = '';
+        if (!leaderName && started && standingsData.length > 0) {
+          // Use standings filtered to relevant holes
+          const segPar = bet.label === 'Front 9' ? pars.slice(0, 9).reduce((s, p) => s + p, 0)
+            : bet.label === 'Back 9' ? pars.slice(9, 18).reduce((s, p) => s + p, 0)
+            : pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0);
+          const key = bet.label === 'Front 9' ? 'nassauFront' : bet.label === 'Back 9' ? 'nassauBack' : 'toPar';
+          const sorted = [...standingsData].filter(p => p[key] !== null && p[key] !== undefined).sort((a, b) => a[key] - b[key]);
+          if (sorted.length >= 2) {
+            leaderName = sorted[0].name;
+            const diff = sorted[1][key] - sorted[0][key];
+            leaderMargin = diff > 0 ? `${diff} UP` : diff === 0 ? 'ALL SQUARE' : `${Math.abs(diff)} DN`;
+          } else if (sorted.length === 1) {
+            leaderName = sorted[0].name;
+          }
+        }
+
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${bet.label !== 'Overall' ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--page-text)">${bet.label}</div>
+            <div style="font-size:11px;color:var(--page-text-muted)">${!started ? 'Not started' : complete ? 'Final' : 'Thru ' + bet.thru}</div>
+          </div>
+          <div style="text-align:right">
+            ${leaderName ? `<div style="font-size:13px;font-weight:700;color:${complete ? 'var(--win,#16A34A)' : 'var(--page-text)'}">${escHtml(leaderName.split(' ')[0])}</div>` : ''}
+            ${leaderMargin ? `<div style="font-size:12px;font-weight:600;color:var(--win,#16A34A)">${leaderMargin}</div>` : ''}
+          </div>
+        </div>`;
+      });
+
+      // Presses
+      const presses = nassauState.presses || [];
+      if (presses.length > 0) {
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gold-primary);margin-bottom:4px">Active Presses</div>`;
+        presses.forEach(press => {
+          html += `<div style="font-size:12px;color:var(--page-text-muted);padding:2px 0">${escHtml(press.by || 'Press')} on Hole ${press.hole || '?'} \u2022 $${nassauBetVal}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      // Total exposure
+      const totalNassau = (3 + presses.length) * nassauBetVal;
+      html += `<div style="margin-top:8px;text-align:right;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--page-text-muted)">Exposure: $${totalNassau}</div>`;
+      html += `</div>`;
+    }
+
+    // ── WOLF ROTATION ──
+    if (games.wolf && wolfOrder.length > 0) {
+      const wolfState = gameState?.wolf || {};
+      const nextHoleNum = latestHole + 1;
+      const currentWolf = wolfOrder[(nextHoleNum - 1) % wolfOrder.length];
+      const wolfPointsPerHole = parseInt(config?.structure?.wolfPoints) || 1;
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-left:3px solid #8B6914;border-radius:10px;padding:14px 16px;margin-bottom:10px">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--page-text)">Wolf</span>
+        <span style="font-size:12px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.1);padding:3px 8px;border-radius:4px">Hole ${nextHoleNum}: ${escHtml(currentWolf.split(' ')[0])} is Wolf</span>
+      </div>`;
+
+      // Rotation display
+      html += `<div style="display:flex;gap:6px;margin-bottom:10px">`;
+      wolfOrder.forEach((name, i) => {
+        const isWolf = name === currentWolf;
+        html += `<div style="flex:1;text-align:center;padding:8px 4px;border-radius:8px;${isWolf ? 'background:#8B6914;color:white' : 'background:var(--bg-secondary);color:var(--page-text-muted)'};font-size:12px;font-weight:${isWolf ? '800' : '600'}">
+          ${isWolf ? '\ud83d\udc3a ' : ''}${escHtml(name.split(' ')[0])}
+        </div>`;
+      });
+      html += `</div>`;
+
+      // Wolf history (last few holes)
+      const wolfPicks = wolfState.picks || {};
+      const recentWolfHoles = scoredHoles.slice(-5);
+      if (recentWolfHoles.length > 0) {
+        recentWolfHoles.forEach(h => {
+          const wolf = wolfOrder[(h - 1) % wolfOrder.length];
+          const pick = wolfPicks[h];
+          const isLone = pick === 'lone' || pick === 'LONE_WOLF';
+          const partner = pick && !isLone ? pick : null;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px">
+            <span style="color:var(--page-text-muted);width:28px">H${h}</span>
+            <span style="font-weight:600;color:var(--page-text)">${escHtml(wolf.split(' ')[0])}</span>
+            <span style="color:${isLone ? '#8B6914' : 'var(--page-text-muted)'};font-weight:${isLone ? '700' : '500'}">${isLone ? 'LONE WOLF \ud83d\udc3a' : partner ? 'Picked ' + escHtml(partner.split(' ')[0]) : '--'}</span>
+          </div>`;
+        });
+      }
+
+      // Wolf Hammer countdown
+      const hammerStart = holesPerRound - 1; // holes 17-18
+      const holesUntilHammer = Math.max(0, hammerStart - latestHole);
+      if (holesUntilHammer > 0 && holesUntilHammer <= 10) {
+        html += `<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.08);padding:6px;border-radius:6px">
+          WOLF HAMMER in ${holesUntilHammer} hole${holesUntilHammer !== 1 ? 's' : ''} \u2022 4x value
+        </div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // ================================================================
   // SECTION 3.5: SETTLEMENT PREVIEW (BOARD tab)
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'board') && scoredHoles.length > 0 && hasPnL) {
