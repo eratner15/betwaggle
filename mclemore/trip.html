@@ -6,7 +6,14 @@
   <title>McLemore 2026 — BetWaggle</title>
   <meta name="description" content="McLemore Buddies Trip · Apr 30 – May 2, 2026 · 8 players, 3 rounds, 2 courses. Live odds, groupings, and action.">
   <meta property="og:title" content="McLemore 2026 — Buddies Trip">
-  <meta property="og:description" content="8 players. 3 rounds. Lookout Mountain. Who's taking the money home?">
+  <meta property="og:description" content="8 players. 3 rounds. 2 courses. Lookout Mountain, GA. Apr 30 – May 2. Skins, Nassau, Best Ball, Scramble, Stableford. Who's taking the money home?">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/mclemore/trip.html">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:site_name" content="BetWaggle">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="McLemore 2026 — Buddies Trip">
+  <meta name="twitter:description" content="8 players. 3 rounds. Lookout Mountain. Live odds and groupings.">
   <meta name="theme-color" content="#1B3022">
   <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -338,7 +345,16 @@
     </div>
   </div>
 
-  <button class="btn-share" onclick="shareTrip()">Share with the Group</button>
+  <div style="position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:50;padding:8px 12px;background:linear-gradient(to top,var(--ivory) 80%,transparent);padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))">
+    <div style="display:flex;gap:8px">
+      <button onclick="shareTrip()" style="flex:1;padding:16px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px;-webkit-tap-highlight-color:transparent" onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
+        Share with the Group
+      </button>
+      <button onclick="copyLink()" id="copy-btn" style="padding:16px 20px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;color:var(--dark);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">
+        📋 Copy
+      </button>
+    </div>
+  </div>
 
   <script>
     // ── Players ──
@@ -648,17 +664,40 @@
 
     // ── Share ──
     function shareTrip() {
-      const url = window.location.href;
-      const text = 'McLemore 2026 — Buddies Trip. 8 players, 3 rounds, Lookout Mountain. Check the odds and groupings:';
+      const url = 'https://betwaggle.com/mclemore/trip.html';
+      const text = 'McLemore 2026 🏌️ — 8 players, 3 rounds, Lookout Mountain. Check the odds, groupings, and scorecards. Who\'s taking the money home?';
       if (navigator.share) {
-        navigator.share({ title: 'McLemore 2026', text, url });
+        navigator.share({ title: 'McLemore 2026 — Buddies Trip', text: text, url: url }).catch(() => {});
       } else {
-        navigator.clipboard.writeText(url).then(() => {
-          const btn = document.querySelector('.btn-share');
-          btn.textContent = 'Link Copied!';
-          setTimeout(() => { btn.textContent = 'Share with the Group'; }, 2000);
-        });
+        copyLink();
       }
+    }
+
+    function copyLink() {
+      const url = 'https://betwaggle.com/mclemore/trip.html';
+      const btn = document.getElementById('copy-btn');
+      navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.style.background = 'rgba(22,163,74,0.08)';
+        btn.style.color = 'var(--win)';
+        btn.style.borderColor = 'var(--win)';
+        setTimeout(() => {
+          btn.textContent = '📋 Copy';
+          btn.style.background = 'var(--white)';
+          btn.style.color = 'var(--dark)';
+          btn.style.borderColor = 'var(--border)';
+        }, 2500);
+      }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2500);
+      });
     }
   </script>
 </body>
