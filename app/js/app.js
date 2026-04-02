@@ -236,6 +236,9 @@ async function bootstrap() {
 
   // Update connectivity indicator every 5s
   setInterval(updateConnectivityIndicator, 5000);
+
+  // Demo auto-simulation — make demo pages feel alive
+  startDemoAutoSimulation(slug);
 }
 
 // Pull latest from server (scores, announcements, all bets)
@@ -3677,6 +3680,154 @@ window.MG = {
 // #4: Persist bet slip to sessionStorage
 function saveBetSlip() {
   sessionStorage.setItem('mg_betslip', JSON.stringify(state._betSlip || []));
+}
+
+// Demo auto-simulation for live sportsbook feel
+let demoSimTimer = null;
+
+function startDemoAutoSimulation(slug) {
+  // Only run on demo pages
+  const isDemoPage = ['demo-buddies', 'demo-scramble', 'legends-trip', 'stag-night', 'augusta-scramble', 'masters-member-guest'].includes(slug);
+  if (!isDemoPage) return;
+
+  console.log('[waggle] Starting auto-simulation for demo:', slug);
+
+  // Stop any existing timer
+  if (demoSimTimer) {
+    clearInterval(demoSimTimer);
+  }
+
+  // Run simulation every 8 seconds with 60% activity chance
+  demoSimTimer = setInterval(() => {
+    if (Math.random() > 0.6) return; // Skip 40% of cycles for realistic pacing
+    generateDemoActivity(slug);
+  }, 8000);
+
+  // Generate initial activity after 3 seconds
+  setTimeout(() => generateDemoActivity(slug), 3000);
+}
+
+function generateDemoActivity(slug) {
+  if (!state?._config?.players) return;
+
+  const players = state._config.players;
+  const eventType = Math.random();
+
+  if (eventType < 0.4) {
+    // Generate fake bet placement (40% chance)
+    generateFakeBet(players, slug);
+  } else if (eventType < 0.8) {
+    // Generate score update (40% chance)
+    generateScoreUpdate(players, slug);
+  } else {
+    // Generate trash talk/chirp (20% chance)
+    generateFakeChirp(players, slug);
+  }
+}
+
+function generateFakeBet(players, slug) {
+  const player = players[Math.floor(Math.random() * players.length)];
+  const betTypes = ['Nassau', 'Skins', 'Wolf', 'Press'];
+  const betType = betTypes[Math.floor(Math.random() * betTypes.length)];
+  const amounts = [10, 15, 20, 25, 30, 50];
+  const amount = amounts[Math.floor(Math.random() * amounts.length)];
+
+  const feedItem = {
+    id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    type: 'bet',
+    player: player.name,
+    text: `placed a $${amount} ${betType} bet`,
+    emoji: '💰',
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString()
+  };
+
+  // Add to feed with realistic styling
+  state._feed.unshift(feedItem);
+
+  // Limit feed to 50 items to prevent memory bloat
+  if (state._feed.length > 50) {
+    state._feed = state._feed.slice(0, 50);
+  }
+
+  // Re-render current view to show new activity
+  route();
+}
+
+function generateScoreUpdate(players, slug) {
+  const player = players[Math.floor(Math.random() * players.length)];
+  const scoreEvents = [
+    'sank a 20-footer for birdie',
+    'chipped in for eagle',
+    'made a clutch par putt',
+    'holed out from the bunker',
+    'drained a 30-foot putt',
+    'hit it stiff from 150 yards',
+    'made an impossible recovery shot',
+    'sank the birdie putt',
+    'rolled in a 15-footer for par',
+    'made birdie from the rough'
+  ];
+
+  const scoreEvent = scoreEvents[Math.floor(Math.random() * scoreEvents.length)];
+
+  const feedItem = {
+    id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    type: 'score',
+    player: player.name,
+    text: scoreEvent,
+    emoji: '🏌️',
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString()
+  };
+
+  state._feed.unshift(feedItem);
+
+  if (state._feed.length > 50) {
+    state._feed = state._feed.slice(0, 50);
+  }
+
+  route();
+}
+
+function generateFakeChirp(players, slug) {
+  const player = players[Math.floor(Math.random() * players.length)];
+  const chirps = [
+    'Ice in the veins',
+    'That\'s how it\'s done!',
+    'Reading these greens like a book',
+    'Money in the bank',
+    'Pressure makes diamonds',
+    'Pure stroke',
+    'Can\'t buy a putt today',
+    'Golf is hard',
+    'Lucky bounce!',
+    'Time to press',
+    'Momentum shift',
+    'Getting hot out here'
+  ];
+
+  const chirp = chirps[Math.floor(Math.random() * chirps.length)];
+  const emojis = ['🔥', '💪', '⛳', '❄️', '👑', '💎', '🎯'];
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+  const feedItem = {
+    id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    type: 'chirp',
+    player: player.name,
+    text: chirp,
+    emoji: emoji,
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString()
+  };
+
+  state._feed.unshift(feedItem);
+
+  if (state._feed.length > 50) {
+    state._feed = state._feed.slice(0, 50);
+  }
+
+  route();
 }
 
 // Boot
