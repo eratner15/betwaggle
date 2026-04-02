@@ -350,7 +350,7 @@ export default {
     }
 
     // ===== FRIENDLY REDIRECTS for common dead-end routes (must be before SPA match) =====
-    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/', '/rules': '/games/', '/help': '/overview/' };
+    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/', '/rules': '/games/', '/help': '/overview/', '/join': '/create/', '/about': '/overview/', '/games/stroke-play': '/games/', '/games/round-robin': '/games/', '/games/chapman': '/games/' };
     const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
     if (redirectTarget) {
       return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
@@ -567,22 +567,46 @@ export default {
       return env.ASSETS.fetch(ovReq);
     }
 
-    // /ads/ — ad creative brief (no-cache to bypass edge)
+    // /ads/ — ad creative brief (auth-protected)
     if (url.pathname === '/ads' || url.pathname === '/ads/') {
+      const pin = request.headers.get('X-Marketing-Pin') || '';
+      const validPin = env.WAGGLE_MARKETING_PIN || '';
+      if (!validPin || pin !== validPin) {
+        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
+          status: 401,
+          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
+        });
+      }
       const req = new Request(new URL('/ads/index.html', request.url), request);
       const res = await env.ASSETS.fetch(req);
       return new Response(res.body, { ...res, headers: { ...Object.fromEntries(res.headers), 'Cache-Control': 'no-store' } });
     }
 
-    // /gtm/ — GTM doc (no-cache to bypass edge)
+    // /gtm/ — GTM doc (auth-protected)
     if (url.pathname === '/gtm' || url.pathname === '/gtm/') {
+      const pin = request.headers.get('X-Marketing-Pin') || '';
+      const validPin = env.WAGGLE_MARKETING_PIN || '';
+      if (!validPin || pin !== validPin) {
+        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
+          status: 401,
+          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
+        });
+      }
       const req = new Request(new URL('/gtm/index.html', request.url), request);
       const res = await env.ASSETS.fetch(req);
       return new Response(res.body, { ...res, headers: { ...Object.fromEntries(res.headers), 'Cache-Control': 'no-store' } });
     }
 
-    // /marketing/ — Evan's marketing command center (password-protected)
+    // /marketing/ — Evan's marketing command center (auth-protected)
     if (url.pathname === '/marketing' || url.pathname === '/marketing/') {
+      const pin = request.headers.get('X-Marketing-Pin') || '';
+      const validPin = env.WAGGLE_MARKETING_PIN || '';
+      if (!validPin || pin !== validPin) {
+        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
+          status: 401,
+          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
+        });
+      }
       const req = new Request(new URL('/marketing/index.html', request.url), request);
       return env.ASSETS.fetch(req);
     }
