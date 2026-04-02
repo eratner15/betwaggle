@@ -567,50 +567,6 @@ export default {
       return env.ASSETS.fetch(ovReq);
     }
 
-    // /ads/ — ad creative brief (auth-protected)
-    if (url.pathname === '/ads' || url.pathname === '/ads/') {
-      const pin = request.headers.get('X-Marketing-Pin') || '';
-      const validPin = env.WAGGLE_MARKETING_PIN || '';
-      if (!validPin || pin !== validPin) {
-        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
-          status: 401,
-          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
-        });
-      }
-      const req = new Request(new URL('/ads/index.html', request.url), request);
-      const res = await env.ASSETS.fetch(req);
-      return new Response(res.body, { ...res, headers: { ...Object.fromEntries(res.headers), 'Cache-Control': 'no-store' } });
-    }
-
-    // /gtm/ — GTM doc (auth-protected)
-    if (url.pathname === '/gtm' || url.pathname === '/gtm/') {
-      const pin = request.headers.get('X-Marketing-Pin') || '';
-      const validPin = env.WAGGLE_MARKETING_PIN || '';
-      if (!validPin || pin !== validPin) {
-        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
-          status: 401,
-          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
-        });
-      }
-      const req = new Request(new URL('/gtm/index.html', request.url), request);
-      const res = await env.ASSETS.fetch(req);
-      return new Response(res.body, { ...res, headers: { ...Object.fromEntries(res.headers), 'Cache-Control': 'no-store' } });
-    }
-
-    // /marketing/ — Evan's marketing command center (auth-protected)
-    if (url.pathname === '/marketing' || url.pathname === '/marketing/') {
-      const pin = request.headers.get('X-Marketing-Pin') || '';
-      const validPin = env.WAGGLE_MARKETING_PIN || '';
-      if (!validPin || pin !== validPin) {
-        return new Response('<!DOCTYPE html><html><head><title>401 Unauthorized</title></head><body><h1>401 Unauthorized</h1><p>Access denied. Contact admin for access.</p></body></html>', {
-          status: 401,
-          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' }
-        });
-      }
-      const req = new Request(new URL('/marketing/index.html', request.url), request);
-      return env.ASSETS.fetch(req);
-    }
-
     // /api/marketing/stats — live stats for the marketing dashboard
     if (url.pathname === '/api/marketing/stats' && request.method === 'GET') {
       return handleMarketingStats(url, env);
@@ -1059,6 +1015,7 @@ export default {
         return new Response(JSON.stringify({ ok: true, slug, url: `https://betwaggle.com/${slug}/`, adminPin: config.event.adminPin, players: config.players.map(p => `${p.name} (${p.venmo})`), games: 'Nassau $10 + Skins $5 + Wolf' }), { headers: { 'Content-Type': 'application/json' } });
       } catch (e) { return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
     }
+
 
     // Serve static assets
     const assetResp = await env.ASSETS.fetch(request);

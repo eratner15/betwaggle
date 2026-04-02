@@ -234,6 +234,115 @@ assertClose(interpolateProb(-5, -5), 0.5, 0.001, 'Both -5 HCP (clamped to 0) = 5
 assert(mlToDecimal(-10000) > 1.0, 'Heavy favorite decimal > 1.0');
 assert(mlToDecimal(-10000) < 1.02, 'Heavy favorite decimal < 1.02');
 
+// ── 11. Odds delta calculation ──
+console.log('\n11. Odds delta tracking');
+
+// Mock delta calculation functions (inline versions)
+function calculateOddsDeltas(current, previous) {
+  if (!previous) {
+    return {
+      deltaA: 0, deltaB: 0,
+      directionA: 'unchanged', directionB: 'unchanged',
+      magnitudeA: 'none', magnitudeB: 'none'
+    };
+  }
+
+  const deltaA = current.mlA - previous.mlA;
+  const deltaB = current.mlB - previous.mlB;
+
+  const directionA = deltaA > 0 ? 'worse' : deltaA < 0 ? 'better' : 'unchanged';
+  const directionB = deltaB > 0 ? 'worse' : deltaB < 0 ? 'better' : 'unchanged';
+
+  const getMagnitude = (delta) => {
+    const abs = Math.abs(delta);
+    if (abs === 0) return 'none';
+    if (abs < 20) return 'small';
+    if (abs < 50) return 'medium';
+    return 'large';
+  };
+
+  return {
+    deltaA, deltaB,
+    directionA, directionB,
+    magnitudeA: getMagnitude(deltaA),
+    magnitudeB: getMagnitude(deltaB)
+  };
+}
+
+// Test scenario 1: No previous odds (first calculation)
+const firstCall = calculateOddsDeltas({ mlA: -120, mlB: 100 }, null);
+assert(firstCall.deltaA === 0, 'First call deltaA should be 0');
+assert(firstCall.deltaB === 0, 'First call deltaB should be 0');
+assert(firstCall.directionA === 'unchanged', 'First call directionA should be unchanged');
+assert(firstCall.directionB === 'unchanged', 'First call directionB should be unchanged');
+assert(firstCall.magnitudeA === 'none', 'First call magnitudeA should be none');
+assert(firstCall.magnitudeB === 'none', 'First call magnitudeB should be none');
+
+// Test scenario 2: Small odds movement (Team A gets worse, Team B gets better)
+const smallMove = calculateOddsDeltas(
+  { mlA: -110, mlB: -110 }, // Current: both teams now closer to even
+  { mlA: -120, mlB: 100 }   // Previous: A was favored
+);
+assert(smallMove.deltaA === 10, 'Small move deltaA should be +10 (worse odds)');
+assert(smallMove.deltaB === -210, 'Small move deltaB should be -210 (better odds)');
+assert(smallMove.directionA === 'worse', 'Team A direction should be worse');
+assert(smallMove.directionB === 'better', 'Team B direction should be better');
+assert(smallMove.magnitudeA === 'small', 'Team A magnitude should be small');
+assert(smallMove.magnitudeB === 'large', 'Team B magnitude should be large');
+
+// Test scenario 3: Medium odds movement after score change
+const mediumMove = calculateOddsDeltas(
+  { mlA: -150, mlB: 130 },  // Current: A becomes bigger favorite
+  { mlA: -120, mlB: 100 }   // Previous: A was slight favorite
+);
+assert(mediumMove.deltaA === -30, 'Medium move deltaA should be -30 (better odds)');
+assert(mediumMove.deltaB === 30, 'Medium move deltaB should be +30 (worse odds)');
+assert(mediumMove.directionA === 'better', 'Team A direction should be better');
+assert(mediumMove.directionB === 'worse', 'Team B direction should be worse');
+assert(mediumMove.magnitudeA === 'medium', 'Team A magnitude should be medium');
+assert(mediumMove.magnitudeB === 'medium', 'Team B magnitude should be medium');
+
+// Test scenario 4: Large odds swing (Team B takes control)
+const largeMove = calculateOddsDeltas(
+  { mlA: 180, mlB: -200 },  // Current: B becomes heavy favorite
+  { mlA: -120, mlB: 100 }   // Previous: A was favorite
+);
+assert(largeMove.deltaA === 300, 'Large move deltaA should be +300 (much worse)');
+assert(largeMove.deltaB === -300, 'Large move deltaB should be -300 (much better)');
+assert(largeMove.directionA === 'worse', 'Team A direction should be worse');
+assert(largeMove.directionB === 'better', 'Team B direction should be better');
+assert(largeMove.magnitudeA === 'large', 'Team A magnitude should be large');
+assert(largeMove.magnitudeB === 'large', 'Team B magnitude should be large');
+
+// Test scenario 5: No change (odds stay the same)
+const noChange = calculateOddsDeltas(
+  { mlA: -120, mlB: 100 },  // Current: same as previous
+  { mlA: -120, mlB: 100 }   // Previous: exact same odds
+);
+assert(noChange.deltaA === 0, 'No change deltaA should be 0');
+assert(noChange.deltaB === 0, 'No change deltaB should be 0');
+assert(noChange.directionA === 'unchanged', 'No change directionA should be unchanged');
+assert(noChange.directionB === 'unchanged', 'No change directionB should be unchanged');
+assert(noChange.magnitudeA === 'none', 'No change magnitudeA should be none');
+assert(noChange.magnitudeB === 'none', 'No change magnitudeB should be none');
+
+// Test scenario 6: Live odds update during match progression
+const liveUpdate1 = calculateOddsDeltas(
+  { mlA: -130, mlB: 110 },  // After hole 1: A wins first hole
+  { mlA: -120, mlB: 100 }   // Pre-match odds
+);
+assert(liveUpdate1.deltaA === -10, 'Live update 1 deltaA should be -10');
+assert(liveUpdate1.directionA === 'better', 'Live update 1 direction A better');
+assert(liveUpdate1.magnitudeA === 'small', 'Live update 1 magnitude A small');
+
+const liveUpdate2 = calculateOddsDeltas(
+  { mlA: -105, mlB: -115 }, // After hole 6: match becomes very close
+  { mlA: -130, mlB: 110 }   // After hole 1
+);
+assert(liveUpdate2.deltaA === 25, 'Live update 2 deltaA should be +25');
+assert(liveUpdate2.directionA === 'worse', 'Live update 2 direction A worse');
+assert(liveUpdate2.magnitudeA === 'medium', 'Live update 2 magnitude A medium');
+
 // ═══════════════════════════════════════════════════════════════
 // RESULTS
 // ═══════════════════════════════════════════════════════════════

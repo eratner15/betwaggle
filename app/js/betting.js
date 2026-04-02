@@ -5,6 +5,7 @@
 
 let _teams = {};
 let _flights = {};
+let _oddsHistory = {}; // Track previous odds: { matchKey: { mlA, mlB, probA, probB, timestamp } }
 
 export function setConfig(config) {
   _teams = config.teams;
@@ -76,6 +77,62 @@ export function mlToDecimal(ml) {
   return +(1 + ml / 100).toFixed(2);
 }
 
+// ---- odds delta tracking helpers ----------------------------
+
+// Generate consistent key for odds history tracking
+function getMatchKey(teamAId, teamBId, matchId = null) {
+  // Use matchId if available, otherwise create deterministic key from team IDs
+  if (matchId) return matchId;
+  // Ensure consistent ordering for teamA vs teamB matchups
+  const [idA, idB] = [teamAId, teamBId].sort();
+  return `${idA}_vs_${idB}`;
+}
+
+// Calculate delta information between current and previous odds
+function calculateOddsDeltas(current, previous) {
+  if (!previous) {
+    return {
+      deltaA: 0, deltaB: 0,
+      directionA: 'unchanged', directionB: 'unchanged',
+      magnitudeA: 'none', magnitudeB: 'none'
+    };
+  }
+
+  const deltaA = current.mlA - previous.mlA;
+  const deltaB = current.mlB - previous.mlB;
+
+  // Direction: positive delta = worse odds (longer shot), negative = better odds (shorter)
+  const directionA = deltaA > 0 ? 'worse' : deltaA < 0 ? 'better' : 'unchanged';
+  const directionB = deltaB > 0 ? 'worse' : deltaB < 0 ? 'better' : 'unchanged';
+
+  // Magnitude based on absolute change in moneyline
+  const getMagnitude = (delta) => {
+    const abs = Math.abs(delta);
+    if (abs === 0) return 'none';
+    if (abs < 20) return 'small';
+    if (abs < 50) return 'medium';
+    return 'large';
+  };
+
+  return {
+    deltaA, deltaB,
+    directionA, directionB,
+    magnitudeA: getMagnitude(deltaA),
+    magnitudeB: getMagnitude(deltaB)
+  };
+}
+
+// Store current odds in history for future delta calculation
+function storeOddsHistory(matchKey, odds) {
+  _oddsHistory[matchKey] = {
+    mlA: odds.mlA,
+    mlB: odds.mlB,
+    probA: odds.probA,
+    probB: odds.probB,
+    timestamp: Date.now()
+  };
+}
+
 // ---- odds overrides (set by admin line management) ----------
 
 let _oddsOverrides = {};
@@ -141,6 +198,9 @@ function probToML(p) {
 }
 
 export function getMatchMoneyline(teamAId, teamBId, matchId) {
+  // Generate consistent key for this matchup
+  const matchKey = getMatchKey(teamAId, teamBId, matchId);
+
   // Check for manual admin override first
   if (matchId && _oddsOverrides[matchId]) {
     const ov = _oddsOverrides[matchId];
@@ -148,7 +208,20 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
     const mlB = ov.mlB;
     const probA = mlToProb(mlA);
     const probB = mlToProb(mlB);
-    return { probA, probB, mlA, mlB };
+    const currentOdds = { probA, probB, mlA, mlB };
+
+    // Get previous odds and calculate deltas
+    const previousOdds = _oddsHistory[matchKey];
+    const deltas = calculateOddsDeltas(currentOdds, previousOdds);
+
+    // Store current odds for next time
+    storeOddsHistory(matchKey, currentOdds);
+
+    return {
+      probA, probB, mlA, mlB,
+      previousOdds: previousOdds || null,
+      ...deltas
+    };
   }
 
   const tA = _teams[teamAId];
@@ -185,8 +258,20 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
   const probB = 1 - probA;
   const mlA = probToML(probA);
   const mlB = probToML(probB);
+  const currentOdds = { probA, probB, mlA, mlB };
 
-  return { probA, probB, mlA, mlB };
+  // Get previous odds and calculate deltas
+  const previousOdds = _oddsHistory[matchKey];
+  const deltas = calculateOddsDeltas(currentOdds, previousOdds);
+
+  // Store current odds for next time
+  storeOddsHistory(matchKey, currentOdds);
+
+  return {
+    probA, probB, mlA, mlB,
+    previousOdds: previousOdds || null,
+    ...deltas
+  };
 }
 
 // ---- live odds (mid-round adjustment) -----------------------
@@ -208,14 +293,35 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
  * @returns {{ probA, probB, mlA, mlB, isLive }}
  */
 export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
+  // Generate consistent key for this matchup (include 'live' prefix for separate tracking)
+  const matchKey = `live_${getMatchKey(teamAId, teamBId, matchId)}`;
+
   if (!liveState || !liveState.holesPlayed || liveState.holesPlayed === 0) {
-    return { ...getMatchMoneyline(teamAId, teamBId, matchId), isLive: false };
+    const baseOdds = getMatchMoneyline(teamAId, teamBId, matchId);
+    return { ...baseOdds, isLive: false };
   }
 
   // Check for manual override — always takes precedence
   if (matchId && _oddsOverrides[matchId]) {
     const ov = _oddsOverrides[matchId];
-    return { probA: mlToProb(ov.mlA), probB: mlToProb(ov.mlB), mlA: ov.mlA, mlB: ov.mlB, isLive: true };
+    const mlA = ov.mlA;
+    const mlB = ov.mlB;
+    const probA = mlToProb(mlA);
+    const probB = mlToProb(mlB);
+    const currentOdds = { probA, probB, mlA, mlB };
+
+    // Get previous live odds and calculate deltas
+    const previousOdds = _oddsHistory[matchKey];
+    const deltas = calculateOddsDeltas(currentOdds, previousOdds);
+
+    // Store current odds for next time
+    storeOddsHistory(matchKey, currentOdds);
+
+    return {
+      probA, probB, mlA, mlB, isLive: true,
+      previousOdds: previousOdds || null,
+      ...deltas
+    };
   }
 
   const { holesPlayed, totalHoles = 18, scoreA = 0, scoreB = 0 } = liveState;
@@ -251,8 +357,20 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
   const probB = 1 - liveProb;
   const mlA = probToML(probA);
   const mlB = probToML(probB);
+  const currentOdds = { probA, probB, mlA, mlB };
 
-  return { probA, probB, mlA, mlB, isLive: true };
+  // Get previous live odds and calculate deltas
+  const previousOdds = _oddsHistory[matchKey];
+  const deltas = calculateOddsDeltas(currentOdds, previousOdds);
+
+  // Store current odds for next time
+  storeOddsHistory(matchKey, currentOdds);
+
+  return {
+    probA, probB, mlA, mlB, isLive: true,
+    previousOdds: previousOdds || null,
+    ...deltas
+  };
 }
 
 // ---- match-level odds (with draw) ---------------------------

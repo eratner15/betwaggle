@@ -313,14 +313,96 @@
     .team-name { font-size: 13px; color: var(--text); font-weight: 600; }
     .team-hi { font-size: 11px; color: var(--muted); margin-left: 5px; }
     .odds-pill {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 3px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 8px;
       letter-spacing: .02em;
+      min-height: 56px;
+      min-width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 2px solid transparent;
+      font-family: 'SF Mono','Menlo',monospace;
+      background: rgba(26,71,42,0.08);
+      position: relative;
+      overflow: hidden;
     }
-    .odds-fav { background: none; color: var(--forest); font-family: 'SF Mono','Menlo',monospace; font-weight: 700; }
-    .odds-dog { background: none; color: var(--muted); font-family: 'SF Mono','Menlo',monospace; font-weight: 600; }
+
+    .odds-pill:hover {
+      transform: scale(1.02);
+      border-color: var(--gold);
+      background: rgba(26,71,42,0.12);
+    }
+
+    .odds-pill:active {
+      transform: scale(0.98);
+    }
+
+    .odds-pill.selected {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--forest);
+    }
+
+    .odds-fav {
+      color: var(--forest);
+      background: rgba(34,197,94,0.08);
+    }
+    .odds-fav:hover {
+      background: rgba(34,197,94,0.15);
+    }
+
+    .odds-dog {
+      color: var(--text);
+      background: rgba(26,71,42,0.06);
+    }
+    .odds-dog:hover {
+      background: rgba(26,71,42,0.12);
+    }
+
+    /* Odds movement animations */
+    @keyframes oddsFlashGreen {
+      0% { background: rgba(34,197,94,0.3); transform: scale(1.05); }
+      100% { background: rgba(34,197,94,0.08); transform: scale(1); }
+    }
+
+    @keyframes oddsFlashRed {
+      0% { background: rgba(239,68,68,0.3); transform: scale(1.05); }
+      100% { background: rgba(239,68,68,0.08); transform: scale(1); }
+    }
+
+    .odds-pill.flash-green {
+      animation: oddsFlashGreen 0.6s ease-out;
+    }
+
+    .odds-pill.flash-red {
+      animation: oddsFlashRed 0.6s ease-out;
+    }
+
+    /* Leaderboard smooth transitions */
+    .match-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .match-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+      position: relative;
+    }
+
+    .match-line:hover {
+      background: rgba(201,168,76,0.08);
+    }
 
     .match-score-line {
       margin-top: 10px;
@@ -823,8 +905,39 @@
 
     /* Entrance animations */
     @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes slideIn { from { transform: translateX(-20px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+    @keyframes countUp { from { transform: scale(0.8); opacity:0.5; } to { transform: scale(1); opacity:1; } }
+    @keyframes cardFlip {
+      0% { transform: perspective(1000px) rotateY(0deg); }
+      50% { transform: perspective(1000px) rotateY(-90deg); }
+      100% { transform: perspective(1000px) rotateY(0deg); }
+    }
+    @keyframes settlementReveal {
+      0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+      60% { opacity: 0.8; transform: scale(1.02) translateY(-5px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes winnerGlow {
+      0%, 100% { text-shadow: 0 0 10px rgba(212,175,55,0.3); }
+      50% { text-shadow: 0 0 20px rgba(212,175,55,0.6), 0 0 30px rgba(212,175,55,0.4); }
+    }
+
     .reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .settlement-item {
+      animation: settlementReveal 0.6s ease-out;
+      animation-delay: var(--delay, 0s);
+    }
+
+    .winner-amount {
+      animation: winnerGlow 2s ease-in-out infinite;
+    }
+
+    .flip-card {
+      animation: cardFlip 1s ease-in-out;
+    }
     @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
     /* ──────────────────────────────────────────
@@ -1017,6 +1130,7 @@
           <div class="mockup-footer" id="demo-nav">
             <button class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer;border:none;font:inherit">Lay Action</button>
             <button class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer;border:none;font:inherit">The Board</button>
+            <button id="sound-toggle" onclick="toggleSound()" style="background:none;border:none;font-size:16px;cursor:pointer;padding:8px;border-radius:4px;margin-left:4px" title="Enable Sound">🔇</button>
           </div>
         </div>
       </div>
@@ -1110,12 +1224,15 @@
           } else if (v === 'settle') {
             body.innerHTML =
               '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Final Standings</div>' +
-              demoState.players.map(function(p) {
+              demoState.players.map(function(p, index) {
                 var c = p.pnl > 0 ? 'var(--sage)' : p.pnl < 0 ? '#ef4444' : 'rgba(255,255,255,.5)';
                 var str = p.pnl > 0 ? '+$' + p.pnl : p.pnl < 0 ? '-$' + Math.abs(p.pnl) : 'Even';
-                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule)">' +
+                var isWinner = p.pnl > 0;
+                var delayStyle = '--delay: ' + (index * 0.15) + 's';
+
+                return '<div class="settlement-item" style="display:flex;justify-content:space-between;padding:12px 8px;border-bottom:1px solid var(--rule);' + delayStyle + '">' +
                   '<span style="font-size:14px;color:var(--forest);font-weight:600">' + p.name + '</span>' +
-                  '<span style="font-size:18px;font-weight:800;color:' + c + '">' + str + '</span></div>';
+                  '<span class="' + (isWinner ? 'winner-amount' : '') + '" style="font-size:18px;font-weight:800;color:' + c + '">' + str + '</span></div>';
               }).join('') +
               '<div style="margin-top:12px;padding:12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:6px">' +
                 '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Who Pays Who</div>' +
@@ -1140,22 +1257,417 @@
         window.demoBet = function(side) {
           demoState.view = 'bet';
           renderDemo();
-          // Flash the selected odds pill
+
+          // Flash the selected odds pill with CSS animation
           var el = document.getElementById(side === 'A' ? 'odds-a' : 'odds-b');
-          if (el) { el.style.background = 'rgba(201,168,76,.4)'; setTimeout(function() { el.style.background = ''; }, 300); }
+          if (el) {
+            el.classList.add('selected');
+            setTimeout(function() {
+              el.classList.remove('selected');
+            }, 300);
+          }
+
+          playOddsShiftSound();
+          hapticFeedback('odds');
         };
 
         // Place a bet → return to live view with new bet in list
         window.demoPlaceBet = function(amount) {
-          demoState.bets.push({ player: 'You', team: 'Thomas/Walsh', stake: amount, toWin: Math.round(amount * 0.625), status: 'active' });
-          demoState.view = 'live';
-          renderDemo();
+          // Add visual feedback for bet placement
+          var betButtons = document.querySelectorAll('[onclick*="demoPlaceBet"]');
+          betButtons.forEach(btn => btn.style.transform = 'scale(0.95)');
+
+          setTimeout(() => {
+            demoState.bets.push({
+              player: 'You',
+              team: 'Thomas/Walsh',
+              stake: amount,
+              toWin: Math.round(amount * 0.625),
+              status: 'active'
+            });
+            demoState.view = 'live';
+            renderDemo();
+
+            // Reset button transforms
+            betButtons.forEach(btn => btn.style.transform = '');
+          }, 100);
+
+          playBetPlacedSound();
+          hapticFeedback('bet');
         };
 
-        // Static demo — no auto-cycling. Users click to explore.
+        // Auto-simulation system — make demo feel alive
+        var autoSimTimer = null;
+        var isAutoSimEnabled = true;
+        var lastUpdate = Date.now();
+        var oddsFlashElements = new Set();
 
-        // Initial render
+        function updateOdds(teamADelta, teamBDelta) {
+          var prevA = demoState.match.teamAodds;
+          var prevB = demoState.match.teamBodds;
+
+          demoState.match.teamAodds = Math.max(-300, Math.min(300, prevA + teamADelta));
+          demoState.match.teamBodds = Math.max(-300, Math.min(300, prevB + teamBDelta));
+
+          // Flash odds if significant change (>= 10 points)
+          if (Math.abs(teamADelta) >= 10) {
+            setTimeout(() => {
+              flashOdds('A', teamADelta > 0 ? 'red' : 'green');
+              playOddsShiftSound();
+              hapticFeedback('odds');
+            }, 100);
+          }
+          if (Math.abs(teamBDelta) >= 10) {
+            setTimeout(() => {
+              flashOdds('B', teamBDelta > 0 ? 'red' : 'green');
+              playOddsShiftSound();
+              hapticFeedback('odds');
+            }, 100);
+          }
+        }
+
+        function flashOdds(team, color) {
+          var el = document.getElementById('odds-' + team.toLowerCase());
+          if (!el) return;
+
+          // Remove any existing flash classes
+          el.classList.remove('flash-green', 'flash-red');
+
+          // Add appropriate flash class
+          var flashClass = color === 'green' ? 'flash-green' : 'flash-red';
+          el.classList.add(flashClass);
+
+          // Remove flash class after animation completes
+          setTimeout(() => {
+            el.classList.remove(flashClass);
+          }, 600);
+        }
+
+        function simulateHoleProgress() {
+          if (!isAutoSimEnabled) return;
+
+          var now = Date.now();
+          if (now - lastUpdate < 3000) return; // Min 3 second intervals
+          lastUpdate = now;
+
+          // Randomly advance hole (30% chance)
+          if (Math.random() < 0.3 && demoState.hole < 18) {
+            demoState.hole++;
+
+            // Update match status with realistic golf scoring
+            var outcomes = [
+              { scoreChange: 1, status: `${demoState.match.scoreA + 1} UP thru ${demoState.hole}`, oddsA: -15, oddsB: 12 },
+              { scoreChange: 0, status: `${demoState.match.scoreA} UP thru ${demoState.hole}`, oddsA: -5, oddsB: 4 },
+              { scoreChange: -1, status: `${Math.max(0, demoState.match.scoreA - 1)} UP thru ${demoState.hole}`, oddsA: 10, oddsB: -8 },
+              { scoreChange: 0, status: `All Square thru ${demoState.hole}`, oddsA: 25, oddsB: -20 }
+            ];
+
+            var outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+            demoState.match.scoreA = Math.max(0, demoState.match.scoreA + outcome.scoreChange);
+            demoState.match.status = outcome.status;
+
+            updateOdds(outcome.oddsA, outcome.oddsB);
+
+            // Occasionally add a new skin winner (20% chance)
+            if (Math.random() < 0.2) {
+              var winners = ['Thomas', 'Walsh', 'Perkins', 'Reed'];
+              var winner = winners[Math.floor(Math.random() * winners.length)];
+              demoState.skins.push({
+                hole: demoState.hole,
+                winner: winner,
+                pot: Math.random() < 0.3 ? 2 : 1 // 30% chance of carryover
+              });
+            }
+
+            // Update player standings based on new results
+            if (outcome.scoreChange !== 0) {
+              var pnlAdjust = outcome.scoreChange > 0 ? 10 : -8;
+              demoState.players[0].pnl += pnlAdjust;
+              demoState.players[1].pnl += pnlAdjust;
+              demoState.players[2].pnl -= pnlAdjust;
+              demoState.players[3].pnl -= pnlAdjust;
+            }
+
+            renderDemo();
+
+            // Add haptic feedback if available
+            if (navigator.vibrate && outcome.scoreChange !== 0) {
+              navigator.vibrate(50);
+            }
+          }
+        }
+
+        function startAutoSim() {
+          if (autoSimTimer) clearInterval(autoSimTimer);
+          autoSimTimer = setInterval(simulateHoleProgress, 3500 + Math.random() * 2000); // 3.5-5.5s intervals
+        }
+
+        function stopAutoSim() {
+          if (autoSimTimer) {
+            clearInterval(autoSimTimer);
+            autoSimTimer = null;
+          }
+        }
+
+        // Enhanced interaction functions
+        window.demoSwitch = function(view) {
+          if (view === 'settle') {
+            // Add dramatic pause before settlement reveal
+            stopAutoSim();
+
+            // Fade out current content
+            var body = document.getElementById('demo-body');
+            if (body) {
+              body.style.opacity = '0.3';
+              body.style.transform = 'scale(0.95)';
+            }
+
+            setTimeout(function() {
+              demoState.view = view;
+              renderDemo();
+
+              // Restore body and trigger confetti
+              if (body) {
+                body.style.opacity = '';
+                body.style.transform = '';
+                body.style.animation = 'fadeIn 0.8s ease-out';
+              }
+
+              setTimeout(triggerConfetti, 500);
+            }, 1200); // 1.2 second dramatic pause
+
+            return;
+          }
+
+          demoState.view = view;
+          renderDemo();
+
+          // Restart auto-sim when returning to live view
+          if (view === 'live') {
+            setTimeout(startAutoSim, 1000);
+          } else if (view !== 'settle') {
+            stopAutoSim();
+          }
+        };
+
+        // Auto-simulation management
+        window.toggleAutoSim = function() {
+          isAutoSimEnabled = !isAutoSimEnabled;
+          if (isAutoSimEnabled) {
+            startAutoSim();
+          } else {
+            stopAutoSim();
+          }
+        };
+
+        // Lightweight canvas-based confetti system
+        function createConfetti(container) {
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          var confettiPieces = [];
+          var animationId = null;
+
+          // Set up canvas
+          canvas.style.position = 'absolute';
+          canvas.style.top = '0';
+          canvas.style.left = '0';
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+          canvas.style.pointerEvents = 'none';
+          canvas.style.zIndex = '10';
+
+          function resizeCanvas() {
+            var rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+          }
+
+          // Confetti piece constructor
+          function ConfettiPiece() {
+            this.x = Math.random() * canvas.width;
+            this.y = -10;
+            this.width = Math.random() * 8 + 4;
+            this.height = Math.random() * 6 + 4;
+            this.speedX = (Math.random() - 0.5) * 3;
+            this.speedY = Math.random() * 3 + 2;
+            this.rotation = Math.random() * 360;
+            this.rotationSpeed = (Math.random() - 0.5) * 10;
+            this.colors = ['#D4AF37', '#C5A059', '#F5F0E8', '#52B788', '#22c55e'];
+            this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
+            this.gravity = 0.1;
+            this.friction = 0.99;
+          }
+
+          ConfettiPiece.prototype.update = function() {
+            this.speedY += this.gravity;
+            this.speedX *= this.friction;
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.rotation += this.rotationSpeed;
+
+            // Gentle side-to-side motion
+            this.x += Math.sin(this.y * 0.01) * 0.5;
+          };
+
+          ConfettiPiece.prototype.draw = function() {
+            ctx.save();
+            ctx.translate(this.x + this.width/2, this.y + this.height/2);
+            ctx.rotate(this.rotation * Math.PI / 180);
+            ctx.fillStyle = this.color;
+            ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+            ctx.restore();
+          };
+
+          function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            confettiPieces = confettiPieces.filter(function(piece) {
+              piece.update();
+              piece.draw();
+              return piece.y < canvas.height + 20;
+            });
+
+            if (confettiPieces.length > 0) {
+              animationId = requestAnimationFrame(animate);
+            } else {
+              cleanup();
+            }
+          }
+
+          function cleanup() {
+            if (animationId) {
+              cancelAnimationFrame(animationId);
+              animationId = null;
+            }
+            if (canvas.parentNode) {
+              canvas.parentNode.removeChild(canvas);
+            }
+          }
+
+          // Create confetti burst
+          function burst() {
+            for (var i = 0; i < 50; i++) {
+              confettiPieces.push(new ConfettiPiece());
+            }
+          }
+
+          // Initialize
+          resizeCanvas();
+          container.appendChild(canvas);
+          burst();
+          animate();
+
+          // Auto cleanup after 5 seconds
+          setTimeout(cleanup, 5000);
+
+          return { cleanup: cleanup };
+        }
+
+        // Sound system - optional audio feedback
+        var audioContext = null;
+        var soundEnabled = false;
+
+        function initAudio() {
+          try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (e) {
+            console.log('Audio not supported');
+          }
+        }
+
+        function playSound(frequency, duration, type) {
+          if (!audioContext || !soundEnabled) return;
+
+          var oscillator = audioContext.createOscillator();
+          var gainNode = audioContext.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+          oscillator.type = type || 'sine';
+
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playBetPlacedSound() {
+          // Quick ascending chime
+          playSound(800, 0.1, 'sine');
+          setTimeout(() => playSound(1000, 0.1, 'sine'), 50);
+        }
+
+        function playOddsShiftSound() {
+          // Subtle tick
+          playSound(400, 0.05, 'square');
+        }
+
+        function playSettlementSound() {
+          // Victory fanfare
+          var notes = [523, 659, 784, 1047]; // C-E-G-C
+          notes.forEach((note, i) => {
+            setTimeout(() => playSound(note, 0.3, 'sine'), i * 100);
+          });
+        }
+
+        // Enhanced haptic feedback
+        function hapticFeedback(pattern) {
+          if (navigator.vibrate) {
+            if (pattern === 'bet') {
+              navigator.vibrate(50);
+            } else if (pattern === 'odds') {
+              navigator.vibrate(30);
+            } else if (pattern === 'settlement') {
+              navigator.vibrate([100, 50, 100, 50, 200]);
+            } else {
+              navigator.vibrate(pattern);
+            }
+          }
+        }
+
+        // Trigger confetti on settlement view
+        var currentConfetti = null;
+        function triggerConfetti() {
+          // Clean up any existing confetti
+          if (currentConfetti) {
+            currentConfetti.cleanup();
+          }
+
+          var container = document.getElementById('demo-body');
+          if (container) {
+            currentConfetti = createConfetti(container);
+            playSettlementSound();
+            hapticFeedback('settlement');
+          }
+        }
+
+        // Sound toggle function
+        window.toggleSound = function() {
+          soundEnabled = !soundEnabled;
+          if (soundEnabled && !audioContext) {
+            initAudio();
+          }
+
+          // Update UI indicator if it exists
+          var soundBtn = document.getElementById('sound-toggle');
+          if (soundBtn) {
+            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+            soundBtn.title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
+          }
+
+          // Play test sound when enabling
+          if (soundEnabled) {
+            playBetPlacedSound();
+          }
+        };
+
+        // Initial render and start auto-simulation
         renderDemo();
+        setTimeout(startAutoSim, 2000); // Start after 2 seconds
       })();
       </script>
 
