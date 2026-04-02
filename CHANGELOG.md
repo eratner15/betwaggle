@@ -2,6 +2,20 @@
 
 All notable changes to BetWaggle are documented in this file.
 
+## [0.21.0.0] - 2026-04-02 — Sprint 3: Setup Friction + Invite Loop
+
+### Added
+- **Demo-to-create CTA** — `/demo/` now has a prominent "Create Your Own Outing" button linking to `/create/?source=demo`, reducing friction from demo browsing to event creation.
+- **Copy Invite Link** button on `/my-events/` event cards — one-tap copy of `https://betwaggle.com/join/{slug}` to clipboard.
+- **Copy Invite Text** button on `/my-events/` event cards — copies a ready-to-send invite message with event name and join link.
+- **`POST /api/invite-telemetry`** endpoint — tracks `copy_invite_link`, `copy_invite_text`, and `share_invite` actions with bounded allowlist and KV counters under `invite-metric:*` keys.
+
+### Migration Notes
+- No schema migration required.
+- New KV keys are additive only (`invite-metric:{action}:{slug}`).
+
+---
+
 ## [0.20.0.0] - 2026-04-01
 
 ### Added

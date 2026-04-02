@@ -283,6 +283,18 @@
       border: 1.5px solid var(--rule);
     }
 
+    .btn-invite {
+      background: #fff;
+      color: var(--sage);
+      border: 1.5px solid var(--sage);
+      cursor: pointer;
+    }
+
+    .btn-invite.copied {
+      background: var(--sage);
+      color: #fff;
+    }
+
     /* EMPTY / LOADING */
     .empty-state {
       text-align: center;
@@ -480,6 +492,8 @@
             '<a href="/' + e.slug + '/#admin" class="btn-admin">Admin</a>' +
             '<a href="/' + e.slug + '/#settle" class="btn-settle">Settlement</a>' +
             '<a href="#" onclick="cloneEvent(\'' + e.slug + '\');return false" style="padding:10px 16px;background:#fff;color:var(--gold-dk);border:1.5px solid var(--gold);border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Clone</a>' +
+            '<a href="#" onclick="copyInviteLink(\'' + e.slug + '\',this);return false" class="btn-invite" style="padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Copy Invite Link</a>' +
+            '<a href="#" onclick="copyInviteText(\'' + e.slug + '\',\'' + escapeHtml(e.name) + '\',this);return false" class="btn-invite" style="padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Copy Invite Text</a>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -502,6 +516,37 @@
       var div = document.createElement('div');
       div.textContent = str;
       return div.innerHTML;
+    }
+
+    function flashCopied(btn, originalText) {
+      btn.classList.add('copied');
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.classList.remove('copied'); btn.textContent = originalText; }, 2000);
+    }
+
+    function trackInvite(action, slug) {
+      fetch('/api/invite-telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, slug: slug })
+      }).catch(function() {});
+    }
+
+    function copyInviteLink(slug, btn) {
+      var link = 'https://betwaggle.com/join/' + slug;
+      navigator.clipboard.writeText(link).then(function() {
+        flashCopied(btn, 'Copy Invite Link');
+        trackInvite('copy_invite_link', slug);
+      });
+    }
+
+    function copyInviteText(slug, name, btn) {
+      var link = 'https://betwaggle.com/join/' + slug;
+      var text = "You're invited to " + name + " on Waggle! Join here: " + link;
+      navigator.clipboard.writeText(text).then(function() {
+        flashCopied(btn, 'Copy Invite Text');
+        trackInvite('copy_invite_text', slug);
+      });
     }
   </script>
 

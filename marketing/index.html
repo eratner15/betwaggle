@@ -292,12 +292,12 @@
     .lead-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; min-width: 120px; }
     .lead-interest-tag { font-size: 11px; background: var(--cream-dark); color: var(--muted); padding: 2px 7px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .status-texted { background: #9CA3AF; }
-    .status-responded { background: #F59E0B; }
-    .status-interested { background: #3B82F6; }
-    .status-demo_seen { background: #8B5CF6; }
-    .status-purchased { background: #10B981; }
-    .status-dead { background: #EF4444; }
+    .status-lead_sourced { background: #9CA3AF; }
+    .status-contacted { background: #F59E0B; }
+    .status-replied { background: #3B82F6; }
+    .status-qualified { background: #8B5CF6; }
+    .status-event_created { background: #0EA5A4; }
+    .status-paid_event { background: #10B981; }
     .lead-actions { display: flex; gap: 6px; }
 
     /* ── LEAD FORM INPUTS ── */
@@ -797,12 +797,12 @@ No worries if the timing isn't right -- I'll follow up again before your member-
           <option value="pro">Club Pro referral</option>
         </select>
         <select class="lead-input" id="lead-status">
-          <option value="texted">Texted</option>
-          <option value="responded">Responded</option>
-          <option value="interested">Interested -- needs push</option>
-          <option value="demo_seen">Saw demo</option>
-          <option value="purchased">Purchased</option>
-          <option value="dead">Dead</option>
+          <option value="lead_sourced">Lead sourced</option>
+          <option value="contacted">Contacted</option>
+          <option value="replied">Replied</option>
+          <option value="qualified">Qualified</option>
+          <option value="event_created">Event created</option>
+          <option value="paid_event">Paid event</option>
         </select>
         <textarea class="lead-input" id="lead-notes" placeholder="Notes (optional)" rows="2" style="resize:vertical"></textarea>
         <div style="display:flex;gap:8px">
@@ -819,6 +819,14 @@ No worries if the timing isn't right -- I'll follow up again before your member-
       <p class="desc" id="followup-status-line"></p>
       <div id="followup-templates"></div>
       <button class="btn-action-sm" onclick="closeFollowup()" style="margin-top:12px;background:var(--cream-dark);color:var(--text)">Close</button>
+    </div>
+
+    <div class="section-card">
+      <div class="step-badge">Weekly Scorecard</div>
+      <h3>Lifecycle report template</h3>
+      <p class="desc">Generate a weekly scorecard artifact from current lead stages and stage history.</p>
+      <button class="btn-action-sm" onclick="generateLeadScorecard()">Generate Weekly Scorecard</button>
+      <div id="lead-scorecard-output" style="display:none;margin-top:12px"></div>
     </div>
   </div>
 
@@ -1287,30 +1295,37 @@ P.S. Live demo: betwaggle.com/demo/ -- walk through a full Nassau/skins event fr
 
   // ── LEAD TRACKER ──────────────────────────────────────────────────────────
 
-  const STATUS_LABELS = { texted:'Texted', responded:'Responded', interested:'Interested', demo_seen:'Saw Demo', purchased:'Purchased', dead:'Dead' };
+  const STATUS_LABELS = {
+    lead_sourced: 'Lead sourced',
+    contacted: 'Contacted',
+    replied: 'Replied',
+    qualified: 'Qualified',
+    event_created: 'Event created',
+    paid_event: 'Paid event',
+  };
   const INTEREST_LABELS = { trip:'Golf Trip ($32)', member_guest:'Member-Guest ($149)', outing:'Club Outing ($32)', pro:'Club Pro' };
 
   const FOLLOWUP_TEMPLATES = {
-    texted: (name, interest) => [
+    lead_sourced: (name, interest) => [
       { label: 'Day 2 -- No response yet', text: `hey ${name} -- did you get a chance to check out waggle? happy to answer any questions: betwaggle.com/` },
       { label: 'Day 5 -- Last try', text: `hey ${name} -- still think this would be great for ${interest === 'member_guest' ? 'your member-guest' : 'your next trip'}. demo if you want to see it first: betwaggle.com/demo/` },
     ],
-    responded: (name, interest) => [
+    contacted: (name, interest) => [
       { label: 'Push to create', text: `hey ${name} -- want me to walk you through the setup? takes like 5 min: betwaggle.com/create/` },
       { label: 'Offer demo event', text: `hey ${name} -- I can get a demo event set up for your group so you can see exactly how it'll look before committing. just say the word` },
     ],
-    interested: (name, interest) => [
+    replied: (name, interest) => [
       { label: 'Send direct create link', text: `hey ${name} -- here's the direct link to set it up: betwaggle.com/create/ -- takes about 5 min, you enter your crew and it builds the whole thing` },
       { label: 'Urgency close', text: `hey ${name} -- your ${interest === 'member_guest' ? 'member-guest' : 'trip'} is coming up. want to have this ready for the group? takes 5 min now, saves a ton of headache on the day` },
     ],
-    demo_seen: (name) => [
+    qualified: (name) => [
       { label: 'Close after demo', text: `hey ${name} -- now that you've seen how it works -- ready to set one up? $32 for the whole trip: betwaggle.com/create/` },
     ],
-    purchased: (name) => [
-      { label: 'Ask for referral', text: `hey ${name} -- glad you got it set up! if any of your other golf buddies are organizing trips this year, send them the link: betwaggle.com/` },
+    event_created: (name) => [
+      { label: 'Push to payment', text: `hey ${name} -- your event is built. once payment clears, your group link goes live immediately. need help getting checkout done today?` },
     ],
-    dead: (name) => [
-      { label: 'Reopen in 30 days', text: `hey ${name} -- circling back from a while ago. you guys planning any golf this season? my cousin's app might be useful: betwaggle.com/` },
+    paid_event: (name) => [
+      { label: 'Ask for referral', text: `hey ${name} -- glad you got it set up! if any of your other golf buddies are organizing trips this year, send them the link: betwaggle.com/` },
     ],
   };
 
@@ -1356,7 +1371,7 @@ P.S. Live demo: betwaggle.com/demo/ -- walk through a full Nassau/skins event fr
     document.getElementById('lead-name').value = lead?.name || '';
     document.getElementById('lead-contact').value = lead?.contact || '';
     document.getElementById('lead-interest').value = lead?.interest || 'trip';
-    document.getElementById('lead-status').value = lead?.status || 'texted';
+    document.getElementById('lead-status').value = lead?.status || 'lead_sourced';
     document.getElementById('lead-notes').value = lead?.notes || '';
     document.getElementById('lead-form-badge').textContent = lead ? 'Edit Lead' : 'Add Lead';
     document.getElementById('lead-form-title').textContent = lead ? lead.name : 'New Lead';
@@ -1396,10 +1411,10 @@ P.S. Live demo: betwaggle.com/demo/ -- walk through a full Nassau/skins event fr
 
   function showFollowup(id, name, status, interest) {
     const panel = document.getElementById('followup-panel');
-    const tmplFn = FOLLOWUP_TEMPLATES[status] || FOLLOWUP_TEMPLATES.texted;
+    const tmplFn = FOLLOWUP_TEMPLATES[status] || FOLLOWUP_TEMPLATES.lead_sourced;
     const tmpls = tmplFn(name, interest);
     document.getElementById('followup-name').textContent = name;
-    document.getElementById('followup-status-line').textContent = STATUS_LABELS[status] + ' -- ' + (INTEREST_LABELS[interest] || interest);
+    document.getElementById('followup-status-line').textContent = (STATUS_LABELS[status] || status) + ' -- ' + (INTEREST_LABELS[interest] || interest);
     document.getElementById('followup-templates').innerHTML = tmpls.map((t, i) => {
       const tid = 'fup-' + i;
       return `<div style="margin-bottom:14px">
@@ -1413,6 +1428,27 @@ P.S. Live demo: betwaggle.com/demo/ -- walk through a full Nassau/skins event fr
 
   function closeFollowup() {
     document.getElementById('followup-panel').style.display = 'none';
+  }
+
+  async function generateLeadScorecard() {
+    const pin = sessionStorage.getItem(PIN_KEY);
+    const box = document.getElementById('lead-scorecard-output');
+    box.style.display = 'block';
+    box.innerHTML = '<div style="font-size:13px;color:var(--muted)">Generating weekly scorecard...</div>';
+    try {
+      const res = await fetch('/api/leads/weekly-scorecard?pin=' + encodeURIComponent(pin));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not generate scorecard');
+      box.innerHTML = `
+        <div class="notice" style="margin-bottom:10px">
+          Generated ${new Date(data.generatedAt).toLocaleString()} · Leads: <strong>${data.leadCount || 0}</strong> · Updated this week: <strong>${data.touchedThisWeek || 0}</strong>
+        </div>
+        <div class="copy-block" id="scorecard-md">${esc(data.markdown || '')}<button class="copy-btn" onclick="copyBlock(this,'scorecard-md')">Copy Markdown</button></div>
+        <div class="copy-block" id="scorecard-csv" style="margin-top:10px">${esc(data.csv || '')}<button class="copy-btn" onclick="copyBlock(this,'scorecard-csv')">Copy CSV</button></div>
+      `;
+    } catch (err) {
+      box.innerHTML = '<div style="font-size:13px;color:#991B1B">Scorecard generation failed: ' + esc(err.message || 'unknown error') + '</div>';
+    }
   }
 
   // Leads and ad generator load when their tab opens (handled in switchTab above)

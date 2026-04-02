@@ -4657,9 +4657,17 @@ function renderAdminSettings(state) {
   const joinUrl = window.location.origin + '/join/' + eventUrlSlug;
   html += `<div class="mg-card" style="margin-bottom:16px">
     <div class="mg-card-header" style="margin-bottom:8px">PLAYER JOIN LINK</div>
-    <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Share this link so players can self-register</div>
+    <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Share Invite first, then copy the link if needed.</div>
     <div style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:monospace;word-break:break-all;margin-bottom:8px">${joinUrl}</div>
-    <button class="mg-btn mg-btn-outline" style="width:auto;padding:6px 16px;font-size:12px" onclick="navigator.clipboard.writeText('${joinUrl}').then(()=>window.MG.toast('Link copied!'))">Copy Link</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="mg-btn mg-btn-primary" style="width:auto;padding:8px 14px;font-size:12px;min-height:44px" onclick="window.MG.shareInviteLink('${joinUrl}')">Share Invite</button>
+      <button class="mg-btn mg-btn-outline" style="width:auto;padding:8px 14px;font-size:12px;min-height:44px" onclick="navigator.clipboard.writeText('${joinUrl}').then(()=>window.MG.toast('Link copied!'))">Copy Link</button>
+    </div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">
+      <span style="white-space:nowrap;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--mg-surface);border:1px solid var(--mg-border)">No app download</span>
+      <span style="white-space:nowrap;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--mg-surface);border:1px solid var(--mg-border)">Works on any phone</span>
+      <span style="white-space:nowrap;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--mg-surface);border:1px solid var(--mg-border)">Live scores + instant settle</span>
+    </div>
   </div>`;
 
   // Announcement input
@@ -6258,15 +6266,19 @@ export function renderSettlement(state) {
     if (!sessionStorage.getItem(shownKey)) {
       sessionStorage.setItem(shownKey, '1');
       const eventUrl = location.href.replace(/#.*$/, '');
-      const referralUrl = 'https://betwaggle.com/create/?ref=' + encodeURIComponent(state._slug);
+      const replayCloneSlug = state._slug || slug || 'event';
+      const referralUrl = 'https://betwaggle.com/create/?ref=' + encodeURIComponent(replayCloneSlug);
       html += `<div id="settle-share-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease">
         <div style="background:var(--bg-primary);border-radius:16px;max-width:380px;width:100%;padding:28px 24px;text-align:center">
           <div style="font-size:22px;font-weight:700;color:var(--bg-secondary);margin-bottom:4px">Round Complete</div>
           <div style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">${escHtml(eventName)}</div>
+          <div style="display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:999px;background:rgba(27,67,50,0.12);border:1px solid rgba(27,67,50,0.3);font-size:12px;font-weight:700;color:#1B4332;margin-bottom:14px">Round complete. Replay open.</div>
           <div style="font-size:13px;color:var(--text-tertiary);margin-bottom:20px;line-height:1.6">Drop the settlement card in the group chat. Everyone sees who owes what — with Venmo links.</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <button onclick="window.MG.exportSettlementCard()" style="width:100%;padding:16px;background:var(--gold-primary);color:var(--bg-secondary);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Export Settlement Card</button>
             <button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:var(--bg-secondary);color:var(--text-primary);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Share Results</button>
+            <a href="/create?clone=${encodeURIComponent(replayCloneSlug)}" style="width:100%;padding:16px;background:#1B4332;color:#FFFFFF;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;display:block">Run It Back</a>
+            <button onclick="window.MG.shareReplayInvite()" style="width:100%;padding:16px;background:transparent;color:#1B4332;border:1px solid rgba(27,67,50,0.35);border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">Replay With Same Group</button>
           </div>
           <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--text-secondary)">
             <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Want to run your own?</div>
@@ -7692,7 +7704,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
 
   // ── f) Run It Back Button — gold CTA ──
   html += `<div style="display:flex;gap:8px;margin-bottom:10px">
-    <a href="/app/?create=1&clone=${encodeURIComponent(slug)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:#1B4332;color:#FFFFFF;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;min-height:52px;box-shadow:0 3px 12px rgba(27,67,50,0.3)">
+    <a href="/create?clone=${encodeURIComponent(slug)}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:#1B4332;color:#FFFFFF;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;min-height:52px;box-shadow:0 3px 12px rgba(27,67,50,0.3)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
       Run It Back
     </a>

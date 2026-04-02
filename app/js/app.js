@@ -1118,6 +1118,54 @@ window.MG = {
     }
   },
 
+  getInviteStakeSummary() {
+    const config = state._config || {};
+    const games = config.games || {};
+    const structure = config.structure || {};
+    const stakes = [];
+    if (games.nassau && structure.nassauBet > 0) stakes.push(`Nassau $${structure.nassauBet}`);
+    if (games.skins && structure.skinsBet > 0) stakes.push(`Skins $${structure.skinsBet}`);
+    if (games.wolf) stakes.push('Wolf');
+    if (games.vegas) stakes.push('Vegas');
+    return stakes.length ? stakes.join(' · ') : 'Live scores + instant settle';
+  },
+
+  async shareInviteLink(joinUrl) {
+    const eventName = (state._config?.event?.name || 'Your event').trim();
+    const safeName = eventName.length > 30 ? `${eventName.slice(0, 27)}...` : eventName;
+    const url = joinUrl || `${location.origin}/join/${encodeURIComponent(state._slug || '')}`;
+    const text = [
+      `You're in: ${safeName}`,
+      `Stakes: ${window.MG.getInviteStakeSummary()}`,
+      'Join in 30 sec. No app needed.',
+      url
+    ].join('\n');
+
+    if (navigator.share) {
+      navigator.share({ title: eventName, text, url }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => toast('Invite copied!')).catch(() => {});
+    }
+  },
+
+  async shareReplayInvite() {
+    const eventName = state._config?.event?.name || 'this event';
+    const slug = state._slug || '';
+    const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(slug)}`;
+    const text = [
+      `Run it back at ${eventName}?`,
+      'Same group, same format, new round.',
+      'Tap to join the replay:',
+      replayUrl
+    ].join('\n');
+
+    if (navigator.share) {
+      navigator.share({ title: `${eventName} - Replay`, text, url: replayUrl }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => toast('Replay invite copied!')).catch(() => {});
+    }
+  },
+
   // ─── Settlement Card ───
   async shareSettlement() {
     if (navigator.vibrate) navigator.vibrate(30);
@@ -1306,6 +1354,13 @@ window.MG = {
         }
       }
     } catch {} // Non-blocking — share works without recap
+
+    if (state._slug) {
+      const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(state._slug)}`;
+      lines.push('Round complete. Replay open.');
+      lines.push(`Replay: ${replayUrl}`);
+      lines.push('');
+    }
 
     // Footer
     lines.push('\u2500'.repeat(24));

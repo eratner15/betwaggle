@@ -124,7 +124,8 @@
     .launch-url{background:var(--dark);border-radius:12px;padding:20px;margin:0 auto;max-width:400px}
     .launch-url a{color:var(--gold);font-size:15px;font-weight:700;text-decoration:none;word-break:break-all}
     .launch-url .copy-hint{font-size:11px;color:rgba(255,255,255,0.5);margin-top:8px}
-    .launch-actions{display:flex;gap:10px;margin-top:20px;justify-content:center;flex-wrap:wrap}
+    .launch-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px;justify-content:center}
+    .launch-secondary-actions{display:flex;gap:10px;justify-content:center}
     .launch-btn{padding:14px 24px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:transform 0.15s}
     .launch-btn:hover{transform:translateY(-1px)}
     .launch-btn.primary{background:var(--gold);color:var(--dark)}
@@ -133,6 +134,9 @@
     .qr-hero img{border-radius:10px}
     .qr-hero .qr-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:12px}
     .qr-hero .qr-hint{font-size:13px;color:var(--muted);margin-top:4px}
+    .launch-proof-row{display:flex;gap:8px;overflow-x:auto;padding:2px 0 2px;margin-top:12px;scrollbar-width:none}
+    .launch-proof-row::-webkit-scrollbar{display:none}
+    .launch-proof-chip{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--green)}
     .admin-card{margin-top:20px;padding:16px 20px;background:var(--dark);border-radius:12px;color:#fff;text-align:left}
     .admin-card .pin-value{font-family:'SF Mono','Menlo',monospace;font-size:28px;font-weight:700;letter-spacing:4px;color:var(--gold);margin:4px 0 8px}
     .admin-card .pin-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
@@ -174,6 +178,13 @@
     .btn-next:disabled{opacity:0.3;cursor:not-allowed}
     .btn-launch{background:var(--gold);color:var(--dark);font-size:16px;box-shadow:var(--shadow-glow)}
     .btn-launch:hover{transform:translateY(-1px)}
+    @media(max-width:720px){
+      .launch-secondary-actions{justify-content:stretch}
+      .launch-secondary-actions .launch-btn{flex:1;padding:12px 10px}
+    }
+    @media(min-width:721px){
+      .launch-actions{max-width:420px;margin-left:auto;margin-right:auto}
+    }
   </style>
 </head>
 <body>
@@ -223,7 +234,7 @@
       scrambleNumTeams: 20,
       theme: 'club', adminPin: '', adminContact: '', slug: '', promoCode: '', _promoValid: false, _promoMsg: '', _rosterRaw: '', _rosterError: '', _launchError: '',
       course: null, _courseQuery: '', _courseResults: [], _courseSearching: false, _editingPlayer: -1, _rounds: [],
-      _ghinResults: [], _ghinSearching: false, _pendingGhin: null,
+      _ghinResults: [], _ghinSearching: false, _pendingGhin: null, _showLaunchQR: false,
     };
 
     const STEPS = ['Event Type','Details','Roster','Flights','Scoring','Theme','Launch'];
@@ -1132,21 +1143,29 @@
         return `<div class="launch-success">
           <div class="launch-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
           <h2>Your sportsbook is live</h2>
-          <p class="sub">Hold this up to your group — everyone scans to join.</p>
-
-          <div class="qr-hero">
-            <img src="${qrUrl}" width="240" height="240" alt="QR code for ${W.slug}">
-            <div class="qr-label">Scan to open</div>
-            <div class="qr-hint">${url.replace('https://','')}</div>
-          </div>
+          <p class="sub">You're in. Share the invite and get everyone registered fast.</p>
 
           <a href="${url}#dashboard" style="display:block;width:100%;padding:16px;background:#D4AF37;color:#1A472A;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;text-align:center;margin:16px 0;box-sizing:border-box">
             Open Your Sportsbook &rarr;
           </a>
 
           <div class="launch-actions">
-            <button class="launch-btn primary" onclick="shareUrl('${url}')">Share with Group</button>
-            <button class="launch-btn secondary" onclick="copyUrl('${url}')">Copy Link</button>
+            <button class="launch-btn primary" onclick="shareUrl('${joinUrl}')">Share Invite</button>
+            <div class="launch-secondary-actions">
+              <button class="launch-btn secondary" onclick="copyUrl('${joinUrl}')">Copy Link</button>
+              <button class="launch-btn secondary" onclick="W._showLaunchQR=!W._showLaunchQR;render()">${W._showLaunchQR ? 'Hide QR' : 'Show QR'}</button>
+            </div>
+          </div>
+          ${W._showLaunchQR ? `
+          <div class="qr-hero">
+            <img src="${qrUrl}" width="240" height="240" alt="QR code for ${W.slug}">
+            <div class="qr-label">Scan to join</div>
+            <div class="qr-hint">${joinUrl.replace('https://','')}</div>
+          </div>` : ''}
+          <div class="launch-proof-row" aria-label="Invite proof points">
+            <div class="launch-proof-chip">No app download</div>
+            <div class="launch-proof-chip">Works on any phone</div>
+            <div class="launch-proof-chip">Live scores + instant settle</div>
           </div>
 
           <div class="admin-card">
@@ -2349,20 +2368,21 @@
     function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${months[parseInt(m)-1]} ${parseInt(day)}, ${y}`;}
     function copyUrl(u){navigator.clipboard.writeText(u).then(()=>alert('Link copied!')).catch(()=>{});}
     function shareUrl(u){
-      var parts = [];
-      parts.push('You have been invited to ' + W.name + '.');
-      parts.push('');
-      parts.push('The book is open. Establish your lines and secure your tee time.');
-      parts.push('');
-      if (W.date1) parts.push(fmtDate(W.date1));
+      var eventName = (W.name || 'Your event').trim();
+      var safeName = eventName.length > 30 ? (eventName.slice(0, 27) + '...') : eventName;
       var stakes = [];
-      if (W.nassauBet) stakes.push('Nassau $' + W.nassauBet);
-      if (W.skinsBet) stakes.push('Skins $' + W.skinsBet);
-      if (stakes.length) parts.push('Stakes: ' + stakes.join(' / '));
-      if (W.date1 || stakes.length) parts.push('');
-      parts.push('Open the sportsbook: ' + u);
-      var text = parts.join('\n');
-      if(navigator.share)navigator.share({title:W.name,text:text,url:u}).catch(()=>{});else{navigator.clipboard.writeText(text).then(()=>alert('Invitation copied!')).catch(()=>{});}
+      if (W.games?.nassau && W.structure?.nassauBet > 0) stakes.push('Nassau $' + W.structure.nassauBet);
+      if (W.games?.skins && W.structure?.skinsBet > 0) stakes.push('Skins $' + W.structure.skinsBet);
+      if (W.games?.wolf) stakes.push('Wolf');
+      if (W.games?.vegas) stakes.push('Vegas');
+      var stakeLine = stakes.length ? stakes.join(' · ') : 'Live games + instant settle';
+      var text = [
+        "You're in: " + safeName,
+        'Stakes: ' + stakeLine,
+        'Join in 30 sec. No app needed.',
+        u
+      ].join('\n');
+      if(navigator.share)navigator.share({title:eventName,text:text,url:u}).catch(()=>{});else{navigator.clipboard.writeText(text).then(()=>alert('Invitation copied!')).catch(()=>{});}
     }
 
     // Pre-load course from ?course=ID (set by "Play This Tee" on course detail pages)

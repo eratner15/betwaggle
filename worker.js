@@ -305,6 +305,29 @@ export default {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
+    // ===== INVITE TELEMETRY =====
+    if (url.pathname === '/api/invite-telemetry' && request.method === 'POST') {
+      const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+      try {
+        const body = await request.json();
+        const allowedActions = ['copy_invite_link', 'copy_invite_text', 'share_invite'];
+        const action = body.action;
+        const slug = body.slug;
+        if (!action || !allowedActions.includes(action) || !slug) {
+          return new Response(JSON.stringify({ error: 'Invalid action or slug' }), { status: 400, headers: corsHeaders });
+        }
+        const key = `invite-metric:${action}:${slug}`;
+        const current = parseInt(await env.MG_BOOK.get(key) || '0', 10);
+        await env.MG_BOOK.put(key, String(current + 1));
+        return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: corsHeaders });
+      }
+    }
+    if (url.pathname === '/api/invite-telemetry' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
     // ===== UNSUBSCRIBE =====
     if (url.pathname === '/api/unsubscribe' && request.method === 'GET') {
       return handleUnsubscribe(url, env);
@@ -529,6 +552,11 @@ export default {
 
     // /create/ — wizard (static)
     if (url.pathname === '/create' || url.pathname === '/create/') {
+      ctx.waitUntil(trackFunnelEvent(env, 'visit', {
+        path: '/create',
+        referrer: request.headers.get('referer') || '',
+        userAgent: request.headers.get('user-agent') || '',
+      }));
       const wizReq = new Request(new URL('/create/index.html', request.url), request);
       return env.ASSETS.fetch(wizReq);
     }
@@ -656,6 +684,9 @@ export default {
     }
     if (url.pathname === '/api/leads' && request.method === 'POST') {
       return handleLeadsUpsert(request, env);
+    }
+    if (url.pathname === '/api/leads/weekly-scorecard' && request.method === 'GET') {
+      return handleLeadsWeeklyScorecard(url, env);
     }
     if (url.pathname.startsWith('/api/leads/') && request.method === 'DELETE') {
       return handleLeadsDelete(url, env);
@@ -1844,6 +1875,12 @@ async function handleCreateCheckout(request, env) {
 
   let config;
   try { config = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+  await trackFunnelEvent(env, 'signup_start', {
+    eventType: config?.event?.eventType || '',
+    format: config?.event?.format || '',
+    adminContact: (config?.event?.adminContact || '').trim().toLowerCase(),
+    source: config?.meta?.source || {},
+  });
 
   const isFreeType = config.event?.eventType === 'quick' || (config.event?.eventType === 'buddies_trip' && !env.STRIPE_SECRET_KEY);
   if (isFreeType) {
@@ -2047,6 +2084,18 @@ async function handleCheckoutSuccess(url, env) {
   if (organizerEmail) config.meta = { ...(config.meta || {}), organizerEmail };
   config.meta = { ...(config.meta || {}), stripe_session_id: sessionId };
   const result = await activateEvent(config, env);
+  await trackFunnelEvent(env, 'signup_complete', {
+    slug: result.slug,
+    paid: true,
+    adminContact: (config?.event?.adminContact || '').trim().toLowerCase(),
+  });
+  await trackFunnelEvent(env, 'paid_event', {
+    slug: result.slug,
+    sessionId,
+    amountCents: Number(config?.meta?.actualAmountCents || config?.meta?.originalAmountCents || 0),
+    eventType: config?.event?.eventType || '',
+    format: config?.event?.format || '',
+  });
   await env.MG_BOOK.delete(`pending:${tempId}`);
 
   // Clean up pending-checkout recovery key
@@ -2680,7 +2729,20 @@ async function handleStripeWebhook(request, env) {
     if (tempId) {
       const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
       if (configRaw) {
-        await activateEvent(JSON.parse(configRaw), env);
+        const cfg = JSON.parse(configRaw);
+        const activated = await activateEvent(cfg, env);
+        await trackFunnelEvent(env, 'signup_complete', {
+          slug: activated.slug,
+          paid: true,
+          source: cfg?.meta?.source || {},
+        });
+        await trackFunnelEvent(env, 'paid_event', {
+          slug: activated.slug,
+          sessionId: session?.id || '',
+          amountCents: Number(session?.amount_total || cfg?.meta?.actualAmountCents || 0),
+          eventType: cfg?.event?.eventType || '',
+          format: cfg?.event?.format || '',
+        });
         await env.MG_BOOK.delete(`pending:${tempId}`);
       }
     }
@@ -2775,6 +2837,13 @@ async function activateEvent(config, env) {
     } catch (err) { console.error('AFFILIATE_EVENT_INDEX_ERROR', { error: String(err) }); }
   }
 
+  await trackFunnelEvent(env, 'event_created', {
+    slug,
+    eventType: config?.event?.eventType || '',
+    format: config?.event?.format || '',
+    source: config?.meta?.source || {},
+  });
+
   return { slug, url: config.event.url };
 }
 
@@ -2798,6 +2867,11 @@ async function handleCreateEventFromConfig(config, env) {
     }
   }
   const result = await activateEvent(config, env);
+  await trackFunnelEvent(env, 'signup_complete', {
+    slug: result.slug,
+    paid: false,
+    adminContact: (config?.event?.adminContact || '').trim().toLowerCase(),
+  });
   return new Response(JSON.stringify({ ok: true, slug: result.slug, url: result.url, adminUrl: `${result.url}#admin` }), { headers: EVENT_CORS });
 }
 
@@ -2805,6 +2879,25 @@ async function handleCreateEvent(request, env) {
   let config;
   try { config = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
   return handleCreateEventFromConfig(config, env);
+}
+
+async function trackFunnelEvent(env, eventName, details = {}) {
+  if (!env?.MG_BOOK || !eventName) return;
+  const ts = new Date().toISOString();
+  const day = ts.slice(0, 10);
+  const safeEvent = String(eventName).toLowerCase();
+  const payload = { event: safeEvent, ts, ...details };
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const eventKey = `funnel:event:${ts}:${suffix}`;
+  const dailyKey = `funnel:daily:${day}`;
+  try {
+    await env.MG_BOOK.put(eventKey, JSON.stringify(payload), { expirationTtl: 90 * 24 * 60 * 60 });
+    const daily = (await env.MG_BOOK.get(dailyKey, 'json')) || {};
+    daily[safeEvent] = Number(daily[safeEvent] || 0) + 1;
+    await env.MG_BOOK.put(dailyKey, JSON.stringify(daily), { expirationTtl: 120 * 24 * 60 * 60 });
+  } catch (_) {
+    // Instrumentation must be non-blocking.
+  }
 }
 
 // ─── Marketing stats API ───────────────────────────────────────────────────
@@ -2846,8 +2939,10 @@ async function handleMarketingStats(url, env) {
   const byChannel = {};
   events.forEach(e => { byChannel[e.channel] = (byChannel[e.channel] || 0) + 1; });
   const recent = events.slice(-10).reverse();
+  const todayKey = `funnel:daily:${new Date().toISOString().slice(0, 10)}`;
+  const funnelToday = (await env.MG_BOOK.get(todayKey, 'json')) || {};
 
-  return new Response(JSON.stringify({ total, revenue, byChannel, recent }), { headers });
+  return new Response(JSON.stringify({ total, revenue, byChannel, recent, funnelToday }), { headers });
 }
 
 // ─── Weekly Marketing Digest ──────────────────────────────────────────────
@@ -3071,6 +3166,102 @@ async function handleAdsSave(request, env) {
 
 // ─── Lead tracker ───────────────────────────────────────────────────────
 
+const LEAD_STAGES = ['Lead sourced', 'Contacted', 'Replied', 'Qualified', 'Event created', 'Paid event'];
+const LEGACY_STAGE_MAP = {
+  texted: 'Lead sourced',
+  responded: 'Contacted',
+  interested: 'Replied',
+  demo_seen: 'Qualified',
+  purchased: 'Paid event',
+  dead: 'Lead sourced',
+};
+
+function normalizeLeadStage(rawStage) {
+  const raw = String(rawStage || '').trim();
+  if (!raw) return LEAD_STAGES[0];
+  const fromLegacy = LEGACY_STAGE_MAP[raw.toLowerCase()];
+  if (fromLegacy) return fromLegacy;
+  const fromSlug = LEAD_STAGES.find((s) => stageToSlug(s) === raw.toLowerCase());
+  if (fromSlug) return fromSlug;
+  const exact = LEAD_STAGES.find((s) => s.toLowerCase() === raw.toLowerCase());
+  return exact || LEAD_STAGES[0];
+}
+
+function stageToSlug(stage) {
+  return String(stage || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function buildLeadScorecard(leads) {
+  const now = Date.now();
+  const lookbackMs = 7 * 24 * 60 * 60 * 1000;
+  const windowStartIso = new Date(now - lookbackMs).toISOString();
+  const stageCounts = Object.fromEntries(LEAD_STAGES.map((s) => [s, 0]));
+  const transitions = {};
+  let touchedThisWeek = 0;
+
+  for (const lead of leads) {
+    const stage = normalizeLeadStage(lead.stage || lead.status);
+    stageCounts[stage] = Number(stageCounts[stage] || 0) + 1;
+    const updatedAt = lead.updatedAt || lead.createdAt || '';
+    if (updatedAt && updatedAt >= windowStartIso) touchedThisWeek += 1;
+
+    const history = Array.isArray(lead.stageHistory) ? lead.stageHistory : [];
+    for (const item of history) {
+      if (!item || !item.at || item.at < windowStartIso) continue;
+      const key = normalizeLeadStage(item.stage);
+      transitions[key] = Number(transitions[key] || 0) + 1;
+    }
+  }
+
+  const markdown = [
+    '# Weekly Lead Scorecard',
+    '',
+    `- Generated: ${new Date(now).toISOString()}`,
+    `- Window: last 7 days (since ${windowStartIso.slice(0, 10)})`,
+    `- Total leads tracked: ${leads.length}`,
+    `- Leads touched this week: ${touchedThisWeek}`,
+    '',
+    '## Lifecycle Snapshot',
+    ...LEAD_STAGES.map((s) => `- ${s}: ${stageCounts[s] || 0}`),
+    '',
+    '## Stage Transitions This Week',
+    ...LEAD_STAGES.map((s) => `- ${s}: ${transitions[s] || 0}`),
+    '',
+    '## Notes',
+    '- Fill in top blockers and wins here.',
+    '- Include owner actions for next week.',
+  ].join('\n');
+
+  const csvHeader = [
+    'lead_id',
+    'name',
+    'contact',
+    'interest',
+    'current_stage',
+    'stage_owner',
+    'stage_updated_at',
+    'last_updated_at',
+    'notes',
+  ];
+  const csvRows = leads.map((lead) => ([
+    lead.id || '',
+    lead.name || '',
+    lead.contact || '',
+    lead.interest || '',
+    normalizeLeadStage(lead.stage || lead.status),
+    lead.stageOwner || '',
+    lead.stageUpdatedAt || '',
+    lead.updatedAt || '',
+    (lead.notes || '').replace(/\n/g, ' '),
+  ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')));
+  const csv = [csvHeader.join(','), ...csvRows].join('\n');
+
+  return { stageCounts, transitions, touchedThisWeek, markdown, csv };
+}
+
 async function handleLeadsList(url, env) {
   if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
   if (!env.MG_BOOK) return new Response(JSON.stringify([]), { headers: ADS_JSON });
@@ -3078,7 +3269,19 @@ async function handleLeadsList(url, env) {
   const items = await Promise.all(list.keys.map(async k => {
     try { return JSON.parse(await env.MG_BOOK.get(k.name, 'text')); } catch { return null; }
   }));
-  return new Response(JSON.stringify(items.filter(Boolean).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))), { headers: ADS_JSON });
+  const normalized = items.filter(Boolean).map((lead) => {
+    const stage = normalizeLeadStage(lead.stage || lead.status);
+    const stageUpdatedAt = lead.stageUpdatedAt || lead.updatedAt || lead.createdAt || '';
+    return {
+      ...lead,
+      stage,
+      status: stageToSlug(stage),
+      stageUpdatedAt,
+      stageOwner: lead.stageOwner || 'marketing',
+      stageHistory: Array.isArray(lead.stageHistory) ? lead.stageHistory : [{ stage, at: stageUpdatedAt, owner: lead.stageOwner || 'marketing', reason: 'seed' }],
+    };
+  });
+  return new Response(JSON.stringify(normalized.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))), { headers: ADS_JSON });
 }
 
 async function handleLeadsUpsert(request, env) {
@@ -3087,7 +3290,34 @@ async function handleLeadsUpsert(request, env) {
   if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'no storage' }), { status: 500, headers: ADS_JSON });
   const id = body.id || crypto.randomUUID().slice(0, 8);
-  const record = { id, name: body.name, contact: body.contact, interest: body.interest, status: body.status || 'texted', notes: body.notes || '', updatedAt: new Date().toISOString() };
+  const existing = body.id ? (await env.MG_BOOK.get(`lead:${id}`, 'json').catch(() => null)) : null;
+  const now = new Date().toISOString();
+  const stage = normalizeLeadStage(body.stage || body.status || existing?.stage || existing?.status);
+  const prevStage = normalizeLeadStage(existing?.stage || existing?.status);
+  const stageOwner = String(body.stageOwner || body.owner || 'marketing').trim() || 'marketing';
+  const stageHistory = Array.isArray(existing?.stageHistory) ? [...existing.stageHistory] : [];
+  if (!existing || stage !== prevStage) {
+    stageHistory.push({
+      stage,
+      at: now,
+      owner: stageOwner,
+      reason: body.stageReason || (existing ? 'manual_update' : 'create'),
+    });
+  }
+  const record = {
+    id,
+    name: body.name || existing?.name || '',
+    contact: body.contact || existing?.contact || '',
+    interest: body.interest || existing?.interest || 'trip',
+    stage,
+    status: stageToSlug(stage),
+    stageOwner,
+    stageUpdatedAt: !existing || stage !== prevStage ? now : (existing.stageUpdatedAt || now),
+    stageHistory,
+    notes: body.notes || existing?.notes || '',
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
   await env.MG_BOOK.put(`lead:${id}`, JSON.stringify(record));
   return new Response(JSON.stringify({ ok: true, id, record }), { headers: ADS_JSON });
 }
@@ -3097,6 +3327,32 @@ async function handleLeadsDelete(url, env) {
   const id = url.pathname.split('/').pop();
   if (env.MG_BOOK) await env.MG_BOOK.delete(`lead:${id}`);
   return new Response(JSON.stringify({ ok: true }), { headers: ADS_JSON });
+}
+
+async function handleLeadsWeeklyScorecard(url, env) {
+  if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'no storage' }), { status: 500, headers: ADS_JSON });
+  const list = await env.MG_BOOK.list({ prefix: 'lead:' });
+  const leads = [];
+  for (const key of list.keys) {
+    try {
+      const lead = await env.MG_BOOK.get(key.name, 'json');
+      if (lead) leads.push(lead);
+    } catch (_) {}
+  }
+  const scorecard = buildLeadScorecard(leads);
+  const artifactDate = new Date().toISOString().slice(0, 10);
+  const artifact = {
+    generatedAt: new Date().toISOString(),
+    leadCount: leads.length,
+    stageCounts: scorecard.stageCounts,
+    transitions: scorecard.transitions,
+    touchedThisWeek: scorecard.touchedThisWeek,
+    markdown: scorecard.markdown,
+    csv: scorecard.csv,
+  };
+  await env.MG_BOOK.put(`lead-scorecard:weekly:${artifactDate}`, JSON.stringify(artifact), { expirationTtl: 90 * 24 * 60 * 60 });
+  return new Response(JSON.stringify(artifact), { headers: ADS_JSON });
 }
 
 // ─── Campaign tracker ──────────────────────────────────────────────────

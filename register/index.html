@@ -25,7 +25,8 @@
     .event-header h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.2}
     .event-header .meta{font-size:13px;opacity:0.7;line-height:1.6}
     .event-header .meta span+span::before{content:' \00b7 '}
-    .event-header .fee{margin-top:14px;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 18px;font-size:15px;font-weight:700;color:var(--gold)}
+    .event-header .value-prop{margin-top:12px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.9)}
+    .event-header .fee{margin-top:12px;display:inline-block;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 14px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.85)}
     .event-header .fee .label{font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);display:block;margin-bottom:2px}
 
     /* ── Container ── */
@@ -35,6 +36,7 @@
     .form-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:28px 24px;margin-top:-16px;position:relative;z-index:1;box-shadow:var(--shadow-md)}
     .form-card h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:4px}
     .form-card .subtitle{font-size:13px;color:var(--muted);margin-bottom:24px}
+    .form-helper{margin-top:6px;font-size:11px;color:var(--muted);line-height:1.4}
 
     /* ── Form elements ── */
     .form-group{margin-bottom:20px}
@@ -93,6 +95,10 @@
     /* ── Back link ── */
     .back-link{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--green);text-decoration:none;padding:16px 0 0;margin-bottom:-8px}
     .back-link:hover{color:var(--green-light)}
+    .momentum-block{display:none;background:#eef6f0;border:1px solid rgba(26,71,42,0.15);border-radius:12px;padding:14px 16px;margin-top:20px}
+    .momentum-title{font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--green)}
+    .momentum-count{margin-top:4px;font-size:17px;font-weight:700;color:var(--dark)}
+    .momentum-names{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.4}
 
     /* ── Sponsors ── */
     .sponsors-section{margin-top:32px}
@@ -104,10 +110,15 @@
 
     /* ── No-JS fallback ── */
     noscript .noscript-msg{background:#fef3c7;color:#92400e;padding:16px;border-radius:10px;text-align:center;margin:20px 0;font-size:14px}
+    .sticky-submit{position:fixed;left:0;right:0;bottom:0;padding:10px 14px 12px;background:rgba(245,240,232,0.96);backdrop-filter:blur(6px);border-top:1px solid var(--border);display:none;z-index:30}
+    .sticky-submit .btn-primary{margin:0}
 
     @media(min-width:600px){
       .event-header h1{font-size:34px}
       .form-card{padding:36px 32px}
+    }
+    @media(min-width:761px){
+      .sticky-submit{display:none !important}
     }
   </style>
 </head>
@@ -131,6 +142,7 @@
     <span id="eventDate"></span>
     <span id="eventCourse"></span>
   </div>
+  <div class="value-prop">Register your team in under a minute.</div>
   <div class="fee" id="entryFeeBox" style="display:none">
     <span class="label">Entry Fee Per Team</span>
     <span id="entryFeeAmount"></span>
@@ -143,10 +155,16 @@
     Back to Event
   </a>
 
+  <div id="momentumBlock" class="momentum-block">
+    <div class="momentum-title">Momentum</div>
+    <div id="momentumCount" class="momentum-count"></div>
+    <div id="momentumNames" class="momentum-names"></div>
+  </div>
+
   <!-- Registration form -->
   <div class="form-card" id="formCard">
     <h2>Register Your Team</h2>
-    <p class="subtitle">Fill out your team details below. All fields marked with * are required.</p>
+    <p class="subtitle">Quick details, then you’re in.</p>
 
     <div id="alertBox" class="alert"></div>
 
@@ -166,6 +184,7 @@
       <div class="form-group">
         <label>Captain Email *</label>
         <input type="email" id="captainEmail" placeholder="email@example.com" required maxlength="120">
+        <div class="form-helper">Used for updates and payout reminders only.</div>
       </div>
 
       <div class="divider"></div>
@@ -239,6 +258,11 @@
     <div id="sponsorsList"></div>
   </div>
 </div>
+<div class="sticky-submit" id="stickySubmitBar">
+  <button type="button" class="btn-primary btn-register" id="stickySubmitBtn" onclick="handleSubmit()">
+    <span class="btn-text" id="stickyBtnText">Register Team</span>
+  </button>
+</div>
 
 <script>
 (function() {
@@ -253,6 +277,63 @@
   const API_BASE = '/' + slug + '/api';
   let eventConfig = null;
   let entryFee = 0;
+  const requiredFieldIds = ['teamName', 'captainName', 'captainEmail', 'player2'];
+
+  function focusFirstInvalidRequiredField() {
+    for (var i = 0; i < requiredFieldIds.length; i++) {
+      var el = document.getElementById(requiredFieldIds[i]);
+      if (el && !el.value.trim()) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+  }
+
+  function syncSubmitButtons(isLoading) {
+    var primary = document.getElementById('submitBtn');
+    var sticky = document.getElementById('stickySubmitBtn');
+    var btnTextEl = document.getElementById('btnText');
+    var text = (btnTextEl && btnTextEl.textContent) ? btnTextEl.textContent : 'Register Team';
+    var stickyText = document.getElementById('stickyBtnText');
+    if (stickyText) stickyText.textContent = isLoading ? 'Submitting...' : text;
+    if (primary) {
+      primary.classList.toggle('loading', !!isLoading);
+      primary.disabled = !!isLoading;
+    }
+    if (sticky) {
+      sticky.disabled = !!isLoading;
+    }
+  }
+
+  function updateStickySubmitVisibility() {
+    var stickyBar = document.getElementById('stickySubmitBar');
+    var primary = document.getElementById('submitBtn');
+    if (!stickyBar || !primary || window.innerWidth >= 761) {
+      if (stickyBar) stickyBar.style.display = 'none';
+      return;
+    }
+    var rect = primary.getBoundingClientRect();
+    var shouldShow = rect.bottom < 0;
+    stickyBar.style.display = shouldShow ? 'block' : 'none';
+  }
+
+  function renderMomentumBlock(teams) {
+    var block = document.getElementById('momentumBlock');
+    if (!block) return;
+    var count = (teams || []).length;
+    if (count <= 0) {
+      block.style.display = 'none';
+      return;
+    }
+    var names = teams
+      .map(function(t) { return (t.name || '').trim(); })
+      .filter(Boolean)
+      .slice(0, 3);
+    document.getElementById('momentumCount').textContent = count + ' team' + (count !== 1 ? 's' : '') + ' already in';
+    document.getElementById('momentumNames').textContent = names.length > 0 ? names.join(' · ') : 'First groups are already locked in.';
+    block.style.display = 'block';
+  }
 
   // Load event config
   async function loadEvent() {
@@ -279,8 +360,11 @@
         document.getElementById('entryFeeBox').style.display = 'inline-block';
         document.getElementById('entryFeeAmount').textContent = '$' + entryFee;
         document.getElementById('btnText').textContent = 'Pay & Register \u2014 $' + entryFee;
+        document.getElementById('stickyBtnText').textContent = 'Pay & Register \u2014 $' + entryFee;
         document.getElementById('submitBtn').classList.remove('btn-register');
         document.getElementById('submitBtn').classList.add('btn-pay');
+        document.getElementById('stickySubmitBtn').classList.remove('btn-register');
+        document.getElementById('stickySubmitBtn').classList.add('btn-pay');
       }
 
       // Load sponsors
@@ -304,6 +388,7 @@
   function renderTeams(teams) {
     const count = teams.length;
     document.getElementById('teamCount').textContent = count;
+    renderMomentumBlock(teams);
 
     if (count === 0) {
       document.getElementById('teamsList').innerHTML = '<div class="teams-empty"><div class="icon">&#9971;</div><div>No teams registered yet. Be the first!</div></div>';
@@ -398,6 +483,7 @@
       alertBox.className = 'alert error';
       alertBox.textContent = 'Please fill in all required fields (team name, captain name, email, and player 2).';
       alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      focusFirstInvalidRequiredField();
       return;
     }
 
@@ -421,9 +507,7 @@
     }
     var handicap = hcpCount > 0 ? parseFloat(totalHcp.toFixed(1)) : 0;
 
-    var btn = document.getElementById('submitBtn');
-    btn.classList.add('loading');
-    btn.disabled = true;
+    syncSubmitButtons(true);
 
     try {
       // If there's an entry fee, go through Stripe checkout
@@ -477,8 +561,8 @@
       alertBox.className = 'alert error';
       alertBox.textContent = e.message || 'Something went wrong. Please try again.';
     } finally {
-      btn.classList.remove('loading');
-      btn.disabled = false;
+      syncSubmitButtons(false);
+      updateStickySubmitVisibility();
     }
   };
 
@@ -503,6 +587,9 @@
   // Init
   loadEvent();
   loadTeams();
+  window.addEventListener('scroll', updateStickySubmitVisibility, { passive: true });
+  window.addEventListener('resize', updateStickySubmitVisibility);
+  setTimeout(updateStickySubmitVisibility, 150);
 })();
 </script>
 </body>
