@@ -2644,6 +2644,175 @@ export function renderRoundFeed(state) {
       }
       html += `</div>`;
     }
+
+    // ── VEGAS ──
+    if (games.vegas && gameState?.vegas) {
+      const v = gameState.vegas;
+      const score = v.score || { A: 0, B: 0 };
+      const vegasBet = parseInt(config?.structure?.vegasBet) || 1;
+      const aLeading = score.A < score.B;
+      const bLeading = score.B < score.A;
+      const diff = Math.abs(score.A - score.B);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #B91C1C;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Vegas</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${vegasBet}/pt</span>
+      </div>`;
+      html += `<div style="display:flex;justify-content:space-around;text-align:center;padding:8px 0">
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:4px">Team A</div>
+          <div style="font-size:11px;color:var(--page-text-muted);margin-bottom:4px">${(v.teamA||[]).map(n=>escHtml(n.split(' ')[0])).join(' / ')}</div>
+          <div style="font-size:28px;font-weight:800;color:${aLeading?'var(--win,#16A34A)':'var(--page-text)'};font-family:var(--font-mono)">${score.A}</div>
+        </div>
+        <div style="font-size:13px;color:var(--page-text-muted);align-self:center;font-weight:600">vs</div>
+        <div>
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:4px">Team B</div>
+          <div style="font-size:11px;color:var(--page-text-muted);margin-bottom:4px">${(v.teamB||[]).map(n=>escHtml(n.split(' ')[0])).join(' / ')}</div>
+          <div style="font-size:28px;font-weight:800;color:${bLeading?'var(--win,#16A34A)':'var(--page-text)'};font-family:var(--font-mono)">${score.B}</div>
+        </div>
+      </div>`;
+      html += `<div style="text-align:center;margin-top:4px;font-size:12px;font-weight:600;color:${diff > 0 ? 'var(--win,#16A34A)' : 'var(--page-text-muted)'}">${diff > 0 ? `Team ${aLeading ? 'A' : 'B'} leads by ${diff}` : 'All square'}</div>`;
+      html += `</div>`;
+    }
+
+    // ── STABLEFORD ──
+    if (games.stableford && gameState?.stableford?.running) {
+      const stblBet = parseInt(config?.structure?.stablefordBet) || 5;
+      const running = gameState.stableford.running;
+      const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #7C3AED;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Stableford</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${stblBet}/pt</span>
+      </div>`;
+      sorted.forEach(([name, pts], i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          </div>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── MATCH PLAY ──
+    if (games.match_play && gameState?.match_play?.running) {
+      const mpBet = parseInt(config?.structure?.matchPlayBet) || 10;
+      const running = gameState.match_play.running;
+      const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #0369A1;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Match Play</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${mpBet}/match</span>
+      </div>`;
+      sorted.forEach(([name, pts], i) => {
+        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'A/S';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── BANKER ──
+    if (games.banker && gameState?.banker?.running) {
+      const bankerBet = parseInt(config?.structure?.bankerBet) || 5;
+      const running = gameState.banker.running;
+      const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
+      const bankerState = gameState.banker;
+      const currentBanker = bankerState.currentBanker || null;
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #D97706;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Banker</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bankerBet}/pt</span>
+      </div>`;
+      if (currentBanker) {
+        html += `<div style="text-align:center;margin-bottom:8px;font-size:12px;font-weight:700;color:#D97706;background:rgba(217,119,6,0.1);padding:4px 8px;border-radius:6px">
+          Current Banker: ${escHtml(currentBanker.split(' ')[0])}
+        </div>`;
+      }
+      sorted.forEach(([name, pts], i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:14px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'};font-family:var(--font-mono)">${pts > 0 ? '+' : ''}${pts}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── BINGO BANGO BONGO ──
+    if (games.bingo && gameState?.bingo?.running) {
+      const bbbBet = parseInt(config?.structure?.bbbBet) || 5;
+      const running = gameState.bingo.running;
+      const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #059669;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Bingo Bango Bongo</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bbbBet}/pt</span>
+      </div>`;
+      sorted.forEach(([name, pts], i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          </div>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── BLOODSOME ──
+    if (games.bloodsome && gameState?.bloodsome?.running) {
+      const bloodBet = parseInt(config?.structure?.bloodsomeBet) || 5;
+      const running = gameState.bloodsome.running;
+      const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #BE185D;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Bloodsome</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bloodBet}/pt</span>
+      </div>`;
+      sorted.forEach(([name, pts], i) => {
+        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'A/S';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── STROKE PLAY ──
+    if (games.stroke_play && gameState?.stroke_play?.net) {
+      const spBet = parseInt(config?.structure?.strokePlayBet) || 10;
+      const net = gameState.stroke_play.net;
+      const sorted = Object.entries(net).sort((a, b) => (a[1] || 0) - (b[1] || 0));
+
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #1B4332;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Stroke Play (Net)</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${spBet}</span>
+      </div>`;
+      sorted.forEach(([name, score], i) => {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          </div>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${score}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
   }
 
   // ================================================================
