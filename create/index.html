@@ -875,6 +875,31 @@
         </div>`;
     }
 
+    function applyPreset(preset) {
+      // Reset all games first
+      Object.keys(W.games).forEach(k => W.games[k] = false);
+      if (preset === 'classic') {
+        W.games.nassau = true; W.games.skins = true;
+        W.structure.nassauBet = 10; W.structure.skinsBet = 5;
+      } else if (preset === 'action') {
+        W.games.nassau = true; W.games.skins = true; W.games.wolf = true;
+        W.structure.nassauBet = 10; W.structure.skinsBet = 5; W.structure.wolfBet = 5;
+      } else if (preset === 'trio') {
+        W.games.skins = true; W.games.nines = true;
+        W.structure.skinsBet = 5; W.structure.ninesBet = 5;
+      } else if (preset === 'skins') {
+        W.games.skins = true;
+        W.structure.skinsBet = 5;
+      }
+      // Auto-advance: set format and jump to review
+      const firstGame = ['nassau','skins','wolf','vegas','match_play','stroke_play'].find(g => W.games[g]) || 'skins';
+      W.format = firstGame;
+      W.features.betting = true; W.theme = 'club';
+      if (!W.venue || W.venue === 'On the course') W.venue = W._courseQuery || 'On the course';
+      autoFlights(); autoPairings();
+      W.step = 6; render(); scrollTo(0,0);
+    }
+
     async function getAdvisorPick() {
       if (W.roster.length < 2) return;
       const btn = document.getElementById('advisor-btn');
@@ -939,6 +964,42 @@
           <p class="desc">${W.type==='quick' ? 'Pick your games and optionally set your course.' : 'Pick the games your group wants to play. Mix and match — all run simultaneously.'}</p>
           ${hasRoster ? `<div id="advisor-result"></div>
           <button id="advisor-btn" onclick="getAdvisorPick()" style="width:100%;padding:12px 16px;background:var(--dark);color:var(--gold);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px;letter-spacing:0.3px">Ask AI: Best Format for This Group</button>` : ''}
+
+          <div style="margin-bottom:20px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Quick Presets — one tap to go</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div onclick="applyPreset('classic')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--dark);border-radius:12px;cursor:pointer;min-height:56px">
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:var(--gold)">Classic Nassau + Skins</div>
+                  <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">$10 Nassau · $5 Skins — the standard game</div>
+                </div>
+                <div style="font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap">GO →</div>
+              </div>
+              ${W.roster.length >= 4 ? `<div onclick="applyPreset('action')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(135deg,#1A472A,#0D2818);border-radius:12px;cursor:pointer;min-height:56px">
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:#fff">Full Action</div>
+                  <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">Nassau + Skins + Wolf — max stakes</div>
+                </div>
+                <div style="font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap">GO →</div>
+              </div>` : ''}
+              ${W.roster.length === 3 ? `<div onclick="applyPreset('trio')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(135deg,#1A472A,#0D2818);border-radius:12px;cursor:pointer;min-height:56px">
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:#fff">3-Player Special</div>
+                  <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">Skins + 3-Player 9s — $5 each</div>
+                </div>
+                <div style="font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap">GO →</div>
+              </div>` : ''}
+              <div onclick="applyPreset('skins')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;background:var(--white);min-height:56px">
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:var(--text)">Skins Only</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px">$5/skin — simple, fast, everyone knows it</div>
+                </div>
+                <div style="font-size:11px;font-weight:700;color:var(--green);white-space:nowrap">GO →</div>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;margin-bottom:4px">— or pick your own —</div>
+          </div>
+
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">
             ${allGames.map(g => `
             <div onclick="if(W.games.hasOwnProperty('${g.id}'))W.games.${g.id}=!W.games.${g.id};else W.games['${g.id}']=true;render()"
