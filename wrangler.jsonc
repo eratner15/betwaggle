@@ -6,7 +6,9 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
-    "run_worker_first": true
+    "routing": {
+      "run_worker_first": true
+    }
   },
   "routes": [
     {
@@ -25,12 +27,9 @@
     { "binding": "MG_BOOK", "id": "9cce45f658ad416ba777e715911316c0" }
   ],
   "triggers": {
-    "crons": ["0 13 * * *"]
+    "crons": ["0 13 * * 1"]
   },
   "ai": {
     "binding": "AI"
-  },
-  "vars": {
-    "GOLF_COURSE_API_KEY": "COBW6GTT7745YL3L5E7DBZRLTQ"
   }
 }
