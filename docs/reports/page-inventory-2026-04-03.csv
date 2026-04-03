@@ -1,0 +1,21 @@
+page,purpose,intended_visibility,live_http_status,pricing_status,link_status,status_notes,last_checked_utc
+/,Homepage conversion path,public,200,needs_copy_normalization,working,"Core pricing present; several CTAs use '$32' shorthand instead of '$32/event'.",2026-04-03T15:16:52Z
+/tour/,Product tour and comparison,public,200,needs_copy_normalization,working,"No $199 found; table uses $149/season + $32/event but CTA labels use '$32' shorthand.",2026-04-03T15:16:52Z
+/pricing/,Canonical pricing page,public,200,needs_copy_normalization,working,"Consistent $32/event model; season copy still uses '$149/season' instead of '$149/season pass'.",2026-04-03T15:16:52Z
+/demo/,Demo directory and launcher,public,200,needs_copy_normalization,working,"CTA uses '$32' shorthand; support line correctly says '$32/event'.",2026-04-03T15:16:52Z
+/create/,Event creation and checkout flow,public,200,incorrect,working,"Source contains non-team price hardcoded to 29 and per-person split based on 29.",2026-04-03T15:16:52Z
+/pro/,Course pro affiliate landing,public,200,incorrect,working,"Affiliate calculator still claims '$149 per scramble event'.",2026-04-03T15:16:52Z
+/affiliates/,Affiliate signup landing,public,200,n/a,working,"Canonical affiliate route.",2026-04-03T15:16:52Z
+/affiliate/,Legacy affiliate path,public,301,n/a,redirects,"Redirects to /affiliates/.",2026-04-03T15:16:52Z
+/join/,Legacy join route,public,301,n/a,redirects,"Redirects to /create/.",2026-04-03T15:16:52Z
+/about/,Legacy about route,public,301,n/a,redirects,"Redirects to /overview/.",2026-04-03T15:16:52Z
+/games/stroke-play/,Legacy game route,public,301,n/a,redirects,"Redirects to /games/.",2026-04-03T15:16:52Z
+/games/round-robin/,Legacy game route,public,301,n/a,redirects,"Redirects to /games/.",2026-04-03T15:16:52Z
+/games/chapman/,Legacy game route,public,301,n/a,redirects,"Redirects to /games/.",2026-04-03T15:16:52Z
+/marketing/,Internal docs alias,internal,404,n/a,blocked,"Alias route blocked (expected).",2026-04-03T15:16:52Z
+/gtm/,Internal docs alias,internal,404,n/a,blocked,"Alias route blocked (expected).",2026-04-03T15:16:52Z
+/ads/,Internal docs alias,internal,404,n/a,blocked,"Alias route blocked (expected).",2026-04-03T15:16:52Z
+/marketing-private/,Internal marketing command center,internal,200,needs_update_exposed,exposed,"Publicly reachable internal page with non-canonical '$32 per trip' and '$149' shorthand.",2026-04-03T15:16:52Z
+/gtm-private/,Internal GTM strategy page,internal,200,incorrect_exposed,exposed,"Publicly reachable; contains '$149 per event' and '$499/yr' legacy pricing.",2026-04-03T15:16:52Z
+/ads-private/,Internal ad strategy page,internal,200,needs_update_exposed,exposed,"Publicly reachable; contains non-canonical '$32 for whole trip' and '$149 flat' phrasing.",2026-04-03T15:16:52Z
+/inventory/,Internal ops inventory,internal_review,200,n/a,exposed,"Publicly reachable; confirm intended exposure.",2026-04-03T15:16:52Z

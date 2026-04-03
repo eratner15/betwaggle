@@ -1,0 +1,19 @@
+page,element,current_price,correct_price,status,file_line,notes
+/,event_ctas,$32/event,$32/event,correct,index.html:2373|2727|2732|2768,Homepage event CTAs match canonical event price
+/,season_ctas,$149/season,$149/season pass,copy_mismatch,index.html:2378|2733|2770,Season copy missing "pass"
+/tour/,pricing_row,$149/season + $32/event,$149/season pass + $32/event,copy_mismatch,tour/index.html:295,Season copy missing "pass"
+/tour/ (live),event_ctas,$32,$32/event,copy_mismatch,https://betwaggle.com/tour/ (2026-04-03 12:03 ET),Live deploy still shows shorthand "$32" in CTA text
+/pricing/,meta_descriptions,$149/season,$149/season pass,copy_mismatch,pricing/index.html:7|11|12|22|23,Metadata still uses /season wording
+/pricing/,hero_and_table,$149/season,$149/season pass,copy_mismatch,pricing/index.html:715|789|847|871,On-page season price text missing "pass"
+/pricing/,season_ctas_js,$149/season,$149/season pass,copy_mismatch,pricing/index.html:781|910|947|959|960|968,CTA and JS messages still use /season wording
+/pricing/,event_ctas,$32/event,$32/event,correct,pricing/index.html:707|741|762|847|899|909,Event pricing copy is consistent
+/demo/,primary_cta,$32,$32/event,copy_mismatch,demo/index.html:448,CTA uses shorthand "$32"
+/demo/,support_copy,$32/event,$32/event,correct,demo/index.html:451,Support line matches canonical event pricing
+/create/,wizard_event_price_logic,$29,$32/event,incorrect,create/index.html:1520,Hardcoded event price is 29 instead of 32
+/create/,wizard_per_person_calc,29/roster,$32/roster,incorrect,create/index.html:2303,Per-person math is based on 29 instead of 32
+/create/,season_badge,$149/season,$149/season pass,copy_mismatch,create/index.html:477|2570,Season label missing "pass"
+/worker.js,stripe_labels,"$149/season + $32","$149/season pass + $32/event",copy_mismatch,worker.js:1969|1972,Checkout labels use shorthand pricing text
+/worker.js,ad_prompt_copy,$149/season,$149/season pass,copy_mismatch,worker.js:4061|4066,Ad prompt copy uses /season wording
+/emails,outreach_season_copy,$149/season,$149/season pass,copy_mismatch,emails/outreach/ca-golf-sequence.html:12|42|92;emails/outreach/fl-charity-sequence.html:38,Outreach templates need season-pass wording
+/emails,outreach_season_pass_copy,$149/season pass,$149/season pass,correct,emails/outreach/sc-nc-premium-sequence.html:11|37|81,Template already matches canonical season-pass language
+/emails,canonical_style_guide,$149/season,$149/season pass,copy_mismatch,emails/SEQUENCE.md:25,Style guide still defines outdated season phrasing

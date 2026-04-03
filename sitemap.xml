@@ -71,6 +71,11 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://betwaggle.com/guides/</loc>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://betwaggle.com/guides/how-to-run-a-charity-golf-scramble/</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>

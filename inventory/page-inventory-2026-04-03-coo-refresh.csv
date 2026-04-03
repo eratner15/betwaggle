@@ -1,0 +1,32 @@
+page,purpose,should_be_public,live_status,pricing_state,link_health,notes,checked_at
+/,Homepage conversion entry,yes,200,mixed_copy,working,"Event pricing correct; season + CTA shorthand mismatches remain",2026-04-03
+/create/,Event creation and checkout funnel,yes,200,incorrect,working,"Hardcoded 29 event price plus $149/season wording",2026-04-03
+/tour/,Product comparison and explainer,yes,200,mixed_copy,working,"No $199 found; season copy still $149/season",2026-04-03
+/pricing/,Canonical pricing + checkout path,yes,200,mixed_copy,working,"Multiple $149/season and $32 CTA shorthand strings",2026-04-03
+/demo/,Interactive demo launcher,yes,200,mixed_copy,working,"Support line has $32/event; CTA shorthand uses $32",2026-04-03
+/demo-buddies/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/demo-scramble/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/legends-trip/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/stag-night/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/augusta-scramble/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/masters-member-guest/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/weekend-warrior/,Demo scenario route,yes,200,not_applicable,working,"Route healthy",2026-04-03
+/games/,Game format directory,yes,200,not_applicable,working,"Present in sitemap and live",2026-04-03
+/guides/,SEO guide hub,yes,200,not_applicable,working,"Present in sitemap and live",2026-04-03
+/overview/,Operations/product overview page,yes,200,not_applicable,working,"Live and linked from redirects",2026-04-03
+/courses/,Course directory,yes,200,not_applicable,working,"Live",2026-04-03
+/my-events/,Returning user entry point,yes,200,not_applicable,working,"Live",2026-04-03
+/affiliates/,Affiliate landing page,yes,200,not_applicable,working,"Canonical affiliate route",2026-04-03
+/affiliate/,Legacy alias,no,301,not_applicable,redirected,"Redirects to /affiliates/; duplicate entry point remains",2026-04-03
+/marketing/,Legacy internal route,no,404,not_applicable,blocked,"No longer publicly accessible",2026-04-03
+/gtm/,Legacy internal route,no,404,not_applicable,blocked,"No longer publicly accessible",2026-04-03
+/ads/,Legacy internal route,no,404,not_applicable,blocked,"No longer publicly accessible",2026-04-03
+/marketing-private/,Internal workspace,no,200,not_applicable,exposed,"Still publicly reachable",2026-04-03
+/gtm-private/,Internal workspace,no,200,not_applicable,exposed,"Still publicly reachable",2026-04-03
+/ads-private/,Internal workspace,no,200,not_applicable,exposed,"Still publicly reachable",2026-04-03
+/inventory/,Internal ops artifacts,no,200,not_applicable,exposed,"Operational files publicly reachable",2026-04-03
+/join/,Legacy route,no,301,not_applicable,redirected,"Redirects to /create/",2026-04-03
+/about/,Legacy route,no,301,not_applicable,redirected,"Redirects to /overview/",2026-04-03
+/games/stroke-play/,Deprecated route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03
+/games/round-robin/,Deprecated route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03
+/games/chapman/,Deprecated route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03

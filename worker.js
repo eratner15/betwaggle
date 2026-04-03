@@ -28,13 +28,26 @@ const BLOCKED_PUBLIC_ROUTE_PREFIXES = [
   '/ads/',
 ];
 
+function normalizeRoutePathname(pathname) {
+  let normalized = String(pathname || '/');
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {}
+  if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+  normalized = normalized.replace(/\/{2,}/g, '/').toLowerCase();
+  if (!normalized.endsWith('/')) normalized = `${normalized}/`;
+  return normalized;
+}
+
 function isPrivateRoutePath(pathname) {
-  const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
-  return PRIVATE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  const normalized = normalizeRoutePathname(pathname);
+  if (PRIVATE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return true;
+  // Safety net: block any route segment ending in "-private" (e.g. /foo/marketing-private/bar).
+  return /(^|\/)[^/]*-private(\/|$)/.test(normalized);
 }
 
 function isBlockedPublicRoutePath(pathname) {
-  const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  const normalized = normalizeRoutePathname(pathname);
   return BLOCKED_PUBLIC_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
@@ -62,6 +75,22 @@ function hasPrivateRouteAccess(request, url, env) {
 
 function privateRouteNotFound() {
   return new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+}
+
+function isProductionHostname(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  return host === 'betwaggle.com' || host === 'www.betwaggle.com';
+}
+
+function hasApiAdminAccess(request, url, env) {
+  if (hasPrivateRouteAccess(request, url, env)) return true;
+  const pin = String(request.headers.get('X-Marketing-Pin') || '').trim();
+  const validPin = String(env.WAGGLE_MARKETING_PIN || '').trim();
+  return !!(validPin && pin && pin === validPin);
+}
+
+function unauthorizedJson() {
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: EVENT_CORS });
 }
 
 // Generate random 4-digit admin PIN (1000-9999)
@@ -100,6 +129,7 @@ function serverExpectedOdds(hcpA, hcpB) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    try {
 
     // Auto-seed events on first request (fire-and-forget, idempotent)
     ctx.waitUntil(seedDemoEvent(env).catch(()=>{}));
@@ -329,10 +359,10 @@ export default {
 
     // ===== EMAIL CAPTURE =====
     if (url.pathname === '/api/email-capture' && request.method === 'POST') {
-      return handleEmailCapture(request, env);
+      return handleEmailCapture(request, env, ctx);
     }
     if (url.pathname === '/api/email-capture' && request.method === 'OPTIONS') {
-      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+      return new Response(null, { status: 204, headers: EMAIL_CORS });
     }
 
     // ===== EMAIL DRIP =====
@@ -340,12 +370,13 @@ export default {
       return handleEmailDrip(request, env);
     }
     if (url.pathname === '/api/email/drip' && request.method === 'OPTIONS') {
-      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } });
+      return new Response(null, { status: 204, headers: EMAIL_CORS });
     }
 
     // ===== MY EVENTS (Commissioner Dashboard) =====
     // GET /api/my-events?email={email} — list commissioner's events
     if (url.pathname === '/api/my-events' && request.method === 'GET') {
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const email = (url.searchParams.get('email') || '').trim().toLowerCase();
       const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
       if (!email) return new Response(JSON.stringify({ events: [] }), { headers });
@@ -370,7 +401,7 @@ export default {
       return new Response(JSON.stringify({ events }), { headers });
     }
     if (url.pathname === '/api/my-events' && request.method === 'OPTIONS') {
-      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': 'Content-Type' } });
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token' } });
     }
 
     // ===== INVITE TELEMETRY =====
@@ -401,10 +432,23 @@ export default {
       return handleUnsubscribe(url, env);
     }
 
+    // ===== CHECKOUT SUCCESS PAGE (UI ROUTE) =====
+    if (url.pathname === '/checkout/success' && request.method === 'GET') {
+      const sessionId = String(url.searchParams.get('session_id') || '').trim();
+      const expectedTier = String(url.searchParams.get('tier') || '').trim().toLowerCase();
+      const expectedEventSlug = String(url.searchParams.get('eventSlug') || '').trim().toLowerCase();
+      ctx.waitUntil(trackFunnelEvent(env, 'checkout_success_page_view', {
+        sessionId,
+        expectedTier,
+        expectedEventSlug,
+      }));
+      return handleCheckoutSuccessPage(url);
+    }
+
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner', 'share', 'inventory', 'admin', 'pro'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'guides', 'my-events', 'register', 'partner', 'share', 'inventory', 'admin', 'pro'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -426,7 +470,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'guides', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -567,6 +611,14 @@ export default {
       return new Response(null, { headers: EVENT_CORS });
     }
 
+    // /api/checkout — simple one-time checkout for event/season tiers
+    if (url.pathname === '/api/checkout' && request.method === 'POST') {
+      return handleSimpleCheckout(request, env);
+    }
+    if (url.pathname === '/api/checkout' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: EVENT_CORS });
+    }
+
     // GET /api/create-checkout?resume=TEMP_ID — resume abandoned checkout
     if (url.pathname === '/api/create-checkout' && request.method === 'GET' && url.searchParams.get('resume')) {
       return handleResumeCheckout(url, env);
@@ -574,6 +626,7 @@ export default {
 
     // GET /api/pending-checkout?email={email} — check for abandoned checkout
     if (url.pathname === '/api/pending-checkout' && request.method === 'GET') {
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const email = (url.searchParams.get('email') || '').trim().toLowerCase();
       if (!email) return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       const pending = await env.MG_BOOK.get(`pending-checkout:${email}`, 'json');
@@ -585,6 +638,9 @@ export default {
         }
       }
       return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/api/pending-checkout' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token' } });
     }
 
     // /api/validate-promo — validate a promo code
@@ -599,13 +655,20 @@ export default {
     if (url.pathname === '/api/checkout-success' && request.method === 'GET') {
       return handleCheckoutSuccess(url, env);
     }
+    // /api/checkout/success — JSON success handler for one-time checkout API
+    if (url.pathname === '/api/checkout/success' && request.method === 'GET') {
+      return handleSimpleCheckoutSuccess(request, url, env);
+    }
+    if (url.pathname === '/api/checkout/success' && request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: EVENT_CORS });
+    }
 
     // POST /api/admin/refund — refund a Stripe payment
     if (url.pathname === '/api/admin/refund' && request.method === 'POST') {
       const pin = request.headers.get('X-Marketing-Pin') || '';
       const validPin = env.WAGGLE_MARKETING_PIN || '';
       if (!validPin || pin !== validPin) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: EVENT_CORS });
       }
       return handleAdminRefund(request, env);
     }
@@ -616,6 +679,9 @@ export default {
     // /api/stripe-webhook — Stripe webhook for resilient activation
     if (url.pathname === '/api/stripe-webhook' && request.method === 'POST') {
       return handleStripeWebhook(request, env);
+    }
+    if (url.pathname === '/api/stripe-webhook' && request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: EVENT_CORS });
     }
 
     // /create/ — wizard (static)
@@ -660,12 +726,18 @@ export default {
 
     // /api/affiliates — affiliate management
     if (url.pathname === '/api/affiliates/register' && request.method === 'POST') {
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
+      const rl = await enforceApiRateLimit(env, request, 'api-rl:affiliates-register', 12, 60);
+      if (!rl.allowed) return new Response(JSON.stringify({ error: rl.error }), { status: 429, headers: EVENT_CORS });
       return handleAffiliateRegister(request, env);
     }
     if (url.pathname === '/api/affiliates/stats' && request.method === 'GET') {
       return handleAffiliateStats(url, env);
     }
     if (url.pathname === '/api/affiliates/payout-request' && request.method === 'POST') {
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
+      const rl = await enforceApiRateLimit(env, request, 'api-rl:affiliates-payout', 10, 60);
+      if (!rl.allowed) return new Response(JSON.stringify({ error: rl.error }), { status: 429, headers: EVENT_CORS });
       return handleAffiliatePayoutRequest(request, env);
     }
     if (url.pathname === '/api/affiliates/admin' && request.method === 'GET') {
@@ -673,6 +745,15 @@ export default {
     }
     if (url.pathname === '/api/affiliates/mark-paid' && request.method === 'POST') {
       return handleAffiliateMarkPaid(request, env);
+    }
+    if (url.pathname.startsWith('/api/affiliates/') && request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token',
+        }
+      });
     }
 
     // POST /api/referral-credit — credit a commissioner for a referral
@@ -716,10 +797,18 @@ export default {
 
     // /api/affiliate-signup — public affiliate signup from /affiliates/ page
     if (url.pathname === '/api/affiliate-signup' && request.method === 'POST') {
+      const rl = await enforceApiRateLimit(env, request, 'api-rl:affiliate-signup', 5, 60);
+      if (!rl.allowed) return new Response(JSON.stringify({ error: rl.error }), { status: 429, headers: EVENT_CORS });
       return handleAffiliateSignup(request, env);
     }
     if (url.pathname === '/api/affiliate-signup' && request.method === 'OPTIONS') {
-      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token',
+        }
+      });
     }
 
     // /api/leads — lead tracker CRUD
@@ -786,6 +875,9 @@ export default {
     if (url.pathname === '/api/admin/course-leads/stats' && request.method === 'GET') {
       return handleCourseLeadsStats(url, env);
     }
+    if (url.pathname === '/api/admin/course-leads/enrich' && request.method === 'POST') {
+      return handleCourseLeadsEnrich(request, env);
+    }
     if (url.pathname.startsWith('/api/admin/course-leads') && request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
@@ -812,14 +904,32 @@ export default {
       return env.ASSETS.fetch(req);
     }
 
-    // /affiliate/dashboard — affiliate dashboard page (static)
-    if (url.pathname === '/affiliate/dashboard' || url.pathname === '/affiliate/dashboard/') {
+    // /affiliates/dashboard — canonical affiliate dashboard page (static)
+    if (
+      url.pathname === '/affiliates/dashboard' ||
+      url.pathname === '/affiliates/dashboard/' ||
+      url.pathname === '/affiliates/dashboard.html'
+    ) {
       const req = new Request(new URL('/affiliate/dashboard.html', request.url), request);
       return env.ASSETS.fetch(req);
     }
 
+    // /affiliate/dashboard — legacy alias, permanently redirect to canonical /affiliates/dashboard
+    if (
+      url.pathname === '/affiliate/dashboard' ||
+      url.pathname === '/affiliate/dashboard/' ||
+      url.pathname === '/affiliate/dashboard.html'
+    ) {
+      const canonicalAffiliateDashboardUrl = `${url.origin}/affiliates/dashboard${url.search}`;
+      return Response.redirect(canonicalAffiliateDashboardUrl, 301);
+    }
+
     // /affiliate/ — legacy alias, permanently redirect to canonical /affiliates/
-    if (url.pathname === '/affiliate' || url.pathname === '/affiliate/') {
+    if (
+      url.pathname === '/affiliate' ||
+      url.pathname === '/affiliate/' ||
+      url.pathname === '/affiliate/index.html'
+    ) {
       const canonicalAffiliateUrl = `${url.origin}/affiliates/${url.search}`;
       return Response.redirect(canonicalAffiliateUrl, 301);
     }
@@ -975,6 +1085,8 @@ export default {
 
     // ===== SEED DEMO EVENT (dev/admin) =====
     if (url.pathname === '/api/seed-demo' && request.method === 'GET') {
+      if (isProductionHostname(url.hostname)) return privateRouteNotFound();
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       try {
         const result = await seedDemoEvent(env);
         return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
@@ -985,6 +1097,8 @@ export default {
 
     // Force reseed any demo — deletes existing data first
     if (url.pathname === '/api/force-reseed' && request.method === 'GET') {
+      if (isProductionHostname(url.hostname)) return privateRouteNotFound();
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const slug = url.searchParams.get('slug');
       const seedMap = {
         'cabot-citrus-invitational': () => seedDemoEvent(env),
@@ -1012,6 +1126,8 @@ export default {
 
     // Seed Joe's Frisco trip (v2 — clean slate)
     if (url.pathname === '/api/seed-frisco-v2' && request.method === 'GET') {
+      if (isProductionHostname(url.hostname)) return privateRouteNotFound();
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       try {
         const slug = 'pga-frisco-2026';
         // Delete old version if exists
@@ -1093,6 +1209,8 @@ export default {
 
     // Seed the Frisco buddies trip event (v1 — legacy)
     if (url.pathname === '/api/seed-frisco' && request.method === 'GET') {
+      if (isProductionHostname(url.hostname)) return privateRouteNotFound();
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       try {
         const slug = 'frisco-ranch-buddies';
         const existing = await env.MG_BOOK.get(`config:${slug}`, 'text');
@@ -1164,6 +1282,14 @@ export default {
     }
 
 
+    // API fallback: always return JSON + CORS for unknown API routes.
+    if (url.pathname.startsWith('/api/')) {
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: EVENT_CORS });
+      }
+      return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: EVENT_CORS });
+    }
+
     // Serve static assets
     const assetResp = await env.ASSETS.fetch(request);
     const hdrs = new Headers(assetResp.headers);
@@ -1180,14 +1306,31 @@ export default {
     }
 
     return new Response(assetResp.body, { status: assetResp.status, headers: hdrs });
+    } catch (e) {
+      console.error('fetch_unhandled_error', e?.message || e);
+      if (url.pathname.startsWith('/api/') || /\/api(?:\/|$)/.test(url.pathname)) {
+        return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: EVENT_CORS });
+      }
+      return new Response('Internal Server Error', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
   },
 
-  // Cron handler: weekly digest + drip emails + demo seed + expiration cleanup
+  // Cron handler: daily drip + cleanup, weekly digest (Mondays UTC), demo seed
   async scheduled(event, env, ctx) {
+    const scheduledAt = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
+    const isMondayUtc = scheduledAt.getUTCDay() === 1;
+
     ctx.waitUntil(seedDemoEvent(env));
     ctx.waitUntil(seedFriscoV2(env));
-    ctx.waitUntil(sendWeeklyMarketingDigest(env));
-    ctx.waitUntil(processDripEmails(env));
+    if (isMondayUtc) {
+      ctx.waitUntil(sendWeeklyMarketingDigest(env));
+    }
+    ctx.waitUntil(
+      processDripEmails(env).catch((err) => {
+        console.error('drip-cron-failed', err?.message || err);
+        return null;
+      })
+    );
     ctx.waitUntil(cleanupExpiredEvents(env));
   },
 };
@@ -1813,7 +1956,7 @@ input:focus{border-color:#D4AF37}
 </style>
 </head>
 <body>
-<img src="/logo.png" alt="Waggle" class="logo">
+<img src="/waggle_logo.jpg" alt="Waggle" class="logo">
 <div class="event-name">${eventName}</div>
 ${venue || dates ? `<div class="event-sub">${[venue, dates].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
 <div class="card" id="card">
@@ -1889,7 +2032,11 @@ document.getElementById('inp-email').addEventListener('keydown', e => { if (e.ke
 // ─── Stripe Payment Gate ───────────────────────────────────────────────
 
 const WAGGLE_PRICES = { member_guest: 14900, scramble: 14900, trip: 3200, outing: 3200 };
-const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149)', scramble: 'Waggle Scramble / Outing ($149)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
+const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149/season)', scramble: 'Waggle Scramble / Outing ($149/season)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
+const CHECKOUT_TIERS = {
+  event: { amount: 3200, label: 'Waggle Event ($32)' },
+  season: { amount: 14900, label: 'Waggle Season Pass ($149/season)' },
+};
 
 // Built-in promo codes — can move to KV later
 const PROMO_CODES = {
@@ -1919,18 +2066,546 @@ async function handleValidatePromo(request, env) {
   return new Response(JSON.stringify({ valid: true, discount: PROMO_CODES[code].discount, label: PROMO_CODES[code].label }), { headers: EVENT_CORS });
 }
 
+async function incrementPromoUsage(env, rawPromoCode, redemptionKey = '') {
+  if (!env?.MG_BOOK) return;
+  const promoCode = String(rawPromoCode || '').trim().toUpperCase();
+  if (!promoCode || !PROMO_CODES[promoCode]) return;
+
+  const dedupeKey = redemptionKey ? `promo-redemption:${promoCode}:${redemptionKey}` : '';
+  if (dedupeKey) {
+    const alreadyApplied = await env.MG_BOOK.get(dedupeKey, 'text');
+    if (alreadyApplied) return;
+  }
+
+  const usageKey = `promo:${promoCode}:uses`;
+  const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0', 10);
+  await env.MG_BOOK.put(usageKey, String(uses + 1));
+
+  if (dedupeKey) {
+    await env.MG_BOOK.put(dedupeKey, '1', { expirationTtl: 365 * 24 * 60 * 60 });
+  }
+}
+
+async function markEventPaidInStorage(env, eventSlug, payment) {
+  if (!eventSlug) return { ok: false, error: 'Missing event slug', kvUpdated: false, d1Updated: false };
+  let kvUpdated = false;
+  let d1Updated = false;
+
+  // Update KV config for immediate app state
+  if (env.MG_BOOK) {
+    const configRaw = await env.MG_BOOK.get(`config:${eventSlug}`, 'text');
+    if (configRaw) {
+      try {
+        const config = JSON.parse(configRaw);
+        config.event = { ...(config.event || {}), paid: true, paidAt: payment.paidAt, paymentTier: payment.tier };
+        config.meta = { ...(config.meta || {}), checkout_payment: payment };
+        await env.MG_BOOK.put(`config:${eventSlug}`, JSON.stringify(config));
+        kvUpdated = true;
+      } catch (_) {}
+    }
+  }
+
+  // Persist to D1 without schema changes by updating events.config JSON payload
+  if (env.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare('SELECT id, config FROM events WHERE slug = ? LIMIT 1').bind(eventSlug).first();
+      if (row?.id && row?.config) {
+        let config;
+        try { config = JSON.parse(row.config); } catch { config = {}; }
+        config.event = { ...(config.event || {}), paid: true, paidAt: payment.paidAt, paymentTier: payment.tier };
+        config.meta = { ...(config.meta || {}), checkout_payment: payment };
+        await env.WAGGLE_DB.prepare('UPDATE events SET config = ? WHERE id = ?').bind(JSON.stringify(config), row.id).run();
+        d1Updated = true;
+      }
+    } catch (e) {
+      console.error('markEventPaidInStorage_d1_error', e?.message || e);
+    }
+  }
+
+  return { ok: kvUpdated || d1Updated, kvUpdated, d1Updated };
+}
+
+function extractSlugFromEventUrl(rawUrl) {
+  try {
+    const parsed = new URL(String(rawUrl || ''));
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    return String(segments[0] || '').trim().toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+async function getCheckoutEventStatus(env, slug) {
+  if (!slug) return { exists: false, kvExists: false, d1Exists: false, kvValid: false, kvActive: false };
+  let kvExists = false;
+  let d1Exists = false;
+  let kvValid = false;
+  let kvActive = false;
+  let kvSlugMatches = false;
+  let kvPaid = false;
+
+  if (env.MG_BOOK) {
+    const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+    kvExists = !!configRaw;
+    if (configRaw) {
+      try {
+        const config = JSON.parse(configRaw);
+        const hasEventEnvelope = !!(config && typeof config === 'object' && config.event && typeof config.event === 'object');
+        const hasMeaningfulEventData = !!(
+          config?.event?.name ||
+          config?.event?.eventType ||
+          Array.isArray(config?.players) ||
+          Array.isArray(config?.roster) ||
+          (config?.teams && typeof config.teams === 'object')
+        );
+        kvValid = hasEventEnvelope && hasMeaningfulEventData;
+        const declaredSlug = String(
+          config?.event?.slug ||
+          config?.slug ||
+          extractSlugFromEventUrl(config?.event?.url) ||
+          ''
+        ).trim().toLowerCase();
+        // Some historical configs did not include event.slug; allow those only if the
+        // current key is otherwise valid and active.
+        kvSlugMatches = !declaredSlug || declaredSlug === slug;
+        const status = String(config?.event?.status || '').toLowerCase();
+        const expiresAt = config?.event?.expiresAt ? new Date(config.event.expiresAt).getTime() : 0;
+        const isExpired = Number.isFinite(expiresAt) && expiresAt > 0 && Date.now() > expiresAt;
+        kvPaid = !!config?.event?.paid;
+        kvActive = kvValid && kvSlugMatches && !kvPaid && !['cancelled', 'refunded', 'archived', 'draft'].includes(status) && !isExpired;
+      } catch (_) {
+        kvValid = false;
+        kvActive = false;
+        kvSlugMatches = false;
+        kvPaid = false;
+      }
+    }
+  }
+  if (env.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare('SELECT id FROM events WHERE slug = ? LIMIT 1').bind(slug).first();
+      d1Exists = !!row?.id;
+    } catch (e) {
+      console.error('event_exists_checkout_d1_error', e?.message || e);
+    }
+  }
+  return { exists: kvExists || d1Exists, kvExists, d1Exists, kvValid, kvActive, kvSlugMatches, kvPaid };
+}
+
+function isCheckoutEventPayable(status) {
+  return !!(status && status.exists && status.kvExists && status.kvValid && status.kvSlugMatches && status.kvActive && !status.kvPaid);
+}
+
+async function processSimpleCheckoutSession(env, session, source = 'unknown') {
+  const id = session?.id || '';
+  if (!id) return { ok: false, error: 'Missing session id' };
+  if (session.payment_status !== 'paid') return { ok: false, error: 'Session is not paid' };
+
+  const tier = (session.metadata?.waggle_checkout_tier || '').toLowerCase();
+  if (!CHECKOUT_TIERS[tier]) return { ok: false, error: 'Unknown checkout tier' };
+
+  const email = String(session.metadata?.waggle_checkout_email || session.customer_details?.email || session.customer_email || '').trim().toLowerCase();
+  const eventSlug = String(session.metadata?.waggle_event_slug || '').trim().toLowerCase();
+  const payment = {
+    sessionId: id,
+    tier,
+    email,
+    eventSlug,
+    amountCents: Number(session.amount_total || CHECKOUT_TIERS[tier].amount || 0),
+    paidAt: new Date().toISOString(),
+    source,
+  };
+
+  // Idempotency guard for success-page + webhook dual-processing.
+  if (env.MG_BOOK) {
+    const doneKey = `checkout-simple:done:${id}`;
+    const done = await env.MG_BOOK.get(doneKey, 'json');
+    if (done?.ok) return done;
+  }
+
+  let checkoutLock = null;
+  let checkoutLockKey = '';
+  if (env.MG_BOOK) {
+    checkoutLockKey = `checkout-simple:lock:${id}`;
+    checkoutLock = await acquireKvLock(env, checkoutLockKey, {
+      ttlSeconds: 30,
+      maxAttempts: 4,
+      retryDelayMs: 75,
+      settleMs: 20,
+    });
+    if (!checkoutLock.ok) {
+      const doneKey = `checkout-simple:done:${id}`;
+      for (let i = 0; i < 20; i++) {
+        const done = await env.MG_BOOK.get(doneKey, 'json');
+        if (done?.ok) return done;
+        await sleep(100);
+      }
+      return { ok: false, error: 'Checkout is already being processed' };
+    }
+  }
+
+  try {
+    if (tier === 'event') {
+      if (!eventSlug) return { ok: false, error: 'eventSlug is required for event tier' };
+      const status = await getCheckoutEventStatus(env, eventSlug);
+      if (!isCheckoutEventPayable(status)) return { ok: false, error: 'Event not found' };
+      const saved = await markEventPaidInStorage(env, eventSlug, payment);
+      if (!saved.ok) return { ok: false, error: 'Unable to mark event paid' };
+      if (env.WAGGLE_DB && !saved.d1Updated) return { ok: false, error: 'Event payment not persisted in D1' };
+    } else if (email && env.MG_BOOK) {
+      const seasonPass = { tier: 'season', email, sessionId: id, amountCents: payment.amountCents, paidAt: payment.paidAt };
+      await env.MG_BOOK.put(`season-pass:${email}`, JSON.stringify(seasonPass));
+    }
+
+    if (env.MG_BOOK) {
+      const doneKey = `checkout-simple:done:${id}`;
+      await env.MG_BOOK.put(doneKey, JSON.stringify({ ok: true, payment }), { expirationTtl: 30 * 24 * 60 * 60 });
+    }
+  } finally {
+    if (env.MG_BOOK && checkoutLock?.ok && checkoutLock?.token && checkoutLockKey) {
+      await releaseKvLock(env, checkoutLockKey, checkoutLock.token);
+    }
+  }
+
+  return { ok: true, payment };
+}
+
+async function handleSimpleCheckout(request, env) {
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
+
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+
+  const tier = String(body?.tier || '').trim().toLowerCase();
+  const email = String(body?.email || '').trim().toLowerCase();
+  const eventSlug = String(body?.eventSlug || '').trim().toLowerCase();
+  const tierConfig = CHECKOUT_TIERS[tier];
+  if (!tierConfig) return new Response(JSON.stringify({ error: 'tier must be \"event\" or \"season\"' }), { status: 400, headers: EVENT_CORS });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400, headers: EVENT_CORS });
+  if (tier === 'event' && !eventSlug) return new Response(JSON.stringify({ error: 'eventSlug required for event tier' }), { status: 400, headers: EVENT_CORS });
+  if (tier === 'event') {
+    if (!/^[a-z0-9_-]{2,64}$/.test(eventSlug)) {
+      return new Response(JSON.stringify({ error: 'Invalid eventSlug format' }), { status: 400, headers: EVENT_CORS });
+    }
+    const status = await getCheckoutEventStatus(env, eventSlug);
+    if (status?.kvPaid) {
+      return new Response(JSON.stringify({ error: 'Event already paid' }), { status: 409, headers: EVENT_CORS });
+    }
+    if (!isCheckoutEventPayable(status)) {
+      console.warn('simple_checkout_event_not_found', {
+        eventSlug,
+        exists: !!status.exists,
+        kvExists: !!status.kvExists,
+        kvValid: !!status.kvValid,
+        kvSlugMatches: !!status.kvSlugMatches,
+        kvActive: !!status.kvActive,
+        kvPaid: !!status.kvPaid,
+      });
+      return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
+    }
+  }
+
+  const stripeBody = new URLSearchParams({
+    'payment_method_types[]': 'card',
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': tierConfig.label,
+    'line_items[0][price_data][unit_amount]': String(tierConfig.amount),
+    'line_items[0][quantity]': '1',
+    'mode': 'payment',
+    customer_email: email,
+    'success_url': buildSimpleCheckoutUiSuccessUrl(tier, eventSlug),
+    'cancel_url': 'https://betwaggle.com/pricing/?checkout=cancelled',
+    'metadata[waggle_checkout_tier]': tier,
+    'metadata[waggle_checkout_email]': email,
+    'metadata[waggle_event_slug]': eventSlug,
+  });
+
+  try {
+    const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: stripeBody.toString(),
+    });
+
+    const payload = await stripeRes.json().catch(() => ({}));
+    if (!stripeRes.ok) {
+      return new Response(JSON.stringify({ error: payload?.error?.message || 'Stripe error' }), { status: 502, headers: EVENT_CORS });
+    }
+    if (!payload?.id || !payload?.url) {
+      return new Response(JSON.stringify({ error: 'Invalid Stripe checkout response' }), { status: 502, headers: EVENT_CORS });
+    }
+    return new Response(JSON.stringify({ ok: true, checkoutUrl: payload.url, sessionId: payload.id }), { headers: EVENT_CORS });
+  } catch (e) {
+    console.error('simple_checkout_create_error', e?.message || e);
+    return new Response(JSON.stringify({ error: 'Stripe request failed' }), { status: 502, headers: EVENT_CORS });
+  }
+}
+
+function buildSimpleCheckoutUiSuccessUrl(tier, eventSlug) {
+  const safeTier = String(tier || '').trim().toLowerCase();
+  const safeEventSlug = String(eventSlug || '').trim().toLowerCase();
+  const base = `https://betwaggle.com/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${encodeURIComponent(safeTier || 'event')}`;
+  if (safeTier === 'event' && safeEventSlug) {
+    return `${base}&eventSlug=${encodeURIComponent(safeEventSlug)}`;
+  }
+  return base;
+}
+
+function shouldReturnHtmlSuccess(request, url) {
+  const format = String(url.searchParams.get('format') || '').trim().toLowerCase();
+  if (format === 'json') return false;
+  if (format === 'html') return true;
+  // Default to redirect so Stripe/browser flows never strand users on raw JSON.
+  return true;
+}
+
+function buildSimpleCheckoutSuccessRedirect(payment) {
+  const tier = String(payment?.tier || '').toLowerCase();
+  const eventSlug = String(payment?.eventSlug || '').trim().toLowerCase();
+  if (tier === 'event' && eventSlug) {
+    return `https://betwaggle.com/${encodeURIComponent(eventSlug)}/?checkout=success&paid=1`;
+  }
+  return `https://betwaggle.com/pricing/?checkout=success&tier=${encodeURIComponent(tier || 'event')}`;
+}
+
+async function handleSimpleCheckoutSuccess(request, url, env) {
+  const sessionId = String(url.searchParams.get('session_id') || '').trim();
+  if (!sessionId) return new Response(JSON.stringify({ error: 'session_id required' }), { status: 400, headers: EVENT_CORS });
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
+
+  try {
+    const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
+    });
+    if (!stripeRes.ok) return new Response(JSON.stringify({ error: 'Checkout session not found' }), { status: 404, headers: EVENT_CORS });
+
+    const session = await stripeRes.json();
+    const result = await processSimpleCheckoutSession(env, session, 'checkout_success');
+    if (!result.ok) return new Response(JSON.stringify({ error: result.error || 'Checkout processing failed' }), { status: 400, headers: EVENT_CORS });
+
+    const expectedTier = String(url.searchParams.get('expected_tier') || url.searchParams.get('tier') || '').trim().toLowerCase();
+    const expectedEventSlug = String(url.searchParams.get('expected_event_slug') || url.searchParams.get('eventSlug') || '').trim().toLowerCase();
+    if (expectedTier && expectedTier !== String(result.payment?.tier || '').toLowerCase()) {
+      return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
+    }
+    if (expectedEventSlug) {
+      const actualEventSlug = String(result.payment?.eventSlug || '').trim().toLowerCase();
+      if (actualEventSlug !== expectedEventSlug) {
+        return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
+      }
+    }
+
+    if (shouldReturnHtmlSuccess(request, url)) {
+      return Response.redirect(buildSimpleCheckoutSuccessRedirect(result.payment), 302);
+    }
+
+    return new Response(JSON.stringify({ ok: true, payment: result.payment }), { headers: EVENT_CORS });
+  } catch (e) {
+    console.error('simple_checkout_success_error', e?.message || e);
+    return new Response(JSON.stringify({ error: 'Unable to verify checkout session' }), { status: 502, headers: EVENT_CORS });
+  }
+}
+
+function handleCheckoutSuccessPage(url) {
+  const sessionId = String(url.searchParams.get('session_id') || '').trim();
+  const expectedTier = String(url.searchParams.get('tier') || '').trim().toLowerCase();
+  const expectedEventSlug = String(url.searchParams.get('eventSlug') || '').trim().toLowerCase();
+  const bootstrap = JSON.stringify({
+    sessionId,
+    expectedTier,
+    expectedEventSlug,
+  }).replace(/</g, '\\u003c');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout Confirmation | Waggle</title>
+  <style>
+    :root { --bg:#0f2a1b; --panel:#173924; --text:#f5f0e8; --muted:#c7c2b8; --accent:#d4af37; --danger:#ff7d7d; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(80% 80% at 50% 20%, #1e4d31 0%, var(--bg) 70%); color: var(--text); }
+    .card { width:min(560px,100%); background:var(--panel); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; box-shadow:0 24px 60px rgba(0,0,0,0.35); }
+    h1 { margin:0 0 8px; font-size:28px; line-height:1.2; }
+    p { margin:0; color:var(--muted); line-height:1.5; }
+    .state { margin-top:18px; font-size:15px; color:var(--muted); }
+    .state.error { color: var(--danger); }
+    .actions { margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; }
+    .btn { border:0; border-radius:10px; padding:12px 16px; font-weight:600; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    .btn.primary { background:var(--accent); color:#1d1d1d; }
+    .btn.secondary { background:rgba(255,255,255,0.1); color:var(--text); }
+    .meta { margin-top:14px; font-size:12px; color:rgba(255,255,255,0.6); word-break:break-all; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 id="title">Confirming your payment...</h1>
+    <p id="subtitle">Please wait while we verify your checkout session.</p>
+    <div id="state" class="state">Loading</div>
+    <div id="actions" class="actions" style="display:none"></div>
+    <div id="meta" class="meta"></div>
+  </main>
+  <script>
+    const BOOTSTRAP = ${bootstrap};
+    const stateEl = document.getElementById('state');
+    const titleEl = document.getElementById('title');
+    const subtitleEl = document.getElementById('subtitle');
+    const actionsEl = document.getElementById('actions');
+    const metaEl = document.getElementById('meta');
+
+    function setState(title, subtitle, stateText, isError) {
+      titleEl.textContent = title;
+      subtitleEl.textContent = subtitle;
+      stateEl.textContent = stateText;
+      stateEl.className = isError ? 'state error' : 'state';
+    }
+
+    function setActions(actions) {
+      actionsEl.innerHTML = '';
+      if (!actions || actions.length === 0) {
+        actionsEl.style.display = 'none';
+        return;
+      }
+      actionsEl.style.display = 'flex';
+      for (const action of actions) {
+        const a = document.createElement('a');
+        a.className = 'btn ' + (action.primary ? 'primary' : 'secondary');
+        a.href = action.href;
+        a.textContent = action.label;
+        actionsEl.appendChild(a);
+      }
+    }
+
+    async function verify() {
+      const sessionId = BOOTSTRAP.sessionId;
+      if (!sessionId) {
+        setState('Invalid confirmation link', 'This checkout link is missing a session id.', 'Missing session id', true);
+        setActions([{ label: 'Back to Pricing', href: '/pricing/', primary: true }]);
+        return;
+      }
+
+      const verifyUrl = new URL('/api/checkout/success', window.location.origin);
+      verifyUrl.searchParams.set('format', 'json');
+      verifyUrl.searchParams.set('session_id', sessionId);
+      if (BOOTSTRAP.expectedTier) verifyUrl.searchParams.set('expected_tier', BOOTSTRAP.expectedTier);
+      if (BOOTSTRAP.expectedEventSlug) verifyUrl.searchParams.set('expected_event_slug', BOOTSTRAP.expectedEventSlug);
+
+      try {
+        const res = await fetch(verifyUrl.toString(), { headers: { 'Accept': 'application/json' } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          const isInvalid = res.status === 400 || res.status === 403 || res.status === 404;
+          setState(
+            isInvalid ? 'Checkout could not be confirmed' : 'Checkout verification failed',
+            isInvalid ? 'The session is invalid, expired, or does not match this payment context.' : 'Please retry in a moment.',
+            data.error || ('HTTP ' + res.status),
+            true
+          );
+          setActions([{ label: 'Back to Pricing', href: '/pricing/', primary: true }]);
+          metaEl.textContent = 'Session: ' + sessionId;
+          return;
+        }
+
+        const payment = data.payment || {};
+        let primaryLink = '/pricing/?checkout=success';
+        let primaryLabel = 'Open Pricing';
+        if (payment.tier === 'event' && payment.eventSlug) {
+          primaryLink = '/' + encodeURIComponent(payment.eventSlug) + '/?checkout=success&paid=1';
+          primaryLabel = 'Open Event Dashboard';
+        }
+
+        setState(
+          'Payment confirmed',
+          'Your checkout is complete and your account is now updated.',
+          'Tier: ' + (payment.tier || 'event'),
+          false
+        );
+        setActions([
+          { label: primaryLabel, href: primaryLink, primary: true },
+          { label: 'Back to Home', href: '/', primary: false }
+        ]);
+        metaEl.textContent = 'Session: ' + sessionId;
+      } catch (err) {
+        setState('Checkout verification failed', 'We could not verify your payment right now.', 'Network error', true);
+        setActions([{ label: 'Retry', href: window.location.pathname + window.location.search, primary: true }]);
+      }
+    }
+
+    verify();
+  </script>
+</body>
+</html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 // ─── Subscription Handlers ────────────────────────────────────────────────
+
+async function createSeasonPassCheckoutResponse(env, email, sourceTag = 'subscribe_season') {
+  const tierConfig = CHECKOUT_TIERS.season;
+  const stripeBody = new URLSearchParams({
+    'payment_method_types[]': 'card',
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': tierConfig.label,
+    'line_items[0][price_data][unit_amount]': String(tierConfig.amount),
+    'line_items[0][quantity]': '1',
+    'mode': 'payment',
+    customer_email: email,
+    'success_url': buildSimpleCheckoutUiSuccessUrl('season', ''),
+    'cancel_url': 'https://betwaggle.com/pricing/?checkout=cancelled',
+    'metadata[waggle_checkout_tier]': 'season',
+    'metadata[waggle_checkout_email]': email,
+    'metadata[waggle_event_slug]': '',
+    'metadata[waggle_checkout_source]': sourceTag,
+  });
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: stripeBody.toString(),
+  });
+
+  if (!stripeRes.ok) {
+    const err = await stripeRes.json().catch(() => ({}));
+    return new Response(JSON.stringify({ error: err?.error?.message || 'Stripe error' }), { status: 500, headers: EVENT_CORS });
+  }
+
+  const session = await stripeRes.json();
+  if (!session?.url) return new Response(JSON.stringify({ error: 'Invalid Stripe checkout response' }), { status: 502, headers: EVENT_CORS });
+  return new Response(JSON.stringify({ checkoutUrl: session.url, mode: 'payment', tier: 'season' }), { headers: EVENT_CORS });
+}
 
 async function handleSubscribe(request, env) {
   if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
   const email = (body.email || '').trim().toLowerCase();
-  const plan = body.plan || 'monthly'; // 'monthly' or 'annual'
+  const plan = String(body.plan || 'monthly').trim().toLowerCase();
   if (!email) return new Response(JSON.stringify({ error: 'Email required' }), { status: 400, headers: EVENT_CORS });
 
+  // Canonical season pass checkout is one-time $149 regardless of subscription config.
+  if (plan === 'season' || plan === 'season_pass' || plan === 'season-pass') {
+    return createSeasonPassCheckoutResponse(env, email, 'subscribe_season');
+  }
+
+  if (plan !== 'monthly' && plan !== 'annual') {
+    return new Response(JSON.stringify({ error: 'plan must be one of: monthly, annual, season' }), { status: 400, headers: EVENT_CORS });
+  }
+
   const priceId = plan === 'annual' ? (env.STRIPE_PRICE_ANNUAL || '') : (env.STRIPE_PRICE_MONTHLY || '');
-  if (!priceId) return new Response(JSON.stringify({ error: 'Subscription pricing not configured. Contact support.' }), { status: 500, headers: EVENT_CORS });
+  // Backward-compatible fallback:
+  // If legacy subscription price IDs are not configured, route this flow to
+  // one-time Season Pass checkout instead of hard-failing.
+  if (!priceId) {
+    return createSeasonPassCheckoutResponse(env, email, 'subscribe_fallback');
+  }
 
   // Check if already subscribed
   const existing = await env.MG_BOOK.get(`subscriber:${email}`, 'json');
@@ -2002,18 +2677,42 @@ function normalizeAffiliateRefCode(rawRef) {
   return String(rawRef || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
 }
 
+async function resolveAffiliateByCode(env, rawCode) {
+  const normalizedCode = normalizeAffiliateRefCode(rawCode);
+  if (!normalizedCode) return null;
+
+  if (env?.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare(
+        `SELECT code, name, email FROM affiliates WHERE UPPER(code) = ? LIMIT 1`
+      ).bind(normalizedCode).first();
+      if (row) return { code: row.code, affiliate: row, source: 'd1' };
+    } catch (_) {}
+  }
+
+  if (env?.MG_BOOK) {
+    try {
+      const refData = await env.MG_BOOK.get(`affiliate-ref:${normalizedCode}`, 'json');
+      if (refData) return { code: normalizedCode, affiliate: refData, source: 'ref' };
+      const kvData = await env.MG_BOOK.get(`affiliate:${normalizedCode}`, 'json');
+      if (kvData) return { code: normalizedCode, affiliate: kvData, source: 'kv' };
+    } catch (_) {}
+  }
+
+  return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: EVENT_CORS });
+}
+
 async function applyAffiliateRefToConfig(config, env, rawRef) {
-  if (!config || !env?.MG_BOOK) return null;
-  const code = normalizeAffiliateRefCode(rawRef);
-  if (!code) return null;
+  if (!config) return null;
+  const resolved = await resolveAffiliateByCode(env, rawRef);
+  if (!resolved) return null;
   try {
-    const affiliate = await env.MG_BOOK.get(`affiliate-ref:${code}`, 'json');
-    if (!affiliate) return null;
+    const code = resolved.code;
     config.meta = config.meta || {};
     config.meta.ref_code = code;
     const source = (config.meta.source && typeof config.meta.source === 'object') ? config.meta.source : {};
     config.meta.source = { ...source, ref: code };
-    return { code, affiliate };
+    return { code, affiliate: resolved.affiliate };
   } catch (_) {
     return null;
   }
@@ -2153,15 +2852,13 @@ async function handleCreateCheckout(request, env) {
 
   // If 100% discount, create event for free (skip Stripe)
   if (discount === 100) {
-    // Increment promo usage
-    if (env.MG_BOOK) {
-      const usageKey = `promo:${promoCode}:uses`;
-      const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
-      await env.MG_BOOK.put(usageKey, String(uses + 1));
-    }
     // Store promo info on config for success page
     config.meta = { ...(config.meta || {}), promoCode, promoLabel, promoDiscount: discount, originalAmountCents: originalAmount, actualAmountCents: 0 };
-    return handleCreateEventFromConfig(config, env);
+    const freeCreateRes = await handleCreateEventFromConfig(config, env);
+    if (freeCreateRes.ok && promoCode) {
+      await incrementPromoUsage(env, promoCode);
+    }
+    return freeCreateRes;
   }
 
   // Apply discount to amount
@@ -2216,13 +2913,6 @@ async function handleCreateCheckout(request, env) {
     return new Response(JSON.stringify({ error: err?.error?.message || 'Stripe error' }), { status: 500, headers: EVENT_CORS });
   }
 
-  // Increment promo usage on successful checkout creation
-  if (discount > 0 && promoCode && env.MG_BOOK) {
-    const usageKey = `promo:${promoCode}:uses`;
-    const uses = parseInt(await env.MG_BOOK.get(usageKey) || '0');
-    await env.MG_BOOK.put(usageKey, String(uses + 1));
-  }
-
   const session = await stripeRes.json();
   return new Response(JSON.stringify({ checkoutUrl: session.url }), { headers: EVENT_CORS });
 }
@@ -2273,6 +2963,155 @@ async function handleResumeCheckout(url, env) {
   return Response.redirect('https://betwaggle.com/create/', 302);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function acquireKvLock(env, key, opts = {}) {
+  if (!env?.MG_BOOK || !key) return { ok: false, token: '' };
+  const ttlSeconds = Math.max(1, Number(opts.ttlSeconds || 10));
+  const maxAttempts = Math.max(1, Number(opts.maxAttempts || 3));
+  const retryDelayMs = Math.max(5, Number(opts.retryDelayMs || 100));
+  const settleMs = Math.max(0, Number(opts.settleMs || 20));
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const existing = await env.MG_BOOK.get(key, 'text');
+    if (!existing) {
+      const token = crypto.randomUUID();
+      await env.MG_BOOK.put(key, token, { expirationTtl: ttlSeconds });
+      if (settleMs) await sleep(settleMs);
+      const owner = await env.MG_BOOK.get(key, 'text');
+      if (owner === token) return { ok: true, token };
+    }
+    if (attempt < maxAttempts - 1) await sleep(retryDelayMs);
+  }
+  return { ok: false, token: '' };
+}
+
+async function releaseKvLock(env, key, token) {
+  if (!env?.MG_BOOK || !key || !token) return;
+  const owner = await env.MG_BOOK.get(key, 'text');
+  if (owner === token) await env.MG_BOOK.delete(key).catch(() => {});
+}
+
+async function appendFeedEntriesAtomic(env, slug, entries, opts = {}) {
+  if (!env?.MG_BOOK || !slug) return { ok: false, error: 'Storage not configured' };
+  const items = (Array.isArray(entries) ? entries : [entries]).filter(Boolean);
+  if (items.length === 0) return { ok: true, count: 0 };
+
+  const feedKey = `${slug}:feed`;
+  const lockKey = `${slug}:feed-write-lock`;
+  const mode = opts.mode === 'prepend' ? 'prepend' : 'append';
+  const maxItems = Math.max(1, Number(opts.maxItems || 200));
+
+  const lock = await acquireKvLock(env, lockKey, {
+    ttlSeconds: 10,
+    maxAttempts: 4,
+    retryDelayMs: 40,
+    settleMs: 15,
+  });
+  if (!lock.ok) return { ok: false, error: 'Feed update in progress' };
+
+  try {
+    const feed = (await env.MG_BOOK.get(feedKey, 'json')) || [];
+    if (mode === 'prepend') feed.unshift(...items);
+    else feed.push(...items);
+
+    while (feed.length > maxItems) {
+      if (mode === 'prepend') feed.pop();
+      else feed.shift();
+    }
+
+    await env.MG_BOOK.put(feedKey, JSON.stringify(feed));
+    return { ok: true, count: items.length, total: feed.length };
+  } finally {
+    await releaseKvLock(env, lockKey, lock.token);
+  }
+}
+
+async function enforceApiRateLimit(env, request, prefix, limit = 5, windowSeconds = 60) {
+  if (!env?.MG_BOOK) return { allowed: true };
+  const ip = String(request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || 'unknown')
+    .split(',')[0]
+    .trim();
+  const rateKey = `${prefix}:${ip}`;
+  const lockKey = `${rateKey}:lock`;
+  const lock = await acquireKvLock(env, lockKey, { ttlSeconds: 5, maxAttempts: 4, retryDelayMs: 30, settleMs: 10 });
+  if (!lock.ok) return { allowed: false, error: 'Rate limiter busy. Retry shortly.' };
+  try {
+    const count = parseInt(await env.MG_BOOK.get(rateKey, 'text') || '0', 10);
+    if (count >= Math.max(1, Number(limit) || 1)) return { allowed: false, error: 'Too many requests. Try again later.' };
+    await env.MG_BOOK.put(rateKey, String(count + 1), { expirationTtl: Math.max(1, Number(windowSeconds) || 60) });
+    return { allowed: true };
+  } finally {
+    await releaseKvLock(env, lockKey, lock.token);
+  }
+}
+
+async function activatePendingCheckout(env, { tempId, sessionId, organizerEmail }) {
+  const activationKey = `checkout-activation:${tempId}`;
+  const lockKey = `checkout-activation-lock:${tempId}`;
+
+  const existingActivation = await env.MG_BOOK.get(activationKey, 'json');
+  if (existingActivation?.slug) {
+    return { isNewActivation: false, ...existingActivation };
+  }
+
+  const activationLock = await acquireKvLock(env, lockKey, {
+    ttlSeconds: 30,
+    maxAttempts: 4,
+    retryDelayMs: 75,
+    settleMs: 20,
+  });
+  if (!activationLock.ok) {
+    for (let i = 0; i < 20; i++) {
+      const activated = await env.MG_BOOK.get(activationKey, 'json');
+      if (activated?.slug) return { isNewActivation: false, ...activated };
+      await sleep(100);
+    }
+    return { pendingMissing: true };
+  }
+
+  try {
+    const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
+    if (!configRaw) {
+      const activated = await env.MG_BOOK.get(activationKey, 'json');
+      if (activated?.slug) return { isNewActivation: false, ...activated };
+      return { pendingMissing: true };
+    }
+
+    const config = JSON.parse(configRaw);
+    await incrementPromoUsage(env, config?.meta?.promoCode || '', `session:${sessionId}`);
+    if (organizerEmail) config.meta = { ...(config.meta || {}), organizerEmail };
+    config.meta = { ...(config.meta || {}), stripe_session_id: sessionId };
+
+    const result = await activateEvent(config, env);
+    const purchaseValue = config.event?.format === 'round_robin_match_play' ? 149 : 32;
+    const activationRecord = {
+      slug: result.slug,
+      url: result.url,
+      purchaseValue,
+      sessionId,
+      adminContact: (config?.event?.adminContact || '').trim().toLowerCase(),
+      eventType: config?.event?.eventType || '',
+      format: config?.event?.format || '',
+      amountCents: Number(config?.meta?.actualAmountCents || config?.meta?.originalAmountCents || 0),
+      source: config?.meta?.source || {},
+      activatedAt: new Date().toISOString(),
+    };
+    await env.MG_BOOK.put(activationKey, JSON.stringify(activationRecord), { expirationTtl: 30 * 24 * 60 * 60 });
+    await env.MG_BOOK.delete(`pending:${tempId}`);
+
+    const pendingEmail = (config.event?.adminContact || '').trim().toLowerCase();
+    if (pendingEmail) {
+      await env.MG_BOOK.delete(`pending-checkout:${pendingEmail}`).catch(() => {});
+    }
+
+    return { isNewActivation: true, config, ...activationRecord };
+  } finally {
+    await releaseKvLock(env, lockKey, activationLock.token);
+  }
+}
+
 async function handleCheckoutSuccess(url, env) {
   const sessionId = url.searchParams.get('session_id');
   const tempId = url.searchParams.get('tmp');
@@ -2281,54 +3120,52 @@ async function handleCheckoutSuccess(url, env) {
     return Response.redirect('https://betwaggle.com/create/?error=missing_session', 302);
   }
 
-  let organizerEmail = null;
-  if (env.STRIPE_SECRET_KEY) {
-    const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
-      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
-    });
-    if (stripeRes.ok) {
-      const session = await stripeRes.json();
-      if (session.payment_status !== 'paid') {
-        return Response.redirect('https://betwaggle.com/create/?error=payment_failed', 302);
-      }
-      organizerEmail = session.customer_details?.email || null;
-    }
+  if (!env.STRIPE_SECRET_KEY) {
+    return Response.redirect('https://betwaggle.com/create/?error=stripe_unavailable', 302);
   }
 
-  const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
-  if (!configRaw) {
+  let organizerEmail = null;
+  const stripeRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+    headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
+  });
+  if (!stripeRes.ok) {
+    return Response.redirect('https://betwaggle.com/create/?error=invalid_session', 302);
+  }
+
+  const session = await stripeRes.json();
+  if (session.payment_status !== 'paid') {
+    return Response.redirect('https://betwaggle.com/create/?error=payment_failed', 302);
+  }
+  if ((session.metadata?.waggle_temp_id || '') !== tempId) {
+    return Response.redirect('https://betwaggle.com/create/?error=session_mismatch', 302);
+  }
+  organizerEmail = session.customer_details?.email || null;
+
+  const activation = await activatePendingCheckout(env, { tempId, sessionId, organizerEmail });
+  if (!activation?.slug) {
     return Response.redirect('https://betwaggle.com/create/?error=expired', 302);
   }
 
-  const config = JSON.parse(configRaw);
-  if (organizerEmail) config.meta = { ...(config.meta || {}), organizerEmail };
-  config.meta = { ...(config.meta || {}), stripe_session_id: sessionId };
-  const result = await activateEvent(config, env);
-  await trackFunnelEvent(env, 'signup_complete', {
-    slug: result.slug,
-    paid: true,
-    adminContact: (config?.event?.adminContact || '').trim().toLowerCase(),
-  });
-  await trackFunnelEvent(env, 'paid_event', {
-    slug: result.slug,
-    sessionId,
-    amountCents: Number(config?.meta?.actualAmountCents || config?.meta?.originalAmountCents || 0),
-    eventType: config?.event?.eventType || '',
-    format: config?.event?.format || '',
-  });
-  await env.MG_BOOK.delete(`pending:${tempId}`);
+  if (activation.isNewActivation) {
+    const config = activation.config || {};
+    await trackFunnelEvent(env, 'signup_complete', {
+      slug: activation.slug,
+      paid: true,
+      adminContact: activation.adminContact || '',
+    });
+    await trackFunnelEvent(env, 'paid_event', {
+      slug: activation.slug,
+      sessionId,
+      amountCents: activation.amountCents || 0,
+      eventType: activation.eventType || '',
+      format: activation.format || '',
+    });
 
-  // Clean up pending-checkout recovery key
-  const pendingEmail2 = (config.event?.adminContact || '').trim().toLowerCase();
-  if (pendingEmail2) {
-    await env.MG_BOOK.delete(`pending-checkout:${pendingEmail2}`).catch(() => {});
-  }
+    await creditAffiliateForPaidEvent(config, env, activation.slug, sessionId, activation.amountCents || 0);
 
-  await creditAffiliateForPaidEvent(config, env, result.slug, sessionId, config?.meta?.actualAmountCents || config?.meta?.originalAmountCents);
-
-  if (env.RESEND_API_KEY) {
-    const eventName = config.event?.name || 'Your Event';
-    const eventUrl = result.url;
+    if (env.RESEND_API_KEY) {
+      const eventName = config.event?.name || 'Your Event';
+      const eventUrl = activation.url;
     const adminUrl = `${eventUrl}#admin`;
     const adminPin = config.event?.adminPin || '(see your setup)';
     const resendPost = (payload) => fetch('https://api.resend.com/emails', {
@@ -2341,11 +3178,11 @@ async function handleCheckoutSuccess(url, env) {
 
     if (organizerEmail) {
       promises.push(resendPost({
-        from: 'Waggle <waggle@cafecito-ai.com>',
+        from: 'Waggle <hello@betwaggle.com>',
         to: organizerEmail,
         subject: `Your Waggle event is live: ${eventName}`,
         html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;padding:32px 24px">
-  <img src="https://betwaggle.com/logo.png" alt="Waggle" style="height:36px;margin-bottom:24px">
+  <img src="https://betwaggle.com/waggle_logo.jpg" alt="Waggle" style="height:36px;margin-bottom:24px">
   <h2 style="color:#0D2818;font-size:22px;margin:0 0 8px">Your sportsbook is live.</h2>
   <p style="color:#374151;font-size:15px;margin:0 0 24px">Share this link with your group. Everyone opens it on their phone.</p>
   <a href="${eventUrl}" style="display:block;background:#2D6A4F;color:#fff;text-align:center;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:24px">${eventUrl}</a>
@@ -2360,18 +3197,18 @@ async function handleCheckoutSuccess(url, env) {
       }));
     }
 
-    promises.push(resendPost({
-      from: 'Waggle <waggle@cafecito-ai.com>',
-      to: 'evan@cafecito-ai.com',
-      subject: `New Waggle event: ${result.slug}${organizerEmail ? ' by ' + organizerEmail : ''}`,
-      html: `<p><strong>Event:</strong> ${eventName}</p><p><strong>Slug:</strong> ${result.slug}</p><p><strong>Organizer:</strong> ${organizerEmail || 'unknown'}</p><p><strong>URL:</strong> <a href="${eventUrl}">${eventUrl}</a></p><p><strong>Source:</strong> ${JSON.stringify(config.meta?.source || {})}</p>`,
-    }));
+      promises.push(resendPost({
+        from: 'Waggle <hello@betwaggle.com>',
+        to: 'evan@cafecito-ai.com',
+        subject: `New Waggle event: ${activation.slug}${organizerEmail ? ' by ' + organizerEmail : ''}`,
+        html: `<p><strong>Event:</strong> ${eventName}</p><p><strong>Slug:</strong> ${activation.slug}</p><p><strong>Organizer:</strong> ${organizerEmail || 'unknown'}</p><p><strong>URL:</strong> <a href="${eventUrl}">${eventUrl}</a></p><p><strong>Source:</strong> ${JSON.stringify(config.meta?.source || {})}</p>`,
+      }));
 
-    await Promise.allSettled(promises);
+      await Promise.allSettled(promises);
+    }
   }
 
-  const purchaseValue = config.event?.format === 'round_robin_match_play' ? 149 : 32;
-  return Response.redirect(`https://betwaggle.com/success/?slug=${result.slug}&v=${purchaseValue}`, 302);
+  return Response.redirect(`https://betwaggle.com/success/?slug=${activation.slug}&v=${activation.purchaseValue || 32}`, 302);
 }
 
 async function handleWaggleSuccess(url, env) {
@@ -2444,7 +3281,7 @@ async function handleWaggleSuccess(url, env) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>You're All Set -- Waggle</title>
   <meta name="robots" content="noindex">
-  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -2697,12 +3534,12 @@ async function handleCourseDetailPage(courseId, env) {
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${clubName} \u2014 Waggle</title>
   <meta name="description" content="View the full scorecard for ${clubName}${location ? ' in ' + location : ''}.">
-  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0D2818;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Inter',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0D2818;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
 </head><body>
   <header class="header">
-    <a href="/" class="header-logo"><img src="/logo.png" alt="Waggle"><span>Waggle</span></a>
+    <a href="/" class="header-logo"><img src="/waggle_logo.jpg" alt="Waggle"><span>Waggle</span></a>
     <nav class="header-nav"><a href="/courses/">Courses</a><a href="/create/?course=${courseId}" class="cta">Play Here</a></nav>
   </header>
   <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#2D6A4F;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#2D6A4F;font-weight:600">Courses</a> / ${clubName}</div>
@@ -2796,16 +3633,16 @@ async function handleCourseDetailPage(courseId, env) {
 async function handleAdminRefund(request, env) {
   const body = await request.json().catch(() => ({}));
   const { slug, reason } = body;
-  if (!slug) return new Response(JSON.stringify({ error: 'slug required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  if (!slug) return new Response(JSON.stringify({ error: 'slug required' }), { status: 400, headers: EVENT_CORS });
 
   const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-  if (!configRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+  if (!configRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
 
   const config = JSON.parse(configRaw);
   const stripeSessionId = config.meta?.stripe_session_id;
-  if (!stripeSessionId) return new Response(JSON.stringify({ error: 'No Stripe session found for this event' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  if (!stripeSessionId) return new Response(JSON.stringify({ error: 'No Stripe session found for this event' }), { status: 400, headers: EVENT_CORS });
 
-  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500, headers: EVENT_CORS });
 
   try {
     // Get the payment intent from the session
@@ -2815,7 +3652,7 @@ async function handleAdminRefund(request, env) {
     const session = await sessionRes.json();
     const paymentIntentId = session.payment_intent;
 
-    if (!paymentIntentId) return new Response(JSON.stringify({ error: 'No payment intent found' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!paymentIntentId) return new Response(JSON.stringify({ error: 'No payment intent found' }), { status: 400, headers: EVENT_CORS });
 
     // Create refund
     const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
@@ -2832,47 +3669,81 @@ async function handleAdminRefund(request, env) {
       config.event.refundReason = reason || '';
       await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
 
-      return new Response(JSON.stringify({ ok: true, refundId: refund.id, amount: refund.amount }), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ ok: true, refundId: refund.id, amount: refund.amount }), { headers: EVENT_CORS });
     }
-    return new Response(JSON.stringify({ error: 'Refund failed', details: refund }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Refund failed', details: refund }), { status: 400, headers: EVENT_CORS });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: EVENT_CORS });
   }
 }
 
 // ─── Stripe Webhook ───────────────────────────────────────────────────────
 
+function parseStripeSignatureHeader(rawHeader) {
+  const out = { t: '', v1: [] };
+  const parts = String(rawHeader || '').split(',');
+  for (const part of parts) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (!key || !value) continue;
+    if (key === 't') out.t = value;
+    if (key === 'v1') out.v1.push(value);
+  }
+  return out;
+}
+
+function safeHexToBytes(hex) {
+  const norm = String(hex || '').toLowerCase();
+  if (!/^[0-9a-f]+$/.test(norm) || norm.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(norm.length / 2);
+  for (let i = 0; i < norm.length; i += 2) {
+    bytes[i / 2] = parseInt(norm.slice(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function timingSafeEqualHex(expectedHex, candidateHex) {
+  const a = safeHexToBytes(expectedHex);
+  const b = safeHexToBytes(candidateHex);
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= (a[i] ^ b[i]);
+  return diff === 0;
+}
+
 async function handleStripeWebhook(request, env) {
+  const WEBHOOK_JSON = EVENT_CORS;
   if (!env.STRIPE_WEBHOOK_SECRET) {
     // No secret configured — reject all webhooks for security
-    return new Response(JSON.stringify({ error: 'Webhook not configured' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'Webhook not configured' }), { status: 500, headers: WEBHOOK_JSON });
   }
 
   const sig = request.headers.get('stripe-signature');
   if (!sig) {
-    return new Response(JSON.stringify({ error: 'Missing signature' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Missing signature' }), { status: 400, headers: WEBHOOK_JSON });
   }
 
   const body = await request.text();
 
-  // Verify Stripe signature using Web Crypto API
-  const parts = sig.split(',').reduce((acc, part) => {
-    const [key, value] = part.split('=');
-    acc[key] = value;
-    return acc;
-  }, {});
-
+  // Verify Stripe signature using Web Crypto API.
+  const parts = parseStripeSignatureHeader(sig);
   const timestamp = parts.t;
-  const signature = parts.v1;
+  const signatures = parts.v1;
 
-  if (!timestamp || !signature) {
-    return new Response(JSON.stringify({ error: 'Invalid signature format' }), { status: 400 });
+  if (!timestamp || signatures.length === 0) {
+    return new Response(JSON.stringify({ error: 'Invalid signature format' }), { status: 400, headers: WEBHOOK_JSON });
   }
 
-  // Check timestamp is within 5 minutes (prevent replay attacks)
+  // Check timestamp is a valid unix epoch and within 5 minutes (prevent replay attacks)
   const now = Math.floor(Date.now() / 1000);
-  if (Math.abs(now - parseInt(timestamp)) > 300) {
-    return new Response(JSON.stringify({ error: 'Timestamp too old' }), { status: 400 });
+  const ts = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(ts) || ts <= 0) {
+    return new Response(JSON.stringify({ error: 'Invalid timestamp' }), { status: 400, headers: WEBHOOK_JSON });
+  }
+  if (Math.abs(now - ts) > 300) {
+    return new Response(JSON.stringify({ error: 'Timestamp too old' }), { status: 400, headers: WEBHOOK_JSON });
   }
 
   // Compute expected signature
@@ -2887,95 +3758,135 @@ async function handleStripeWebhook(request, env) {
   const expectedSig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
   const expectedHex = Array.from(new Uint8Array(expectedSig)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-  if (expectedHex !== signature) {
-    return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400 });
+  const signatureValid = signatures.some((candidate) => timingSafeEqualHex(expectedHex, candidate));
+  if (!signatureValid) {
+    return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400, headers: WEBHOOK_JSON });
   }
 
   // Signature valid — process the event
-  const event = JSON.parse(body);
+  let event;
+  try { event = JSON.parse(body); } catch { return new Response(JSON.stringify({ error: 'Invalid webhook payload' }), { status: 400, headers: WEBHOOK_JSON }); }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data?.object;
-    // Handle subscription checkout
-    if (session?.metadata?.waggle_subscription === 'true' && session.subscription) {
-      const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
-      if (email && env.MG_BOOK) {
-        // Fetch subscription details from Stripe
-        const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${session.subscription}`, {
-          headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
-        });
-        const sub = subRes.ok ? await subRes.json() : null;
-        await env.MG_BOOK.put(`subscriber:${email}`, JSON.stringify({
-          plan: session.metadata?.plan || 'monthly',
-          status: 'active',
-          stripeSubId: session.subscription,
-          stripeCustomerId: session.customer,
-          currentPeriodEnd: sub ? sub.current_period_end * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
-          createdAt: Date.now(),
-        }));
+  let eventLock = null;
+  let eventDoneKey = '';
+  try {
+    if (event?.id && env.MG_BOOK) {
+      eventDoneKey = `stripe-webhook:event:${event.id}:done`;
+      const seen = await env.MG_BOOK.get(eventDoneKey, 'text');
+      if (seen === '1') return new Response(JSON.stringify({ ok: true, duplicate: true }), { headers: WEBHOOK_JSON });
+
+      const eventLockKey = `stripe-webhook:event:${event.id}:lock`;
+      eventLock = await acquireKvLock(env, eventLockKey, { ttlSeconds: 30, maxAttempts: 3, retryDelayMs: 50, settleMs: 15 });
+      if (!eventLock.ok) {
+        const processed = await env.MG_BOOK.get(eventDoneKey, 'text');
+        if (processed === '1') return new Response(JSON.stringify({ ok: true, duplicate: true }), { headers: WEBHOOK_JSON });
+        return new Response(JSON.stringify({ ok: true, processing: true }), { headers: WEBHOOK_JSON });
       }
+
+      const seenAfterLock = await env.MG_BOOK.get(eventDoneKey, 'text');
+      if (seenAfterLock === '1') return new Response(JSON.stringify({ ok: true, duplicate: true }), { headers: WEBHOOK_JSON });
     }
-    // Handle one-time event checkout
-    const tempId = session?.metadata?.waggle_temp_id;
-    if (tempId) {
-      const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
-      if (configRaw) {
-        const cfg = JSON.parse(configRaw);
-        cfg.meta = { ...(cfg.meta || {}), stripe_session_id: session?.id || '' };
-        const activated = await activateEvent(cfg, env);
-        await trackFunnelEvent(env, 'signup_complete', {
-          slug: activated.slug,
-          paid: true,
-          source: cfg?.meta?.source || {},
-        });
-        await trackFunnelEvent(env, 'paid_event', {
-          slug: activated.slug,
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data?.object;
+      if (session?.metadata?.waggle_checkout_tier) {
+        const result = await processSimpleCheckoutSession(env, session, 'webhook');
+        if (!result.ok) {
+          console.error('stripe_simple_checkout_process_error', { sessionId: session?.id, error: result.error || 'unknown' });
+        }
+      }
+      // Handle subscription checkout
+      if (session?.metadata?.waggle_subscription === 'true' && session.subscription) {
+        const email = (session.metadata?.email || session.customer_email || session.customer_details?.email || '').toLowerCase();
+        if (email && env.MG_BOOK) {
+          // Fetch subscription details from Stripe
+          const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${session.subscription}`, {
+            headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}` },
+          });
+          const sub = subRes.ok ? await subRes.json() : null;
+          await env.MG_BOOK.put(`subscriber:${email}`, JSON.stringify({
+            plan: session.metadata?.plan || 'monthly',
+            status: 'active',
+            stripeSubId: session.subscription,
+            stripeCustomerId: session.customer,
+            currentPeriodEnd: sub ? sub.current_period_end * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
+            createdAt: Date.now(),
+          }));
+        }
+      }
+      // Handle one-time event checkout
+      const tempId = session?.metadata?.waggle_temp_id;
+      if (tempId) {
+        const activation = await activatePendingCheckout(env, {
+          tempId,
           sessionId: session?.id || '',
-          amountCents: Number(session?.amount_total || cfg?.meta?.actualAmountCents || 0),
-          eventType: cfg?.event?.eventType || '',
-          format: cfg?.event?.format || '',
+          organizerEmail: session?.customer_details?.email || session?.customer_email || '',
         });
-        await creditAffiliateForPaidEvent(cfg, env, activated.slug, session?.id || '', session?.amount_total || cfg?.meta?.actualAmountCents);
-        await env.MG_BOOK.delete(`pending:${tempId}`);
+        if (activation?.isNewActivation) {
+          const cfg = activation.config || {};
+          await trackFunnelEvent(env, 'signup_complete', {
+            slug: activation.slug,
+            paid: true,
+            source: activation.source || cfg?.meta?.source || {},
+          });
+          await trackFunnelEvent(env, 'paid_event', {
+            slug: activation.slug,
+            sessionId: session?.id || '',
+            amountCents: Number(session?.amount_total || activation.amountCents || 0),
+            eventType: activation.eventType || '',
+            format: activation.format || '',
+          });
+          await creditAffiliateForPaidEvent(cfg, env, activation.slug, session?.id || '', session?.amount_total || activation.amountCents || 0);
+        }
       }
-    }
 
-    // Handle team entry fee checkout
-    if (session?.metadata?.type === 'team_entry_fee') {
-      const teamSlug = session.metadata.waggle_slug;
-      const teamId = session.metadata.team_id;
-      if (teamSlug && teamId && env.MG_BOOK) {
-        const teams = (await env.MG_BOOK.get(`${teamSlug}:registered-teams`, 'json')) || [];
-        const team = teams.find(t => t.id === teamId);
-        if (team) {
-          team.paid = true;
-          team.paidAt = new Date().toISOString();
-          team.stripeSessionId = session.id;
-          await env.MG_BOOK.put(`${teamSlug}:registered-teams`, JSON.stringify(teams));
+      // Handle team entry fee checkout
+      if (session?.metadata?.type === 'team_entry_fee') {
+        const teamSlug = session.metadata.waggle_slug;
+        const teamId = session.metadata.team_id;
+        if (teamSlug && teamId && env.MG_BOOK) {
+          const teams = (await env.MG_BOOK.get(`${teamSlug}:registered-teams`, 'json')) || [];
+          const team = teams.find(t => t.id === teamId);
+          if (team) {
+            team.paid = true;
+            team.paidAt = new Date().toISOString();
+            team.stripeSessionId = session.id;
+            await env.MG_BOOK.put(`${teamSlug}:registered-teams`, JSON.stringify(teams));
+          }
         }
       }
     }
-  }
 
-  // Handle subscription lifecycle events
-  if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
-    const sub = event.data?.object;
-    if (sub && env.MG_BOOK) {
-      // Find subscriber by Stripe subscription ID
-      // We need to look up by customer email since we key by email
-      const customerEmail = sub.metadata?.email || '';
-      if (customerEmail) {
-        const existing = await env.MG_BOOK.get(`subscriber:${customerEmail}`, 'json');
-        if (existing && existing.stripeSubId === sub.id) {
-          existing.status = sub.status === 'active' ? 'active' : 'canceled';
-          existing.currentPeriodEnd = sub.current_period_end * 1000;
-          await env.MG_BOOK.put(`subscriber:${customerEmail}`, JSON.stringify(existing));
+    // Handle subscription lifecycle events
+    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+      const sub = event.data?.object;
+      if (sub && env.MG_BOOK) {
+        // Find subscriber by Stripe subscription ID
+        // We need to look up by customer email since we key by email
+        const customerEmail = sub.metadata?.email || '';
+        if (customerEmail) {
+          const existing = await env.MG_BOOK.get(`subscriber:${customerEmail}`, 'json');
+          if (existing && existing.stripeSubId === sub.id) {
+            existing.status = sub.status === 'active' ? 'active' : 'canceled';
+            existing.currentPeriodEnd = sub.current_period_end * 1000;
+            await env.MG_BOOK.put(`subscriber:${customerEmail}`, JSON.stringify(existing));
+          }
         }
       }
     }
+    if (eventDoneKey && env.MG_BOOK) {
+      await env.MG_BOOK.put(eventDoneKey, '1', { expirationTtl: 14 * 24 * 60 * 60 });
+    }
+  } catch (err) {
+    console.error('stripe-webhook-handler-error', err?.message || err);
+    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), { status: 500, headers: WEBHOOK_JSON });
+  } finally {
+    if (event?.id && env.MG_BOOK && eventLock?.ok && eventLock?.token) {
+      await releaseKvLock(env, `stripe-webhook:event:${event.id}:lock`, eventLock.token);
+    }
   }
 
-  return new Response('ok');
+  return new Response(JSON.stringify({ ok: true }), { headers: WEBHOOK_JSON });
 }
 
 // ─── Event Activation ─────────────────────────────────────────────────────
@@ -3043,6 +3954,12 @@ async function activateEvent(config, env) {
 async function handleCreateEventFromConfig(config, env) {
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EVENT_CORS });
   const isRoundMode = ['quick', 'buddies_trip'].includes(config.event?.eventType);
+  if (isRoundMode) {
+    config.featureFlags = { ...(config.featureFlags || {}) };
+    const hasSprint3Override = typeof config.featureFlags.ux_sprint3_gameflow === 'boolean' || typeof config.ux_sprint3_gameflow === 'boolean';
+    if (!hasSprint3Override) config.featureFlags.ux_sprint3_gameflow = true;
+    config.ux_sprint3_gameflow = !!config.featureFlags.ux_sprint3_gameflow;
+  }
   const hasPlayers = isRoundMode ? (config.players?.length >= 2 || config.roster?.length >= 2) : (config.teams && Object.keys(config.teams).length >= 2);
   if (!config.event?.name || !config.event?.adminPin || !hasPlayers) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: EVENT_CORS });
@@ -3100,6 +4017,15 @@ async function trackFunnelEvent(env, eventName, details = {}) {
 
 // ─── Marketing stats API ───────────────────────────────────────────────────
 
+function getConfiguredEventPriceDollars(cfg) {
+  const eventType = cfg.event?.eventType === 'scramble'
+    ? 'scramble'
+    : cfg.event?.format === 'round_robin_match_play'
+      ? 'member_guest'
+      : (cfg.event?.format || 'trip');
+  return Math.round((WAGGLE_PRICES[eventType] ?? WAGGLE_PRICES.trip) / 100);
+}
+
 async function handleMarketingStats(url, env) {
   const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
   const pin = url.searchParams.get('pin');
@@ -3118,7 +4044,7 @@ async function handleMarketingStats(url, env) {
       const cfg = JSON.parse(raw);
       const src = cfg.meta?.source || {};
       const channel = src.utm_source || (src.ref ? 'affiliate:' + src.ref : null) || 'direct';
-      const price = cfg.event?.format === 'round_robin_match_play' ? 149 : 29;
+      const price = getConfiguredEventPriceDollars(cfg);
       events.push({
         slug: key.name.replace('config:', ''),
         name: cfg.event?.name || '(unnamed)',
@@ -3160,7 +4086,7 @@ async function sendWeeklyMarketingDigest(env) {
         const cfg = JSON.parse(raw);
         const src = cfg.meta?.source || {};
         const channel = src.utm_source || (src.ref ? 'affiliate:' + src.ref : null) || 'direct';
-        const price = cfg.event?.format === 'round_robin_match_play' ? 149 : 29;
+        const price = getConfiguredEventPriceDollars(cfg);
         const isWarrior = cfg.event?.eventType === 'quick';
         const actualPrice = isWarrior ? 0 : price;
         allEvents.push({
@@ -3207,7 +4133,7 @@ async function sendWeeklyMarketingDigest(env) {
       <tr><th>Channel</th><th>Events</th></tr>
       ${channelRows}
     </table>
-    <p style="margin-top:16px;color:#666;font-size:12px">View full dashboard at betwaggle.com/marketing/</p>`;
+    <p style="margin-top:16px;color:#666;font-size:12px">View full dashboard at betwaggle.com/marketing-private/</p>`;
 
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -3306,12 +4232,12 @@ async function handleAdsGenerate(request, env) {
 
   const segDesc = {
     trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($32)',
-    club: 'golf club members or staff running member-guests or charity outings ($149)',
+    club: 'golf club members or staff running member-guests or charity outings ($149/season)',
     pro: 'club professionals offering a live betting add-on to members',
   };
 
   const pts = (body.painPoints || []).slice(0, 6).map(p => `- "${p.text}"`).join('\n');
-  const prompt = `You write direct-response Google Search ads for Waggle, a $${body.segment === 'club' ? 149 : 29} golf sportsbook that runs Nassau/skins/wolf from any phone with no app download and auto-settlement.
+  const prompt = `You write direct-response Google Search ads for Waggle, a ${body.segment === 'club' ? '$149/season' : '$32/event'} golf sportsbook that runs Nassau/skins/wolf from any phone with no app download and auto-settlement.
 
 Target: ${segDesc[body.segment] || segDesc.trip}
 
@@ -3934,6 +4860,93 @@ async function handleCourseLeadsStats(url, env) {
   return new Response(JSON.stringify({ total, by_state: byState, by_segment: bySegment }), { headers: ADS_JSON });
 }
 
+function normalizeInferredWebsite(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) return `https://${value.replace(/^\/+/, '')}`;
+  return value;
+}
+
+function normalizeInferredEmail(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+
+function normalizeInferredPhone(raw) {
+  const phone = String(raw || '').trim();
+  if (!phone) return '';
+  const digits = phone.replace(/[^\d]/g, '');
+  if (digits.length < 7) return '';
+  return phone;
+}
+
+function normalizeLeadSegment(raw) {
+  const input = String(raw || '').trim().toLowerCase();
+  const allowed = new Set(['private', 'public', 'resort', 'municipal', 'semi-private']);
+  if (allowed.has(input)) return input;
+  if (!input) return 'unknown';
+  if (input.includes('semi')) return 'semi-private';
+  if (input.includes('muni')) return 'municipal';
+  if (input.includes('resort')) return 'resort';
+  if (input.includes('private')) return 'private';
+  if (input.includes('public') || input.includes('daily')) return 'public';
+  return 'unknown';
+}
+
+async function handleCourseLeadsEnrich(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: ADS_JSON }); }
+  if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.AI) return new Response(JSON.stringify({ error: 'Workers AI not configured' }), { status: 500, headers: ADS_JSON });
+
+  const courseName = String(body.course_name || body.courseName || body.name || '').trim();
+  const city = String(body.city || '').trim();
+  const state = String(body.state || '').trim().toUpperCase();
+  if (!courseName || !city || !state) {
+    return new Response(JSON.stringify({ error: 'course_name, city, and state are required' }), { status: 400, headers: ADS_JSON });
+  }
+
+  const systemPrompt = [
+    'You infer golf-course business contact details.',
+    'Return strict JSON only with keys: website, contact_email, phone, segment.',
+    'segment must be one of: private, public, resort, municipal, semi-private, unknown.',
+    'If unsure, return empty strings and segment unknown.',
+    'Do not include markdown.'
+  ].join(' ');
+  const userPrompt = {
+    course_name: courseName,
+    city,
+    state,
+    task: 'Infer likely official website URL, best contact email, main phone number, and course segment.'
+  };
+
+  try {
+    const aiResult = await env.AI.run('@cf/meta/llama-3.1-70b-instruct', {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: JSON.stringify(userPrompt) }
+      ],
+      max_tokens: 320,
+      temperature: 0.1,
+    });
+
+    const text = String(aiResult?.response || '').trim();
+    const parsed = extractJson(text) || {};
+
+    const enriched = {
+      website: normalizeInferredWebsite(parsed.website),
+      contact_email: normalizeInferredEmail(parsed.contact_email),
+      phone: normalizeInferredPhone(parsed.phone),
+      segment: normalizeLeadSegment(parsed.segment),
+    };
+
+    return new Response(JSON.stringify(enriched), { headers: ADS_JSON });
+  } catch (e) {
+    console.error('course_lead_enrich_error', e?.message || e);
+    return new Response(JSON.stringify({ error: 'enrichment failed' }), { status: 502, headers: ADS_JSON });
+  }
+}
+
 // ─── Outreach Campaign — Bulk Send + History ────────────────────────────
 
 async function handleOutreachBulkSend(request, env) {
@@ -4088,24 +5101,9 @@ async function handleAffiliateLookupRef(url, env) {
   const code = url.searchParams.get('ref') || url.searchParams.get('code') || '';
   if (!code) return new Response(JSON.stringify({ error: 'ref parameter required' }), { status: 400, headers: ADS_JSON });
 
-  // Check KV first (from /api/affiliate-signup registrations)
-  const kvData = await env.MG_BOOK.get(`affiliate:${code}`, 'json');
-  if (kvData) {
-    return new Response(JSON.stringify({ ok: true, source: 'kv', affiliate: kvData }), { headers: ADS_JSON });
-  }
-
-  // Check D1
-  if (env.WAGGLE_DB) {
-    const dbAffiliate = await env.WAGGLE_DB.prepare('SELECT * FROM affiliates WHERE code = ?').bind(code).first();
-    if (dbAffiliate) {
-      return new Response(JSON.stringify({ ok: true, source: 'd1', affiliate: { code: dbAffiliate.code, name: dbAffiliate.name, email: dbAffiliate.email } }), { headers: ADS_JSON });
-    }
-  }
-
-  // Check KV ref tracking
-  const refData = await env.MG_BOOK.get(`affiliate-ref:${code}`, 'json');
-  if (refData) {
-    return new Response(JSON.stringify({ ok: true, source: 'ref', affiliate: refData }), { headers: ADS_JSON });
+  const resolved = await resolveAffiliateByCode(env, code);
+  if (resolved) {
+    return new Response(JSON.stringify({ ok: true, source: resolved.source, affiliate: resolved.affiliate, code: resolved.code }), { headers: ADS_JSON });
   }
 
   return new Response(JSON.stringify({ error: 'affiliate not found' }), { status: 404, headers: ADS_JSON });
@@ -4119,15 +5117,18 @@ const PARTNER_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow
 
 async function handlePartnerDashboard(code, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
+  const normalizedCode = normalizeAffiliateRefCode(code);
+  if (!normalizedCode) return new Response(JSON.stringify({ error: 'Partner not found. Check your affiliate code.' }), { status: 404, headers: PARTNER_CORS });
 
   // Look up affiliate in D1
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(normalizedCode).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found. Check your affiliate code.' }), { status: 404, headers: PARTNER_CORS });
+  const canonicalCode = affiliate.code;
 
   // Fetch referrals
   const referrals = await env.WAGGLE_DB.prepare(
     `SELECT * FROM referrals WHERE affiliate_code = ? ORDER BY created_at DESC LIMIT 200`
-  ).bind(code).all();
+  ).bind(canonicalCode).all();
   const refs = referrals.results || [];
 
   // Revenue calculations
@@ -4145,7 +5146,7 @@ async function handlePartnerDashboard(code, env) {
   }
 
   // Fetch event configs for this affiliate from KV index
-  const eventsKey = `affiliate-events:${code}`;
+  const eventsKey = `affiliate-events:${canonicalCode}`;
   const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
 
   // Also check referrals for event slugs not in the KV index
@@ -4223,20 +5224,22 @@ async function handlePartnerDashboard(code, env) {
       avgTeamsPerEvent: events.length > 0 ? (totalTeams / events.length).toFixed(1) : '0'
     },
     owed_cents: owed,
-    link: `https://betwaggle.com/create/?ref=${encodeURIComponent(code)}`
+    link: `https://betwaggle.com/create/?ref=${encodeURIComponent(canonicalCode)}`
   }), { headers: PARTNER_CORS });
 }
 
 async function handlePartnerEvents(code, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const normalizedCode = normalizeAffiliateRefCode(code);
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(normalizedCode).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+  const canonicalCode = affiliate.code;
 
-  const eventsKey = `affiliate-events:${code}`;
+  const eventsKey = `affiliate-events:${canonicalCode}`;
   const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
 
   // Also pull from referrals
-  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(code).all();
+  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(canonicalCode).all();
   const refSlugs = (referrals.results || []).map(r => r.event_slug).filter(Boolean);
   const allSlugs = [...new Set([...eventSlugs, ...refSlugs])];
 
@@ -4269,12 +5272,14 @@ async function handlePartnerEvents(code, env) {
 
 async function handlePartnerTeams(code, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const normalizedCode = normalizeAffiliateRefCode(code);
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(normalizedCode).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+  const canonicalCode = affiliate.code;
 
-  const eventsKey = `affiliate-events:${code}`;
+  const eventsKey = `affiliate-events:${canonicalCode}`;
   const eventSlugs = (env.MG_BOOK ? (await env.MG_BOOK.get(eventsKey, 'json')) : null) || [];
-  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(code).all();
+  const referrals = await env.WAGGLE_DB.prepare(`SELECT DISTINCT event_slug FROM referrals WHERE affiliate_code = ?`).bind(canonicalCode).all();
   const refSlugs = (referrals.results || []).map(r => r.event_slug).filter(Boolean);
   const allSlugs = [...new Set([...eventSlugs, ...refSlugs])];
 
@@ -4302,15 +5307,17 @@ async function handlePartnerTeams(code, env) {
 
 async function handlePartnerPayoutRequest(code, request, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: PARTNER_CORS });
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const normalizedCode = normalizeAffiliateRefCode(code);
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(normalizedCode).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'Partner not found' }), { status: 404, headers: PARTNER_CORS });
+  const canonicalCode = affiliate.code;
   const owed = (affiliate.total_payout_cents || 0) - (affiliate.paid_out_cents || 0);
   if (owed < 2000) return new Response(JSON.stringify({ error: 'Minimum $20 required to request payout', owed_cents: owed }), { status: 400, headers: PARTNER_CORS });
 
   let paypal_email = '';
   try { const body = await request.json(); paypal_email = body.paypal_email || ''; } catch {}
   if (paypal_email) {
-    await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paypal_email = ? WHERE code = ?`).bind(paypal_email, code).run();
+    await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paypal_email = ? WHERE code = ?`).bind(paypal_email, canonicalCode).run();
   }
 
   if (env.RESEND_API_KEY) {
@@ -4321,7 +5328,7 @@ async function handlePartnerPayoutRequest(code, request, env) {
         from: 'Waggle Partners <waggle@cafecito-ai.com>',
         to: 'evan@cafecito-ai.com',
         subject: `Waggle Partner Payout: ${affiliate.name} \u2014 $${(owed / 100).toFixed(2)}`,
-        html: `<p><strong>${escHtml(affiliate.name)}</strong> (partner code: ${escHtml(code)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
+        html: `<p><strong>${escHtml(affiliate.name)}</strong> (partner code: ${escHtml(canonicalCode)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
       }),
     }).catch(() => {});
   }
@@ -4336,6 +5343,10 @@ async function handleAffiliateSignup(request, env) {
   const { name, email, promotion_method, website_url, course_name, role } = body || {};
   if (!name || !name.trim()) return new Response(JSON.stringify({ error: 'Name is required' }), { status: 400, headers: h });
   if (!email || !email.trim()) return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: h });
+  const normalizedEmail = String(email).trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return new Response(JSON.stringify({ error: 'Valid email is required' }), { status: 400, headers: h });
+  }
 
   // Generate 6-char uppercase alphanumeric ref code (e.g., ABC123)
   const uc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -4346,7 +5357,7 @@ async function handleAffiliateSignup(request, env) {
   const record = {
     affiliate_id,
     name: name.trim(),
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     promotion_method: promotion_method || '',
     website_url: website_url || '',
     course_name: course_name || '',
@@ -4384,7 +5395,7 @@ async function handleAffiliateSignup(request, env) {
     affiliate_id,
     ref_code: affiliate_id,
     link: `https://betwaggle.com/create/?ref=${affiliate_id}`,
-    dashboard: `https://betwaggle.com/affiliate/?code=${affiliate_id}`
+    dashboard: `https://betwaggle.com/affiliates/?code=${affiliate_id}`
   }), { headers: h });
 }
 
@@ -4419,7 +5430,7 @@ async function handleAffiliateRegister(request, env) {
     return new Response(JSON.stringify({
       ok: true, code, name: existing.name,
       link: `https://betwaggle.com/go/?ref=${encodeURIComponent(code)}`,
-      dashboard: `https://betwaggle.com/affiliate/?code=${encodeURIComponent(code)}`
+      dashboard: `https://betwaggle.com/affiliates/?code=${encodeURIComponent(code)}`
     }), { headers: AFFILIATE_CORS });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: AFFILIATE_CORS });
@@ -4428,13 +5439,14 @@ async function handleAffiliateRegister(request, env) {
 
 async function handleAffiliateStats(url, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: AFFILIATE_CORS });
-  const code = url.searchParams.get('code');
+  const code = normalizeAffiliateRefCode(url.searchParams.get('code'));
   if (!code) return new Response(JSON.stringify({ error: 'code required' }), { status: 400, headers: AFFILIATE_CORS });
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(code).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'affiliate not found' }), { status: 404, headers: AFFILIATE_CORS });
+  const canonicalCode = affiliate.code;
   const referrals = await env.WAGGLE_DB.prepare(
     `SELECT * FROM referrals WHERE affiliate_code = ? ORDER BY created_at DESC LIMIT 50`
-  ).bind(code).all();
+  ).bind(canonicalCode).all();
   const pending_cents = (referrals.results || []).filter(r => r.status === 'pending').reduce((s, r) => s + (r.commission_cents || 0), 0);
   return new Response(JSON.stringify({
     ok: true,
@@ -4442,7 +5454,7 @@ async function handleAffiliateStats(url, env) {
     pending_cents,
     owed_cents: affiliate.total_payout_cents - (affiliate.paid_out_cents || 0),
     referrals: referrals.results || [],
-    link: `https://betwaggle.com/go/?ref=${encodeURIComponent(code)}`
+    link: `https://betwaggle.com/go/?ref=${encodeURIComponent(canonicalCode)}`
   }), { headers: AFFILIATE_CORS });
 }
 
@@ -4450,14 +5462,16 @@ async function handleAffiliatePayoutRequest(request, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: AFFILIATE_CORS });
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: AFFILIATE_CORS }); }
-  const { code, paypal_email } = body;
+  const code = normalizeAffiliateRefCode(body?.code);
+  const { paypal_email } = body;
   if (!code) return new Response(JSON.stringify({ error: 'code required' }), { status: 400, headers: AFFILIATE_CORS });
-  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE code = ?`).bind(code).first();
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT * FROM affiliates WHERE UPPER(code) = ?`).bind(code).first();
   if (!affiliate) return new Response(JSON.stringify({ error: 'affiliate not found' }), { status: 404, headers: AFFILIATE_CORS });
+  const canonicalCode = affiliate.code;
   const owed = affiliate.total_payout_cents - (affiliate.paid_out_cents || 0);
   if (owed < 2000) return new Response(JSON.stringify({ error: 'minimum $20 required to request payout', owed_cents: owed }), { status: 400, headers: AFFILIATE_CORS });
   if (paypal_email) {
-    await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paypal_email = ? WHERE code = ?`).bind(paypal_email, code).run();
+    await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paypal_email = ? WHERE code = ?`).bind(paypal_email, canonicalCode).run();
   }
   if (env.RESEND_API_KEY) {
     await fetch('https://api.resend.com/emails', {
@@ -4467,7 +5481,7 @@ async function handleAffiliatePayoutRequest(request, env) {
         from: 'Waggle Affiliates <waggle@cafecito-ai.com>',
         to: 'evan@cafecito-ai.com',
         subject: `Waggle Affiliate Payout Request: ${affiliate.name} \u2014 $${(owed / 100).toFixed(2)}`,
-        html: `<p><strong>${escHtml(affiliate.name)}</strong> (code: ${escHtml(code)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
+        html: `<p><strong>${escHtml(affiliate.name)}</strong> (code: ${escHtml(canonicalCode)}) is requesting a payout of <strong>$${(owed / 100).toFixed(2)}</strong>.</p><p>PayPal: ${escHtml(paypal_email || affiliate.paypal_email || '(not provided)')}</p>`
       }),
     }).catch(() => {});
   }
@@ -4487,11 +5501,15 @@ async function handleAffiliateMarkPaid(request, env) {
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: AFFILIATE_CORS });
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: AFFILIATE_CORS }); }
-  const { code, amount_cents, pin } = body;
+  const code = normalizeAffiliateRefCode(body?.code);
+  const { amount_cents, pin } = body;
   if (!pin || pin !== (env.ADMIN_PIN || '')) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: AFFILIATE_CORS });
   if (!code || !amount_cents) return new Response(JSON.stringify({ error: 'code and amount_cents required' }), { status: 400, headers: AFFILIATE_CORS });
-  await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paid_out_cents = paid_out_cents + ? WHERE code = ?`).bind(amount_cents, code).run();
-  await env.WAGGLE_DB.prepare(`UPDATE referrals SET status = 'paid' WHERE affiliate_code = ? AND status = 'pending'`).bind(code).run();
+  const affiliate = await env.WAGGLE_DB.prepare(`SELECT code FROM affiliates WHERE UPPER(code) = ? LIMIT 1`).bind(code).first();
+  if (!affiliate) return new Response(JSON.stringify({ error: 'affiliate not found' }), { status: 404, headers: AFFILIATE_CORS });
+  const canonicalCode = affiliate.code;
+  await env.WAGGLE_DB.prepare(`UPDATE affiliates SET paid_out_cents = paid_out_cents + ? WHERE code = ?`).bind(amount_cents, canonicalCode).run();
+  await env.WAGGLE_DB.prepare(`UPDATE referrals SET status = 'paid' WHERE affiliate_code = ? AND status = 'pending'`).bind(canonicalCode).run();
   return new Response(JSON.stringify({ ok: true, marked_paid_cents: amount_cents }), { headers: AFFILIATE_CORS });
 }
 
@@ -4681,7 +5699,7 @@ async function serveEventHtml(slug, request, env) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-block;margin-top:20px;background:#1A472A;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
 <body>
-<img src="/logo.png" alt="Waggle" class="logo">
+<img src="/waggle_logo.jpg" alt="Waggle" class="logo">
 <h1>Event not found</h1>
 <p>No event exists at <span class="slug">/${slug}</span></p>
 <p>It may have ended or the link might be wrong.</p>
@@ -4837,7 +5855,7 @@ async function serveEventHtml(slug, request, env) {
     gtag('config', '${gadsId}');
     gtag('event', 'conversion', {
       send_to: '${gadsId}/${gadsLabel}',
-      value: ${config.event?.format === 'round_robin_match_play' ? 149 : 29},
+      value: ${getConfiguredEventPriceDollars(config)},
       currency: 'USD',
       transaction_id: '${slug}'
     });
@@ -4854,7 +5872,7 @@ async function serveEventHtml(slug, request, env) {
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
-      <img src="/logo.png" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
+      <img src="/waggle_logo.jpg" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
     </a>
     <h1>${shortName}</h1>
     <div class="mg-subtitle">${venue}</div>
@@ -5906,56 +6924,71 @@ async function handleEventApi(slug, path, request, env, ctx) {
         if (matchData.scoreB !== undefined && (matchData.scoreB < 0 || matchData.scoreB > 50)) return new Response(JSON.stringify({ error: `Invalid score for match ${matchId}` }), { status: 400, headers: EVENT_CORS });
       }
     }
-    const existing = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
-    const merged = { ...existing, ...body };
-    await env.MG_BOOK.put(`${K}:scores`, JSON.stringify(merged));
+    const scoresLockKey = `${K}:scores-write-lock`;
+    const scoresLock = await acquireKvLock(env, scoresLockKey, {
+      ttlSeconds: 15,
+      maxAttempts: 4,
+      retryDelayMs: 60,
+      settleMs: 20,
+    });
+    if (!scoresLock.ok) {
+      return new Response(JSON.stringify({ error: 'Scores are being updated by another request. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
 
-    // Auto-settle bets (simplified — core logic preserved)
-    const bets = (await env.MG_BOOK.get(`${K}:bets`, 'json')) || [];
-    let changed = false;
-    const newlySettled = [];
-    for (const bet of bets) {
-      if (bet.status !== 'active') continue;
-      if (bet.type === 'match_winner' && bet.matchId) {
-        const match = merged[bet.matchId];
-        if (!match || match.status !== 'final') continue;
-        const isDraw = match.scoreA === match.scoreB;
-        let winnerTeamId = null;
-        if (match.scoreA > match.scoreB) winnerTeamId = match.teamA;
-        else if (match.scoreB > match.scoreA) winnerTeamId = match.teamB;
-        if (isDraw) { bet.status = bet.selection === 'draw' ? 'won' : 'push'; bet.payout = bet.status === 'won' ? Math.round(bet.stake * bet.odds) : bet.stake; }
-        else if (bet.selection === 'draw') { bet.status = 'lost'; bet.payout = 0; }
-        else if (bet.selection == winnerTeamId) { bet.status = 'won'; bet.payout = Math.round(bet.stake * bet.odds); }
-        else { bet.status = 'lost'; bet.payout = 0; }
-        bet.settledAt = new Date().toISOString();
-        newlySettled.push(bet);
-        changed = true;
-      }
-      if (bet.type === 'match_margin' && bet.matchId) {
-        const match = merged[bet.matchId];
-        if (!match || match.status !== 'final') continue;
-        const outcome = `${match.scoreA}-${match.scoreB}`;
-        bet.status = bet.selection === outcome ? 'won' : 'lost';
-        bet.payout = bet.status === 'won' ? Math.round(bet.stake * bet.odds) : 0;
-        bet.settledAt = new Date().toISOString();
-        newlySettled.push(bet);
-        changed = true;
-      }
-    }
-    if (changed) {
-      await env.MG_BOOK.put(`${K}:bets`, JSON.stringify(bets));
-      if (newlySettled.length > 0) {
-        const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
-        for (const bet of newlySettled) {
-          const key = bet.bettor.trim().toLowerCase();
-          if (!players[key]) continue;
-          const payout = bet.status === 'won' ? (bet.payout ?? Math.round(bet.stake * bet.odds)) : bet.status === 'push' ? bet.stake : 0;
-          if (payout > 0) players[key].credits = (players[key].credits || 0) + payout;
+    try {
+      const existing = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
+      const merged = { ...existing, ...body };
+      await env.MG_BOOK.put(`${K}:scores`, JSON.stringify(merged));
+
+      // Auto-settle bets (simplified — core logic preserved)
+      const bets = (await env.MG_BOOK.get(`${K}:bets`, 'json')) || [];
+      let changed = false;
+      const newlySettled = [];
+      for (const bet of bets) {
+        if (bet.status !== 'active') continue;
+        if (bet.type === 'match_winner' && bet.matchId) {
+          const match = merged[bet.matchId];
+          if (!match || match.status !== 'final') continue;
+          const isDraw = match.scoreA === match.scoreB;
+          let winnerTeamId = null;
+          if (match.scoreA > match.scoreB) winnerTeamId = match.teamA;
+          else if (match.scoreB > match.scoreA) winnerTeamId = match.teamB;
+          if (isDraw) { bet.status = bet.selection === 'draw' ? 'won' : 'push'; bet.payout = bet.status === 'won' ? Math.round(bet.stake * bet.odds) : bet.stake; }
+          else if (bet.selection === 'draw') { bet.status = 'lost'; bet.payout = 0; }
+          else if (bet.selection == winnerTeamId) { bet.status = 'won'; bet.payout = Math.round(bet.stake * bet.odds); }
+          else { bet.status = 'lost'; bet.payout = 0; }
+          bet.settledAt = new Date().toISOString();
+          newlySettled.push(bet);
+          changed = true;
         }
-        await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+        if (bet.type === 'match_margin' && bet.matchId) {
+          const match = merged[bet.matchId];
+          if (!match || match.status !== 'final') continue;
+          const outcome = `${match.scoreA}-${match.scoreB}`;
+          bet.status = bet.selection === outcome ? 'won' : 'lost';
+          bet.payout = bet.status === 'won' ? Math.round(bet.stake * bet.odds) : 0;
+          bet.settledAt = new Date().toISOString();
+          newlySettled.push(bet);
+          changed = true;
+        }
       }
+      if (changed) {
+        await env.MG_BOOK.put(`${K}:bets`, JSON.stringify(bets));
+        if (newlySettled.length > 0) {
+          const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+          for (const bet of newlySettled) {
+            const key = bet.bettor.trim().toLowerCase();
+            if (!players[key]) continue;
+            const payout = bet.status === 'won' ? (bet.payout ?? Math.round(bet.stake * bet.odds)) : bet.status === 'push' ? bet.stake : 0;
+            if (payout > 0) players[key].credits = (players[key].credits || 0) + payout;
+          }
+          await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+        }
+      }
+      return new Response(JSON.stringify({ ok: true, scores: merged }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, scoresLockKey, scoresLock.token);
     }
-    return new Response(JSON.stringify({ ok: true, scores: merged }), { headers: EVENT_CORS });
   }
 
   // GET /scores
@@ -6027,34 +7060,43 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const { player, hole, bet } = body;
     if (!player || !hole) return new Response(JSON.stringify({ error: 'player and hole required' }), { status: 400, headers: EVENT_CORS });
+    let pressCount = 0;
 
-    // Read game state
-    let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
-    if (!gameState.nassau) gameState.nassau = {};
-    if (!gameState.nassau.presses) gameState.nassau.presses = [];
+    const stateLockKey = `${K}:game-state-write-lock`;
+    const stateLock = await acquireKvLock(env, stateLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!stateLock.ok) {
+      return new Response(JSON.stringify({ error: 'Game state update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
 
-    // Add the press
-    gameState.nassau.presses.push({
-      player,
-      hole: parseInt(hole),
-      bet: parseInt(bet) || 10,
-      timestamp: Date.now(),
-      active: true
-    });
+    try {
+      let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+      if (!gameState.nassau) gameState.nassau = {};
+      if (!gameState.nassau.presses) gameState.nassau.presses = [];
 
-    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      gameState.nassau.presses.push({
+        player,
+        hole: parseInt(hole),
+        bet: parseInt(bet) || 10,
+        timestamp: Date.now(),
+        active: true
+      });
+      pressCount = gameState.nassau.presses.length;
 
-    // Add feed entry
-    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
-    feed.unshift({
+      await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+    } finally {
+      await releaseKvLock(env, stateLockKey, stateLock.token);
+    }
+
+    // Add feed entry with lock to avoid dropped updates during concurrent writes.
+    const feedWrite = await appendFeedEntriesAtomic(env, K, {
       ts: Date.now(),
       type: 'press',
       text: `${player.split(' ')[0]} presses on hole ${hole}. Stakes doubled!`,
       player
-    });
-    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 100)));
+    }, { mode: 'prepend', maxItems: 100 });
+    if (!feedWrite.ok) console.warn('feed_press_append_failed', { slug: K, reason: feedWrite.error || 'unknown' });
 
-    return new Response(JSON.stringify({ ok: true, presses: gameState.nassau.presses.length }), { headers: EVENT_CORS });
+    return new Response(JSON.stringify({ ok: true, presses: pressCount }), { headers: EVENT_CORS });
   }
 
   // POST /nassau-press
@@ -6063,17 +7105,31 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const { player, segment, startHole } = body;
     if (!player || !segment || !startHole) return new Response(JSON.stringify({ error: 'player, segment, and startHole required' }), { status: 400, headers: EVENT_CORS });
-    const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
-    if (!gameState.nassau) gameState.nassau = { running: {}, presses: [] };
-    if (!gameState.nassau.presses) gameState.nassau.presses = [];
     const pressId = `press_${player.replace(/\s+/g,'_')}_${segment}_h${startHole}_${Date.now()}`;
-    gameState.nassau.presses.push({ id: pressId, player, segment, startHole, running: {}, active: true, winner: null });
-    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+    const stateLockKey = `${K}:game-state-write-lock`;
+    const stateLock = await acquireKvLock(env, stateLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!stateLock.ok) {
+      return new Response(JSON.stringify({ error: 'Game state update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
     try {
-      const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
-      feed.push({ id: `press_${pressId}`, type: 'press', player, text: `Press declared on Hole ${startHole}! \uD83D\uDD25`, emoji: '\uD83D\uDD25', ts: Date.now() });
-      while (feed.length > 200) feed.shift();
-      await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
+      const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+      if (!gameState.nassau) gameState.nassau = { running: {}, presses: [] };
+      if (!gameState.nassau.presses) gameState.nassau.presses = [];
+      gameState.nassau.presses.push({ id: pressId, player, segment, startHole, running: {}, active: true, winner: null });
+      await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+    } finally {
+      await releaseKvLock(env, stateLockKey, stateLock.token);
+    }
+    try {
+      const feedWrite = await appendFeedEntriesAtomic(env, K, {
+        id: `press_${pressId}`,
+        type: 'press',
+        player,
+        text: `Press declared on Hole ${startHole}! \uD83D\uDD25`,
+        emoji: '\uD83D\uDD25',
+        ts: Date.now()
+      }, { mode: 'append', maxItems: 200 });
+      if (!feedWrite.ok) console.warn('feed_press_append_failed', { slug: K, reason: feedWrite.error || 'unknown' });
     } catch (feedErr) { console.error('feed-press-error', feedErr.message); }
     return new Response(JSON.stringify({ ok: true, pressId }), { headers: EVENT_CORS });
   }
@@ -6084,11 +7140,20 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const { teamA, teamB } = body;
     if (!Array.isArray(teamA) || !Array.isArray(teamB)) return new Response(JSON.stringify({ error: 'teamA and teamB arrays required' }), { status: 400, headers: EVENT_CORS });
-    const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
-    if (!gameState.vegas) gameState.vegas = { holes: {}, score: { A: 0, B: 0 } };
-    gameState.vegas.teamA = teamA;
-    gameState.vegas.teamB = teamB;
-    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+    const stateLockKey = `${K}:game-state-write-lock`;
+    const stateLock = await acquireKvLock(env, stateLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!stateLock.ok) {
+      return new Response(JSON.stringify({ error: 'Game state update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    try {
+      const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+      if (!gameState.vegas) gameState.vegas = { holes: {}, score: { A: 0, B: 0 } };
+      gameState.vegas.teamA = teamA;
+      gameState.vegas.teamB = teamB;
+      await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+    } finally {
+      await releaseKvLock(env, stateLockKey, stateLock.token);
+    }
     return new Response(JSON.stringify({ ok: true, teamA, teamB }), { headers: EVENT_CORS });
   }
 
@@ -6098,13 +7163,22 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const { holeNum, wolf, partner } = body;
     if (!holeNum || holeNum < 1 || holeNum > 18 || !wolf) return new Response(JSON.stringify({ error: 'holeNum and wolf required' }), { status: 400, headers: EVENT_CORS });
-    const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
-    if (!gameState.wolf) gameState.wolf = { picks: {}, results: {} };
-    const holes = (await env.MG_BOOK.get(`${K}:holes`, 'json')) || {};
-    if (holes[holeNum]) return new Response(JSON.stringify({ error: 'Scores already entered for this hole' }), { status: 409, headers: EVENT_CORS });
-    gameState.wolf.picks[holeNum] = { wolf, partner: partner || null, format: partner ? '2v2' : '1v3', lockedAt: Date.now() };
-    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
-    return new Response(JSON.stringify({ ok: true, pick: gameState.wolf.picks[holeNum] }), { headers: EVENT_CORS });
+    const writeLockKey = `${K}:write-lock`;
+    const writeLock = await acquireKvLock(env, writeLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!writeLock.ok) {
+      return new Response(JSON.stringify({ error: 'Score update is in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    try {
+      const holes = (await env.MG_BOOK.get(`${K}:holes`, 'json')) || {};
+      if (holes[holeNum]) return new Response(JSON.stringify({ error: 'Scores already entered for this hole' }), { status: 409, headers: EVENT_CORS });
+      const gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+      if (!gameState.wolf) gameState.wolf = { picks: {}, results: {} };
+      gameState.wolf.picks[holeNum] = { wolf, partner: partner || null, format: partner ? '2v2' : '1v3', lockedAt: Date.now() };
+      await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      return new Response(JSON.stringify({ ok: true, pick: gameState.wolf.picks[holeNum] }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, writeLockKey, writeLock.token);
+    }
   }
 
   // GET /vapid-key
@@ -6131,9 +7205,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const eventType2 = cfg2?.event?.eventType || cfg2?.eventType || '';
     const isRoundModeEvent = ['quick', 'buddies_trip'].includes(eventType2);
     if (!isAdmin && !isRoundModeEvent) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    let lockToken = '';
+    const mutexKey = `${K}:write-lock`;
+    let holeNumForLog = null;
     try {
       const body = await request.json().catch(() => ({}));
       const { holeNum, scores } = body;
+      holeNumForLog = holeNum;
 
       const rlKey = `${K}:hole-rl:${holeNum}`;
       const lastSubmit = await env.MG_BOOK.get(rlKey, 'text');
@@ -6172,32 +7250,23 @@ async function handleEventApi(slug, path, request, env, ctx) {
       } else if (cfg?.course?.strokeIndex) { strokeIndex = cfg.course.strokeIndex; }
       if (!strokeIndex && cfg?.courseHcpIndex?.length === 18) strokeIndex = cfg.courseHcpIndex;
 
-      // ── Concurrency-safe score merge ──────────────────────────
-      // KV is eventually consistent. Two carts submitting different holes
-      // simultaneously can race: both read State A, both write back, second
-      // write stomps the first. Fix: acquire a short-lived mutex key, then
-      // re-read + merge + write. If mutex is held, wait and retry.
-      const mutexKey = `${K}:write-lock`;
-      let lockAcquired = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const existingLock = await env.MG_BOOK.get(mutexKey, 'text');
-        if (!existingLock) {
-          await env.MG_BOOK.put(mutexKey, String(Date.now()), { expirationTtl: 60 });
-          lockAcquired = true;
-          break;
-        }
-        // Lock held — wait 300ms and retry
-        await new Promise(r => setTimeout(r, 300));
+      // Concurrency-safe score merge: lock, then read+merge+write.
+      const scoreWriteLock = await acquireKvLock(env, mutexKey, {
+        ttlSeconds: 15,
+        maxAttempts: 6,
+        retryDelayMs: 120,
+        settleMs: 20,
+      });
+      if (!scoreWriteLock.ok) {
+        return new Response(JSON.stringify({ error: 'Score update is in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
       }
-      // Even if lock wasn't acquired (timeout), proceed with merge — better than failing
+      lockToken = scoreWriteLock.token;
       const holes = (await env.MG_BOOK.get(`${K}:holes`, 'json')) || {};
       // MERGE: only update THIS hole, preserve all other holes untouched
       const existingHole = holes[holeNum];
       const mergedScores = existingHole?.scores ? { ...existingHole.scores, ...scores } : scores;
       holes[holeNum] = { scores: mergedScores, timestamp: Date.now(), enteredBy: 'admin' };
       await env.MG_BOOK.put(`${K}:holes`, JSON.stringify(holes));
-      // Release mutex
-      if (lockAcquired) { await env.MG_BOOK.delete(mutexKey).catch(() => {}); }
 
       let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
       const allEvents = [];
@@ -6299,7 +7368,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
 
       // Auto-generate narrative activity feed (sportsbook style)
       try {
-        const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+        const feedEntries = [];
         const pars = cfg?.course?.pars || cfg?.coursePars || [];
         const par = pars[holeNum - 1] || 4;
         const skinsBet = parseInt(cfg?.structure?.skinsBet) || 5;
@@ -6326,20 +7395,24 @@ async function handleEventApi(slug, path, request, env, ctx) {
             const potMultiplier = skinEvent.pot || 1;
             scoreText += ` Takes the skin ($${skinValue * potMultiplier}).`;
           }
-          feed.push({ id: `score_${holeNum}_${pName}_${Date.now()}`, type: 'score', player: pName, text: scoreText, ts: Date.now() });
+          feedEntries.push({ id: `score_${holeNum}_${pName}_${Date.now()}`, type: 'score', player: pName, text: scoreText, ts: Date.now() });
         }
         // Skin carry narrative
         if (skinCarry) {
-          feed.push({ id: `carry_${holeNum}_${Date.now()}`, type: 'score', player: 'System', text: `Skin carries to #${holeNum + 1}. Pot: $${skinValue * skinPot}.`, ts: Date.now() });
+          feedEntries.push({ id: `carry_${holeNum}_${Date.now()}`, type: 'score', player: 'System', text: `Skin carries to #${holeNum + 1}. Pot: $${skinValue * skinPot}.`, ts: Date.now() });
         }
-        while (feed.length > 200) feed.shift();
-        await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
+        if (feedEntries.length > 0) {
+          const feedWrite = await appendFeedEntriesAtomic(env, K, feedEntries, { mode: 'append', maxItems: 200 });
+          if (!feedWrite.ok) console.warn('feed_auto_append_failed', { slug: K, reason: feedWrite.error || 'unknown' });
+        }
       } catch (feedErr) { console.error('feed-auto-generate-error', feedErr.message); }
 
+      if (lockToken) await releaseKvLock(env, mutexKey, lockToken);
       return new Response(JSON.stringify({ ok: true, holeNum, events: allEvents, warnings }), { headers: EVENT_CORS });
     } catch (outerErr) {
+      if (lockToken) await releaseKvLock(env, mutexKey, lockToken);
       console.error('hole-handler-crash', { slug, error: outerErr.message });
-      console.error('hole-handler-crash', { slug, holeNum, error: outerErr.message });
+      console.error('hole-handler-crash', { slug, holeNum: holeNumForLog, error: outerErr.message });
       return new Response(JSON.stringify({ error: 'Internal error' }), { status: 500, headers: EVENT_CORS });
     }
   }
@@ -6572,10 +7645,10 @@ async function handleEventApi(slug, path, request, env, ctx) {
     const player = (body.player || 'Anonymous').slice(0, 30).replace(/<[^>]*>/g, '').trim();
     if (!text && !emoji) return new Response(JSON.stringify({ error: 'text or emoji required' }), { status: 400, headers: EVENT_CORS });
     const item = { id: `chirp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, type: 'chirp', player, text, emoji, ts: Date.now() };
-    const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
-    feed.push(item);
-    while (feed.length > 200) feed.shift();
-    await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
+    const feedWrite = await appendFeedEntriesAtomic(env, K, item, { mode: 'append', maxItems: 200 });
+    if (!feedWrite.ok) {
+      return new Response(JSON.stringify({ error: feedWrite.error || 'Feed update in progress' }), { status: 409, headers: EVENT_CORS });
+    }
     return new Response(JSON.stringify({ ok: true, item }), { headers: EVENT_CORS });
   }
 
@@ -7213,19 +8286,6 @@ Match player names to rows. Only include holes with scores written.`;
     return new Response(JSON.stringify(sponsors), { headers: EVENT_CORS });
   }
 
-  // POST /sponsors — add/update a hole sponsor (admin only)
-  if (path === 'sponsors' && request.method === 'POST') {
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 401, headers: EVENT_CORS });
-    }
-
-    try {
-      const body = await request.json();
-      const { hole, sponsorName, sponsorLogo } = body;
-      if (!hole || !sponsorName) {
-        return new Response(JSON.stringify({ error: 'hole and sponsorName are required' }), { status: 400, headers: EVENT_CORS });
-      }
-
   // ── Calcutta Auction Endpoints ──────────────────────────────────────────
 
   // GET /calcutta — get auction state
@@ -7379,6 +8439,19 @@ Match player names to rows. Only include holes with scores written.`;
     return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
   }
 
+  // POST /sponsors — add/update a hole sponsor (admin only)
+  if (path === 'sponsors' && request.method === 'POST') {
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 401, headers: EVENT_CORS });
+    }
+
+    try {
+      const body = await request.json();
+      const { hole, sponsorName, sponsorLogo } = body;
+      if (!hole || !sponsorName || !String(sponsorName).trim()) {
+        return new Response(JSON.stringify({ error: 'hole and sponsorName are required' }), { status: 400, headers: EVENT_CORS });
+      }
+
       const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
       if (!cfgRaw) return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
 
@@ -7422,7 +8495,7 @@ Match player names to rows. Only include holes with scores written.`;
     }
   }
 
-  return null;
+  return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: EVENT_CORS });
 }
 
 // ─── AI Recap ─────────────────────────────────────────────────────────────
@@ -7630,69 +8703,400 @@ async function handleGhinSearch(q, env) {
 
 // ─── Email Capture & Drip Pipeline ─────────────────────────────────────────
 
-const EMAIL_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+const EMAIL_CORS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin',
+};
+const EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS = 24 * 60 * 60;
+let emailCaptureD1Unavailable = false;
 
-async function handleEmailCapture(request, env) {
+function getEmailCaptureRequestId(request) {
+  return String(
+    request.headers.get('x-request-id') ||
+    request.headers.get('cf-ray') ||
+    crypto.randomUUID()
+  ).trim();
+}
+
+async function sha256Hex(value) {
   try {
-    const body = await request.json();
-    const { email, source, game_interest, course_interest, opted_in_newsletter } = body;
+    const bytes = new TextEncoder().encode(String(value || ''));
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  } catch {
+    return '';
+  }
+}
+
+async function persistEmailCaptureInD1(env, record) {
+  if (!env.WAGGLE_DB || emailCaptureD1Unavailable) return false;
+  try {
+    await env.WAGGLE_DB.prepare(
+      `INSERT INTO email_captures
+       (email, source, source_page, game_interest, course_interest, opted_in_newsletter, captured_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(email) DO UPDATE SET
+         source = excluded.source,
+         source_page = excluded.source_page,
+         game_interest = excluded.game_interest,
+         course_interest = excluded.course_interest,
+         opted_in_newsletter = excluded.opted_in_newsletter,
+         captured_at = excluded.captured_at`
+    ).bind(
+      record.email,
+      record.source || '',
+      record.source_page || '',
+      record.game_interest || null,
+      record.course_interest || null,
+      record.opted_in_newsletter ? 1 : 0,
+      record.captured_at || record.created_at
+    ).run();
+    return true;
+  } catch (e) {
+    if (String(e?.message || '').toLowerCase().includes('no such table')) {
+      emailCaptureD1Unavailable = true;
+    }
+    console.error('email_capture_d1_error', e?.message || e);
+    return false;
+  }
+}
+
+async function enforceEmailCaptureRateLimit(env, request) {
+  if (!env?.MG_BOOK) return { allowed: true };
+  const forwardedFor = String(request.headers.get('x-forwarded-for') || '').trim();
+  const firstForwarded = forwardedFor ? forwardedFor.split(',')[0].trim() : '';
+  const ip = (
+    request.headers.get('CF-Connecting-IP') ||
+    request.headers.get('X-Real-IP') ||
+    firstForwarded ||
+    'unknown'
+  );
+  const rlKey = `email-rl:${ip}`;
+  const lockKey = `${rlKey}:lock`;
+  const lock = await acquireKvLock(env, lockKey, { ttlSeconds: 5, maxAttempts: 4, retryDelayMs: 25, settleMs: 10 });
+  if (!lock.ok) return { allowed: false, status: 429, error: 'Rate limiter busy. Retry shortly.' };
+
+  try {
+    const rlCount = parseInt(await env.MG_BOOK.get(rlKey, 'text') || '0', 10);
+    if (rlCount >= 5) return { allowed: false, status: 429, error: 'Too many requests. Try again later.' };
+    await env.MG_BOOK.put(rlKey, String(rlCount + 1), { expirationTtl: 60 });
+    return { allowed: true };
+  } finally {
+    await releaseKvLock(env, lockKey, lock.token);
+  }
+}
+
+async function triggerCaptureDripWelcome(env, {
+  kvKey,
+  normalizedEmail,
+  source,
+  requestId,
+  emailHash,
+  suppressionKey,
+}) {
+  const resendResult = await sendDripEmail(env, normalizedEmail, 0, source, { requestId, emailHash, trigger: 'email_capture' });
+
+  const latestRecord = await env.MG_BOOK.get(kvKey, 'json');
+  if (latestRecord) {
+    latestRecord.drip_step = Math.max(1, Number(latestRecord.drip_step || 0));
+    latestRecord.last_drip_trigger_at = new Date().toISOString();
+    await env.MG_BOOK.put(kvKey, JSON.stringify(latestRecord));
+  }
+
+  console.log('email_capture_drip_triggered', JSON.stringify({
+    requestId,
+    emailHash,
+    resendStatus: resendResult?.status || null,
+    suppressionKey,
+  }));
+}
+
+async function handleEmailCapture(request, env, ctx) {
+  const requestId = getEmailCaptureRequestId(request);
+  let emailHash = '';
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return new Response(JSON.stringify({ error: 'Invalid JSON', code: 'INVALID_JSON', requestId }), { status: 400, headers: EMAIL_CORS });
+  }
+
+  try {
+    const { email, source, source_page, game_interest, course_interest, opted_in_newsletter } = body;
 
     // Validate email
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(JSON.stringify({ error: 'Invalid email address' }), { status: 400, headers: EMAIL_CORS });
-    }
-
-    // Rate limit: 5 per IP per minute
-    if (env.MG_BOOK) {
-      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-      const rlKey = `email-rl:${ip}`;
-      const rlCount = parseInt(await env.MG_BOOK.get(rlKey, 'text') || '0', 10);
-      if (rlCount >= 5) {
-        return new Response(JSON.stringify({ error: 'Too many requests. Try again later.' }), { status: 429, headers: EMAIL_CORS });
-      }
-      await env.MG_BOOK.put(rlKey, String(rlCount + 1), { expirationTtl: 60 });
-    }
-
-    if (!env.MG_BOOK) {
-      return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EMAIL_CORS });
+      return new Response(JSON.stringify({ error: 'Invalid email address', code: 'INVALID_EMAIL', requestId }), { status: 400, headers: EMAIL_CORS });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    emailHash = await sha256Hex(normalizedEmail);
+
+    if (!env.MG_BOOK) {
+      return new Response(JSON.stringify({ error: 'Storage not configured', code: 'STORAGE_NOT_CONFIGURED', requestId, emailHash }), { status: 500, headers: EMAIL_CORS });
+    }
+
+    // Rate limit: 5 per IP per minute (lock-protected to reduce race overshoot).
+    const rl = await enforceEmailCaptureRateLimit(env, request);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.', code: 'RATE_LIMITED', requestId, emailHash }), { status: rl.status || 429, headers: EMAIL_CORS });
+    }
+
     const kvKey = `email:${normalizedEmail}`;
-
-    // Check if already exists
-    const existing = await env.MG_BOOK.get(kvKey, 'json');
-    if (existing) {
-      return new Response(JSON.stringify({ ok: true, message: 'Already subscribed' }), { headers: EMAIL_CORS });
+    const emailLockKey = `email-capture-lock:${normalizedEmail}`;
+    const emailLock = await acquireKvLock(env, emailLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 40, settleMs: 10 });
+    if (!emailLock.ok) {
+      return new Response(JSON.stringify({ error: 'Email capture in progress. Retry shortly.', code: 'CAPTURE_LOCKED', requestId, emailHash }), { status: 409, headers: EMAIL_CORS });
     }
 
-    const record = {
-      email: normalizedEmail,
-      source: source || 'landing_page',
-      game_interest: game_interest || null,
-      course_interest: course_interest || null,
-      opted_in_newsletter: opted_in_newsletter !== false,
-      created_at: new Date().toISOString(),
-      drip_step: 0,
-      converted: false,
-    };
+    try {
+      const nowIso = new Date().toISOString();
+      const existing = await env.MG_BOOK.get(kvKey, 'json');
+      const baseSource = source || existing?.source || 'landing_page';
+      const baseSourcePage = source_page || source || existing?.source_page || baseSource || 'landing_page';
 
-    await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+      if (existing) {
+        const updated = {
+          ...existing,
+          source: baseSource,
+          source_page: baseSourcePage,
+          game_interest: game_interest ?? existing.game_interest ?? null,
+          course_interest: course_interest ?? existing.course_interest ?? null,
+          opted_in_newsletter: opted_in_newsletter === false ? false : (existing.opted_in_newsletter !== false),
+          captured_at: nowIso,
+        };
+        await env.MG_BOOK.put(kvKey, JSON.stringify(updated));
+        const d1Stored = await persistEmailCaptureInD1(env, updated);
+        if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
+          return new Response(JSON.stringify({
+            error: 'Capture persistence failed',
+            code: 'CAPTURE_PERSIST_FAILED',
+            requestId,
+            emailHash,
+            stored: { kv: true, d1: false }
+          }), { status: 500, headers: EMAIL_CORS });
+        }
 
-    // Send welcome email
-    if (env.RESEND_API_KEY && record.opted_in_newsletter) {
-      try {
-        await sendDripEmail(env, normalizedEmail, 0, record.source);
-        record.drip_step = 1;
-        await env.MG_BOOK.put(kvKey, JSON.stringify(record));
-      } catch (e) {
-        console.error('Welcome email failed:', e.message);
+        if (updated.opted_in_newsletter) {
+          if (!env.RESEND_API_KEY) {
+            return new Response(JSON.stringify({
+              error: 'Email service not configured',
+              code: 'RESEND_NOT_CONFIGURED',
+              requestId,
+              emailHash,
+              stored: { kv: true, d1: d1Stored },
+            }), { status: 503, headers: EMAIL_CORS });
+          }
+          const suppressionKey = `email-drip:capture:${normalizedEmail}`;
+          const suppression = await env.MG_BOOK.get(suppressionKey, 'json');
+          if (!suppression) {
+            await env.MG_BOOK.put(suppressionKey, JSON.stringify({
+              requestedAt: nowIso,
+              requestId,
+              emailHash,
+            }), { expirationTtl: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS });
+
+            const dripJob = triggerCaptureDripWelcome(env, {
+              kvKey,
+              normalizedEmail,
+              source: updated.source,
+              requestId,
+              emailHash,
+              suppressionKey,
+            }).catch(async (err) => {
+              await env.MG_BOOK.delete(suppressionKey).catch(() => {});
+              console.error('email_capture_drip_failed', JSON.stringify({
+                requestId,
+                emailHash,
+                resendStatus: err?.resendStatus || null,
+                message: err?.message || String(err),
+              }));
+            });
+            if (ctx?.waitUntil) ctx.waitUntil(dripJob);
+            else await dripJob;
+
+            return new Response(JSON.stringify({
+              ok: true,
+              message: 'Already subscribed',
+              stored: { kv: true, d1: d1Stored },
+              drip: {
+                queued: true,
+                suppressed: false,
+                idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
+              },
+              requestId,
+              emailHash,
+            }), { headers: EMAIL_CORS });
+          }
+          return new Response(JSON.stringify({
+            ok: true,
+            message: 'Already subscribed',
+            stored: { kv: true, d1: d1Stored },
+            drip: {
+              queued: false,
+              suppressed: true,
+              idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
+            },
+            requestId,
+            emailHash,
+          }), { headers: EMAIL_CORS });
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          message: 'Already subscribed',
+          stored: { kv: true, d1: d1Stored },
+          drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
+          requestId,
+          emailHash,
+        }), { headers: EMAIL_CORS });
       }
-    }
 
-    return new Response(JSON.stringify({ ok: true }), { headers: EMAIL_CORS });
+      const record = {
+        email: normalizedEmail,
+        source: baseSource,
+        source_page: baseSourcePage,
+        game_interest: game_interest || null,
+        course_interest: course_interest || null,
+        opted_in_newsletter: opted_in_newsletter !== false,
+        created_at: nowIso,
+        captured_at: nowIso,
+        drip_step: 0,
+        converted: false,
+      };
+
+      await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+      const d1Stored = await persistEmailCaptureInD1(env, record);
+      if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
+        return new Response(JSON.stringify({
+          error: 'Capture persistence failed',
+          code: 'CAPTURE_PERSIST_FAILED',
+          requestId,
+          emailHash,
+          stored: { kv: true, d1: false }
+        }), { status: 500, headers: EMAIL_CORS });
+      }
+
+      if (!record.opted_in_newsletter) {
+        return new Response(JSON.stringify({
+          ok: true,
+          stored: { kv: true, d1: d1Stored },
+          drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
+          requestId,
+          emailHash,
+        }), { headers: EMAIL_CORS });
+      }
+
+      if (!env.RESEND_API_KEY) {
+        return new Response(JSON.stringify({
+          error: 'Email service not configured',
+          code: 'RESEND_NOT_CONFIGURED',
+          requestId,
+          emailHash,
+          stored: { kv: true, d1: d1Stored },
+        }), { status: 503, headers: EMAIL_CORS });
+      }
+
+      const suppressionKey = `email-drip:capture:${normalizedEmail}`;
+      const suppression = await env.MG_BOOK.get(suppressionKey, 'json');
+      if (suppression) {
+        return new Response(JSON.stringify({
+          ok: true,
+          stored: { kv: true, d1: d1Stored },
+          drip: {
+            queued: false,
+            suppressed: true,
+            idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
+          },
+          requestId,
+          emailHash,
+        }), { headers: EMAIL_CORS });
+      }
+
+      await env.MG_BOOK.put(suppressionKey, JSON.stringify({
+        requestedAt: nowIso,
+        requestId,
+        emailHash,
+      }), { expirationTtl: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS });
+
+      if (ctx?.waitUntil) {
+        ctx.waitUntil(
+          triggerCaptureDripWelcome(env, {
+            kvKey,
+            normalizedEmail,
+            source: record.source,
+            requestId,
+            emailHash,
+            suppressionKey,
+          }).catch(async (err) => {
+            await env.MG_BOOK.delete(suppressionKey).catch(() => {});
+            console.error('email_capture_drip_failed', JSON.stringify({
+              requestId,
+              emailHash,
+              resendStatus: err?.resendStatus || null,
+              message: err?.message || String(err),
+            }));
+          })
+        );
+        return new Response(JSON.stringify({
+          ok: true,
+          stored: { kv: true, d1: d1Stored },
+          drip: {
+            queued: true,
+            suppressed: false,
+            idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
+          },
+          requestId,
+          emailHash,
+        }), { headers: EMAIL_CORS });
+      }
+
+      try {
+        await triggerCaptureDripWelcome(env, {
+          kvKey,
+          normalizedEmail,
+          source: record.source,
+          requestId,
+          emailHash,
+          suppressionKey,
+        });
+      } catch (err) {
+        await env.MG_BOOK.delete(suppressionKey).catch(() => {});
+        return new Response(JSON.stringify({
+          error: 'Failed to trigger welcome drip',
+          code: 'DRIP_TRIGGER_FAILED',
+          requestId,
+          emailHash,
+          resendStatus: err?.resendStatus || null,
+          stored: { kv: true, d1: d1Stored },
+        }), { status: 502, headers: EMAIL_CORS });
+      }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        stored: { kv: true, d1: d1Stored },
+        drip: {
+          queued: false,
+          suppressed: false,
+          idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
+        },
+        requestId,
+        emailHash,
+      }), { headers: EMAIL_CORS });
+    } finally {
+      await releaseKvLock(env, emailLockKey, emailLock.token);
+    }
   } catch (e) {
-    return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: EMAIL_CORS });
+    console.error('email_capture_error', JSON.stringify({
+      requestId,
+      emailHash: emailHash || null,
+      message: e?.message || String(e),
+    }));
+    return new Response(JSON.stringify({ error: 'Internal server error', code: 'INTERNAL_ERROR', requestId, emailHash }), { status: 500, headers: EMAIL_CORS });
   }
 }
 
@@ -7705,7 +9109,9 @@ async function handleUnsubscribe(url, env) {
   const record = await env.MG_BOOK.get(kvKey, 'json');
   if (record) {
     record.opted_in_newsletter = false;
+    record.unsubscribed_at = new Date().toISOString();
     await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+    await persistEmailCaptureInD1(env, record);
   }
   return new Response(unsubscribeHtml(true), { headers: { 'Content-Type': 'text/html' } });
 }
@@ -7723,7 +9129,7 @@ const DRIP_SEQUENCE = [
   },
   { // Step 1: Day 2
     dayOffset: 2,
-    subject: 'How a foursome used Waggle on their Scottsdale trip',
+    subject: 'How a 4-some used Waggle on their trip',
     templateFile: '/emails/drip-02-social-proof.html'
   },
   { // Step 2: Day 4
@@ -7733,18 +9139,18 @@ const DRIP_SEQUENCE = [
   },
   { // Step 3: Day 7
     dayOffset: 7,
-    subject: 'Your buddies\' trip is coming up. Lock in $32.',
+    subject: 'Your buddies trip is coming up. Lock in $32.',
     templateFile: '/emails/drip-04-urgency.html'
   },
   { // Step 4: Day 14
     dayOffset: 14,
-    subject: 'Last chance: set up your next event for $32',
+    subject: 'Last chance: set up your next event for $32/event',
     templateFile: '/emails/drip-05-last-chance.html'
   }
 ];
 
 
-async function sendDripEmail(env, email, stepIndex, source) {
+async function sendDripEmail(env, email, stepIndex, source, meta = {}) {
   const step = DRIP_SEQUENCE[stepIndex];
   if (!step) return;
 
@@ -7758,16 +9164,34 @@ async function sendDripEmail(env, email, stepIndex, source) {
 
     const html = (await templateResponse.text()).replace(/\{\{email\}\}/g, email);
 
-    await fetch('https://api.resend.com/emails', {
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Evan at Waggle <evan@betwaggle.com>',
+        from: 'Waggle <hello@betwaggle.com>',
         to: [email],
         subject: step.subject,
         html,
       }),
     });
+
+    const resendBody = await resendResponse.text();
+    if (!resendResponse.ok) {
+      console.error('resend-send-failed', {
+        email,
+        requestId: meta.requestId || null,
+        emailHash: meta.emailHash || null,
+        stepIndex,
+        source: source || null,
+        status: resendResponse.status,
+        body: resendBody,
+      });
+      const error = new Error(`Resend send failed (${resendResponse.status})`);
+      error.resendStatus = resendResponse.status;
+      error.resendBody = resendBody;
+      throw error;
+    }
+    return { status: resendResponse.status, body: resendBody };
   } catch (error) {
     console.error('Error sending drip email:', error);
     throw error;
@@ -7775,34 +9199,60 @@ async function sendDripEmail(env, email, stepIndex, source) {
 }
 
 async function processDripEmails(env) {
-  if (!env.MG_BOOK || !env.RESEND_API_KEY) return;
+  const summary = { attempted: 0, sent: 0, failed: 0, skipped: 0 };
+  if (!env.MG_BOOK || !env.RESEND_API_KEY) {
+    console.log('drip-run-summary', JSON.stringify(summary));
+    return summary;
+  }
   try {
-    const list = await env.MG_BOOK.list({ prefix: 'email:' });
     const now = Date.now();
-    for (const key of list.keys) {
-      try {
-        const record = await env.MG_BOOK.get(key.name, 'json');
-        if (!record || !record.opted_in_newsletter || !record.created_at) continue;
-        const createdAt = new Date(record.created_at).getTime();
-        const daysSinceCreated = (now - createdAt) / (1000 * 60 * 60 * 24);
-        const currentStep = record.drip_step || 0;
+    let cursor = undefined;
+    do {
+      const listOpts = { prefix: 'email:' };
+      if (cursor) listOpts.cursor = cursor;
+      const list = await env.MG_BOOK.list(listOpts);
 
-        // Find next step to send
-        if (currentStep >= DRIP_SEQUENCE.length) continue;
-        const nextStep = DRIP_SEQUENCE[currentStep];
-        if (!nextStep || daysSinceCreated < nextStep.dayOffset) continue;
+      for (const key of list.keys) {
+        try {
+          const record = await env.MG_BOOK.get(key.name, 'json');
+          if (!record || !record.opted_in_newsletter || !record.created_at) {
+            summary.skipped += 1;
+            continue;
+          }
+          const createdAt = new Date(record.created_at).getTime();
+          const daysSinceCreated = (now - createdAt) / (1000 * 60 * 60 * 24);
+          const currentStep = record.drip_step || 0;
 
-        // Send the email
-        await sendDripEmail(env, record.email, currentStep, record.source);
-        record.drip_step = currentStep + 1;
-        await env.MG_BOOK.put(key.name, JSON.stringify(record));
-      } catch (e) {
-        console.error('Drip error for', key.name, e.message);
+          if (currentStep >= DRIP_SEQUENCE.length) {
+            summary.skipped += 1;
+            continue;
+          }
+          const nextStep = DRIP_SEQUENCE[currentStep];
+          if (!nextStep || daysSinceCreated < nextStep.dayOffset) {
+            summary.skipped += 1;
+            continue;
+          }
+
+          summary.attempted += 1;
+          await sendDripEmail(env, record.email, currentStep, record.source);
+          record.drip_step = currentStep + 1;
+          await env.MG_BOOK.put(key.name, JSON.stringify(record));
+          summary.sent += 1;
+        } catch (e) {
+          summary.failed += 1;
+          console.error('Drip error for', key.name, e.message);
+        }
       }
-    }
+
+      cursor = list.list_complete ? undefined : list.cursor;
+    } while (cursor);
   } catch (e) {
     console.error('processDripEmails error:', e.message);
+    throw e;
   }
+
+  console.log('drip-run-summary', JSON.stringify(summary));
+  return summary;
 }
 
 async function handleEmailDrip(request, env) {
@@ -7812,28 +9262,28 @@ async function handleEmailDrip(request, env) {
     if (!env.WAGGLE_MARKETING_PIN || pin !== env.WAGGLE_MARKETING_PIN) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: EMAIL_CORS
       });
     }
 
     if (!env.RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: 'Email service not configured' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: EMAIL_CORS
       });
     }
 
     // Process drip emails
-    await processDripEmails(env);
+    const summary = await processDripEmails(env);
 
-    return new Response(JSON.stringify({ ok: true, message: 'Drip emails processed' }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    return new Response(JSON.stringify({ ok: true, message: 'Drip emails processed', summary }), {
+      headers: EMAIL_CORS
     });
   } catch (error) {
     console.error('handleEmailDrip error:', error.message);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: EMAIL_CORS
     });
   }
 }

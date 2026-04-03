@@ -12,15 +12,57 @@ let _demoMode = false;
 let _simulationTimer = null;
 let _simulationSpeed = 1; // 1x = real time, 2x = 2x speed, etc.
 let _virtualPlayers = [];
+let _simulationSeedKey = "waggle-default-demo-seed";
+let _simulationRngState = 1;
 let _simulationState = {
   holesSimulated: {},  // Track simulated holes per match
   lastOddsUpdate: {},  // Last odds movement timestamp per match
   betActivity: []      // Recent virtual bet activity
 };
 
+function hashSeed(seed) {
+  let hash = 2166136261;
+  const value = String(seed || "waggle-default-demo-seed");
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) || 1;
+}
+
+function setSimulationSeed(seed) {
+  _simulationSeedKey = String(seed || "waggle-default-demo-seed");
+  _simulationRngState = hashSeed(_simulationSeedKey);
+}
+
+function simulationRandom() {
+  _simulationRngState = (_simulationRngState + 0x6D2B79F5) >>> 0;
+  let t = _simulationRngState;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function simulationToken(len = 6) {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < len; i++) {
+    token += alphabet[Math.floor(simulationRandom() * alphabet.length)];
+  }
+  return token;
+}
+
 export function setConfig(config) {
   _teams = config.teams;
   _flights = config.flights;
+  const seedFromConfig =
+    config?.demoSeed ||
+    config?.event?.id ||
+    config?.event?.slug ||
+    config?.slug ||
+    config?.eventId ||
+    "waggle-default-demo-seed";
+  setSimulationSeed(seedFromConfig);
 
   // Demo configuration
   if (config.demoMode !== undefined) {
@@ -64,11 +106,19 @@ export function resetSimulation() {
     betActivity: []
   };
   _oddsHistory = {};
+  setSimulationSeed(_simulationSeedKey);
 }
 
 // Start the simulation timer loop
-function startSimulation() {
-  if (_simulationTimer) return;
+export function startSimulation(options = {}) {
+  if (typeof options.speed === "number" && Number.isFinite(options.speed)) {
+    _simulationSpeed = Math.max(0.1, Math.min(10, options.speed));
+  }
+  if (options.seed !== undefined) {
+    setSimulationSeed(options.seed);
+  }
+  _demoMode = true;
+  if (_simulationTimer) return true;
 
   const interval = Math.max(50, Math.round(2000 / _simulationSpeed)); // Min 50ms, scales with speed
   _simulationTimer = setInterval(() => {
@@ -78,14 +128,27 @@ function startSimulation() {
       console.error('[Betting] Simulation error:', err);
     }
   }, interval);
+  return true;
 }
 
 // Stop the simulation timer
-function stopSimulation() {
+export function stopSimulation() {
+  _demoMode = false;
   if (_simulationTimer) {
     clearInterval(_simulationTimer);
     _simulationTimer = null;
   }
+  return true;
+}
+
+export function getSimulationSnapshot() {
+  return {
+    demoMode: _demoMode,
+    speed: _simulationSpeed,
+    seed: _simulationSeedKey,
+    state: JSON.parse(JSON.stringify(_simulationState)),
+    activeTimer: !!_simulationTimer
+  };
 }
 
 // Main simulation cycle - runs every 2 seconds (scaled by speed)
@@ -124,12 +187,12 @@ export function generateVirtualPlayers(count = 12) {
   const players = [];
   for (let i = 0; i < count; i++) {
     const personality = personalities[i % personalities.length];
-    const variance = 0.7 + Math.random() * 0.6; // 0.7-1.3x multiplier
+    const variance = 0.7 + simulationRandom() * 0.6; // 0.7-1.3x multiplier
 
     players.push({
       id: `virtual_${i + 1}`,
       name: namePool[i % namePool.length],
-      bankroll: Math.round(personality.avgBet * (10 + Math.random() * 20)), // 10-30x avg bet
+      bankroll: Math.round(personality.avgBet * (10 + simulationRandom() * 20)), // 10-30x avg bet
       personality: personality.name,
       avgBetSize: Math.round(personality.avgBet * variance),
       bettingFrequency: Math.max(0.1, personality.frequency * variance), // Chance per cycle
@@ -150,7 +213,7 @@ function getRandomVirtualPlayer() {
 
   const weights = _virtualPlayers.map(p => p.bettingFrequency);
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  let random = Math.random() * totalWeight;
+  let random = simulationRandom() * totalWeight;
 
   for (let i = 0; i < _virtualPlayers.length; i++) {
     random -= weights[i];
@@ -163,12 +226,12 @@ function getRandomVirtualPlayer() {
 // Generate realistic bet size for a virtual player
 function generateBetSize(player, odds) {
   // Base bet around their average with variance
-  let betSize = player.avgBetSize * (0.5 + Math.random());
+  let betSize = player.avgBetSize * (0.5 + simulationRandom());
 
   // Adjust based on odds confidence (better odds = bigger bets for some)
   if (player.personality === 'Aggressive' || player.personality === 'High Roller') {
     if (Math.abs(odds.mlA) < 200 || Math.abs(odds.mlB) < 200) { // Close to even
-      betSize *= (1.2 + Math.random() * 0.5); // Bet more on close matches
+      betSize *= (1.2 + simulationRandom() * 0.5); // Bet more on close matches
     }
   }
 
@@ -193,7 +256,7 @@ function simulateOddsFluctuations(now) {
       const lastUpdate = _simulationState.lastOddsUpdate[matchKey] || 0;
 
       // Only update odds every 8-15 seconds (scaled by simulation speed)
-      const updateInterval = (8000 + Math.random() * 7000) / _simulationSpeed;
+      const updateInterval = (8000 + simulationRandom() * 7000) / _simulationSpeed;
       if (now - lastUpdate < updateInterval) return;
 
       // Get current odds (this will store in history automatically)
@@ -203,7 +266,7 @@ function simulateOddsFluctuations(now) {
       const baseProb = currentOdds.probA;
 
       // Market "noise" - random small movements ±1-3%
-      const noise = (Math.random() - 0.5) * 0.06; // ±3% max
+      const noise = (simulationRandom() - 0.5) * 0.06; // ±3% max
 
       // Longer-term drift - simulate changing market sentiment
       const drift = generateMarketDrift(matchKey, now);
@@ -329,7 +392,7 @@ function simulateMatchProgression(now) {
       if (holesData.holesPlayed >= holesData.totalHoles) return;
 
       // Realistic hole timing: 10-15 minutes per hole (scaled by simulation speed)
-      const holeBaseDuration = (10 + Math.random() * 5) * 60 * 1000; // 10-15 min in ms
+      const holeBaseDuration = (10 + simulationRandom() * 5) * 60 * 1000; // 10-15 min in ms
       const scaledDuration = holeBaseDuration / _simulationSpeed;
 
       if (now - holesData.lastHoleTime < scaledDuration) return;
@@ -381,7 +444,7 @@ function simulateHoleResult(teamAId, teamBId, holeNumber) {
   probA = Math.max(0.1, Math.min(0.9, probA + holeVariance));
 
   // Simulate the hole
-  const random = Math.random();
+  const random = simulationRandom();
 
   if (random < probA * 0.85) {
     return { pointsA: 1, pointsB: 0 }; // Team A wins hole
@@ -415,7 +478,7 @@ function simulateVirtualBetting(now) {
     if (now - player.lastBetTime < 30000 / _simulationSpeed) return; // Min 30s between bets
 
     // Check if this player wants to bet this cycle
-    if (Math.random() > player.bettingFrequency / 10) return; // Scale frequency
+    if (simulationRandom() > player.bettingFrequency / 10) return; // Scale frequency
 
     // Find an interesting betting opportunity
     const betOpportunity = findBettingOpportunity(player, now);
@@ -513,7 +576,7 @@ function findBettingOpportunity(player, now) {
 
   const weights = topOpportunities.map(o => o.attractiveness);
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  let random = Math.random() * totalWeight;
+  let random = simulationRandom() * totalWeight;
 
   for (let i = 0; i < topOpportunities.length; i++) {
     random -= weights[i];
@@ -563,7 +626,7 @@ function createVirtualBet(player, opportunity, now) {
   if (betSize < 5 || betSize > player.bankroll) return null;
 
   return {
-    id: `virtual_bet_${now}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `virtual_bet_${now}_${simulationToken(4)}`,
     type: opportunity.type,
     selection: opportunity.selection,
     stake: betSize,
@@ -606,7 +669,7 @@ export function initSimulation(appState) {
         scoreB: match.scoreB || 0,
         lastHoleTime: Date.now(),
         holeStartTime: Date.now(),
-        matchStartTime: Date.now() - Math.random() * 60000 * 30 // Started up to 30min ago
+        matchStartTime: Date.now() - simulationRandom() * 60000 * 30 // Started up to 30min ago
       };
     }
   });
@@ -807,11 +870,57 @@ function getMatchKey(teamAId, teamBId, matchId = null) {
 
 // Calculate delta information between current and previous odds
 function calculateOddsDeltas(current, previous) {
+  const movementMagnitude = (delta) => {
+    const abs = Math.abs(delta);
+    if (abs < 20) return "small";
+    if (abs < 50) return "medium";
+    return "large";
+  };
+
+  const buildMovementPayload = (prevA, prevB, currA, currB) => {
+    const deltaA = currA - prevA;
+    const deltaB = currB - prevB;
+    const directionA = deltaA > 0 ? "worse" : deltaA < 0 ? "better" : "unchanged";
+    const directionB = deltaB > 0 ? "worse" : deltaB < 0 ? "better" : "unchanged";
+
+    return {
+      previousOdds: { player1: prevA, player2: prevB },
+      currentOdds: { player1: currA, player2: currB },
+      delta: { player1: deltaA, player2: deltaB },
+      direction: { player1: directionA, player2: directionB },
+      magnitude: {
+        player1: movementMagnitude(deltaA),
+        player2: movementMagnitude(deltaB)
+      }
+    };
+  };
+
+  const attachCanonicalAliases = (movement) => ({
+    ...movement,
+    teamA: movement.player1,
+    teamB: movement.player2
+  });
+
   if (!previous) {
+    const seededMovement = buildMovementPayload(current.mlA, current.mlB, current.mlA, current.mlB);
     return {
       deltaA: 0, deltaB: 0,
       directionA: 'unchanged', directionB: 'unchanged',
-      magnitudeA: 'none', magnitudeB: 'none'
+      magnitudeA: 'small', magnitudeB: 'small',
+      oddsMovement: {
+        previousOdds: attachCanonicalAliases(seededMovement.previousOdds),
+        currentOdds: attachCanonicalAliases(seededMovement.currentOdds),
+        delta: attachCanonicalAliases(seededMovement.delta),
+        direction: attachCanonicalAliases(seededMovement.direction),
+        magnitude: attachCanonicalAliases(seededMovement.magnitude)
+      },
+      oddsDelta: {
+        previousOdds: attachCanonicalAliases(seededMovement.previousOdds),
+        currentOdds: attachCanonicalAliases(seededMovement.currentOdds),
+        delta: attachCanonicalAliases(seededMovement.delta),
+        direction: attachCanonicalAliases(seededMovement.direction),
+        magnitude: attachCanonicalAliases(seededMovement.magnitude)
+      }
     };
   }
 
@@ -823,19 +932,22 @@ function calculateOddsDeltas(current, previous) {
   const directionB = deltaB > 0 ? 'worse' : deltaB < 0 ? 'better' : 'unchanged';
 
   // Magnitude based on absolute change in moneyline
-  const getMagnitude = (delta) => {
-    const abs = Math.abs(delta);
-    if (abs === 0) return 'none';
-    if (abs < 20) return 'small';
-    if (abs < 50) return 'medium';
-    return 'large';
+  const movement = buildMovementPayload(previous.mlA, previous.mlB, current.mlA, current.mlB);
+  const movementWithAliases = {
+    previousOdds: attachCanonicalAliases(movement.previousOdds),
+    currentOdds: attachCanonicalAliases(movement.currentOdds),
+    delta: attachCanonicalAliases(movement.delta),
+    direction: attachCanonicalAliases(movement.direction),
+    magnitude: attachCanonicalAliases(movement.magnitude)
   };
 
   return {
     deltaA, deltaB,
     directionA, directionB,
-    magnitudeA: getMagnitude(deltaA),
-    magnitudeB: getMagnitude(deltaB)
+    magnitudeA: movementMagnitude(deltaA),
+    magnitudeB: movementMagnitude(deltaB),
+    oddsMovement: movementWithAliases,
+    oddsDelta: movementWithAliases
   };
 }
 
@@ -854,6 +966,13 @@ function storeOddsHistory(matchKey, odds) {
 
 let _oddsOverrides = {};
 let _lockedMatches = [];
+
+// Default relative hole difficulty profile (1.0 = neutral)
+// Higher means harder hole, which lowers confidence in current lead.
+const DEFAULT_HOLE_DIFFICULTY = [
+  1.08, 0.96, 1.12, 1.04, 0.94, 1.06, 0.98, 1.10, 0.92,
+  1.03, 0.97, 1.09, 1.01, 0.95, 1.07, 0.99, 1.11, 0.93
+];
 
 export function setOddsOverrides(overrides) {
   _oddsOverrides = overrides || {};
@@ -993,6 +1112,99 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
 
 // ---- live odds (mid-round adjustment) -----------------------
 
+function sigmoid(x) {
+  return 1 / (1 + Math.exp(-x));
+}
+
+function resolveHoleDifficultyProfile(liveState, totalHoles) {
+  const rawProfile =
+    liveState?.holeDifficulty ||
+    liveState?.holeDifficulties ||
+    liveState?.holeDifficultyProfile ||
+    liveState?.remainingHoleDifficulty;
+
+  if (!Array.isArray(rawProfile) || rawProfile.length === 0) {
+    return DEFAULT_HOLE_DIFFICULTY.slice(0, totalHoles);
+  }
+
+  const normalized = rawProfile.slice(0, totalHoles).map((value, index) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return DEFAULT_HOLE_DIFFICULTY[index % DEFAULT_HOLE_DIFFICULTY.length];
+    }
+
+    // If values look like stroke index (1-18), convert to relative difficulty.
+    if (numeric >= 1 && numeric <= 18 && Number.isInteger(numeric)) {
+      return 1 + ((10 - numeric) / 35);
+    }
+
+    // Otherwise treat input as already normalized.
+    return Math.max(0.75, Math.min(1.25, numeric));
+  });
+
+  while (normalized.length < totalHoles) {
+    normalized.push(DEFAULT_HOLE_DIFFICULTY[normalized.length % DEFAULT_HOLE_DIFFICULTY.length]);
+  }
+
+  return normalized;
+}
+
+function averageRemainingDifficulty(liveState, holesPlayed, totalHoles) {
+  const profile = resolveHoleDifficultyProfile(liveState, totalHoles);
+  const remaining = profile.slice(Math.max(0, holesPlayed), totalHoles);
+  if (remaining.length === 0) return 1;
+
+  const avg = remaining.reduce((sum, v) => sum + v, 0) / remaining.length;
+  return Math.max(0.8, Math.min(1.2, avg));
+}
+
+function averageCompletedDifficulty(liveState, holesPlayed, totalHoles) {
+  const profile = resolveHoleDifficultyProfile(liveState, totalHoles);
+  const completed = profile.slice(0, Math.max(0, holesPlayed));
+  if (completed.length === 0) return 1;
+  const avg = completed.reduce((sum, v) => sum + v, 0) / completed.length;
+  return Math.max(0.8, Math.min(1.2, avg));
+}
+
+function getRecentMomentum(liveState) {
+  const events = Array.isArray(liveState?.holeResults) ? liveState.holeResults : null;
+  if (!events || events.length === 0) return 0;
+
+  const recent = events.slice(-3);
+  let momentum = 0;
+  recent.forEach((result, idx) => {
+    const weight = idx === recent.length - 1 ? 1.2 : 1.0;
+    if (result?.winner === "A" || result?.winner === "teamA") momentum += weight;
+    else if (result?.winner === "B" || result?.winner === "teamB") momentum -= weight;
+    else if (Number.isFinite(result?.delta)) momentum += Math.max(-1, Math.min(1, result.delta)) * weight;
+  });
+  return Math.max(-2, Math.min(2, momentum));
+}
+
+function getLatestHoleSignal(liveState, totalHoles) {
+  const events = Array.isArray(liveState?.holeResults) ? liveState.holeResults : [];
+  const latest = events.length > 0 ? events[events.length - 1] : null;
+  const profile = resolveHoleDifficultyProfile(liveState, totalHoles);
+
+  if (!latest) {
+    return { difficulty: 1, margin: 1, delta: 0 };
+  }
+
+  const holeIdx = Math.max(0, Math.min(totalHoles - 1, Number(latest.hole || 1) - 1));
+  const fallbackDifficulty = profile[holeIdx] || 1;
+  const latestDifficulty = Number.isFinite(Number(latest.difficulty))
+    ? Number(latest.difficulty)
+    : fallbackDifficulty;
+  const margin = Math.max(1, Number(latest.margin) || Math.abs(Number(latest.delta) || 0) || 1);
+  const delta = Number(latest.delta) || 0;
+
+  return {
+    difficulty: Math.max(0.8, Math.min(1.25, latestDifficulty)),
+    margin,
+    delta
+  };
+}
+
 /**
  * Get LIVE moneyline odds that factor in current match state.
  * Uses holes remaining + score differential to shift pre-match odds.
@@ -1042,33 +1254,102 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
   }
 
   const { holesPlayed, totalHoles = 18, scoreA = 0, scoreB = 0 } = liveState;
-  const holesRemaining = Math.max(1, totalHoles - holesPlayed);
+  const holesRemainingRaw = Math.max(0, totalHoles - holesPlayed);
+  const holesRemaining = Math.max(1, holesRemainingRaw);
   const scoreDiff = scoreA - scoreB; // positive = A leading
 
   // Start with pre-match handicap probability
   const preMatch = getMatchMoneyline(teamAId, teamBId, matchId);
-  let baseProb = preMatch.probA;
+  const preMatchProb = preMatch.probA;
+  const completion = Math.max(0, Math.min(1, holesPlayed / totalHoles));
+  const remainingDifficulty = averageRemainingDifficulty(liveState, holesPlayed, totalHoles);
+  const completedDifficulty = averageCompletedDifficulty(liveState, holesPlayed, totalHoles);
+  const momentum = getRecentMomentum(liveState);
+  const latestHoleSignal = getLatestHoleSignal(liveState, totalHoles);
+  const evidenceVolatility = Math.max(
+    0.82,
+    Math.min(
+      1.3,
+      1 + ((latestHoleSignal.difficulty - 1) * 0.4) + ((latestHoleSignal.margin - 1) * 0.07)
+    )
+  );
 
-  // 1. Decay handicap edge by sqrt(remaining/total)
-  //    As match progresses, pre-match handicap matters less
-  const decayFactor = Math.sqrt(holesRemaining / totalHoles);
-  let liveProb = 0.5 + (baseProb - 0.5) * decayFactor;
+  // Mathematical lock for match play style scoring:
+  // if lead exceeds holes left, result is effectively certain.
+  if (Math.abs(scoreDiff) > holesRemainingRaw || holesRemainingRaw === 0) {
+    const lockedProb = scoreDiff > 0 ? 0.999 : scoreDiff < 0 ? 0.001 : 0.5;
+    const lockedMlA = probToML(lockedProb);
+    const lockedMlB = probToML(1 - lockedProb);
+    const lockedOdds = { probA: lockedProb, probB: 1 - lockedProb, mlA: lockedMlA, mlB: lockedMlB };
+    const previousLockedOdds = _oddsHistory[matchKey] || _oddsHistory[getMatchKey(teamAId, teamBId, matchId)] || null;
+    const lockedDeltas = calculateOddsDeltas(lockedOdds, previousLockedOdds);
+    storeOddsHistory(matchKey, lockedOdds);
 
-  // 2. Apply score differential shift
-  //    Empirical match play: each hole lead ≈ 8-12% swing in close-out prob
-  //    Scale by holes remaining (a 2-up lead with 3 to play is huge vs 2-up with 12 to play)
-  if (scoreDiff !== 0) {
-    const leadStrength = scoreDiff / holesRemaining; // normalized lead
-    // Logistic curve: converts lead strength to probability shift
-    // leadStrength of 1.0 (1-up with 1 to play) → ~75% close-out
-    // leadStrength of 0.5 (1-up with 2 to play) → ~65% close-out
-    // leadStrength of 0.33 (2-up with 6 to play) → ~60% close-out
-    const scoreShift = 1 / (1 + Math.exp(-2.5 * leadStrength)) - 0.5;
-    liveProb = liveProb + scoreShift * (1 - Math.abs(liveProb - 0.5) * 0.5);
+    return {
+      probA: lockedProb, probB: 1 - lockedProb, mlA: lockedMlA, mlB: lockedMlB, isLive: true,
+      previousOdds: previousLockedOdds,
+      ...lockedDeltas
+    };
   }
 
-  // Clamp to reasonable range
-  liveProb = Math.max(0.03, Math.min(0.97, liveProb));
+  // Bayesian update:
+  // prior = pre-match handicap edge, evidence = score differential weighted by
+  // holes remaining and remaining-hole difficulty.
+  const leadPressure = Math.max(0, Math.abs(scoreDiff) - (holesRemainingRaw * 0.45));
+  const priorStrength = 2 + Math.pow(1 - completion, 1.12) * 20;
+  const evidenceStrength =
+    (2 + Math.pow(completion, 1.52) * 30 + (leadPressure * 2.4)) *
+    evidenceVolatility *
+    (1 / Math.max(0.9, remainingDifficulty));
+  const scoreScale = Math.max(0.8, ((holesRemaining * 0.72) * remainingDifficulty) / evidenceVolatility);
+  const weightedDiff = (scoreDiff / Math.max(0.7, completedDifficulty)) + (momentum * 0.35);
+  const scoreLikelihood = sigmoid(weightedDiff / scoreScale);
+
+  let liveProb =
+    ((preMatchProb * priorStrength) + (scoreLikelihood * evidenceStrength)) /
+    (priorStrength + evidenceStrength);
+
+  // Hole-by-hole evidence injection:
+  // harder holes and bigger margins should move price more than soft/parity holes.
+  const latestHoleWeight = (0.011 + (completion * 0.016)) * (latestHoleSignal.margin > 1 ? 1.12 : 1);
+  const latestHoleImpact =
+    (Math.max(-1, Math.min(1, latestHoleSignal.delta)) * latestHoleWeight) /
+    Math.max(0.85, remainingDifficulty);
+  liveProb += latestHoleImpact;
+
+  // As holes run out, push probability toward close-out certainty.
+  const closeoutDiff = (scoreDiff * (2.2 + completion * 3.0)) + (momentum * 0.6);
+  const closeoutProb = sigmoid(closeoutDiff / ((holesRemaining * remainingDifficulty) + 0.55));
+  const convergenceWeight = Math.pow(completion, 1.95);
+  liveProb = (liveProb * (1 - convergenceWeight)) + (closeoutProb * convergenceWeight);
+
+  // Smooth hole-to-hole movement so updates are meaningful, not chaotic.
+  const previousForSmoothing = _oddsHistory[matchKey] || _oddsHistory[getMatchKey(teamAId, teamBId, matchId)] || null;
+  if (previousForSmoothing) {
+    const stepFactor = Math.max(
+      0.85,
+      Math.min(
+        1.2,
+        1 + ((latestHoleSignal.difficulty - 1) * 0.5) + ((latestHoleSignal.margin - 1) * 0.04)
+      )
+    );
+    const maxStep = (0.022 + (completion * 0.06)) * stepFactor; // meaningful but not wild hole-to-hole moves
+    const deltaProb = liveProb - previousForSmoothing.probA;
+    if (Math.abs(deltaProb) > maxStep) {
+      liveProb = previousForSmoothing.probA + (Math.sign(deltaProb) * maxStep);
+    }
+  }
+
+  // Endgame nudge (1-2 holes left): lead should look close to certain.
+  if (holesRemainingRaw <= 2 && scoreDiff !== 0) {
+    const endgame = (3 - holesRemainingRaw) / 3; // 1 hole left -> stronger push
+    const target = scoreDiff > 0 ? 0.995 : 0.005;
+    liveProb = (liveProb * (1 - endgame * 0.6)) + (target * endgame * 0.6);
+  }
+
+  const minProb = Math.max(0.001, 0.01 + (1 - completion) * 0.02 - (completion * 0.009));
+  const maxProb = 1 - minProb;
+  liveProb = Math.max(minProb, Math.min(maxProb, liveProb));
 
   const probA = liveProb;
   const probB = 1 - liveProb;
@@ -1077,7 +1358,7 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
   const currentOdds = { probA, probB, mlA, mlB };
 
   // Get previous live odds and calculate deltas
-  const previousOdds = _oddsHistory[matchKey];
+  const previousOdds = _oddsHistory[matchKey] || _oddsHistory[getMatchKey(teamAId, teamBId, matchId)] || null;
   const deltas = calculateOddsDeltas(currentOdds, previousOdds);
 
   // Store current odds for next time
@@ -1088,6 +1369,265 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
     previousOdds: previousOdds || null,
     ...deltas
   };
+}
+
+function toMoneylineOddsFromProb(probA) {
+  const clampedA = Math.max(0.01, Math.min(0.99, Number(probA) || 0.5));
+  const clampedB = 1 - clampedA;
+  return {
+    probA: clampedA,
+    probB: clampedB,
+    mlA: probToML(clampedA),
+    mlB: probToML(clampedB)
+  };
+}
+
+function normalizeBetType(betType) {
+  const normalized = String(betType || "").toLowerCase();
+  if (normalized === "best ball") return "best_ball";
+  if (normalized === "match play") return "match_play";
+  return normalized;
+}
+
+function getBetTypeMarketKey(betType, payload = {}) {
+  const type = normalizeBetType(betType);
+  const id =
+    payload.matchId ||
+    payload.marketId ||
+    payload.id ||
+    `${payload.teamAId || payload.teamA?.id || "A"}_${payload.teamBId || payload.teamB?.id || "B"}`;
+  return `${type}::${id}`;
+}
+
+const _inPlayOddsState = {};
+
+function getPreviousMarketOdds(key) {
+  const prev = _inPlayOddsState[key]?.odds;
+  if (!prev) return null;
+  if (!Number.isFinite(prev.mlA) || !Number.isFinite(prev.mlB)) return null;
+  return {
+    mlA: prev.mlA,
+    mlB: prev.mlB,
+    probA: Number.isFinite(prev.probA) ? prev.probA : mlToProb(prev.mlA),
+    probB: Number.isFinite(prev.probB) ? prev.probB : mlToProb(prev.mlB)
+  };
+}
+
+function persistMarketOddsSnapshot(key, odds, liveState = undefined) {
+  if (!key || !odds || !Number.isFinite(odds.mlA) || !Number.isFinite(odds.mlB)) return;
+  const current = _inPlayOddsState[key] || {};
+  _inPlayOddsState[key] = {
+    liveState: liveState === undefined ? (current.liveState || null) : liveState,
+    odds: {
+      mlA: odds.mlA,
+      mlB: odds.mlB,
+      probA: Number.isFinite(odds.probA) ? odds.probA : mlToProb(odds.mlA),
+      probB: Number.isFinite(odds.probB) ? odds.probB : mlToProb(odds.mlB)
+    }
+  };
+}
+
+function attachOddsMovementPayload(key, odds) {
+  if (!odds || !Number.isFinite(odds.mlA) || !Number.isFinite(odds.mlB)) return odds;
+  if (odds.oddsMovement && odds.oddsDelta) return odds;
+
+  const previousOdds = getPreviousMarketOdds(key);
+  const deltas = calculateOddsDeltas(odds, previousOdds);
+  return {
+    ...odds,
+    previousOdds,
+    ...deltas
+  };
+}
+
+function finalizeMarketOdds(key, odds, liveState = undefined) {
+  const enriched = attachOddsMovementPayload(key, odds);
+  persistMarketOddsSnapshot(key, enriched, liveState);
+  return enriched;
+}
+
+function buildLiveStateFromHoleResult(existingState, holeResult = {}) {
+  const next = {
+    holesPlayed: Number(existingState?.holesPlayed || 0),
+    totalHoles: Number(existingState?.totalHoles || holeResult.totalHoles || 18),
+    scoreA: Number(existingState?.scoreA || 0),
+    scoreB: Number(existingState?.scoreB || 0),
+    holeDifficulty: Array.isArray(existingState?.holeDifficulty)
+      ? [...existingState.holeDifficulty]
+      : [],
+    holeResults: Array.isArray(existingState?.holeResults)
+      ? [...existingState.holeResults]
+      : []
+  };
+
+  const explicitHoleNumber = Number(holeResult.hole || holeResult.holeNumber);
+  const hasWinnerSignal =
+    holeResult.winner === "A" ||
+    holeResult.winner === "B" ||
+    holeResult.winner === "teamA" ||
+    holeResult.winner === "teamB";
+  const hasScoreSignal =
+    holeResult.scoreA !== undefined ||
+    holeResult.scoreB !== undefined ||
+    Number.isFinite(Number(holeResult.deltaA)) ||
+    Number.isFinite(Number(holeResult.deltaB)) ||
+    Number.isFinite(Number(holeResult.delta)) ||
+    hasWinnerSignal;
+  const hasDifficultySignal =
+    Number.isFinite(Number(holeResult.holeDifficulty || holeResult.difficulty)) ||
+    Array.isArray(holeResult.holeDifficultyProfile) ||
+    Array.isArray(holeResult.holeDifficulties) ||
+    Array.isArray(holeResult.historicalHoleDifficulty) ||
+    Array.isArray(holeResult.remainingHoleDifficulty);
+
+  const holeNumber = Number.isFinite(explicitHoleNumber)
+    ? explicitHoleNumber
+    : (hasScoreSignal ? next.holesPlayed + 1 : next.holesPlayed);
+
+  let eventDelta = Number.isFinite(Number(holeResult.delta)) ? Number(holeResult.delta) : 0;
+  let eventMargin = Number.isFinite(Number(holeResult.margin)) ? Math.abs(Number(holeResult.margin)) : 1;
+
+  if (holeResult.scoreA !== undefined && holeResult.scoreB !== undefined) {
+    const a = Number(holeResult.scoreA);
+    const b = Number(holeResult.scoreB);
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      eventMargin = Math.max(1, Math.abs(a - b));
+      if (a < b) {
+        next.scoreA += 1;
+        eventDelta = 1;
+      } else if (b < a) {
+        next.scoreB += 1;
+        eventDelta = -1;
+      } else {
+        eventDelta = 0;
+      }
+    }
+  } else if (holeResult.winner === "A" || holeResult.winner === "teamA") {
+    next.scoreA += 1;
+    eventDelta = 1;
+  } else if (holeResult.winner === "B" || holeResult.winner === "teamB") {
+    next.scoreB += 1;
+    eventDelta = -1;
+  } else if (Number.isFinite(Number(holeResult.deltaA)) || Number.isFinite(Number(holeResult.deltaB))) {
+    const deltaA = Number(holeResult.deltaA || 0);
+    const deltaB = Number(holeResult.deltaB || 0);
+    next.scoreA += deltaA;
+    next.scoreB += deltaB;
+    eventDelta = deltaA - deltaB;
+    eventMargin = Math.max(1, Math.abs(eventDelta));
+  }
+
+  if (hasScoreSignal && Number.isFinite(holeNumber) && holeNumber > next.holesPlayed) {
+    next.holesPlayed = holeNumber;
+  }
+
+  const holeDifficulty = Number(holeResult.holeDifficulty || holeResult.difficulty);
+  if (Number.isFinite(holeDifficulty) && holeNumber >= 1 && holeNumber <= next.totalHoles) {
+    next.holeDifficulty[holeNumber - 1] = holeDifficulty;
+  }
+  const difficultyProfile =
+    holeResult.holeDifficultyProfile ||
+    holeResult.holeDifficulties ||
+    holeResult.historicalHoleDifficulty ||
+    holeResult.remainingHoleDifficulty;
+  if (Array.isArray(difficultyProfile) && difficultyProfile.length > 0) {
+    next.holeDifficulty = difficultyProfile.slice(0, next.totalHoles).map((v, idx) => {
+      const numeric = Number(v);
+      if (!Number.isFinite(numeric)) {
+        return next.holeDifficulty[idx] || DEFAULT_HOLE_DIFFICULTY[idx % DEFAULT_HOLE_DIFFICULTY.length];
+      }
+      return numeric;
+    });
+  }
+
+  if (hasScoreSignal || hasDifficultySignal) {
+    next.holeResults.push({
+      hole: holeNumber,
+      winner: holeResult.winner || null,
+      delta: eventDelta,
+      margin: eventMargin,
+      difficulty: Number.isFinite(holeDifficulty) ? holeDifficulty : null
+    });
+  }
+
+  return next;
+}
+
+function calculateOddsRaw(betType, payload = {}) {
+  const type = normalizeBetType(betType);
+
+  if (type === "nassau" || type === "match_play") {
+    const teamAId = payload.teamAId || payload.teamA?.id || payload.teamA;
+    const teamBId = payload.teamBId || payload.teamB?.id || payload.teamB;
+    if (!teamAId || !teamBId) return null;
+    if (payload.liveState) {
+      return getLiveMatchMoneyline(teamAId, teamBId, payload.matchId, payload.liveState);
+    }
+    return getMatchMoneyline(teamAId, teamBId, payload.matchId);
+  }
+
+  if (type === "skins") {
+    const skinOdds = calculateSkinsOdds(payload.teamA, payload.teamB, payload.holes);
+    return {
+      ...toMoneylineOddsFromProb(skinOdds.probA),
+      model: skinOdds
+    };
+  }
+
+  if (type === "best_ball" || type === "scramble") {
+    const format = type === "scramble" ? "scramble" : "best_ball";
+    const teamFormatOdds = calculateTeamFormatOdds(payload.teamA, payload.teamB, format);
+    return {
+      ...toMoneylineOddsFromProb(teamFormatOdds.probA),
+      model: teamFormatOdds
+    };
+  }
+
+  if (type === "wolf") {
+    const playerOdds = calculateWolfOdds(payload.players || [], payload.holesAsWolf || 4.5);
+    return { players: playerOdds, isLive: !!payload.liveState };
+  }
+
+  if (type === "stableford") {
+    const stablefordOdds = calculateStablefordOdds(payload.teamA, payload.teamB, payload.courseData);
+    return {
+      ...toMoneylineOddsFromProb(stablefordOdds.probA),
+      model: stablefordOdds
+    };
+  }
+
+  return null;
+}
+
+export function calculateOdds(betType, payload = {}) {
+  const marketKey = getBetTypeMarketKey(betType, payload);
+  const rawOdds = calculateOddsRaw(betType, payload);
+  if (!rawOdds) return null;
+  if (!Number.isFinite(rawOdds.mlA) || !Number.isFinite(rawOdds.mlB)) return rawOdds;
+  return finalizeMarketOdds(marketKey, rawOdds, payload.liveState || null);
+}
+
+export function updateOdds(betType, payload = {}, holeResult = {}) {
+  const key = getBetTypeMarketKey(betType, payload);
+  const current = _inPlayOddsState[key] || { liveState: payload.liveState || null };
+  const nextLiveState = buildLiveStateFromHoleResult(current.liveState, holeResult);
+  const nextPayload = { ...payload, liveState: nextLiveState };
+  const rawOdds = calculateOddsRaw(betType, nextPayload);
+  if (!rawOdds) return null;
+  if (!Number.isFinite(rawOdds.mlA) || !Number.isFinite(rawOdds.mlB)) return rawOdds;
+  return finalizeMarketOdds(key, rawOdds, nextLiveState);
+}
+
+export function settle(betType, bet, match) {
+  const type = normalizeBetType(betType);
+  if (!bet || !match) return null;
+  if (type === "nassau") return settleNassauBet(bet, match);
+  if (type === "skins") return settleSkinsBet(bet, match);
+  if (type === "match_play") return settleMatchPlayBet(bet, match);
+  if (type === "best_ball" || type === "scramble") return settleBestBallScrambleBet(bet, match);
+  if (type === "wolf") return settleWolfBet(bet, match);
+  if (type === "stableford") return settleStablefordBet(bet, match);
+  return null;
 }
 
 // ---- match-level odds (with draw) ---------------------------
@@ -1198,6 +1738,32 @@ export function placeBet(state, bet) {
   return placed;
 }
 
+function normalizeSelectionForMatch(selection, match) {
+  if (!match) return selection;
+  if (selection === "teamA") return match.teamA;
+  if (selection === "teamB") return match.teamB;
+  return selection;
+}
+
+function isEarlyTerminatedMatch(match) {
+  const status = String(match?.status || "").toLowerCase();
+  const earlyStatuses = new Set([
+    "cancelled",
+    "canceled",
+    "abandoned",
+    "suspended",
+    "rain_delay",
+    "rainout",
+    "quit",
+    "forfeit",
+    "withdrawn",
+    "incomplete",
+    "stopped"
+  ]);
+
+  return earlyStatuses.has(status) || !!match?.roundEndedEarly || !!match?.endedEarlyReason;
+}
+
 export function settleBets(state) {
   // Use the enhanced zero-sum settlement function
   return settleBetsWithZeroSumValidation(state);
@@ -1217,16 +1783,36 @@ export function settleBetsWithZeroSumValidation(state) {
 
     let proposedStatus = null;
     let proposedPayout = 0;
+    const match = state.matches[bet.matchId];
+    const normalizedSelection = normalizeSelectionForMatch(bet.selection, match);
+
+    if (match && isEarlyTerminatedMatch(match)) {
+      const partialSettlement = handlePartialRound(match, { ...bet, selection: normalizedSelection });
+      if (partialSettlement) {
+        proposedStatus = partialSettlement.status;
+        proposedPayout = partialSettlement.payout;
+      }
+    }
+
+    if (proposedStatus) {
+      const normalizedPayout = normalizeSettlementPayout(bet.stake, proposedStatus, proposedPayout);
+      betsToSettle.push({
+        ...bet,
+        selection: normalizedSelection,
+        proposedStatus,
+        proposedPayout: normalizedPayout
+      });
+      return;
+    }
 
     if (bet.type === "match_winner") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       let winner = null;
       if (match.scoreA > match.scoreB) winner = match.teamA;
       else if (match.scoreB > match.scoreA) winner = match.teamB;
 
-      if (bet.selection === "draw") {
+      if (normalizedSelection === "draw") {
         if (winner === null) {
           proposedStatus = "won";
           const stakeCents = dollarsToCents(bet.stake);
@@ -1238,7 +1824,7 @@ export function settleBetsWithZeroSumValidation(state) {
       } else if (winner === null) {
         proposedStatus = "push";
         proposedPayout = bet.stake; // Exact stake returned
-      } else if (bet.selection == winner) {
+      } else if (normalizedSelection == winner) {
         proposedStatus = "won";
         const stakeCents = dollarsToCents(bet.stake);
         const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
@@ -1249,7 +1835,6 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "match_margin") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       const outcome = `${match.scoreA}-${match.scoreB}`;
@@ -1279,11 +1864,10 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "nassau") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Nassau has three components: front 9, back 9, and overall
-      const settlement = settleNassauBet(bet, match);
+      const settlement = settleNassauBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1291,11 +1875,10 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "skins") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Skins betting - each hole is worth a skin, with carryover or no-carryover variants
-      const settlement = settleSkinsBet(bet, match);
+      const settlement = settleSkinsBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1303,11 +1886,10 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "match_play") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Match Play - hole-by-hole competition, first to be up by more than holes remaining wins
-      const settlement = settleMatchPlayBet(bet, match);
+      const settlement = settleMatchPlayBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1315,11 +1897,10 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "best_ball" || bet.type === "scramble") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Best Ball/Scramble - team formats where team score is best among players or collective effort
-      const settlement = settleBestBallScrambleBet(bet, match);
+      const settlement = settleBestBallScrambleBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1327,11 +1908,10 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "wolf") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Wolf - rotating partnership game with dynamic teams and point-based scoring
-      const settlement = settleWolfBet(bet, match);
+      const settlement = settleWolfBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1339,11 +1919,40 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (bet.type === "stableford") {
-      const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
 
       // Stableford - point-based scoring system based on score relative to par
-      const settlement = settleStablefordBet(bet, match);
+      const settlement = settleStablefordBet({ ...bet, selection: normalizedSelection }, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "vegas") {
+      if (!match || match.status !== "final") return;
+
+      const settlement = settleVegasBet({ ...bet, selection: normalizedSelection }, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "banker") {
+      if (!match || match.status !== "final") return;
+
+      const settlement = settleBankerBet({ ...bet, selection: normalizedSelection }, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "bloodsome") {
+      if (!match || match.status !== "final") return;
+
+      const settlement = settleBloodsomeBet({ ...bet, selection: normalizedSelection }, match);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -1351,35 +1960,26 @@ export function settleBetsWithZeroSumValidation(state) {
     }
 
     if (proposedStatus) {
+      const normalizedPayout = normalizeSettlementPayout(bet.stake, proposedStatus, proposedPayout);
       betsToSettle.push({
         ...bet,
+        selection: normalizedSelection,
         proposedStatus,
-        proposedPayout
+        proposedPayout: normalizedPayout
       });
     }
   });
 
-  // Validate and correct zero-sum compliance before applying settlements
-  const isValid = validateZeroSum(betsToSettle);
-  let correctedBets = betsToSettle;
-
-  if (!isValid) {
-    console.warn("[Betting] Zero-sum violation detected - applying corrections");
-    correctedBets = correctZeroSumViolations(betsToSettle);
-
-    // Verify correction worked
-    const isCorrected = validateZeroSum(correctedBets);
-    if (!isCorrected) {
-      console.error("[Betting] CRITICAL: Unable to correct zero-sum violation");
-    }
-  }
+  // Validate and correct zero-sum compliance per market bucket before applying settlements.
+  const correctedBets = buildCorrectedSettlementsByMarket(betsToSettle);
+  const isValid = validateZeroSum(correctedBets);
 
   // Apply the settlements using corrected bets
   correctedBets.forEach(bet => {
     const originalBet = state.bets.find(b => b.id === bet.id);
     if (originalBet) {
       originalBet.status = bet.proposedStatus;
-      originalBet.payout = bet.proposedPayout;
+      originalBet.payout = normalizeDollars(bet.proposedPayout);
     }
   });
 
@@ -1411,6 +2011,10 @@ function centsToDollars(cents) {
   return cents / 100;
 }
 
+function normalizeDollars(amount) {
+  return centsToDollars(dollarsToCents(Number(amount) || 0));
+}
+
 /**
  * Calculate payout in cents using integer arithmetic
  * @param {number} stakeCents - Stake amount in cents
@@ -1421,6 +2025,91 @@ function calculatePayoutCents(stakeCents, odds) {
   // Convert odds to avoid floating point multiplication
   const oddsInCents = Math.round(odds * 100);
   return Math.round((stakeCents * oddsInCents) / 100);
+}
+
+function normalizeSettlementPayout(stake, status, payout) {
+  if (status === "lost") return 0;
+  if (status === "push" || status === "void" || status === "voided") {
+    return normalizeDollars(stake);
+  }
+  return normalizeDollars(payout);
+}
+
+/**
+ * Allocate relative points/units into zero-sum money deltas.
+ * Uses integer-cents math internally and preserves exact net 0.
+ *
+ * Example:
+ * running {A:1, B:0, C:0}, unitStake=$10 =>
+ * A:+$6.67, B:-$3.33, C:-$3.34 (sum exactly $0.00)
+ *
+ * @param {Object} running - Map of participant -> points/units
+ * @param {number} unitStake - Dollar value per unit above/below average
+ * @param {Array<string|Object>} participants - Participant names or player objects with `name`
+ * @returns {Object} map of participant -> dollar delta (can include cents)
+ */
+export function allocateRelativeZeroSum(running = {}, unitStake = 0, participants = []) {
+  const participantNames = (Array.isArray(participants) ? participants : [])
+    .map((p) => (typeof p === "string" ? p : p?.name))
+    .filter(Boolean);
+  const names = participantNames.length > 0
+    ? participantNames
+    : Object.keys(running || {});
+
+  const result = {};
+  if (names.length === 0) return result;
+
+  const stakeCents = dollarsToCents(Number(unitStake) || 0);
+  if (stakeCents === 0) {
+    names.forEach((name) => { result[name] = 0; });
+    return result;
+  }
+
+  const n = names.length;
+  const points = names.map((name) => {
+    const value = Number(running?.[name]);
+    return Number.isFinite(value) ? value : 0;
+  });
+  const totalPoints = points.reduce((sum, value) => sum + value, 0);
+
+  const rows = names.map((name, idx) => {
+    const numerator = (points[idx] * n - totalPoints) * stakeCents;
+    const exactCents = numerator / n;
+    const baseCents = exactCents >= 0 ? Math.floor(exactCents) : Math.ceil(exactCents);
+    return {
+      name,
+      exactCents,
+      cents: baseCents,
+      fractional: exactCents - baseCents
+    };
+  });
+
+  let residualCents = -rows.reduce((sum, row) => sum + row.cents, 0);
+  if (residualCents !== 0) {
+    const direction = residualCents > 0 ? 1 : -1;
+    const ranked = [...rows].sort((a, b) => {
+      const aPriority = direction > 0 ? a.fractional : -a.fractional;
+      const bPriority = direction > 0 ? b.fractional : -b.fractional;
+      if (bPriority !== aPriority) return bPriority - aPriority;
+      return Math.abs(b.exactCents) - Math.abs(a.exactCents);
+    });
+
+    let idx = 0;
+    let safety = 0;
+    while (residualCents !== 0 && safety < 100000) {
+      const target = ranked[idx % ranked.length];
+      target.cents += direction;
+      residualCents -= direction;
+      idx++;
+      safety++;
+    }
+  }
+
+  rows.forEach((row) => {
+    result[row.name] = centsToDollars(row.cents);
+  });
+
+  return result;
 }
 
 /**
@@ -1443,14 +2132,17 @@ export function auditZeroSum(state) {
   const report = {
     isZeroSum: true,
     netFlow: 0,
+    netFlowCents: 0,
     totalStakes: 0,
+    totalStakesCents: 0,
     totalPayouts: 0,
+    totalPayoutsCents: 0,
     violations: [],
     betTypeBreakdown: {}
   };
 
-  let totalStakesCollected = 0;
-  let totalPayoutsIssued = 0;
+  let totalStakesCollectedCents = 0;
+  let totalPayoutsIssuedCents = 0;
 
   // Group bets by type for detailed analysis
   const betsByType = {};
@@ -1462,68 +2154,108 @@ export function auditZeroSum(state) {
     if (!betsByType[bet.type]) {
       betsByType[bet.type] = {
         stakes: 0,
+        stakesCents: 0,
         payouts: 0,
+        payoutsCents: 0,
         netFlow: 0,
+        netFlowCents: 0,
         count: 0
       };
     }
 
     const typeStats = betsByType[bet.type];
     typeStats.count++;
+    const stakeCents = dollarsToCents(bet.stake);
 
     if (bet.status === "won") {
-      totalPayoutsIssued += bet.payout;
-      typeStats.payouts += bet.payout;
-      typeStats.stakes += bet.stake; // This should also be collected
-      totalStakesCollected += bet.stake;
+      const payoutCents = dollarsToCents(bet.payout);
+      totalPayoutsIssuedCents += payoutCents;
+      typeStats.payoutsCents += payoutCents;
+      typeStats.stakesCents += stakeCents;
+      totalStakesCollectedCents += stakeCents;
     } else if (bet.status === "lost") {
-      totalStakesCollected += bet.stake;
-      typeStats.stakes += bet.stake;
-    } else if (bet.status === "push") {
+      totalStakesCollectedCents += stakeCents;
+      typeStats.stakesCents += stakeCents;
+    } else if (bet.status === "push" || bet.status === "void" || bet.status === "voided") {
       // Push should be neutral (stake returned)
-      totalStakesCollected += bet.stake;
-      totalPayoutsIssued += bet.payout; // Should equal stake
-      typeStats.stakes += bet.stake;
-      typeStats.payouts += bet.payout;
+      const payoutCents = dollarsToCents(bet.payout);
+      totalStakesCollectedCents += stakeCents;
+      totalPayoutsIssuedCents += payoutCents;
+      typeStats.stakesCents += stakeCents;
+      typeStats.payoutsCents += payoutCents;
     }
-
-    typeStats.netFlow = typeStats.payouts - typeStats.stakes;
   });
 
-  report.totalStakes = totalStakesCollected;
-  report.totalPayouts = totalPayoutsIssued;
-  report.netFlow = totalPayoutsIssued - totalStakesCollected;
+  Object.values(betsByType).forEach((stats) => {
+    stats.stakes = centsToDollars(stats.stakesCents);
+    stats.payouts = centsToDollars(stats.payoutsCents);
+    stats.netFlowCents = stats.payoutsCents - stats.stakesCents;
+    stats.netFlow = centsToDollars(stats.netFlowCents);
+  });
+
+  report.totalStakesCents = totalStakesCollectedCents;
+  report.totalPayoutsCents = totalPayoutsIssuedCents;
+  report.totalStakes = centsToDollars(totalStakesCollectedCents);
+  report.totalPayouts = centsToDollars(totalPayoutsIssuedCents);
+  report.netFlowCents = totalPayoutsIssuedCents - totalStakesCollectedCents;
+  report.netFlow = centsToDollars(report.netFlowCents);
   report.betTypeBreakdown = betsByType;
 
   // Check for violations using cents precision
-  const netFlowCents = dollarsToCents(report.netFlow);
-  if (Math.abs(netFlowCents) > 0) { // Zero tolerance for cents-level violations
+  if (Math.abs(report.netFlowCents) > 0) { // Zero tolerance for cents-level violations
     report.isZeroSum = false;
     report.violations.push({
       type: "net_flow_violation",
       severity: "critical",
       amount: report.netFlow,
-      amountCents: netFlowCents,
-      description: `Total net flow is ${netFlowCents} cents ($${report.netFlow.toFixed(2)}), should be exactly $0.00`
+      amountCents: report.netFlowCents,
+      description: `Total net flow is ${report.netFlowCents} cents ($${report.netFlow.toFixed(2)}), should be exactly $0.00`
     });
   }
 
   // Check each bet type for violations
   Object.entries(betsByType).forEach(([type, stats]) => {
-    const netFlowCents = dollarsToCents(stats.netFlow);
-    if (Math.abs(netFlowCents) > 0) {
+    if (Math.abs(stats.netFlowCents) > 0) {
       report.violations.push({
         type: "bet_type_violation",
         severity: "high",
         betType: type,
         amount: stats.netFlow,
-        amountCents: netFlowCents,
-        description: `${type} bets have net flow of ${netFlowCents} cents ($${stats.netFlow.toFixed(2)})`
+        amountCents: stats.netFlowCents,
+        description: `${type} bets have net flow of ${stats.netFlowCents} cents ($${stats.netFlow.toFixed(2)})`
       });
     }
   });
 
   return report;
+}
+
+function getSettlementBucketKey(bet) {
+  const matchKey = bet.matchId || bet.flightId || bet.eventId || "global";
+  const componentKey =
+    bet.component ||
+    bet.format ||
+    (bet.carryover ? "carryover" : "standard");
+  return `${matchKey}::${bet.type}::${componentKey}`;
+}
+
+function buildCorrectedSettlementsByMarket(betsToSettle) {
+  const grouped = new Map();
+  betsToSettle.forEach((bet) => {
+    const key = getSettlementBucketKey(bet);
+    if (!grouped.has(key)) grouped.set(key, []);
+    const normalizedPayout = normalizeSettlementPayout(bet.stake, bet.proposedStatus, bet.proposedPayout);
+    grouped.get(key).push({
+      ...bet,
+      proposedPayout: normalizedPayout
+    });
+  });
+
+  const corrected = [];
+  grouped.forEach((group) => {
+    corrected.push(...correctZeroSumViolations(group));
+  });
+  return corrected;
 }
 
 /**
@@ -1542,8 +2274,9 @@ export function validateZeroSum(betsToSettle) {
     if (bet.proposedStatus === "won") {
       const payoutCents = dollarsToCents(bet.proposedPayout || 0);
       totalPayoutsCents += payoutCents;
-    } else if (bet.proposedStatus === "push") {
-      totalPayoutsCents += stakeCents; // Stake returned
+    } else if (bet.proposedStatus === "push" || bet.proposedStatus === "void" || bet.proposedStatus === "voided") {
+      const payoutCents = dollarsToCents(bet.proposedPayout ?? bet.stake);
+      totalPayoutsCents += payoutCents;
     }
     // Lost bets contribute stake but no payout
   });
@@ -1560,69 +2293,72 @@ export function validateZeroSum(betsToSettle) {
  */
 export function correctZeroSumViolations(betsToSettle) {
   let totalStakesCents = 0;
-  let totalProposedPayoutsCents = 0;
-  const winningBets = [];
+  let totalPayoutsCents = 0;
 
-  // Calculate totals in cents and identify winning bets
-  betsToSettle.forEach(bet => {
+  const normalized = betsToSettle.map((bet) => {
     const stakeCents = dollarsToCents(bet.stake);
+    const normalizedPayout = normalizeSettlementPayout(bet.stake, bet.proposedStatus, bet.proposedPayout);
+    const payoutCents = dollarsToCents(normalizedPayout);
     totalStakesCents += stakeCents;
-
-    if (bet.proposedStatus === "won") {
-      const payoutCents = dollarsToCents(bet.proposedPayout);
-      totalProposedPayoutsCents += payoutCents;
-      winningBets.push({
-        ...bet,
-        stakeCents,
-        payoutCents
-      });
-    } else if (bet.proposedStatus === "push") {
-      totalProposedPayoutsCents += stakeCents; // Stakes returned
-    }
+    totalPayoutsCents += payoutCents;
+    return { ...bet, proposedPayout: normalizedPayout, stakeCents, payoutCents };
   });
 
-  const netViolationCents = totalProposedPayoutsCents - totalStakesCents;
-
-  // If violation is zero or minimal (< 1 cent), no correction needed
-  if (Math.abs(netViolationCents) < 1) {
-    return betsToSettle;
+  const netViolationCents = totalPayoutsCents - totalStakesCents;
+  if (netViolationCents === 0) {
+    return normalized.map(({ stakeCents, payoutCents, ...bet }) => ({
+      ...bet,
+      proposedPayout: centsToDollars(payoutCents)
+    }));
   }
 
-  console.log(`[Betting] Correcting zero-sum violation of ${netViolationCents} cents ($${centsToDollars(netViolationCents).toFixed(2)})`);
+  // Prefer adjusting winning bets.
+  let adjustable = normalized.filter(b => b.proposedStatus === "won");
 
-  // Proportionally adjust winning payouts to correct the violation
-  if (winningBets.length > 0) {
-    const totalWinningPayoutsCents = winningBets.reduce((sum, bet) => sum + bet.payoutCents, 0);
-    const adjustedTotalCents = totalWinningPayoutsCents - netViolationCents;
-
-    // Distribute the adjustment proportionally
-    let remainingAdjustmentCents = netViolationCents;
-
-    winningBets.forEach((bet, index) => {
-      const isLastBet = index === winningBets.length - 1;
-
-      if (isLastBet) {
-        // Give all remaining adjustment to the last bet to ensure exact zero-sum
-        bet.payoutCents -= remainingAdjustmentCents;
-      } else {
-        // Proportional adjustment for this bet
-        const proportion = bet.payoutCents / totalWinningPayoutsCents;
-        const adjustmentCents = Math.round(netViolationCents * proportion);
-        bet.payoutCents -= adjustmentCents;
-        remainingAdjustmentCents -= adjustmentCents;
-      }
-
-      // Update the original bet object with corrected payout in dollars
-      const originalBet = betsToSettle.find(b => b.id === bet.id);
-      if (originalBet) {
-        const originalPayoutCents = dollarsToCents(originalBet.proposedPayout);
-        originalBet.proposedPayout = centsToDollars(bet.payoutCents);
-        console.log(`[Betting] Adjusted ${bet.id} payout: ${originalPayoutCents} cents → ${bet.payoutCents} cents ($${originalBet.proposedPayout.toFixed(2)})`);
-      }
-    });
+  if (adjustable.length === 0) {
+    // No winners means no one can receive redistributed loss pool.
+    // For strict player zero-sum markets, refund stakes in this edge case.
+    return normalized.map(({ stakeCents, payoutCents, ...bet }) => ({
+      ...bet,
+      proposedStatus: "push",
+      proposedPayout: centsToDollars(stakeCents)
+    }));
   }
 
-  return betsToSettle;
+  let remaining = netViolationCents;
+  const totalWeight = adjustable.reduce((sum, b) => sum + Math.max(1, b.payoutCents || b.stakeCents), 0);
+
+  adjustable.forEach((bet, index) => {
+    const weight = Math.max(1, bet.payoutCents || bet.stakeCents);
+    const rawShare = netViolationCents * (weight / totalWeight);
+    const adjustment = index === adjustable.length - 1 ? remaining : Math.trunc(rawShare);
+    remaining -= adjustment;
+    bet.payoutCents = Math.max(0, bet.payoutCents - adjustment);
+  });
+
+  // Residual reconciliation in case clamping to zero prevented full correction.
+  if (remaining !== 0 && adjustable.length > 0) {
+    const payoutStep = remaining > 0 ? -1 : 1;
+    let idx = 0;
+    let safety = 0;
+    while (remaining !== 0 && safety < 100000) {
+      const target = adjustable[idx % adjustable.length];
+      if (payoutStep < 0 && target.payoutCents <= 0) {
+        idx++;
+        safety++;
+        continue;
+      }
+      target.payoutCents += payoutStep;
+      remaining += payoutStep < 0 ? -1 : 1;
+      idx++;
+      safety++;
+    }
+  }
+
+  return normalized.map(({ stakeCents, payoutCents, ...bet }) => ({
+    ...bet,
+    proposedPayout: centsToDollars(payoutCents)
+  }));
 }
 
 /**
@@ -1768,38 +2504,57 @@ function calculateNassauComponent(match, component) {
     holes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
   }
 
-  let teamATotal = 0;
-  let teamBTotal = 0;
+  let teamAHoleWins = 0;
+  let teamBHoleWins = 0;
+  let tiedHoles = 0;
   let holesCompleted = 0;
+  let decidedEarly = false;
 
   holes.forEach(holeNumber => {
     const holeData = match.holeScores[holeNumber];
     if (holeData && holeData.scoreA !== null && holeData.scoreB !== null) {
-      teamATotal += holeData.scoreA;
-      teamBTotal += holeData.scoreB;
+      if (holeData.scoreA < holeData.scoreB) {
+        teamAHoleWins++;
+      } else if (holeData.scoreB < holeData.scoreA) {
+        teamBHoleWins++;
+      } else {
+        tiedHoles++;
+      }
       holesCompleted++;
+
+      const holesRemaining = holes.length - holesCompleted;
+      if (Math.abs(teamAHoleWins - teamBHoleWins) > holesRemaining) {
+        decidedEarly = true;
+      }
     }
   });
 
-  // Need all holes completed for settlement
-  if (holesCompleted < holes.length) {
+  if (holesCompleted === 0) {
     return null; // Not ready to settle
   }
 
+  if (!decidedEarly && holesCompleted < holes.length) {
+    return null;
+  }
+
   let winner = null;
-  if (teamATotal < teamBTotal) {
+  if (teamAHoleWins > teamBHoleWins) {
     winner = match.teamA;
-  } else if (teamBTotal < teamATotal) {
+  } else if (teamBHoleWins > teamAHoleWins) {
     winner = match.teamB;
   }
-  // If scores are equal, winner remains null (tie/push)
+  // If hole wins are equal, winner remains null (tie/push)
 
   return {
     winner,
-    teamATotal,
-    teamBTotal,
-    margin: Math.abs(teamATotal - teamBTotal),
-    component
+    teamAHoleWins,
+    teamBHoleWins,
+    tiedHoles,
+    holesCompleted,
+    holesTotal: holes.length,
+    margin: Math.abs(teamAHoleWins - teamBHoleWins),
+    component,
+    decidedEarly
   };
 }
 
@@ -2085,6 +2840,8 @@ function calculateMatchPlayResult(match) {
   let teamBHoles = 0; // Holes won by team B
   let tiedHoles = 0;
   const holeResults = [];
+  let decidedEarly = false;
+  let lastScoredHole = 0;
 
   // Process each hole
   for (let hole = 1; hole <= 18; hole++) {
@@ -2116,6 +2873,7 @@ function calculateMatchPlayResult(match) {
       scoreB,
       winner: holeWinner
     });
+    lastScoredHole = hole;
 
     // Check for early finish (dormie situation)
     const holesRemaining = 18 - hole;
@@ -2123,16 +2881,20 @@ function calculateMatchPlayResult(match) {
 
     if (holesDifference > holesRemaining) {
       // Match is decided - one team cannot catch up
+      decidedEarly = true;
       break;
     }
   }
 
   // Determine overall winner
   let matchWinner = null;
-  if (teamAHoles > teamBHoles) {
-    matchWinner = match.teamA;
-  } else if (teamBHoles > teamAHoles) {
-    matchWinner = match.teamB;
+  const isFullRound = lastScoredHole >= 18;
+  if (decidedEarly || isFullRound) {
+    if (teamAHoles > teamBHoles) {
+      matchWinner = match.teamA;
+    } else if (teamBHoles > teamAHoles) {
+      matchWinner = match.teamB;
+    }
   }
   // If equal holes won, matchWinner remains null (all square/tied)
 
@@ -2143,7 +2905,10 @@ function calculateMatchPlayResult(match) {
     tiedHoles,
     margin: Math.abs(teamAHoles - teamBHoles),
     format: `${teamAHoles} & ${teamBHoles}`,
-    holeResults
+    holeResults,
+    holesCompleted: holeResults.length,
+    decidedEarly,
+    isFinalResult: decidedEarly || isFullRound
   };
 }
 
@@ -2843,6 +3608,116 @@ export function calculateExpectedStablefordPoints(handicap, coursePar = null) {
   return Math.round(expectedPoints * 10) / 10; // Round to 1 decimal place
 }
 
+// ---- Additional Game Settlements (Vegas / Banker / Bloodsome) ---
+
+function getMatchGameState(match, key) {
+  if (match?.gameState?.[key]) return match.gameState[key];
+  if (match?.[key]) return match[key];
+  return null;
+}
+
+function getPayoutForWin(bet) {
+  const stakeCents = dollarsToCents(bet.stake);
+  const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+  return centsToDollars(payoutCents);
+}
+
+function normalizeSelectionValue(selection) {
+  if (selection === null || selection === undefined) return "";
+  return String(selection).trim().toLowerCase();
+}
+
+function settleVegasBet(bet, match) {
+  const vegas = getMatchGameState(match, "vegas");
+  const vegasScoreA = Number(vegas?.score?.A);
+  const vegasScoreB = Number(vegas?.score?.B);
+
+  let scoreA = Number.isFinite(vegasScoreA) ? vegasScoreA : null;
+  let scoreB = Number.isFinite(vegasScoreB) ? vegasScoreB : null;
+
+  // Fallback for lightweight match fixtures where only aggregate score exists.
+  if (scoreA === null || scoreB === null) {
+    scoreA = Number.isFinite(match?.scoreA) ? Number(match.scoreA) : 0;
+    scoreB = Number.isFinite(match?.scoreB) ? Number(match.scoreB) : 0;
+  }
+
+  if (scoreA === scoreB) {
+    return { status: "push", payout: bet.stake };
+  }
+
+  const winner = scoreA > scoreB ? "A" : "B";
+  const selection = normalizeSelectionValue(bet.selection);
+
+  const selectedWinner = (
+    (winner === "A" && (selection === "a" || selection === "teama" || selection === normalizeSelectionValue(match?.teamA))) ||
+    (winner === "B" && (selection === "b" || selection === "teamb" || selection === normalizeSelectionValue(match?.teamB)))
+  );
+
+  if (selectedWinner) {
+    return { status: "won", payout: getPayoutForWin(bet) };
+  }
+
+  return { status: "lost", payout: 0 };
+}
+
+function settleByFinalScoreFallback(bet, match) {
+  const scoreA = Number(match?.scoreA);
+  const scoreB = Number(match?.scoreB);
+
+  if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB)) return null;
+
+  if (scoreA === scoreB) {
+    return { status: "push", payout: bet.stake };
+  }
+
+  const winner = scoreA > scoreB ? "A" : "B";
+  const selection = normalizeSelectionValue(bet.selection);
+
+  const selectedWinner = (
+    (winner === "A" && (selection === "a" || selection === "teama" || selection === normalizeSelectionValue(match?.teamA))) ||
+    (winner === "B" && (selection === "b" || selection === "teamb" || selection === normalizeSelectionValue(match?.teamB)))
+  );
+
+  if (selectedWinner) {
+    return { status: "won", payout: getPayoutForWin(bet) };
+  }
+
+  return { status: "lost", payout: 0 };
+}
+
+function settleRunningBalanceBet(bet, running) {
+  if (!running || typeof running !== "object") return null;
+
+  const entries = Object.entries(running).filter(([, value]) => Number.isFinite(value));
+  if (entries.length === 0) return null;
+
+  const maxScore = Math.max(...entries.map(([, value]) => value));
+  const leaders = entries.filter(([, value]) => value === maxScore).map(([name]) => name);
+
+  if (leaders.length !== 1) {
+    return { status: "push", payout: bet.stake };
+  }
+
+  const winner = normalizeSelectionValue(leaders[0]);
+  const selection = normalizeSelectionValue(bet.selection);
+
+  if (winner === selection) {
+    return { status: "won", payout: getPayoutForWin(bet) };
+  }
+
+  return { status: "lost", payout: 0 };
+}
+
+function settleBankerBet(bet, match) {
+  const banker = getMatchGameState(match, "banker");
+  return settleRunningBalanceBet(bet, banker?.running) || settleByFinalScoreFallback(bet, match);
+}
+
+function settleBloodsomeBet(bet, match) {
+  const bloodsome = getMatchGameState(match, "bloodsome");
+  return settleRunningBalanceBet(bet, bloodsome?.running) || settleByFinalScoreFallback(bet, match);
+}
+
 // ---- Comprehensive Tie/Push Handling System -----------------
 
 /**
@@ -3112,14 +3987,14 @@ function assessRoundCompletion(match) {
     };
   }
 
-  let holesCompleted = 0;
+  let holesPresent = 0;
   let holesWithValidScores = 0;
 
   for (let hole = 1; hole <= 18; hole++) {
     const holeData = match.holeScores[hole];
 
     if (holeData) {
-      holesCompleted++;
+      holesPresent++;
 
       if ((holeData.scoreA !== null && holeData.scoreB !== null) ||
           (holeData.playersA && holeData.playersB) ||
@@ -3129,15 +4004,16 @@ function assessRoundCompletion(match) {
     }
   }
 
-  const completionPercentage = holesCompleted / 18;
-  const isComplete = holesCompleted === 18 && holesWithValidScores === 18;
+  const completionPercentage = holesWithValidScores / 18;
+  const isComplete = holesWithValidScores === 18;
 
   return {
     isComplete,
-    holesCompleted,
+    holesCompleted: holesWithValidScores,
+    holesPresent,
     holesWithValidScores,
     completionPercentage,
-    reason: isComplete ? "complete" : (holesCompleted === 0 ? "not_started" : "incomplete")
+    reason: isComplete ? "complete" : (holesWithValidScores === 0 ? "not_started" : "incomplete")
   };
 }
 
@@ -3150,8 +4026,8 @@ function getPartialRulesForBetType(betType) {
   const partialRules = {
     match_winner: {
       minimumCompletion: 0.5,        // Need at least 9 holes
-      allowPartialSettlement: true,
-      method: "prorated"
+      allowPartialSettlement: false, // Incomplete head-to-head result is refunded
+      method: "void"
     },
 
     match_margin: {
@@ -3167,7 +4043,7 @@ function getPartialRulesForBetType(betType) {
     },
 
     nassau: {
-      minimumCompletion: 0.5,        // Can settle front/back/overall separately
+      minimumCompletion: 0.25,       // Nassau components can become mathematically decided early
       allowPartialSettlement: true,
       method: "component_based"      // Settle completed components only
     },
@@ -3310,36 +4186,20 @@ function processComponentBased(match, bet, completionStatus) {
   if (bet.type !== "nassau") {
     return processProrated(match, bet, completionStatus);
   }
-
-  const component = bet.component;
-  let canSettle = false;
-
-  if (component === "front9" && completionStatus.holesCompleted >= 9) {
-    canSettle = true;
-  } else if (component === "back9" && completionStatus.holesCompleted >= 18) {
-    canSettle = true;
-  } else if (component === "overall" && completionStatus.completionPercentage >= 0.67) {
-    canSettle = true; // Can extrapolate if 2/3 complete
-  }
-
-  if (canSettle) {
-    const result = settleNassauBet(bet, match);
-    return result ? {
+  const result = settleNassauBet(bet, match);
+  if (result) {
+    return {
       status: result.status,
       payout: result.payout,
       reason: "component_settlement"
-    } : {
-      status: "void",
-      payout: bet.stake,
-      reason: "component_settlement_failed"
-    };
-  } else {
-    return {
-      status: "void",
-      payout: bet.stake,
-      reason: "component_incomplete"
     };
   }
+
+  return {
+    status: "void",
+    payout: bet.stake,
+    reason: "component_incomplete"
+  };
 }
 
 /**
@@ -3404,6 +4264,24 @@ function processHolesCompleted(match, bet, completionStatus) {
  */
 function processHolesWon(match, bet, completionStatus) {
   if (bet.type === "match_play") {
+    const matchPlay = calculateMatchPlayResult(match);
+    if (!matchPlay) {
+      return {
+        status: "void",
+        payout: bet.stake,
+        reason: "match_play_settlement_failed"
+      };
+    }
+
+    // If the partial round did not mathematically decide the match, void.
+    if (!matchPlay.isFinalResult) {
+      return {
+        status: "void",
+        payout: bet.stake,
+        reason: "match_play_incomplete_no_decision"
+      };
+    }
+
     const result = settleMatchPlayBet(bet, match);
     return result ? {
       status: result.status,

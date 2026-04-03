@@ -12,7 +12,7 @@
 **Response:** "That's the best part — you don't set up anything. Players scan a QR code at registration. We print the code, we handle the tech, we manage the settlement. Your staff doesn't touch a thing. The only 'work' you do is put our QR code next to the pin sheets, and collect your commission check."
 
 ### 4. "What's the catch? Why is it free?"
-**Response:** "No catch. Our business model is simple: players pay $32 or $149 per event depending on the format. We keep our share, you keep 25%. If nobody uses it, nobody pays anything — including you. We're incentivized to make the product great because we only make money when your players love it."
+**Response:** "No catch. Our business model is simple: players pay $32/event or $149/season pass depending on how often they play. We keep our share, you keep 25%. If nobody uses it, nobody pays anything — including you. We're incentivized to make the product great because we only make money when your players love it."
 
 ### 5. "Our members are older / not tech-savvy"
 **Response:** "We built Waggle specifically for the golf course, not for tech people. There's no app to download — it works on any phone's browser. The interface is designed for sunlight readability with big buttons. If your members can check a text message, they can use Waggle. And for members who don't want to use it, it doesn't affect their round at all."

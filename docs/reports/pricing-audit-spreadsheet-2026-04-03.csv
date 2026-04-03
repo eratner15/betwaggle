@@ -1,0 +1,22 @@
+page,element,current_price,correct_price,status,source
+/,hero_and_primary_cta,$32/event,$32/event,correct,index.html
+/,season_card_price,$149/season,$149/season pass,copy_mismatch,index.html
+/,season_cta_footer,"Set Up Your Season — $149/season","Set Up Your Season — $149/season pass",copy_mismatch,index.html
+/tour/,pricing_table,"$149/season and $32/event","$149/season pass and $32/event",copy_mismatch,tour/index.html
+/tour/,legacy_199_check,not_found,not_found,correct,tour/index.html
+/pricing/,meta_og_twitter_copy,$149/season,$149/season pass,copy_mismatch,pricing/index.html
+/pricing/,hero_and_table_copy,$149/season,$149/season pass,copy_mismatch,pricing/index.html
+/pricing/,event_ctas,$32/event,$32/event,correct,pricing/index.html
+/pricing/,season_cta_prompt_banner,"Set Up Your Season — $149/season","Set Up Your Season — $149/season pass",copy_mismatch,pricing/index.html
+/demo/,event_cta_and_support,$32/event,$32/event,correct,demo/index.html
+/create/,format_badge_and_price_tile,$149/season,$149/season pass,copy_mismatch,create/index.html
+/emails/affiliate-welcome.html,affiliate_conversion_copy,$149/season,$149/season pass,copy_mismatch,emails/affiliate-welcome.html
+/emails/outreach/ca-golf-sequence.html,preview_and_body_copy,$149/season,$149/season pass,copy_mismatch,emails/outreach/ca-golf-sequence.html
+/emails/outreach/fl-charity-sequence.html,body_copy,$149/season,$149/season pass,copy_mismatch,emails/outreach/fl-charity-sequence.html
+/emails/outreach/sc-nc-premium-sequence.html,pricing_copy,"$149/season pass + $32/event","$149/season pass + $32/event",correct,emails/outreach/sc-nc-premium-sequence.html
+/emails/drip-03-feature-spotlight.html,event_cta,$32/event,$32/event,correct,emails/drip-03-feature-spotlight.html
+/emails/drip-04-urgency.html,event_cta_and_subject,$32/event,$32/event,correct,emails/drip-04-urgency.html
+/emails/drip-05-last-chance.html,event_cta_and_subject,$32/event,$32/event,correct,emails/drip-05-last-chance.html
+/worker.js,waggle_labels_trip_outing,$32,$32/event,copy_mismatch,worker.js
+/worker.js,waggle_labels_season,$149/season,$149/season pass,copy_mismatch,worker.js
+/worker.js,ad_prompt_copy_club_segment,$149/season,$149/season pass,copy_mismatch,worker.js

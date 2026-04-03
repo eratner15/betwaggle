@@ -1,0 +1,12 @@
+page,check,status,details,evidence
+/,Pricing consistency,pass,"All public price mentions use canonical pricing ($32/event, $149/season).",index.html:1439|2352|2367|2400
+/,CTA consistency,pass,"Primary CTA uses 'Set Up Your Event — $32'; secondary CTA uses 'Try the Demo'.",index.html:1441|1442|2348|2363|2716|2720
+/tour/,Pricing consistency,pass,"Comparison table shows $149/season and $32/event; no legacy $199 pricing remains.",tour/index.html:295
+/tour/,CTA consistency,pass,"Primary CTA uses 'Set Up Your Event — $32'; secondary CTA uses 'Try the Demo'.",tour/index.html:131|210|211|272|273|304
+/pricing/,Pricing consistency,pass,"Hero, cards, and table use canonical pricing language ($32/event, $149/season).",pricing/index.html:715|789|847|871
+/pricing/,CTA consistency,pass,"Primary CTA uses 'Set Up Your Event — $32'; secondary CTA uses 'Try the Demo'.",pricing/index.html:707|741|762|801|899|911
+/demo/,Pricing consistency,pass,"Primary conversion CTA is 'Set Up Your Event — $32' with supporting '$32/event' copy.",demo/index.html:448|451
+/demo/,CTA consistency,pass,"Demo cards consistently use 'Try the Demo' and final conversion CTA uses primary event CTA.",demo/index.html:146|182|217|253|289|325|352|374|396|418|440|448
+/affiliate/ and /affiliates/,Route consolidation,pass,"Added redirect page at /affiliate/ to canonical /affiliates/.",affiliate/index.html:1
+/marketing/ /gtm/ /ads/,Public access lockout,needs_backend_verification,"Internal routes require backend/auth verification before close. Coordinate with Shank.",worker.js:19|20|21|26|27|28
+Post-change QA,Link + CTA validation,pending,"Spotter QA needed to verify CTA targets and redirects in production.",n/a

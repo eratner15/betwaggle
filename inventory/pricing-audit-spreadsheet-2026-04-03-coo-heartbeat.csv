@@ -1,0 +1,23 @@
+page,element,current_price,correct_price,status,evidence,last_checked
+/,Primary event CTAs,"Set Up Your Event — $32","Set Up Your Event — $32",correct,"index.html:1438|1452|2359|2373|2388|2727|2732|2756|2768",2026-04-03 12:25 EDT
+/,Season pass copy,"$149/season","$149/season pass",incorrect,"index.html:2378|2733|2770",2026-04-03 12:25 EDT
+/tour/ (live),Page availability,"307 self-redirect loop","200 page with canonical pricing",incorrect,"curl -I https://betwaggle.com/tour/ => location:/tour/",2026-04-03 12:24 EDT
+/tour/ (source),Comparison table season price,"$149/season","$149/season pass",incorrect,"tour/index.html:295",2026-04-03 12:25 EDT
+/tour/ (source),Event CTAs,"Set Up Your Event — $32","Set Up Your Event — $32",correct,"tour/index.html:131|210|272|304",2026-04-03 12:25 EDT
+/pricing/ (live),Page availability,"404 Event Not Found","200 page with canonical pricing",incorrect,"curl -I https://betwaggle.com/pricing/ => 404",2026-04-03 12:24 EDT
+/pricing/ (source),Season pass metadata+hero+table,"$149/season","$149/season pass",incorrect,"pricing/index.html:7|11|12|22|23|715|789|847|871",2026-04-03 12:25 EDT
+/pricing/ (source),Season CTA/button/prompt/banner,"Set Up Your Season — $149/season","Set Up Your Season — $149/season pass",incorrect,"pricing/index.html:781|910|947|959|960|968",2026-04-03 12:25 EDT
+/pricing/ (source),Event CTAs,"Set Up Your Event — $32 / $32/event","Set Up Your Event — $32 / $32/event",correct,"pricing/index.html:707|730|741|750|762|899|909",2026-04-03 12:25 EDT
+/demo/,Primary CTA,"Set Up Your Event — $32","Set Up Your Event — $32",correct,"demo/index.html:448",2026-04-03 12:25 EDT
+/demo/,Support price copy,"$32/event","$32/event",correct,"demo/index.html:451",2026-04-03 12:25 EDT
+/create/ (live),Page availability,"307 self-redirect loop","200 page (conversion route)",incorrect,"curl -I https://betwaggle.com/create/ => location:/create/",2026-04-03 12:24 EDT
+/create/ (source),Season label and badge,"$149/season","$149/season pass",incorrect,"create/index.html:485|2633",2026-04-03 12:25 EDT
+/create/ (source),Event price copy,"$32/event","$32/event",correct,"create/index.html:2365",2026-04-03 12:25 EDT
+worker.js,Checkout/public season labels,"$149/season","$149/season pass",incorrect,"worker.js:2032|2035|4168|4173",2026-04-03 12:25 EDT
+emails/SEQUENCE.md,Pricing style guidance,"$149/season","$149/season pass",incorrect,"emails/SEQUENCE.md:25",2026-04-03 12:25 EDT
+emails/outreach/ca-golf-sequence.html,Season pricing copy,"$149/season","$149/season pass",incorrect,"lines 12|42|92",2026-04-03 12:25 EDT
+emails/outreach/fl-charity-sequence.html,Season pricing copy,"$149/season","$149/season pass",incorrect,"line 38",2026-04-03 12:25 EDT
+emails/affiliate-welcome.html,Season pricing copy,"$149/season","$149/season pass",incorrect,"line 50",2026-04-03 12:25 EDT
+emails/outreach/sc-nc-premium-sequence.html,Season pricing copy,"$149/season pass","$149/season pass",correct,"lines 11|37|81",2026-04-03 12:25 EDT
+repo-wide search,Legacy $199 references,"none found","none",correct,"rg '$199' across *.html/*.js/*.json",2026-04-03 12:25 EDT
+repo-wide search,Legacy $29 references,"none found","none",correct,"rg '$29' across create/index.html worker.js app/js/*.js",2026-04-03 12:25 EDT

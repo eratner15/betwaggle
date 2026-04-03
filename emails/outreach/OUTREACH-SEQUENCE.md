@@ -74,6 +74,6 @@ All templates use these merge fields:
 
 ## Pricing Reference
 
-- **Scrambles/tournaments:** $149/event
+- **Scrambles/tournaments:** $149/season pass
 - **Buddies trips:** $32/event
 - **Affiliate payout:** $8 (Starter), $10 (Pro), $12 (Ambassador) per event referred

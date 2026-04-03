@@ -25,8 +25,8 @@
   <!-- PWA / Mobile -->
   <meta name="theme-color" content="#0D2818">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="/bet_waggle_logo_no_background.png">
-  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="apple-touch-icon" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -925,7 +925,7 @@
   <!-- NAV -->
   <nav>
     <a href="/" class="nav-logo">
-      <img src="/bet_waggle_logo_no_background.png" alt="Waggle" width="28" height="28" style="border-radius:4px">
+      <img src="/waggle_logo.jpg" alt="Waggle" width="28" height="28" style="border-radius:4px">
       <span>Waggle</span>
       <span class="nav-badge">Pro</span>
     </a>
@@ -1053,7 +1053,7 @@
     <div class="revenue-inner">
       <span class="section-label">Affiliate Program</span>
       <h2>Earn on every event your members play.</h2>
-      <p>Waggle charges $32 per event. As an affiliate partner, you earn a commission on every paid event booked through your course. No cost to you, ever.</p>
+      <p>Waggle charges $32/event. As an affiliate partner, you earn a commission on every paid event booked through your course. No cost to you, ever.</p>
       <div class="revenue-cards">
         <div class="rev-card">
           <div class="rev-card-num">$0</div>
@@ -1350,7 +1350,7 @@
             result.className = 'form-result success';
             result.innerHTML = '<strong>You are in.</strong> Your affiliate link is ready. Share it with your members or use it when creating events.'
               + '<span class="affiliate-link-box" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent);this.style.borderColor=\'var(--sage)\';var el=this;setTimeout(function(){el.style.borderColor=\'\'},1500)" title="Click to copy">' + data.link + '</span>'
-              + '<span style="font-size:12px;color:rgba(255,255,255,.35);display:block;margin-top:8px">Click the link to copy. <a href="' + (data.dashboard || '/affiliate/?code=' + data.affiliate_id) + '" style="color:var(--gold);text-decoration:underline">View your dashboard &rarr;</a></span>';
+              + '<span style="font-size:12px;color:rgba(255,255,255,.35);display:block;margin-top:8px">Click the link to copy. <a href="' + (data.dashboard || '/affiliates/?code=' + data.affiliate_id) + '" style="color:var(--gold);text-decoration:underline">View your dashboard &rarr;</a></span>';
             form.style.display = 'none';
           } else {
             result.className = 'form-result error';

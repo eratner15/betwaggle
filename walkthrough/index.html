@@ -463,6 +463,13 @@ html, body {
   letter-spacing: -1px;
   margin-bottom: 6px;
 }
+.title-logo-image {
+  display: block;
+  height: 60px;
+  width: auto;
+  margin: 0 auto 20px;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+}
 .title-tagline {
   font-size: 16px;
   color: var(--white);
@@ -522,8 +529,8 @@ html, body {
 
   <!-- SLIDE 0: TITLE -->
   <div class="slide active" data-slide="0">
-    <div class="title-logo">Waggle</div>
-    <div class="slide-headline" style="font-size: 22px; margin-bottom: 16px;">in 60 Seconds</div>
+    <img class="title-logo-image" src="../waggle_logo.jpg" alt="Waggle logo">
+    <div class="slide-headline" style="font-size: 22px; margin-bottom: 16px;">Waggle in 60 Seconds</div>
     <div class="title-tagline">The sportsbook for your golf group.<br>No app. No math. No arguments.</div>
   </div>
 
@@ -746,7 +753,7 @@ html, body {
   <!-- SLIDE 8: PRICING -->
   <div class="slide" data-slide="8">
     <div class="slide-headline">Simple Pricing</div>
-    <div class="slide-subline">Under $4 per player for a full tournament experience.</div>
+    <div class="slide-subline">Start at $32/event. Upgrade to $149/season for unlimited events.</div>
     <div class="slide-visual">
       <div class="pricing-grid">
         <div class="pricing-tier">
@@ -754,7 +761,7 @@ html, body {
             <div class="pricing-tier-name">Casual Round</div>
             <div class="pricing-tier-desc">2-4 players, basic games</div>
           </div>
-          <div class="pricing-tier-price">Free</div>
+          <div class="pricing-tier-price">$32 <span class="per">/event</span></div>
         </div>
         <div class="pricing-tier featured">
           <div>
@@ -768,7 +775,7 @@ html, body {
             <div class="pricing-tier-name">Tournament</div>
             <div class="pricing-tier-desc">16+ players, multi-day, custom rules</div>
           </div>
-          <div class="pricing-tier-price">$99 <span class="per">/event</span></div>
+          <div class="pricing-tier-price">$149 <span class="per">/season</span></div>
         </div>
       </div>
     </div>
@@ -777,8 +784,8 @@ html, body {
   <!-- SLIDE 9: CTA -->
   <div class="slide" data-slide="9">
     <div class="slide-headline" style="font-size: 40px; margin-bottom: 24px;">Ready?</div>
-    <a href="/create/" class="cta-primary">Set Up Your Event &rarr;</a>
-    <a href="/demo-buddies/" class="cta-secondary">See the Live Demo &rarr;</a>
+    <a href="/create/" class="cta-primary">Set Up Your Event &mdash; $32/event</a>
+    <a href="/demo/" class="cta-secondary">Try the Demo</a>
   </div>
 
 </div>

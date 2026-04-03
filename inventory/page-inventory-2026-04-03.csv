@@ -1,0 +1,15 @@
+path,purpose,public_status,http_status,pricing_status,link_status,notes,last_checked
+/,Homepage conversion entry,public,200,mixed,working,"Event pricing correct; season copy still uses $149/season in multiple spots",2026-04-03T11:53:00-04:00
+/tour/,Product tour and comparison,public,200,mixed,working,"No legacy $199 found; pricing row still uses $149/season",2026-04-03T11:53:00-04:00
+/pricing/,Canonical pricing and checkout,public,200,mixed,working,"Season copy remains $149/season across meta, CTA, prompt, banner",2026-04-03T11:53:00-04:00
+/demo/,Demo launcher + proof,public,200,correct,working,"$32/event copy is consistent",2026-04-03T11:53:00-04:00
+/affiliate/,Legacy affiliate route,public_redirect,301,n/a,duplicate_route,"Redirects to /affiliates/; duplicate entry-point risk persists",2026-04-03T11:53:00-04:00
+/affiliates/,Primary affiliate page,public,200,n/a,working,"Live and reachable",2026-04-03T11:53:00-04:00
+/marketing/,Internal docs route,blocked,404,n/a,blocked,"No longer publicly accessible",2026-04-03T11:53:00-04:00
+/gtm/,Internal docs route,blocked,404,n/a,blocked,"No longer publicly accessible",2026-04-03T11:53:00-04:00
+/ads/,Internal docs route,blocked,404,n/a,blocked,"No longer publicly accessible",2026-04-03T11:53:00-04:00
+/join/,Legacy route,redirect,301,n/a,redirect,"No direct 404; route now redirects",2026-04-03T11:53:00-04:00
+/about/,Legacy route,redirect,301,n/a,redirect,"No direct 404; route now redirects",2026-04-03T11:53:00-04:00
+/games/stroke-play/,Game route,redirect,301,n/a,redirect,"No direct 404; route now redirects",2026-04-03T11:53:00-04:00
+/games/round-robin/,Game route,redirect,301,n/a,redirect,"No direct 404; route now redirects",2026-04-03T11:53:00-04:00
+/games/chapman/,Game route,redirect,301,n/a,redirect,"No direct 404; route now redirects",2026-04-03T11:53:00-04:00

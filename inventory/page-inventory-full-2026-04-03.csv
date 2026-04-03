@@ -1,0 +1,55 @@
+page,purpose,intended_visibility,live_http_status,pricing_status,link_status,status_notes,last_checked_utc
+/,Homepage conversion path,public,200,needs_copy_normalization,working,"Core conversion homepage",2026-04-03T15:25:36Z
+/create/,Event creation and checkout flow,public,200,incorrect,working,"Contains 29 hardcode in source",2026-04-03T15:25:36Z
+/pricing/,Canonical pricing page,public,200,needs_copy_normalization,working,"Season copy still says $149/season",2026-04-03T15:25:36Z
+/tour/,Product tour and comparison,public,200,needs_copy_normalization,working,"No $199 found; CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/demo/,Demo launcher page,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/demo-buddies/,Demo buddies experience,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/demo-scramble/,Demo scramble experience,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/legends-trip/,Demo seeded event,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/stag-night/,Demo seeded event,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/augusta-scramble/,Demo seeded event,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/masters-member-guest/,Demo seeded event,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/weekend-warrior/,Demo seeded event,public,200,n/a,working,"Live demo route",2026-04-03T15:25:36Z
+/games/,Games hub,public,200,needs_copy_normalization,working,"Multiple CTAs use $32 shorthand",2026-04-03T15:25:36Z
+/games/nassau/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/skins/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/scramble/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/best-ball/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/wolf/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/vegas/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/match-play/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/stableford/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/banker/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/bloodsome/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/games/bingo-bango-bongo/,Game landing page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/guides/,Guides hub,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/guides/how-to-run-a-charity-golf-scramble/,Guide article,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/guides/golf-trip-betting-formats/,Guide article,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/guides/how-to-settle-golf-bets/,Guide article,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/guides/best-golf-betting-games-for-a-foursome/,Guide article,public,200,needs_copy_normalization,working,"CTA uses $32 shorthand",2026-04-03T15:25:36Z
+/overview/,Overview page,public,200,n/a,working,"Public content page",2026-04-03T15:25:36Z
+/courses/,Course directory,public,200,n/a,working,"Public discovery page",2026-04-03T15:25:36Z
+/my-events/,My events page,public,200,n/a,working,"Requires event context/login for full utility",2026-04-03T15:25:36Z
+/affiliates/,Affiliate landing page,public,200,n/a,working,"Canonical affiliate route",2026-04-03T15:25:36Z
+/affiliate/,Legacy affiliate path,public,301,n/a,redirects,"Should redirect to /affiliates/ Redirects to https://betwaggle.com/affiliates/.",2026-04-03T15:25:36Z
+/pro/,Course pro affiliate page,public,200,incorrect,working,"Contains $149 per event framing",2026-04-03T15:25:36Z
+/partner/,Partner page,public,200,n/a,working,"Public partner page",2026-04-03T15:25:36Z
+/register/,Registration page,public,200,n/a,working,"Public registration page",2026-04-03T15:25:36Z
+/share/,Share page,public,200,n/a,working,"Public share endpoint page",2026-04-03T15:25:36Z
+/walkthrough/,Walkthrough page,public,200,n/a,working,"Public onboarding page",2026-04-03T15:25:36Z
+/mclemore/,Campaign page,public,200,n/a,working,"Public campaign page",2026-04-03T15:25:36Z
+/mclemore/trip.html,Mclemore trip variant page,public,307,n/a,redirects,"Public campaign asset path Redirects to /mclemore/trip.",2026-04-03T15:25:36Z
+/b/,Alternate landing page,public,200,needs_copy_normalization,working,"Uses $32/$149 shorthand",2026-04-03T15:25:36Z
+/join/,Legacy route alias,public,301,n/a,redirects,"Expected redirect Redirects to https://betwaggle.com/create/.",2026-04-03T15:25:36Z
+/about/,Legacy route alias,public,301,n/a,redirects,"Expected redirect Redirects to https://betwaggle.com/overview/.",2026-04-03T15:25:36Z
+/games/stroke-play/,Legacy route alias,public,301,n/a,redirects,"Expected redirect Redirects to https://betwaggle.com/games/.",2026-04-03T15:25:36Z
+/games/round-robin/,Legacy route alias,public,301,n/a,redirects,"Expected redirect Redirects to https://betwaggle.com/games/.",2026-04-03T15:25:36Z
+/games/chapman/,Legacy route alias,public,301,n/a,redirects,"Expected redirect Redirects to https://betwaggle.com/games/.",2026-04-03T15:25:36Z
+/marketing/,Internal docs alias,internal,404,n/a,blocked,"Should remain blocked",2026-04-03T15:25:36Z
+/gtm/,Internal docs alias,internal,404,n/a,blocked,"Should remain blocked",2026-04-03T15:25:36Z
+/ads/,Internal docs alias,internal,404,n/a,blocked,"Should remain blocked",2026-04-03T15:25:36Z
+/marketing-private/,Internal marketing command center,internal,200,needs_update_exposed,working,"Publicly reachable internal page",2026-04-03T15:25:36Z
+/gtm-private/,Internal GTM strategy page,internal,200,incorrect_exposed,working,"Publicly reachable internal page",2026-04-03T15:25:36Z
+/ads-private/,Internal ad strategy page,internal,200,needs_update_exposed,working,"Publicly reachable internal page",2026-04-03T15:25:36Z
+/inventory/,Ops inventory page,internal_review,200,n/a,working,"Publicly reachable; confirm intended exposure",2026-04-03T15:25:36Z

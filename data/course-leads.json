@@ -1,0 +1,51 @@
+[
+  {
+    "name": "TPC Sawgrass (Stadium)",
+    "club": "TPC Sawgrass",
+    "city": "Ponte Vedra Beach",
+    "state": "FL",
+    "segment": "public"
+  },
+  {
+    "name": "Colonial Country Club",
+    "club": "Colonial Country Club",
+    "city": "Fort Worth",
+    "state": "TX",
+    "segment": "private"
+  },
+  {
+    "name": "TPC Scottsdale (Stadium Course)",
+    "club": "TPC Scottsdale",
+    "city": "Scottsdale",
+    "state": "AZ",
+    "segment": "public"
+  },
+  {
+    "name": "Pebble Beach Golf Links",
+    "club": "Pebble Beach Golf Links",
+    "city": "Pebble Beach",
+    "state": "CA",
+    "segment": "public"
+  },
+  {
+    "name": "Harbour Town Golf Links",
+    "club": "Harbour Town Golf Links",
+    "city": "Hilton Head Island",
+    "state": "SC",
+    "segment": "public"
+  },
+  {
+    "name": "Pinehurst Resort & Country Club (No. 2)",
+    "club": "Pinehurst Resort & Country Club",
+    "city": "Pinehurst",
+    "state": "NC",
+    "segment": "private"
+  },
+  {
+    "name": "Augusta National Golf Club",
+    "club": "Augusta National Golf Club",
+    "city": "Augusta",
+    "state": "GA",
+    "segment": "private"
+  }
+]

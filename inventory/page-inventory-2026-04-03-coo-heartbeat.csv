@@ -1,0 +1,20 @@
+page,purpose,should_be_public,http_status_or_behavior,pricing_status,link_status,notes,last_checked
+/,Homepage entrypoint,yes,"307 -> /b/",mixed,mixed,"Redirects to /b/ variant; includes season copy mismatch in source homepage",2026-04-03 12:25 EDT
+/b/,Homepage variant,yes,200,mixed,working,"Primary live home response",2026-04-03 12:25 EDT
+/create/,Event setup funnel,yes,"307 self-redirect loop",unknown,broken,"Conversion-critical route currently inaccessible",2026-04-03 12:24 EDT
+/tour/,Tour page,yes,"307 self-redirect loop",unknown,broken,"Live page inaccessible; source has season-pass wording mismatch",2026-04-03 12:24 EDT
+/pricing/,Canonical pricing page,yes,404,broken,broken,"Critical regression: pricing route not publicly available",2026-04-03 12:24 EDT
+/demo/,Demo launcher,yes,200,correct,working,"Loads and shows approved $32/event pricing copy",2026-04-03 12:24 EDT
+/demo-buddies/,Demo variant,yes,200,not_priced,working,"Loads",2026-04-03 12:24 EDT
+/demo-scramble/,Demo variant,yes,200,not_priced,working,"Loads",2026-04-03 12:24 EDT
+/overview/,Overview page,yes,"307 self-redirect loop",unknown,broken,"Legacy /about/ points here, so /about/ effectively broken",2026-04-03 12:24 EDT
+/affiliates/,Affiliate signup page,yes,200,mixed,working,"Public and reachable",2026-04-03 12:24 EDT
+/affiliate/,Legacy affiliate alias,yes,"301 -> /affiliates/",mixed,working,"Duplicate path still exists via redirect alias",2026-04-03 12:24 EDT
+/marketing/,Internal docs,no,404,n_a,working,"No longer publicly exposed",2026-04-03 12:24 EDT
+/gtm/,Internal docs,no,404,n_a,working,"No longer publicly exposed",2026-04-03 12:24 EDT
+/ads/,Internal docs,no,404,n_a,working,"No longer publicly exposed",2026-04-03 12:24 EDT
+/join/,Legacy route,yes,"301 -> /create/ (loop target)",n_a,broken,"Redirect target is broken",2026-04-03 12:24 EDT
+/about/,Legacy route,yes,"301 -> /overview/ (loop target)",n_a,broken,"Redirect target is broken",2026-04-03 12:24 EDT
+/games/stroke-play/,Legacy game URL,yes,"301 -> /games/",n_a,working,"No longer a true 404",2026-04-03 12:24 EDT
+/games/round-robin/,Legacy game URL,yes,"301 -> /games/",n_a,working,"No longer a true 404",2026-04-03 12:24 EDT
+/games/chapman/,Legacy game URL,yes,"301 -> /games/",n_a,working,"No longer a true 404",2026-04-03 12:24 EDT

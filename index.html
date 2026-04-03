@@ -26,8 +26,8 @@
   <meta name="theme-color" content="#0D2818">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Waggle">
-  <link rel="apple-touch-icon" href="/bet_waggle_logo_no_background.png">
-  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="apple-touch-icon" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgA.woff2" as="font" type="font/woff2" crossorigin>
@@ -81,6 +81,15 @@
       gap: 10px;
       text-decoration: none;
     }
+    .nav-logo-img {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.2);
+      box-shadow: 0 4px 14px rgba(0,0,0,.3);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
     .nav-logo span {
       font-family: 'Playfair Display', serif;
       font-size: 20px;
@@ -97,7 +106,7 @@
       letter-spacing: .08em;
       text-transform: uppercase;
       padding: 12px 4px 12px;
-      min-height: 44px;
+      min-height: 56px;
       display: flex;
       align-items: center;
       transition: color .15s;
@@ -194,28 +203,38 @@
     }
 
     .btn-primary {
-      display: inline-block;
-      background: var(--gold);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #D4AF37 0%, #C5A059 100%);
       color: var(--forest);
       font-size: 17px;
       font-weight: 700;
       letter-spacing: .04em;
       padding: 18px 40px;
+      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       transition: background .15s, transform .15s, box-shadow .2s;
       box-shadow: 0 4px 20px rgba(201,168,76,.35);
     }
-    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #E2C66A 0%, #C5A059 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(201,168,76,.4);
+    }
 
     .btn-secondary {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: rgba(255,255,255,.05);
       color: rgba(255,255,255,.8);
       font-size: 15px;
       font-weight: 600;
       letter-spacing: .03em;
       padding: 14px 32px;
+      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       border: 1.5px solid rgba(255,255,255,.3);
@@ -246,6 +265,7 @@
       border-radius: 14px 14px 0 0;
       width: 100%;
       max-width: 340px;
+      min-height: 420px;
       overflow: hidden;
       box-shadow: 0 -8px 48px rgba(0,0,0,.4), 0 0 0 1.5px var(--gold);
     }
@@ -436,11 +456,15 @@
     .mockup-btn {
       flex: 1;
       padding: 10px;
+      min-height: 56px;
       border-radius: 5px;
       font-size: 12px;
       font-weight: 600;
       text-align: center;
       letter-spacing: .03em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .mockup-btn-primary { background: var(--gold); color: var(--forest); font-weight: 700; }
     .mockup-btn-secondary { background: #fff; color: var(--forest); border: 1px solid var(--rule); font-weight: 600; }
@@ -614,6 +638,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 56px;
       padding: 16px 12px;
       background: none;
       border: none;
@@ -1405,11 +1430,12 @@
   <!-- NAV -->
   <nav>
     <a class="nav-logo" href="/">
+      <img class="nav-logo-img" src="/waggle_logo.jpg" alt="Waggle logo" loading="eager" decoding="async">
       <span>Waggle</span>
     </a>
     <div class="nav-links">
-      <a class="nav-demo" href="/courses/">Find a Course</a>
-      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32/event</a>
+      <a class="nav-demo" href="/demo/">Try the Demo</a>
+      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32</a>
     </div>
   </nav>
 
@@ -1423,11 +1449,11 @@
         <p class="hero-sub" style="margin-bottom:6px">The live sportsbook your foursome has been running manually for years.</p>
         <p class="hero-sub">$32/event to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic.</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32/event</a>
+          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32</a>
           <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
-          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
+          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; $32/event</span>
           <div style="margin-top:10px;text-align:center">
-            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:44px">Already playing? Find your match &rarr;</a>
+            <a href="/demo/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:56px">Try the Demo</a>
           </div>
         </div>
       </div>
@@ -2284,7 +2310,7 @@
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
           <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
         </div>
-        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32</a>
       </div>
     </div>
   </div>
@@ -2321,21 +2347,21 @@
 
       <div class="pricing-grid">
         <div class="price-card">
-          <span class="price-type">Weekend Warrior</span>
-          <div class="price-amount" style="font-size:2.2rem">Free</div>
-          <span class="price-period">casual rounds, always free</span>
+          <span class="price-type">Event Pass</span>
+          <div class="price-amount" style="font-size:2.2rem">$32/event</div>
+          <span class="price-period">under $8/person for a foursome</span>
           <div class="price-details">
             <span class="price-detail">All 12 game formats, live scoring</span>
             <span class="price-detail">Hole-by-hole scorecard + game summaries</span>
             <span class="price-detail">Perfect for a spontaneous money match</span>
-            <span class="price-detail">No payment, no account required</span>
+            <span class="price-detail">One setup link for the entire group</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
           <div class="price-amount">$32/event</div>
-          <span class="price-period">per event &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
+          <span class="price-period">$32/event &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
           <div class="price-details">
             <span class="price-detail">All 8 formats with live scoring + betting</span>
             <span class="price-detail">GHIN lookup, handicaps auto-filled, no typing</span>
@@ -2344,13 +2370,13 @@
             <span class="price-detail">Shareable settlement card at round end</span>
             <span class="price-detail">Any phone, no app required</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
           <div class="price-amount">$149/season</div>
-          <span class="price-period">per season, unlimited events &amp; players</span>
+          <span class="price-period">$149/season, unlimited events &amp; players</span>
           <div class="price-details">
             <span class="price-detail">Team scramble with live leaderboard</span>
             <span class="price-detail">Closest to pin and longest drive tracking</span>
@@ -2359,8 +2385,8 @@
             <span class="price-detail">Flight assignments and pairing management</span>
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
       </div>
 
@@ -2382,16 +2408,16 @@
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
           <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32/event and sets up the outing. Everyone else joins free via a shared link.</p>
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32/event and sets up the outing. Everyone else joins from the same shared link.</p>
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
           <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            Can I try it free first?
+            Can I test the demo first?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
           <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Free rounds include all 12 game formats with live scoring. The paid tier adds GHIN auto-lookup, AI pairings, live betting odds, and the settlement card.</p>
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Start with the interactive demo, then set up your group at $32/event when you are ready. The full flow includes GHIN auto-lookup, AI pairings, live betting odds, and settlement cards.</p>
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
@@ -2698,13 +2724,13 @@
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32/event</a>
-        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">Free for casual rounds &middot; No credit card required</span>
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32</a>
+        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">$32/event &middot; No credit card required</span>
       </div>
       <div class="final-links">
         <a href="/demo/">Try the Demo</a>
-        <a href="/overview/">Setup guide</a>
-        <a href="/games/">Game rules</a>
+        <a href="/create/">Set Up Your Event &mdash; $32</a>
+        <a href="/create/?tier=season">Set Up Your Season &mdash; $149/season</a>
       </div>
     </div>
   </div>
@@ -2727,7 +2753,7 @@
       document.getElementById('email-input').disabled = true;
       btn.textContent = 'Sent';
     } catch(err) {
-      btn.textContent = 'Set Up Your Event — $32/event';
+      btn.textContent = 'Set Up Your Event — $32';
       btn.disabled = false;
     }
   }
@@ -2739,9 +2765,9 @@
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32/event</a>
-        <a href="/courses/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
-        <a href="/overview/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
+        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32</a>
+        <a href="/demo/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Try the Demo</a>
+        <a href="/create/?tier=season" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Season &mdash; $149/season</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
       <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>

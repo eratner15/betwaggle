@@ -1,0 +1,25 @@
+page,purpose,should_be_public,live_status,pricing_state,link_health,notes,checked_at
+/,Homepage conversion entry,yes,200,mixed_copy,working,"$32/event is correct; season copy still uses '$149/season'",2026-04-03
+/create/,Event creation funnel,yes,200,mixed_copy,working,"Contains '$149/season' labels for season option",2026-04-03
+/tour/,Product tour and comparison,yes,200,mixed_copy,working,"No $199 found; season shown as '$149/season'",2026-04-03
+/pricing/,Canonical pricing and checkout,yes,200,mixed_copy,working,"Event copy correct; season copy uses '$149/season' in multiple elements",2026-04-03
+/demo/,Interactive demo launcher,yes,200,correct,working,"$32/event wording present; no legacy $199",2026-04-03
+/games/,Game format directory,yes,200,not_applicable,working,"No pricing inconsistency observed in top-level route checks",2026-04-03
+/guides/,SEO guide hub,yes,200,not_applicable,working,"Content pages load from sitemap routes",2026-04-03
+/overview/,Product overview page,yes,200,not_applicable,working,"Loads successfully",2026-04-03
+/courses/,Course directory,yes,200,not_applicable,working,"Loads successfully",2026-04-03
+/my-events/,Returning user event lookup,yes,200,not_applicable,working,"Loads successfully",2026-04-03
+/affiliates/,Affiliate landing page,yes,200,not_applicable,working,"Canonical affiliate route",2026-04-03
+/affiliate/,Legacy affiliate route alias,no,301,not_applicable,redirected,"Redirects to /affiliates/ (duplicate entry point still exists)",2026-04-03
+/marketing/,Legacy internal docs route,no,404,not_applicable,blocked,"Public legacy route blocked",2026-04-03
+/gtm/,Legacy GTM docs route,no,404,not_applicable,blocked,"Public legacy route blocked",2026-04-03
+/ads/,Legacy ads docs route,no,404,not_applicable,blocked,"Public legacy route blocked",2026-04-03
+/marketing-private/,Internal marketing workspace,no,200,not_applicable,exposed,"Internal content path is publicly accessible",2026-04-03
+/gtm-private/,Internal GTM workspace,no,200,not_applicable,exposed,"Internal content path is publicly accessible",2026-04-03
+/ads-private/,Internal ads workspace,no,200,not_applicable,exposed,"Internal content path is publicly accessible",2026-04-03
+/inventory/,Internal operations reports,no,200,not_applicable,exposed,"Operational audit artifacts are publicly accessible",2026-04-03
+/join/,Legacy route,no,301,not_applicable,redirected,"Redirects to /create/",2026-04-03
+/about/,Legacy route,no,301,not_applicable,redirected,"Redirects to /overview/",2026-04-03
+/games/stroke-play/,Deprecated game route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03
+/games/round-robin/,Deprecated game route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03
+/games/chapman/,Deprecated game route,no,301,not_applicable,redirected,"Redirects to /games/",2026-04-03

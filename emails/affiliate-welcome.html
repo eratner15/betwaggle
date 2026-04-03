@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!--
+      Subject: You're in — your Waggle affiliate link is ready
+      Trigger: immediate after affiliate signup
+      Variables:
+      - {{affiliate_name}}
+      - {{ref_code}}
+      - {{ref_link}}
+      - {{dashboard_url}}
+      - {{email}}
+    -->
+    <title>Welcome to Waggle Affiliate Program</title>
+  </head>
+  <body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,sans-serif;color:#0D2818">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#F5F0E8;padding:24px 0">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;background:#FFFFFF;border:1px solid #E7DCC8;border-radius:12px;overflow:hidden">
+            <tr>
+              <td style="background:#0D2818;color:#D4AF37;padding:20px 24px;font-size:20px;font-weight:700;letter-spacing:.04em">Waggle Partners</td>
+            </tr>
+            <tr>
+              <td style="padding:28px 24px 24px;line-height:1.6;font-size:15px;color:#1F2937">
+                <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;color:#0D2818;font-family:Georgia,'Times New Roman',serif">Welcome, {{affiliate_name}}.</h1>
+                <p style="margin:0 0 16px">You're live in the Waggle affiliate program.</p>
+                <p style="margin:0 0 16px">Your golfers get the sportsbook for their round. You get paid when they launch paid events.</p>
+
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:18px 0;background:#F9F7F2;border:1px solid #E7DCC8;border-radius:10px">
+                  <tr>
+                    <td style="padding:16px 16px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#6B7280">Your Ref Code</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 16px 14px;font-size:22px;font-weight:700;color:#0D2818">{{ref_code}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 16px 16px;font-size:14px">
+                      <a href="{{ref_link}}" style="color:#0D2818;font-weight:700;text-decoration:underline;word-break:break-all">{{ref_link}}</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <h2 style="margin:24px 0 10px;font-size:17px;color:#0D2818">How commissions work</h2>
+                <ul style="margin:0 0 16px;padding-left:20px">
+                  <li style="margin-bottom:8px">You earn <strong>25%</strong> on every paid event.</li>
+                  <li style="margin-bottom:8px"><strong>$8.00</strong> when someone buys <strong>$32/event</strong>.</li>
+                  <li style="margin-bottom:8px"><strong>$37.25</strong> when someone buys <strong>$149/season</strong>.</li>
+                </ul>
+
+                <h2 style="margin:24px 0 10px;font-size:17px;color:#0D2818">Your dashboard</h2>
+                <p style="margin:0 0 16px">Track referrals, payouts, and event activity here:</p>
+                <p style="margin:0 0 20px"><a href="{{dashboard_url}}" style="color:#0D2818;font-weight:700;text-decoration:underline">{{dashboard_url}}</a></p>
+
+                <h2 style="margin:24px 0 10px;font-size:17px;color:#0D2818">First 3 steps</h2>
+                <ol style="margin:0 0 22px;padding-left:20px">
+                  <li style="margin-bottom:8px">Text your link to your golf group organizer.</li>
+                  <li style="margin-bottom:8px">Post it in your member-guest or weekly league group chat.</li>
+                  <li style="margin-bottom:8px">Share it with your pro shop team before the next trip weekend.</li>
+                </ol>
+
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 0">
+                  <tr>
+                    <td style="background:#D4AF37;border-radius:8px">
+                      <a href="{{ref_link}}" style="display:inline-block;padding:14px 24px;color:#0D2818;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.03em">Copy My Referral Link</a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:22px 0 0">- Evan at Waggle</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 24px 24px;font-size:12px;color:#6B7280;line-height:1.5;border-top:1px solid #EFE7D9">
+                You received this because you signed up for Waggle affiliates.<br>
+                Manage communication preferences: <a href="https://betwaggle.com/unsubscribe?email={{email}}" style="color:#6B7280">unsubscribe</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

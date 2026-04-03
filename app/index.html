@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#1B3022">
+  <meta name="theme-color" content="#FCF9F4">
   <title>Waggle — Your Group's Sportsbook</title>
 
   <!-- Open Graph — makes iMessage/WhatsApp/text previews look great -->
@@ -28,13 +28,24 @@
   <!-- General -->
   <meta name="description" content="Live scores, betting board & Calcutta tracker for the 2026 Turnberry Isle Men's Member-Guest tournament. 48 teams, 8 flights, Soffer Course.">
   <meta name="apple-mobile-web-app-title" content="MG 2026">
-  <link rel="apple-touch-icon" href="/bet_waggle_logo_no_background.png">
-  <link rel="icon" type="image/svg+xml" href="/bet_waggle_logo_no_background.png">
+  <link rel="apple-touch-icon" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
   <link rel="manifest" href="/app/manifest.json">
   <!-- #19: Preconnect for fonts (avoid render-blocking @import) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('waggle-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = (stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light');
+        document.documentElement.classList.toggle('dark-mode', theme === 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="/app/css/styles.css">
   <style>
     @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
@@ -42,12 +53,17 @@
   </style>
 </head>
 <body>
-  <script>if(localStorage.getItem('waggle-outdoor')==='1')document.body.classList.add('outdoor')</script>
   <header class="mg-header">
-    <h1>betwaggle <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;vertical-align:middle;margin-left:6px;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span></h1>
+    <h1 class="mg-brand">
+      <img src="/waggle_logo.jpg" alt="Waggle" class="mg-brand-logo" width="28" height="28">
+      <span class="mg-brand-text">Waggle</span>
+      <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;vertical-align:middle;margin-left:6px;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span>
+    </h1>
     <div class="mg-subtitle">Turnberry Isle &bull; Soffer Course</div>
     <div id="mg-header-tabs" class="mg-header-tabs"></div>
-    <button class="outdoor-toggle" id="outdoor-toggle" title="Toggle Outdoor Mode" onclick="document.body.classList.toggle('outdoor');localStorage.setItem('waggle-outdoor',document.body.classList.contains('outdoor')?'1':'0')">☀️</button>
+    <button class="theme-toggle" id="theme-toggle" type="button" onclick="window.WaggleTheme.toggle()" aria-label="Switch to dark mode" title="Switch to dark mode">
+      <span id="theme-icon">&#9728;</span> <span id="theme-label">Light</span>
+    </button>
   </header>
   <div id="mg-gold-rule-top" style="height:1px;background:linear-gradient(90deg,transparent,#C5A059,transparent)"></div>
 
@@ -65,7 +81,7 @@
     </div>
   </div>
 
-  <button id="score-fab" class="score-fab" style="display:none" onclick="var el=document.getElementById('board-card-score-entry');if(el){el.scrollIntoView({behavior:'smooth',block:'center'})}else{window.MG.openScoreModal()}">
+  <button id="score-fab" class="score-fab" style="display:none" onclick="window.MG.openScoreComposer('fab')">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     <span id="score-fab-text">Score</span>
   </button>
@@ -109,30 +125,55 @@
 
   <div id="mg-toast" class="mg-toast"></div>
 
-  <!-- Outdoor mode toggle — high contrast for on-course glare -->
-  <button class="outdoor-toggle" id="outdoor-toggle" onclick="toggleOutdoorMode()">
-    <span id="outdoor-icon">&#9728;</span> <span id="outdoor-label">Sun</span>
-  </button>
-
   <script>
-    // Outdoor mode — persist preference and auto-detect
-    function toggleOutdoorMode() {
-      var active = document.body.classList.toggle('outdoor-mode');
-      localStorage.setItem('waggle_outdoor', active ? '1' : '0');
-      var label = document.getElementById('outdoor-label');
-      var icon = document.getElementById('outdoor-icon');
-      if (label) label.textContent = active ? 'Indoor' : 'Sun';
-      if (icon) icon.innerHTML = active ? '&#9789;' : '&#9728;';
-    }
-    // Restore on load
     (function() {
-      var saved = localStorage.getItem('waggle_outdoor');
-      if (saved === '1') {
-        document.body.classList.add('outdoor-mode');
-        var label = document.getElementById('outdoor-label');
-        var icon = document.getElementById('outdoor-icon');
-        if (label) label.textContent = 'Indoor';
-        if (icon) icon.innerHTML = '&#9789;';
+      var key = 'waggle-theme';
+      var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var metaTheme = document.querySelector('meta[name="theme-color"]');
+      var btn = document.getElementById('theme-toggle');
+      var icon = document.getElementById('theme-icon');
+      var label = document.getElementById('theme-label');
+
+      function storedTheme() {
+        var val = localStorage.getItem(key);
+        return val === 'dark' || val === 'light' ? val : null;
+      }
+
+      function preferredTheme() {
+        var saved = storedTheme();
+        if (saved) return saved;
+        return mql && mql.matches ? 'dark' : 'light';
+      }
+
+      function applyTheme(theme) {
+        var dark = theme === 'dark';
+        document.documentElement.classList.toggle('dark-mode', dark);
+        document.body.classList.toggle('dark-mode', dark);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
+        if (metaTheme) metaTheme.setAttribute('content', dark ? '#1B3022' : '#FCF9F4');
+        if (icon) icon.innerHTML = dark ? '&#9789;' : '&#9728;';
+        if (label) label.textContent = dark ? 'Dark' : 'Light';
+        if (btn) {
+          btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+          btn.setAttribute('title', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        }
+      }
+
+      window.WaggleTheme = {
+        toggle: function() {
+          var next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+          localStorage.setItem(key, next);
+          applyTheme(next);
+        }
+      };
+
+      applyTheme(preferredTheme());
+
+      if (mql && mql.addEventListener) {
+        mql.addEventListener('change', function(e) {
+          if (!storedTheme()) applyTheme(e.matches ? 'dark' : 'light');
+        });
       }
     })();
   </script>
