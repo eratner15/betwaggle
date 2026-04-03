@@ -1,7 +1,7 @@
 // All views for the Golf Event SPA — config-driven, no hardcoded tournament data
 // Shared utilities extracted to views-shared.js for modularity
 import { applyCapRule } from './data.js';
-import { flightWinnerOdds, matchOdds, marginOdds, probToAmerican, probToDecimal, mlToDecimal, placeBet, settleBets, getMatchMoneyline, getLiveMatchMoneyline, isMatchLocked, interpolateProb, mlToProb, fmtML, allocateRelativeZeroSum } from './betting.js';
+import { flightWinnerOdds, matchOdds, marginOdds, probToAmerican, probToDecimal, mlToDecimal, placeBet, settleBets, getMatchMoneyline, getLiveMatchMoneyline, isMatchLocked, interpolateProb, mlToProb, fmtML } from './betting.js';
 import { getFlightScenarioData, getRemainingMatches } from './scenarios.js';
 import { escHtml as _escHtml, getSkinsHoles as _getSkinsHoles, renderSkinsPanel as _renderSkinsPanel, getCoursePars as _getCoursePars, getCourseYardage as _getCourseYardage, getCourseHcpIndex as _getCourseHcpIndex, getPlayersFromConfig as _getPlayersFromConfig } from './views-shared.js';
 
@@ -67,26 +67,10 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
   const skinsWon = {};
   entities.forEach(e => { skinsWon[e.name] = { count: 0, value: 0 }; });
 
-  const roundPotValue = currentPot * Math.max(0, numP - 1) * skinsBetVal;
-  const coinCols = [1, 2, 3, 4, 5].map(n => {
-    const lit = n <= Math.min(5, Math.max(1, currentPot));
-    const h = 10 + (n * 4);
-    return `<span style="width:20px;height:${h}px;border-radius:999px;background:${lit ? 'linear-gradient(180deg,#F4D988,#D4AF37)' : 'rgba(244,217,136,0.2)'};border:1px solid ${lit ? 'rgba(244,217,136,0.75)' : 'rgba(212,175,55,0.28)'};box-shadow:${lit ? 'inset 0 1px 0 rgba(255,247,222,0.5)' : 'none'}"></span>`;
-  }).join('');
-
-  html += `<div style="background:linear-gradient(160deg,#1A472A,#0D2818);border:1px solid rgba(212,175,55,0.35);border-top:2px solid #D4AF37;border-radius:12px;padding:14px 14px 12px;margin-bottom:12px;box-shadow:0 10px 24px rgba(0,0,0,0.3)">`;
+  html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-top:2px solid var(--gold-primary,#C5A059);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <span style="font-family:Inter,sans-serif;font-size:15px;font-weight:700;color:#F6E7BC;letter-spacing:0.04em;text-transform:uppercase">${title}</span>
-    <span style="font-family:Inter,sans-serif;font-size:11px;color:#D8C58F;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">$${skinsBetVal}/skin</span>
-  </div>`;
-  html += `<div style="margin-bottom:12px;border-radius:10px;padding:10px 11px;background:rgba(13,40,24,0.55);border:1px solid rgba(212,175,55,0.3)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px">
-      <div>
-        <div style="font-family:Inter,sans-serif;font-size:10px;color:#D8C58F;letter-spacing:0.1em;text-transform:uppercase;font-weight:700">Active Pot</div>
-        <div style="font-family:Inter,sans-serif;font-size:28px;line-height:1;font-weight:700;color:#F4D988">$${roundPotValue}</div>
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:4px">${coinCols}</div>
-    </div>
+    <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">${title}</span>
+    <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
   </div>`;
 
   const holesToShow = maxHoles ? scoredHoles.slice(-maxHoles) : scoredHoles;
@@ -97,37 +81,36 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
       const val = (sk.potWon || 1) * (numP - 1) * skinsBetVal;
       if (skinsWon[sk.winner]) { skinsWon[sk.winner].count++; skinsWon[sk.winner].value += val; }
       const isCarryWin = (sk.potWon || 1) > 1;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:rgba(250,245,230,0.98);${h < Math.max(...scoredHoles) ? 'border:1px solid rgba(212,175,55,0.22)' : 'border:1px solid rgba(212,175,55,0.3)'}">
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${h < Math.max(...scoredHoles) ? 'border-bottom:1px solid var(--border)' : ''}">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:#5E634E;width:30px;letter-spacing:0.08em;text-transform:uppercase">H${h}</span>
-          <span style="font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#0D2818">${escHtml(String(sk.winner).split(' ')[0])}</span>
-          <span style="font-family:Inter,sans-serif;font-size:9px;line-height:1;font-weight:700;letter-spacing:0.08em;color:#8A6A12;text-transform:uppercase">Win</span>
-          ${isCarryWin ? `<span style="font-family:Inter,sans-serif;font-size:9px;font-weight:700;background:#D4AF37;color:#0D2818;padding:3px 6px;border-radius:999px;letter-spacing:0.08em;text-transform:uppercase">${sk.potWon}x carry</span>` : ''}
+          <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--win,#16A34A)">${escHtml(String(sk.winner).split(' ')[0])}</span>
+          ${isCarryWin ? `<span style="font-size:10px;font-weight:700;background:var(--gold-primary,#C5A059);color:white;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
         </div>
-        <span style="font-family:Inter,sans-serif;font-size:16px;font-weight:700;color:#8A6A12">$${val}</span>
+        <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--gold-primary,#C5A059)">$${val}</span>
       </div>`;
       currentPot = 1;
     } else if (sk.carried) {
       currentPot = (sk.potBefore || currentPot) + 1;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(212,175,55,0.2)">
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:#D8C58F;width:30px;letter-spacing:0.08em;text-transform:uppercase">H${h}</span>
-          <span style="font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#E8DEC3">Tied</span>
+          <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--page-text-muted)">Tied</span>
         </div>
-        <span style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;background:rgba(212,175,55,0.16);color:#F4D988;padding:4px 8px;border-radius:999px;letter-spacing:0.08em;text-transform:uppercase">Carry \u2192 ${currentPot}x</span>
+        <span style="font-size:11px;font-weight:700;background:rgba(197,160,89,0.15);color:var(--gold-primary);padding:3px 8px;border-radius:4px">CARRY \u2192 ${currentPot}x</span>
       </div>`;
     }
   });
 
   const skinsRanked = Object.entries(skinsWon).sort((a, b) => b[1].value - a[1].value);
   if (skinsRanked.some(([, v]) => v.count > 0)) {
-    html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(212,175,55,0.22)">`;
+    html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
     skinsRanked.forEach(([name, data]) => {
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">
-        <span style="font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#F1E6C7">${escHtml(name.split(' ')[0])}</span>
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+        <span style="font-size:13px;font-weight:600;color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
         <div style="display:flex;gap:12px;align-items:center">
-          <span style="font-family:Inter,sans-serif;font-size:11px;color:#D8C58F">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
-          <span style="font-family:Inter,sans-serif;font-size:14px;font-weight:700;color:#F4D988">$${data.value}</span>
+          <span style="font-size:12px;color:var(--page-text-muted)">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--gold-primary)">$${data.value}</span>
         </div>
       </div>`;
     });
@@ -135,7 +118,7 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
   }
 
   if (currentPot > 1) {
-    html += `<div style="margin-top:8px;text-align:center;font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#F4D988;background:rgba(212,175,55,0.14);padding:8px;border-radius:8px;letter-spacing:0.06em;text-transform:uppercase">
+    html += `<div style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:6px;border-radius:6px">
       ${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}
     </div>`;
   }
@@ -202,335 +185,27 @@ export function getPlayersFromConfig(config) {
   return players;
 }
 
-function getRequiredScoreEntitiesForView(config) {
-  if (config?.games?.scramble && Array.isArray(config?.scrambleTeams) && config.scrambleTeams.length > 0) {
-    return config.scrambleTeams
-      .map(team => (typeof team === 'string' ? team : (team?.name || '')))
-      .filter(Boolean);
-  }
-  return getPlayersFromConfig(config).map(p => p.name).filter(Boolean);
-}
-
-function getHoleScoresMapForView(holeData) {
-  if (!holeData || typeof holeData !== 'object') return {};
-  if (holeData.scores && typeof holeData.scores === 'object') return holeData.scores;
-  return holeData;
-}
-
-function getCompletedHolesMeta(holes, holesPerRound, requiredEntities) {
-  let completedCount = 0;
-  let enteredCount = 0;
-  const incomplete = [];
-  for (let h = 1; h <= holesPerRound; h++) {
-    const scores = getHoleScoresMapForView(holes?.[h]);
-    const enteredNames = Object.keys(scores || {}).filter(name => scores[name] >= 1 && scores[name] <= 15);
-    if (enteredNames.length > 0) enteredCount++;
-    const missingCount = requiredEntities.filter(name => !(scores[name] >= 1 && scores[name] <= 15)).length;
-    if (requiredEntities.length > 0) {
-      if (missingCount === 0) completedCount++;
-      else incomplete.push({ hole: h, missingCount });
-    } else if (enteredNames.length > 0) {
-      completedCount++;
-    } else {
-      incomplete.push({ hole: h, missingCount: 0 });
-    }
-  }
-  return {
-    completedCount,
-    enteredCount,
-    incomplete,
-    roundComplete: completedCount >= holesPerRound
-  };
-}
-
 // ===== DASHBOARD =====
 export function renderDashboard(state) {
   const matches = state.matches;
   const liveMatches = Object.values(matches).filter(m => m.status === "live");
   const finalMatches = Object.values(matches).filter(m => m.status === "final");
   const totalMatches = Object.values(matches).length;
-  const eventName = _C?.event?.name || "Waggle Event";
-  const eventVenue = _C?.event?.venue || "";
-  const eventDate = _C?.event?.dates?.day1 || "";
-  const holesPerRound = state?._config?.holesPerRound || 18;
-  const roster = (state._allPlayers || [])
-    .filter(p => p && p.name)
-    .map(p => ({
-      ...p,
-      hi: Number(p.hi ?? p.handicapIndex ?? p.handicap ?? 10),
-    }));
-  const openingOdds = roster
-    .slice(0, 8)
-    .map((p, idx) => ({
-      name: p.name,
-      hi: p.hi,
-      odds: calculateLiveOdds(
-        idx,
-        Math.max(roster.length, 2),
-        { hi: p.hi, handicapIndex: p.hi, toPar: null },
-        0,
-        holesPerRound,
-        roster
-      ),
-    }));
 
   let statusText = "Tournament Not Started";
   if (finalMatches.length === totalMatches) statusText = "Tournament Complete";
   else if (liveMatches.length > 0) statusText = `${liveMatches.length} Match${liveMatches.length > 1 ? "es" : ""} Live`;
   else if (finalMatches.length > 0) statusText = `${finalMatches.length}/${totalMatches} Matches Complete`;
 
-  let html = `
-  <style>
-    .wg-dash-shell {
-      color: #F5F5F0;
-      padding-bottom: 6px;
-    }
-    .wg-dash-hero {
-      position: relative;
-      background:
-        radial-gradient(120% 80% at 100% 0%, rgba(212,175,55,0.16), rgba(212,175,55,0) 64%),
-        linear-gradient(160deg, #0D2818 0%, #1A472A 100%);
-      border: 1px solid rgba(212,175,55,0.35);
-      border-radius: 12px;
-      padding: 18px 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    .wg-dash-hero-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: #D4AF37;
-      margin-bottom: 6px;
-    }
-    .wg-dash-hero-title {
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1.15;
-      margin-bottom: 10px;
-      color: #FFFFFF;
-    }
-    .wg-dash-hero-meta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-size: 12px;
-      color: rgba(255,255,255,0.85);
-    }
-    .wg-dash-status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 30px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(212,175,55,0.45);
-      background: rgba(13,40,24,0.7);
-      color: #D4AF37;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .4px;
-      text-transform: uppercase;
-    }
-    .wg-dash-status-pill::before {
-      content: '';
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #22C55E;
-      box-shadow: 0 0 8px rgba(34,197,94,0.8);
-      animation: wg-dash-pulse 1.6s ease-in-out infinite;
-    }
-    @keyframes wg-dash-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .5; transform: scale(.82); }
-    }
-    .wg-dash-card {
-      background: #1A472A;
-      border: 1px solid rgba(212,175,55,0.22);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .wg-dash-card-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .wg-dash-name {
-      font-size: 17px;
-      font-weight: 700;
-      color: #F5F5F0;
-      margin-bottom: 4px;
-    }
-    .wg-dash-sub {
-      font-size: 12px;
-      color: rgba(245,245,240,0.7);
-      font-weight: 500;
-    }
-    .wg-dash-cta {
-      min-height: 56px;
-      min-width: 120px;
-      width: auto;
-      border: 1px solid rgba(212,175,55,0.45);
-      background: #D4AF37;
-      color: #0D2818;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 20px;
-      transition: transform .12s ease, box-shadow .12s ease;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .wg-dash-cta:active { transform: scale(.97); }
-    .wg-dash-card .mg-section-title {
-      color: #F5F5F0;
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    .wg-dash-odds-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .wg-dash-odds-chip {
-      min-height: 56px;
-      border-radius: 8px;
-      border: 1.5px solid rgba(212,175,55,0.35);
-      background: #0D2818;
-      color: #F5F5F0;
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      text-align: left;
-      cursor: pointer;
-      transition: transform .1s ease, border-color .15s ease, background .15s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .wg-dash-odds-chip:active { transform: scale(.97); }
-    .wg-dash-odds-chip.odds-pressed {
-      transform: scale(.97);
-      background: #123723;
-      box-shadow: 0 8px 14px rgba(0,0,0,0.32);
-    }
-    .wg-dash-odds-chip:hover {
-      border-color: #D4AF37;
-      background: #123723;
-    }
-    .wg-dash-odds-chip.selected {
-      border-color: #D4AF37;
-      background: #D4AF37;
-      color: #0D2818;
-      box-shadow: 0 0 0 2px rgba(212,175,55,0.35), 0 6px 16px rgba(0,0,0,0.3);
-    }
-    .wg-dash-odds-chip.selected .wg-dash-odds-name,
-    .wg-dash-odds-chip.selected .wg-dash-odds-hi,
-    .wg-dash-odds-chip.selected .wg-dash-odds-line {
-      color: #0D2818;
-      border-color: rgba(13,40,24,0.35);
-    }
-    .wg-dash-odds-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(245,245,240,0.95);
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-bottom: 3px;
-    }
-    .wg-dash-odds-line {
-      font-size: 18px;
-      line-height: 1;
-      font-weight: 700;
-      color: #D4AF37;
-      letter-spacing: .3px;
-    }
-    .wg-dash-odds-hi {
-      margin-left: 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(212,175,55,0.35);
-      padding: 2px 7px;
-      font-size: 10px;
-      color: rgba(245,245,240,0.8);
-      font-weight: 600;
-    }
-    .wg-dash-shell .mg-ticker-item,
-    .wg-dash-shell .mg-flight-card,
-    .wg-dash-shell .mg-announcement {
-      background: #1A472A;
-      color: #F5F5F0;
-      border-color: rgba(212,175,55,0.24);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    .wg-dash-shell .mg-flight-card .flight-name,
-    .wg-dash-shell .mg-flight-card .flight-leader {
-      color: #F5F5F0;
-    }
-    .wg-dash-shell .mg-section-title { color: #F5F5F0; margin: 14px 0 10px; }
-    .wg-dash-shell .text-xs.text-muted { color: rgba(245,245,240,0.7) !important; }
-    .wg-dash-player-picker input,
-    .wg-dash-player-picker button {
-      min-height: 56px !important;
-      border-radius: 8px !important;
-    }
-    .wg-dash-player-picker input {
-      background: #0D2818 !important;
-      color: #F5F5F0 !important;
-      border-color: rgba(212,175,55,0.28) !important;
-      text-align: left !important;
-    }
-    .wg-dash-player-picker input::placeholder {
-      color: rgba(245,245,240,0.6) !important;
-    }
-    .wg-dash-player-picker > div > div {
-      background: #0D2818 !important;
-      border-color: rgba(212,175,55,0.28) !important;
-    }
-    .wg-dash-player-picker button {
-      border-bottom-color: rgba(212,175,55,0.18) !important;
-    }
-    .wg-dash-player-picker button span:first-child {
-      color: #F5F5F0 !important;
-      font-weight: 600 !important;
-    }
-    .wg-dash-player-picker button span:last-child {
-      color: #D4AF37 !important;
-    }
-  </style>
-  <div class="wg-dash-shell">`;
+  let html = "";
 
   // Spectator mode banner
   if (state._spectatorMode) {
-    html += `<div style="background:linear-gradient(135deg,#1A472A,#2D5A3D);color:#F5F5F0;padding:10px 16px;border-radius:12px;margin-bottom:12px;text-align:center;border:1px solid rgba(212,175,55,0.28)">
+    html += `<div style="background:linear-gradient(135deg,var(--mg-green),var(--mg-green-light));color:var(--text-primary);padding:10px 16px;border-radius:var(--mg-radius);margin-bottom:12px;text-align:center">
       <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold)">Spectator Mode</div>
       <div style="font-size:13px;margin-top:2px;opacity:.8">You are watching live</div>
     </div>`;
   }
-
-  html += `<div class="wg-dash-hero">
-    <div class="wg-dash-hero-label">Waggle Live Board</div>
-    <div class="wg-dash-hero-title">${escHtml(eventName)}</div>
-    <div class="wg-dash-hero-meta">
-      ${eventVenue ? `<span>${escHtml(eventVenue)}</span>` : ''}
-      ${eventVenue && eventDate ? `<span>&bull;</span>` : ''}
-      ${eventDate ? `<span>${escHtml(eventDate)}</span>` : ''}
-    </div>
-    <div style="margin-top:12px">
-      <span class="wg-dash-status-pill">${escHtml(statusText)}</span>
-    </div>
-  </div>`;
 
   // Announcements
   if (state.announcements && state.announcements.length > 0) {
@@ -540,54 +215,30 @@ export function renderDashboard(state) {
 
   // Player welcome / register card
   if (!state.bettorName && !state._spectatorMode) {
-    html += `<div class="wg-dash-card" style="text-align:center;padding:16px">
-      <div style="font-size:30px;line-height:1;margin-bottom:6px">&#9971;</div>
-      <div style="font-size:18px;font-weight:700;color:#F5F5F0;margin-bottom:4px">Welcome to ${escHtml(eventName)}</div>
-      <p style="font-size:13px;color:rgba(245,245,240,.7);margin-bottom:12px">Pick your player profile to unlock live betting.</p>
-      <div class="wg-dash-player-picker">${renderPlayerPicker(state)}</div>
+    html += `<div class="mg-card-light" style="text-align:center;padding:20px">
+      <div style="font-size:32px;margin-bottom:8px">&#9971;</div>
+      <div style="font-size:18px;font-weight:700;color:#1B4332;margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
+      <p style="font-size:13px;color:#6B7280;margin-bottom:16px">Tap your name below to start betting</p>
+      ${renderPlayerPicker(state)}
     </div>`;
   } else {
     const credits = state._playerCredits;
     const creditsDisplay = credits !== null && credits !== undefined ? `$${credits}` : '...';
-    html += `<div class="wg-dash-card">
-      <div class="wg-dash-card-row">
+    html += `<div class="mg-card-light" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
       <div>
-        <div class="wg-dash-name">${escHtml(state.bettorName)}</div>
-        <div class="wg-dash-sub">Credits: <strong style="color:#D4AF37">${creditsDisplay}</strong></div>
+        <div style="font-size:14px;font-weight:600;color:#1B4332">${escHtml(state.bettorName)}</div>
+        <div style="font-size:11px;color:#6B7280">Credits: <strong style="color:#B8962E">${creditsDisplay}</strong></div>
       </div>
-      <a href="#bet" class="wg-dash-cta">Place Bets</a>
-      </div>
+      <a href="#bet" class="mg-btn mg-btn-primary" style="width:auto;padding:8px 20px;font-size:13px;text-decoration:none">Place Bets</a>
     </div>`;
   }
 
   // Status bar
-  html += `<div class="wg-dash-card" style="text-align:center">
-    <div style="font-size:11px;color:rgba(245,245,240,0.64);text-transform:uppercase;letter-spacing:1px">${escHtml(eventVenue)}${eventVenue && eventDate ? ' &bull; ' : ''}${escHtml(eventDate)}</div>
-    <div style="font-size:17px;font-weight:700;margin-top:6px;color:#F5F5F0">${escHtml(statusText)}</div>
-    <div style="font-size:11px;color:rgba(245,245,240,0.7);margin-top:8px">${finalMatches.length} of ${totalMatches} matches final</div>
+  html += `<div class="mg-card-light" style="text-align:center">
+    <div style="font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:1px">${_C?.event?.venue || ''} &bull; ${_C?.event?.dates?.day1 || ''}</div>
+    <div style="font-size:16px;font-weight:700;margin-top:4px;color:#1B4332">${statusText}</div>
+    <div style="font-size:11px;color:#9CA3AF;margin-top:8px">${finalMatches.length} of ${totalMatches} matches final</div>
   </div>`;
-
-  if (openingOdds.length > 0) {
-    html += `<div class="wg-dash-card">
-      <div class="mg-section-title" style="margin-top:0">Opening Odds</div>
-      <div class="wg-dash-odds-grid">`;
-    openingOdds.forEach(o => {
-      const shortName = o.name.split(' ').slice(-1)[0];
-      const safeName = escHtml(o.name);
-      const safeNameJs = safeName.replace(/'/g, "\\'");
-      const isSelected = isOddsBetSlipSelected(state, o.name, 'to_win', o.odds);
-      html += `<button class="wg-dash-odds-chip ${isSelected ? 'selected' : ''}"
-        data-odds-player="${escHtml(o.name)}"
-        data-odds-type="to_win"
-        data-odds-line="${escHtml(o.odds)}"
-        aria-pressed="${isSelected ? 'true' : 'false'}"
-        onclick="window.MG.openOddsBetSlip('${safeNameJs}','to_win','${o.odds}');if(navigator.vibrate)navigator.vibrate(12)">
-        <div class="wg-dash-odds-name">${escHtml(shortName)} <span class="wg-dash-odds-hi">HI ${Number(o.hi).toFixed(1)}</span></div>
-        <div class="wg-dash-odds-line">${o.odds}</div>
-      </button>`;
-    });
-    html += `</div></div>`;
-  }
 
   // Hot matches ticker
   if (liveMatches.length > 0) {
@@ -631,7 +282,6 @@ export function renderDashboard(state) {
 
   // Activity Feed (trash talk + score updates)
   html += renderActivityFeed(state);
-  html += `</div>`;
 
   return html;
 }
@@ -897,7 +547,7 @@ function getCourseHcpIndex(config) {
 // ─── PREMIUM SCORECARD RENDERER ───
 // Renders a trifold-style country club scorecard with yardage, HCP, par, player scores,
 // golf-standard color coding (circles under par, squares over par), and running totals.
-function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly, inlineInvalid = {}, syncState = '', showQuickModalAction = false, lastSavedHole = null }) {
+function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly, inlineInvalid = {}, syncState = '' }) {
   const isBack9 = currentHole > 9;
   const startHole = isBack9 ? 10 : 1;
   const endHole = isBack9 ? Math.min(18, holesPerRound) : Math.min(9, holesPerRound);
@@ -925,25 +575,6 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
     const name = (e.name || e || '').trim();
     return name.split(' ')[0] || name;
   });
-  const hasInlineInvalid = Object.keys(inlineInvalid || {}).some(k => inlineInvalid[k]);
-  const hasEdits = Object.keys(inlScores || {}).length > 0;
-  const isSaving = syncState === 'syncing';
-  const allowQuickModalAction = !!showQuickModalAction && (typeof window !== 'undefined' ? window.innerWidth <= 360 : false);
-  const scoreEntryState = isSaving
-    ? 'saving'
-    : syncState === 'queued'
-      ? 'queued_offline'
-      : syncState === 'error'
-        ? 'save_error'
-        : syncState === 'synced'
-          ? 'saved'
-          : allFilled
-            ? 'ready_to_save'
-            : hasInlineInvalid
-              ? 'invalid'
-              : hasEdits
-                ? 'editing'
-                : 'idle';
 
   // Score style helper — golf standard color coding
   function scoreStyle(score, par) {
@@ -966,7 +597,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   let html = '';
 
   // Outer card
-  html += `<div data-score-entry-state="${scoreEntryState}" style="display:flex;flex-direction:column;background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB">`;
+  html += `<div style="background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB">`;
 
   // Header with course name and hole detail
   html += `<div style="padding:14px 16px 10px;border-bottom:1px solid #E8E5DE">`;
@@ -975,18 +606,13 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   html += `<div style="font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">${escHtml(courseName || 'Course')}</div>`;
   html += `<div style="font-size:12px;color:#6B7280;margin-top:3px">Hole ${currentHole} &middot; Par ${inlPar}${inlYds ? ' &middot; ' + inlYds + ' yds' : ''}${inlHcpRank !== null ? ' &middot; HCP ' + inlHcpRank : ''}</div>`;
   html += `</div>`;
-  html += `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">`;
   // Front/Back toggle
   if (holesPerRound > 9) {
     html += `<div style="display:flex;gap:0;border:1px solid #D1D5DB;border-radius:6px;overflow:hidden">`;
-    html += `<button onclick="window.MG.inlineScoreToggle9('front')" style="font-size:12px;font-weight:700;padding:10px 14px;min-height:56px;border:none;cursor:pointer;background:${!isBack9 ? '#0D2818' : '#FAFAF7'};color:${!isBack9 ? '#fff' : '#6B7280'}">Front</button>`;
-    html += `<button onclick="window.MG.inlineScoreToggle9('back')" style="font-size:12px;font-weight:700;padding:10px 14px;min-height:56px;border:none;cursor:pointer;background:${isBack9 ? '#0D2818' : '#FAFAF7'};color:${isBack9 ? '#fff' : '#6B7280'};border-left:1px solid #D1D5DB">Back</button>`;
+    html += `<button onclick="window.MG.inlineScoreToggle9('front')" style="font-size:11px;font-weight:700;padding:5px 12px;border:none;cursor:pointer;background:${!isBack9 ? '#0D2818' : '#FAFAF7'};color:${!isBack9 ? '#fff' : '#6B7280'}">Front</button>`;
+    html += `<button onclick="window.MG.inlineScoreToggle9('back')" style="font-size:11px;font-weight:700;padding:5px 12px;border:none;cursor:pointer;background:${isBack9 ? '#0D2818' : '#FAFAF7'};color:${isBack9 ? '#fff' : '#6B7280'};border-left:1px solid #D1D5DB">Back</button>`;
     html += `</div>`;
   }
-  if (!readOnly && allowQuickModalAction) {
-    html += `<button onclick="window.MG.openScoreModalQuick()" style="font-size:11px;font-weight:700;padding:8px 12px;min-height:56px;border:1px solid #D1D5DB;border-radius:8px;background:#FFFFFF;color:#4B5563;cursor:pointer;white-space:nowrap">Quick score</button>`;
-  }
-  html += `</div>`;
   html += `</div></div>`;
 
   // Sprint 3 progress strip
@@ -1004,7 +630,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   </div>`;
 
   // Scorecard table
-  html += `<div class="mg-score-matrix-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
+  html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
   html += `<table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px;min-width:${numCols * 40 + 64}px">`;
 
   // ── Hole number header row (dark green) ──
@@ -1094,13 +720,11 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
           <input type="number" inputmode="numeric" pattern="[0-9]*"
             id="${scoreInputId}"
             data-inline-score-input="1"
-            data-player-name="${escHtml(entityName)}"
-            min="1" max="15"
-            style="width:56px;height:56px;text-align:center;border:2px solid ${isInvalid ? '#DC2626' : inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:18px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
+            style="width:36px;height:36px;text-align:center;border:2px solid ${isInvalid ? '#DC2626' : inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:14px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
             value="${displayScore || ''}"
             onfocus="this.select()"
             oninput="window.MG.inlineScoreInput('${escHtml(entityName)}',this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();window.MG.inlineScoreKeyboardSave();}"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();window.MG.inlineScoreSaveAttempt();}"
             placeholder="\u00b7">
           ${isInvalid ? `<div style="font-size:10px;color:#DC2626;margin-top:4px;font-weight:700">Enter 1-15</div>` : ''}
         </td>`;
@@ -1155,62 +779,16 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
 
   // Save button (only in editable mode — not when readOnly with separate keypad below)
   if (!readOnly) {
-    html += `<style>
-      @media (max-width: 767px) {
-        .mg-inline-save-bar {
-          order: 4;
-          position: sticky;
-          bottom: 0;
-          z-index: 6;
-          background: linear-gradient(to top, rgba(250,250,247,0.98), rgba(250,250,247,0.95));
-          border-top: 1px solid #E8E5DE;
-          padding-bottom: calc(14px + env(safe-area-inset-bottom));
-        }
-        .mg-score-matrix-wrap { order: 3; }
-      }
-      @media (min-width: 768px) {
-        .mg-inline-save-bar {
-          order: 2;
-          position: sticky;
-          top: 0;
-          z-index: 6;
-          background: #FAFAF7;
-          border-bottom: 1px solid #E8E5DE;
-        }
-        .mg-score-matrix-wrap { order: 3; }
-      }
-    </style>`;
-    html += `<div class="mg-inline-save-bar" data-score-entry-state="${scoreEntryState}" style="padding:12px 16px 14px">`;
-    const canSave = allFilled && !isSaving;
-    const primarySaveLabel = isSaving ? 'Saving...' : (syncState === 'error' ? 'Try again' : ('Save Hole ' + currentHole));
-    html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${canSave ? '' : 'disabled'}
-      style="width:100%;min-height:56px;padding:14px;background:${canSave ? '#B8962E' : '#E5E7EB'};color:${canSave ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${canSave ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${canSave ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
-      ${primarySaveLabel}
+    html += `<div style="padding:12px 16px 14px">`;
+    html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${allFilled ? '' : 'disabled'}
+      style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
+      ${allFilled ? 'Save Hole ' + currentHole : 'Save Hole ' + currentHole}
     </button>`;
     if (syncState) {
-      const savedHoleLabel = Number.isInteger(lastSavedHole) && lastSavedHole > 0 ? lastSavedHole : currentHole;
-      const syncLabel = syncState === 'queued'
-        ? 'Queued'
-        : syncState === 'syncing'
-          ? 'Syncing'
-          : syncState === 'synced'
-            ? `Saved • Hole ${savedHoleLabel} complete`
-            : syncState === 'error'
-              ? 'Try again'
-              : '';
+      const syncLabel = syncState === 'queued' ? 'Queued' : syncState === 'syncing' ? 'Syncing' : syncState === 'synced' ? 'Synced' : '';
       if (syncLabel) {
-        const syncBg = syncState === 'queued'
-          ? 'rgba(180,83,9,0.12)'
-          : syncState === 'error'
-            ? 'rgba(220,38,38,0.12)'
-            : 'rgba(22,163,74,0.12)';
-        const syncColor = syncState === 'queued'
-          ? '#B45309'
-          : syncState === 'error'
-            ? '#B91C1C'
-            : '#15803D';
         html += `<div style="margin-top:8px;display:flex;justify-content:center">
-          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${syncBg};color:${syncColor}">${syncLabel}</span>
+          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${syncState === 'queued' ? 'rgba(180,83,9,0.12)' : 'rgba(22,163,74,0.12)'};color:${syncState === 'queued' ? '#B45309' : '#15803D'}">${syncLabel}</span>
         </div>`;
       }
     }
@@ -1228,27 +806,21 @@ function computePayablePairs(pnl) {
   const creditors = [];
   const debtors = [];
   Object.entries(pnl).forEach(([name, val]) => {
-    const cents = Math.round((Number(val) || 0) * 100);
-    if (cents > 0) creditors.push({ name, amountCents: cents });
-    else if (cents < 0) debtors.push({ name, amountCents: -cents });
+    const rounded = Math.round(val);
+    if (rounded > 0) creditors.push({ name, amount: rounded });
+    else if (rounded < 0) debtors.push({ name, amount: -rounded });
   });
-  creditors.sort((a, b) => b.amountCents - a.amountCents);
-  debtors.sort((a, b) => b.amountCents - a.amountCents);
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
   const txns = [];
   let i = 0, j = 0;
   while (i < creditors.length && j < debtors.length) {
-    const payCents = Math.min(creditors[i].amountCents, debtors[j].amountCents);
-    if (payCents > 0) {
-      txns.push({
-        from: debtors[j].name,
-        to: creditors[i].name,
-        amount: payCents / 100
-      });
-    }
-    creditors[i].amountCents -= payCents;
-    debtors[j].amountCents -= payCents;
-    if (creditors[i].amountCents <= 0) i++;
-    if (debtors[j].amountCents <= 0) j++;
+    const pay = Math.min(creditors[i].amount, debtors[j].amount);
+    if (pay > 0) txns.push({ from: debtors[j].name, to: creditors[i].name, amount: pay });
+    creditors[i].amount -= pay;
+    debtors[j].amount -= pay;
+    if (creditors[i].amount <= 0) i++;
+    if (debtors[j].amount <= 0) j++;
   }
   return txns;
 }
@@ -1294,18 +866,20 @@ export function computeRoundPnL(gameState, players, games, structure) {
   if (games.stableford && gameState?.stableford?.running) {
     const stblBet = parseInt(structure?.stablefordBet) || 5;
     const running = gameState.stableford.running;
-    const deltas = allocateRelativeZeroSum(running, stblBet, players);
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
     players.forEach(p => {
-      pnl[p.name] += deltas[p.name] || 0;
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * stblBet);
     });
   }
 
   if (games.match_play && gameState?.match_play?.running) {
     const mpBet = parseInt(structure?.matchPlayBet) || 10;
     const running = gameState.match_play.running;
-    const deltas = allocateRelativeZeroSum(running, mpBet, players);
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
     players.forEach(p => {
-      pnl[p.name] += deltas[p.name] || 0;
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * mpBet);
     });
   }
 
@@ -1319,18 +893,19 @@ export function computeRoundPnL(gameState, players, games, structure) {
   if (games.bingo && gameState?.bingo?.running) {
     const bbbBet = parseInt(structure?.bbbBet) || 5;
     const running = gameState.bingo.running;
-    const deltas = allocateRelativeZeroSum(running, bbbBet, players);
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
     players.forEach(p => {
-      pnl[p.name] += deltas[p.name] || 0;
+      const pts = running[p.name] || 0;
+      pnl[p.name] += Math.round((pts - avg) * bbbBet);
     });
   }
 
   if (games.bloodsome && gameState?.bloodsome?.running) {
     const bloodBet = parseInt(structure?.bloodsomeBet) || 5;
     const running = gameState.bloodsome.running;
-    const deltas = allocateRelativeZeroSum(running, bloodBet, players);
+    const avg = Object.values(running).reduce((s, v) => s + v, 0) / n;
     players.forEach(p => {
-      pnl[p.name] += deltas[p.name] || 0;
+      pnl[p.name] += Math.round(((running[p.name] || 0) - avg) * bloodBet);
     });
   }
 
@@ -1342,22 +917,20 @@ export function computeRoundPnL(gameState, players, games, structure) {
 export function renderNamePickerModal(state) {
   const players = (state._allPlayers || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  return `<div id="wg-identity-overlay" class="wg-identity-overlay">
-    <div class="wg-identity-card">
-      <div class="wg-identity-title">Who are you?</div>
-      <div class="wg-identity-subtitle">Pick your card to track bets, odds, and live P&amp;L.</div>
-      <div class="wg-identity-list">
-        ${players.map((p) => `
-          <button onclick="window.MG.pickNameFromModalAnimated('${escHtml(p.name)}')" class="wg-identity-option">
-            <span class="wg-identity-player">
-              <span class="wg-identity-name">${escHtml(p.name)}</span>
-              <span class="wg-identity-handicap">Handicap ${Number(p.handicapIndex ?? p.handicap ?? 0) >= 0 ? '+' : ''}${Number(p.handicapIndex ?? p.handicap ?? 0).toFixed(1)}</span>
-            </span>
-            <span class="wg-identity-hi">HI ${Number(p.handicapIndex ?? p.handicap ?? 0).toFixed(1)}</span>
+  return `<div style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--bg-secondary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:16px;padding:24px;max-width:340px;width:100%;box-sizing:border-box">
+      <div style="font-size:18px;font-weight:700;color:var(--text-primary,var(--mg-text));margin-bottom:4px">Who are you?</div>
+      <div style="font-size:13px;color:var(--text-secondary,var(--mg-text-muted));margin-bottom:16px">Pick your name to track your bets and P&amp;L</div>
+      <div style="max-height:300px;overflow-y:auto">
+        ${players.map(p => `
+          <button onclick="window.MG.pickNameFromModal('${escHtml(p.name)}')"
+            style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg-tertiary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:10px;color:var(--text-primary,var(--mg-text));font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent">
+            <span>${escHtml(p.name)}</span>
+            <span style="font-size:12px;color:var(--text-secondary,var(--mg-text-muted))">HI ${p.handicapIndex ?? p.handicap ?? 0}</span>
           </button>
         `).join('')}
       </div>
-      <button onclick="window.MG.pickNameFromModalAnimated('')" class="wg-identity-skip">Just watching</button>
+      <button onclick="window.MG.pickNameFromModal('')" style="width:100%;padding:12px;background:transparent;border:none;color:var(--text-tertiary,var(--mg-text-muted));font-size:13px;cursor:pointer;margin-top:4px">Just watching</button>
     </div>
   </div>`;
 }
@@ -1376,12 +949,10 @@ export function renderScrambleLeaderboard(state) {
   const pars = getCoursePars(config);
   const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
   const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-  const requiredEntities = getRequiredScoreEntitiesForView(config);
-  const completionMeta = getCompletedHolesMeta(holes, holesPerRound, requiredEntities);
-  const holesPlayed = completionMeta.completedCount;
+  const holesPlayed = scoredHoles.length;
   const latestHole = holesPlayed > 0 ? Math.max(...scoredHoles) : 0;
   const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
-  const roundComplete = completionMeta.roundComplete;
+  const roundComplete = holesPlayed >= holesPerRound;
   const holesRemaining = holesPerRound - holesPlayed;
 
   // Teams & prize pool
@@ -1454,7 +1025,6 @@ export function renderScrambleLeaderboard(state) {
   // SECTION 2: INLINE SCORE ENTRY (admin/scorer only)
   // ================================================================
   if ((!scrShowSubTabs || scrActiveSubTab === 'score') && state.adminAuthed && !roundComplete) {
-    const useSprint3Gameflow = !!(config?.featureFlags?.ux_sprint3_gameflow || config?.ux_sprint3_gameflow);
     if (!state._inlineScore) {
       const existingScores = holes[nextHole]?.scores || {};
       state._inlineScore = { hole: nextHole, scores: { ...existingScores } };
@@ -1483,17 +1053,15 @@ export function renderScrambleLeaderboard(state) {
       courseName: scrCourseName,
       isScramble: true,
       inlineInvalid: state._inlineScoreInvalid || {},
-      syncState: state._inlineSyncState || '',
-      lastSavedHole: state._inlineLastSavedHole || null,
-      showQuickModalAction: useSprint3Gameflow
+      syncState: state._inlineSyncState || ''
     }) + `</div>`;
   } else if (roundComplete && state.adminAuthed) {
     html += `<div style="background:var(--bg-secondary);border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid var(--border)">
       <div style="font-size:20px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Round Complete</div>
       <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">All ${holesPerRound} holes scored</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:56px">Review Settlement</a>
-        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px">Edit Last Hole</button>
+        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
       </div>
     </div>`;
   }
@@ -1523,7 +1091,6 @@ export function renderScrambleLeaderboard(state) {
       const odds = oddsArr[i] || '+' + (1500 + (i - 7) * 500);
       const oddsNum = parseFloat(odds.replace('+', ''));
       const isFavorite = odds.startsWith('-');
-      const oddsSelected = isOddsBetSlipSelected(state, entry.team, 'to_win', odds);
 
       // Projected payout
       const payout = payoutByPosition[i] || 0;
@@ -1566,12 +1133,7 @@ export function renderScrambleLeaderboard(state) {
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
             <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
             ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:#B8962E">$${payout.toLocaleString()}</span>` : ''}
-            <button class="mg-odds-btn mg-odds-btn--compact ${oddsSelected ? 'selected' : ''}"
-              data-odds-player="${escHtml(entry.team)}"
-              data-odds-type="to_win"
-              data-odds-line="${odds}"
-              aria-pressed="${oddsSelected ? 'true' : 'false'}"
-              onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')">${odds}</button>
+            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${isFavorite ? '#B8962E' : '#D1D5DB'};background:${isFavorite ? 'rgba(184,150,46,0.08)' : '#F9FAFB'};color:${isFavorite ? '#1A1A1A' : '#6B7280'};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>`;
@@ -1610,7 +1172,7 @@ export function renderScrambleLeaderboard(state) {
         }
 
         // Lay action button
-        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(184,150,46,0.3);border-radius:6px;color:#B8962E;font-size:12px;font-weight:600;cursor:pointer;min-height:56px">Lay Action on ${escHtml(entry.team)}</button>`;
+        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(184,150,46,0.3);border-radius:6px;color:#B8962E;font-size:12px;font-weight:600;cursor:pointer;min-height:44px">Lay Action on ${escHtml(entry.team)}</button>`;
 
         html += `</div>`;
       } else if (ownerStr) {
@@ -1926,7 +1488,7 @@ export function renderScrambleLeaderboard(state) {
   if (!scrShowSubTabs || scrActiveSubTab === 'bar') {
   html += `<div style="padding:16px;background:var(--bg-secondary);border:1px solid var(--mg-border);border-radius:10px;margin-bottom:8px;text-align:center">
     <button onclick="if(navigator.share){navigator.share({title:'${escHtml(config?.event?.name || 'Scramble Leaderboard')}',url:location.href})}else{navigator.clipboard.writeText(location.href).then(()=>alert('Link copied!'))}"
-      style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:56px;margin-bottom:10px">
+      style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:48px;margin-bottom:10px">
       Share Leaderboard
     </button>
     <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:6px">
@@ -2076,8 +1638,6 @@ export function renderRoundFeed(state) {
   initFlashBaseline(slug, holes);
 
   const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-  const requiredEntities = getRequiredScoreEntitiesForView(config);
-  const completionMeta = getCompletedHolesMeta(holes, holesPerRound, requiredEntities);
   const latestHole = scoredHoles.length > 0 ? Math.max(...scoredHoles) : 0;
   const shownHoles = getShownHoles(slug);
   // Determine flash hole: most recently scored hole not yet flashed
@@ -2085,7 +1645,7 @@ export function renderRoundFeed(state) {
   if (flashHole !== null) markHoleShown(slug, flashHole);
 
   const { events, skinsPot, nassau } = deriveLiveFeed(gameState, holes, players);
-  const roundComplete = completionMeta.roundComplete;
+  const roundComplete = scoredHoles.length >= holesPerRound;
 
   // ================================================================
   // TRIP PAGE — Pre-trip hype page (0 holes scored, 2+ players)
@@ -2491,12 +2051,9 @@ export function renderRoundFeed(state) {
   // SECTION 2: SCORE ENTRY (inline scorecard grid)
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && players.length > 0) {
-    const useSprint3Gameflow = !!(config?.featureFlags?.ux_sprint3_gameflow || config?.ux_sprint3_gameflow);
-    // Sprint 3 uses the canonical progress strip inside the premium scorecard.
-    if (!useSprint3Gameflow) {
-      const progressHole = state._inlineScore?.hole || (latestHole < holesPerRound ? latestHole + 1 : holesPerRound);
-      html += renderHoleProgressStrip(holes, holesPerRound, progressHole, pars);
-    }
+    // Add hole progress strip at the top
+    const progressHole = state._inlineScore?.hole || (latestHole < holesPerRound ? latestHole + 1 : holesPerRound);
+    html += renderHoleProgressStrip(holes, holesPerRound, progressHole, pars);
     const yardage = getCourseYardage(config);
     const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
     const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
@@ -2672,15 +2229,13 @@ export function renderRoundFeed(state) {
       holesPerRound,
       courseName,
       isScramble: false,
-      readOnly: !useSprint3Gameflow,
+      readOnly: true,
       inlineInvalid: state._inlineScoreInvalid || {},
-      syncState: state._inlineSyncState || '',
-      lastSavedHole: state._inlineLastSavedHole || null,
-      showQuickModalAction: useSprint3Gameflow
+      syncState: state._inlineSyncState || ''
     }) + `</div>`;
 
     // ── 3b. KEYPAD SCORE ENTRY SECTION (below read-only scorecard) ──
-    if (!useSprint3Gameflow && !roundComplete && players.length > 0 && !state._spectatorMode) {
+    if (!roundComplete && players.length > 0 && !state._spectatorMode) {
       const kpHole = currentHole;
       const kpPar = pars[kpHole - 1] || 4;
       const kpHcp = resolvedHcp[kpHole - 1] ?? '';
@@ -2697,8 +2252,8 @@ export function renderRoundFeed(state) {
           <div style="font-size:15px;color:var(--page-text-muted,#6B7280);font-weight:600">Par ${kpPar}${kpYds ? ' &middot; ' + kpYds + ' yds' : ''}${kpHcp ? ' &middot; SI ' + kpHcp : ''}</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button onclick="window.MG.inlineScoreNav(-1)" style="width:56px;height:56px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9664;</button>
-          <button onclick="window.MG.inlineScoreNav(1)" style="width:56px;height:56px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9654;</button>
+          <button onclick="window.MG.inlineScoreNav(-1)" style="width:48px;height:48px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9664;</button>
+          <button onclick="window.MG.inlineScoreNav(1)" style="width:48px;height:48px;border-radius:50%;border:1.5px solid var(--mg-border,#D1D5DB);background:var(--bg-tertiary,white);color:var(--page-text,#1A1A1A);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.9)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">&#9654;</button>
         </div>
       </div>`;
 
@@ -2717,32 +2272,84 @@ export function renderRoundFeed(state) {
           ${currentScore !== null ? `<span style="font-size:13px;font-weight:600;color:var(--page-text-muted,#9CA3AF);font-family:var(--font-mono,'SF Mono',monospace)">${currentScore}</span>` : ''}
         </div>`;
 
-        // Premium circular score buttons with category-based styling
+        // Premium circular score buttons with effects
         html += `<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">`;
         for (let s = Math.max(1, kpPar - 2); s <= kpPar + 3; s++) {
           const isSelected = currentScore === s;
           const diff = s - kpPar;
-          const scoreToneClass = diff <= -2
-            ? 'mg-inline-score-pill--eagle'
-            : diff === -1
-              ? 'mg-inline-score-pill--birdie'
-              : diff === 0
-                ? 'mg-inline-score-pill--par'
-                : diff === 1
-                  ? 'mg-inline-score-pill--bogey'
-                  : 'mg-inline-score-pill--double';
+
+          // Premium color scheme based on golf performance
+          let btnColor = '#1A1A1A';
+          let btnBg = '#F8F8F6'; // neutral ivory
+          let btnBorder = '#E5E7EB';
+          let glowEffect = '';
+          let sparkleEffect = '';
+
+          if (isSelected || diff <= -2) { // Eagle
+            btnBg = '#D4AF37';
+            btnColor = '#0D2818';
+            btnBorder = '#D4AF37';
+            sparkleEffect = ', 0 0 20px rgba(212,175,55,0.4)';
+          } else if (diff === -1) { // Birdie
+            btnBg = '#16A34A';
+            btnColor = '#FFFFFF';
+            btnBorder = '#16A34A';
+            glowEffect = ', 0 0 16px rgba(22,163,74,0.3)';
+          } else if (diff === 0) { // Par
+            btnBg = '#F8F8F6';
+            btnColor = '#1A1A1A';
+            btnBorder = '#D1D5DB';
+          } else { // Bogey+
+            btnBg = 'rgba(220,38,38,0.08)';
+            btnColor = '#DC2626';
+            btnBorder = 'rgba(220,38,38,0.2)';
+          }
+
           const label = diff <= -2 ? 'Eagle' : diff === -1 ? 'Birdie' : diff === 0 ? 'Par' : diff === 1 ? 'Bogey' : diff === 2 ? 'Dbl' : '+' + diff;
 
           html += `<button
             onclick="window.MG.premiumScoreSet('${escHtml(name)}',${s},${diff})"
-            class="mg-inline-score-pill ${scoreToneClass} ${isSelected ? 'selected' : ''}">
-            <div class="mg-inline-score-pill__value">${s}</div>
-            <div class="mg-inline-score-pill__label">${label}</div>
+            style="
+              width: 64px;
+              height: 64px;
+              min-width: 56px;
+              min-height: 56px;
+              border-radius: 50%;
+              border: 3px solid ${btnBorder};
+              background: ${btnBg};
+              color: ${btnColor};
+              font-size: 18px;
+              font-weight: 800;
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-family: var(--font-mono,'SF Mono','Menlo',monospace);
+              -webkit-tap-highlight-color: transparent;
+              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1)${sparkleEffect}${glowEffect};
+              position: relative;
+              overflow: hidden;
+              ${diff <= -2 && isSelected ? 'animation: premium-sparkle 2s infinite;' : ''}
+              ${diff === -1 && isSelected ? 'animation: premium-glow 2s infinite alternate;' : ''}
+            "
+            onpointerdown="
+              this.style.transform='scale(0.9)';
+              this.style.boxShadow='0 1px 4px rgba(0,0,0,0.2)';
+            "
+            onpointerup="
+              this.style.transform='scale(1.05)';
+              setTimeout(() => this.style.transform = '', 150);
+            "
+            onpointerleave="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)${sparkleEffect}${glowEffect}'">
+            <div style="font-size: 20px; font-weight: 900; line-height: 1;">${s}</div>
+            <div style="font-size: 8px; font-weight: 600; opacity: 0.8; margin-top: 1px; letter-spacing: 0.2px; text-transform: uppercase;">${label}</div>
           </button>`;
         }
         // "Other" button for scores outside the range
         html += `<button onclick="window.MG.inlineScoreType('${escHtml(name)}',prompt('Score for ${escHtml(firstName)}:'))"
-          class="mg-inline-score-pill mg-inline-score-pill--other">+</button>`;
+          style="width:52px;padding:6px 2px;border-radius:10px;border:2.5px solid var(--mg-border,#D1D5DB);background:var(--bg-secondary,#F5F5F5);color:var(--page-text-muted,#6B7280);font-size:14px;font-weight:700;cursor:pointer;min-height:52px;-webkit-tap-highlight-color:transparent">+</button>`;
         html += `</div>`;
 
         // Undo score strip with swipe gesture
@@ -2856,19 +2463,8 @@ export function renderRoundFeed(state) {
       html += `</div>`;
     }
 
-  } else if ((!showSubTabs || activeSubTab === 'score') && roundComplete && !state._spectatorMode) {
-    html += `<div style="background:var(--bg-secondary);border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid var(--border)">
-      <div style="font-size:20px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Round Complete</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">All ${holesPerRound} holes scored</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <a href="#settle" style="display:inline-flex;align-items:center;justify-content:center;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:56px">Review Settlement</a>
-        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px">Edit Last Hole</button>
-      </div>
-    </div>`;
-  }
-
-  // ── 4. ROUND STATS (actual + estimated, collapsible) ──
-  if (scoredHoles.length > 0 && players.length > 0) {
+    // ── 4. ROUND STATS (actual + estimated, collapsible) ──
+    if (scoredHoles.length > 0 && players.length > 0) {
       const statsData = players.map(p => {
         let girActual = 0, girActualTotal = 0, firActual = 0, firActualTotal = 0;
         let puttsActual = 0, puttsActualTotal = 0;
@@ -3032,8 +2628,8 @@ export function renderRoundFeed(state) {
       <div style="font-size:20px;font-weight:700;color:var(--mg-gold);margin-bottom:8px">Round Complete</div>
       <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 3px 12px rgba(212,160,23,0.3);min-height:56px">Review Settlement</a>
-        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:56px">Edit Last Hole</button>
+        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 3px 12px rgba(212,160,23,0.3);min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
       </div>
     </div>`;
   }
@@ -3046,37 +2642,30 @@ export function renderRoundFeed(state) {
     // Leaderboard — 2-line card layout per player
     standingsData.forEach((p, i) => {
       const isLeader = i === 0;
-      const hiVal = Number(p.hi ?? p.handicapIndex ?? 0);
       const toParStr = p.toPar === null ? '--' : p.toPar === 0 ? 'E' : p.toPar > 0 ? '+' + p.toPar : String(p.toPar);
-      const toParColor = (p.toPar ?? 0) < 0 ? '#D4AF37' : (p.toPar ?? 0) > 0 ? '#FF7B7B' : '#FFFFFF';
+      const toParColor = (p.toPar ?? 0) < 0 ? '#1C1C19' : (p.toPar ?? 0) > 0 ? '#DC2626' : '#1C1C19';
       const moneyStr = (p.money || 0) === 0 ? '$0' : (p.money > 0 ? '+$' + p.money : '-$' + Math.abs(p.money));
-      const moneyColor = (p.money || 0) > 0 ? '#16A34A' : (p.money || 0) < 0 ? '#FF7B7B' : '#9CA3AF';
+      const moneyColor = (p.money || 0) > 0 ? '#16A34A' : (p.money || 0) < 0 ? '#DC2626' : '#8A8A85';
       const odds = calculateLiveOdds(i, standingsData.length, p, scoredHoles.length, holesPerRound, standingsData);
-      const oddsSelected = isOddsBetSlipSelected(state, p.name, 'to_win', odds);
-      const isFavorite = odds.startsWith('-') || isLeader;
 
-      html += `<div class="mg-premium-player-row ${isFavorite ? 'is-favorite' : ''}" data-leaderboard-player="${escHtml(p.name)}" data-leaderboard-score="${p.toPar === null ? '' : p.toPar}">
-        <div class="mg-premium-player-head">
-          <div class="mg-premium-player-left">
-            <div class="mg-premium-player-dot"></div>
-            <div class="mg-premium-player-name">${escHtml(p.name)}</div>
-            <span class="mg-premium-hi-badge">HI ${hiVal.toFixed(1)}</span>
-            ${isFavorite ? '<span class="mg-premium-fav-badge">FAV</span>' : ''}
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-radius:10px;padding:16px 20px;margin-bottom:10px">
+        <!-- Line 1: dot + name + P&L + skins count -->
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
+            <div style="width:8px;height:8px;border-radius:50%;background:${isLeader ? '#C5A059' : '#D1D5DB'};flex-shrink:0"></div>
+            <div style="font-size:18px;font-weight:700;color:#1C1C19">${escHtml(p.name)}</div>
           </div>
-          <div class="mg-premium-player-money" style="color:${moneyColor};margin-right:16px">${moneyStr}</div>
-          <div class="mg-premium-player-skins">${p.skins}</div>
+          <div style="font-family:'SF Mono',monospace;font-size:18px;font-weight:700;color:${moneyColor};margin-right:16px">${moneyStr}</div>
+          <div style="font-size:20px;font-weight:700;color:#1C1C19;min-width:24px;text-align:right">${p.skins}</div>
         </div>
-        <div class="mg-premium-player-sub">
-          <div class="mg-premium-player-sub-left">
-            <div class="mg-premium-player-to-par" data-score-value="${p.toPar === null ? '' : p.toPar}" style="color:${toParColor}">${toParStr}</div>
-            <button class="mg-odds-btn mg-odds-btn--compact mg-odds-btn--premium-chip ${oddsSelected ? 'selected' : ''}"
-              data-odds-player="${escHtml(p.name)}"
-              data-odds-type="to_win"
-              data-odds-line="${odds}"
-              aria-pressed="${oddsSelected ? 'true' : 'false'}"
-              onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')">${odds}</button>
+        <!-- Line 2: to-par + odds + "Skins Won" + "N skins" -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-left:18px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex:1">
+            <div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:${toParColor}">${toParStr}</div>
+            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:4px 8px;border-radius:6px;border:1.5px solid #D1D5DB;background:#F9FAFB;color:#6B7280;font-family:'SF Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;min-width:50px;text-align:center;-webkit-tap-highlight-color:transparent;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,0.1)" onpointerdown="this.style.transform='scale(0.95)'; this.style.boxShadow='0 0 0 rgba(0,0,0,0)'" onpointerup="this.style.transform='scale(1.02)'; this.style.boxShadow='0 2px 6px rgba(212,175,55,0.3)'; setTimeout(() => {this.style.transform=''; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'}, 150)" onpointerleave="this.style.transform=''; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'" onmouseenter="this.style.borderColor='#D4AF37'; this.style.background='rgba(212,175,55,0.05)'" onmouseleave="this.style.borderColor='#D1D5DB'; this.style.background='#F9FAFB'">${odds}</button>
           </div>
-          <div class="mg-premium-player-meta">Skins: ${p.skins} skin${p.skins !== 1 ? 's' : ''}</div>
+          <div style="font-size:11px;color:#8A8A85;margin-right:16px">Skins Won</div>
+          <div style="font-size:11px;color:#8A8A85;min-width:24px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</div>
         </div>
       </div>`;
     });
@@ -3116,30 +2705,35 @@ export function renderRoundFeed(state) {
     // Header
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
       <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Pre-Match Action</span>
-      <span style="font-size:12px;color:var(--text-tertiary);font-style:italic">Lines are set</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">Lines are set</span>
     </div>`;
 
     // Player rows with odds — card-based
     sorted.forEach((p, i) => {
       const sortedForOdds = sorted.map(s => ({ hi: s.handicapIndex || 0, toPar: null }));
       const odds = calculateLiveOdds(i, sorted.length, { hi: p.handicapIndex || 0, toPar: null }, 0, holesPerRound, sortedForOdds);
-      const isFavCard = odds.startsWith('-') || i === 0;
-      const oddsSelected = isOddsBetSlipSelected(state, p.name, 'to_win', odds);
-      html += `<div class="mg-premium-player-row ${isFavCard ? 'is-favorite' : ''}">
-        <div class="mg-premium-player-head">
-          <div class="mg-premium-player-left">
-            <div class="mg-premium-player-dot"></div>
-            <div class="mg-premium-player-name">${escHtml(p.name)}</div>
-            <span class="mg-premium-hi-badge">HI ${Number(p.handicapIndex || 0).toFixed(1)}</span>
-            ${isFavCard ? '<span class="mg-premium-fav-badge">FAV</span>' : ''}
+      const isFav2 = odds.startsWith('-');
+      const oddsColor2 = isFav2 ? 'white' : 'var(--text-secondary)';
+      const oddsBorderColor = isFav2 ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
+      const isFavCard = i === 0;
+
+      // Card styles — FAV gets gold gradient
+      const cardBg = isFavCard
+        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
+        : 'background:var(--bg-secondary);border:1px solid var(--border)';
+      const badgeBg = isFavCard ? 'background:var(--gold-bright);color:var(--bg-secondary)' : i < 3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+
+      html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+            <div style="min-width:0">
+              <div style="font-size:15px;font-weight:${isFavCard ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+              <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-            <button class="mg-odds-btn mg-odds-btn--compact mg-odds-btn--premium-chip ${oddsSelected ? 'selected' : ''}"
-              data-odds-player="${escHtml(p.name)}"
-              data-odds-type="to_win"
-              data-odds-line="${odds}"
-              aria-pressed="${oddsSelected ? 'true' : 'false'}"
-              onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')">${odds}</button>
+            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor2};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
           </div>
         </div>
       </div>`;
@@ -3147,7 +2741,7 @@ export function renderRoundFeed(state) {
 
     // Opening Lines — head-to-head spreads — card-based
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px;padding:0">
-      <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Opening Lines</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Opening Lines</span>
     </div>`;
     for (let i = 0; i < Math.floor(sorted.length / 2); i++) {
       const fav = sorted[i];
@@ -3156,9 +2750,9 @@ export function renderRoundFeed(state) {
       html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;min-height:56px;text-align:center;cursor:default;display:inline-flex;align-items:center;justify-content:center">-${spread}</button>
-          <span style="font-size:12px;color:var(--text-tertiary);font-weight:600">vs</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;min-height:56px;text-align:center;cursor:default;display:inline-flex;align-items:center;justify-content:center">+${spread}</button>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
+          <span style="font-size:11px;color:var(--text-tertiary);font-weight:600">vs</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">+${spread}</button>
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
         </div>
       </div>`;
@@ -3174,7 +2768,7 @@ export function renderRoundFeed(state) {
       `${worstPlayer.name.split(' ')[0]} makes a birdie today: Yes/No`,
     ];
     html += `<div style="margin-top:12px;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Prop Bets</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Prop Bets</span>
     </div>`;
     propsList.forEach(prop => {
       html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
@@ -3254,20 +2848,20 @@ export function renderRoundFeed(state) {
       const frontHoles = scoredHoles.filter(h => h <= 9);
       const backHoles = scoredHoles.filter(h => h > 9);
 
-      html += `<div style="background:linear-gradient(160deg,#1A472A,#0D2818);border:1px solid rgba(212,175,55,0.32);border-top:2px solid #D4AF37;border-radius:12px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 10px 24px rgba(0,0,0,0.3)">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid var(--green-primary,#1B3022);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:Inter,sans-serif;font-size:15px;font-weight:700;color:#F6E7BC;letter-spacing:0.04em;text-transform:uppercase">Nassau</span>
-        <span style="font-family:Inter,sans-serif;font-size:11px;color:#D8C58F;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">$${nassauBetVal}/side</span>
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Nassau</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${nassauBetVal}/side</span>
       </div>`;
 
-      // Three bets as stacked linen cards
+      // Three bets as compact cards
       const bets = [
         { label: 'Front 9', holes: frontHoles, thru: frontHoles.length, of: 9, winner: nassauState.frontWinner },
         { label: 'Back 9', holes: backHoles, thru: backHoles.length, of: 9, winner: nassauState.backWinner },
-        { label: 'Overall', holes: scoredHoles, thru: scoredHoles.length, of: holesPerRound, winner: nassauState.totalWinner || nassauState.overallWinner }
+        { label: 'Overall', holes: scoredHoles, thru: scoredHoles.length, of: holesPerRound, winner: nassauState.overallWinner }
       ];
 
-      bets.forEach((bet, idx) => {
+      bets.forEach(bet => {
         const started = bet.thru > 0;
         const complete = bet.thru >= bet.of;
         // Find leader for this segment
@@ -3289,14 +2883,14 @@ export function renderRoundFeed(state) {
           }
         }
 
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:#F8F3E6;border:1px solid rgba(212,175,55,0.2);${idx < bets.length - 1 ? 'margin-bottom:7px' : ''}">
-          <div style="min-width:0">
-            <div style="font-family:Inter,sans-serif;font-size:12px;font-weight:700;color:#0D2818;letter-spacing:0.06em;text-transform:uppercase">${bet.label}</div>
-            <div style="font-family:Inter,sans-serif;font-size:11px;color:#5A634F">${!started ? 'Not started' : complete ? 'Final' : 'Thru ' + bet.thru + ' of ' + bet.of}</div>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${bet.label !== 'Overall' ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--page-text)">${bet.label}</div>
+            <div style="font-size:11px;color:var(--page-text-muted)">${!started ? 'Not started' : complete ? 'Final' : 'Thru ' + bet.thru}</div>
           </div>
           <div style="text-align:right">
-            ${leaderName ? `<div style="font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:${complete ? '#1A472A' : '#0D2818'}">${escHtml(leaderName.split(' ')[0])}</div>` : `<div style="font-family:Inter,sans-serif;font-size:12px;font-weight:600;color:#7A715C">Pending</div>`}
-            <div style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:${complete ? '#8A6A12' : '#5A634F'};letter-spacing:0.07em;text-transform:uppercase">${leaderMargin || (!started ? 'Not started' : complete ? 'Settled' : 'In play')}</div>
+            ${leaderName ? `<div style="font-size:13px;font-weight:700;color:${complete ? 'var(--win,#16A34A)' : 'var(--page-text)'}">${escHtml(leaderName.split(' ')[0])}</div>` : ''}
+            ${leaderMargin ? `<div style="font-size:12px;font-weight:600;color:var(--win,#16A34A)">${leaderMargin}</div>` : ''}
           </div>
         </div>`;
       });
@@ -3304,17 +2898,17 @@ export function renderRoundFeed(state) {
       // Presses
       const presses = nassauState.presses || [];
       if (presses.length > 0) {
-        html += `<div style="margin-top:9px;padding-top:8px;border-top:1px solid rgba(212,175,55,0.24)">
-          <div style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#D8C58F;margin-bottom:6px">Active Presses</div>`;
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gold-primary);margin-bottom:4px">Active Presses</div>`;
         presses.forEach(press => {
-          html += `<div style="font-family:Inter,sans-serif;font-size:11px;color:#E8DEC3;padding:3px 0">${escHtml(press.by || 'Press')} on Hole ${press.hole || '?'} \u2022 $${nassauBetVal}</div>`;
+          html += `<div style="font-size:12px;color:var(--page-text-muted);padding:2px 0">${escHtml(press.by || 'Press')} on Hole ${press.hole || '?'} \u2022 $${nassauBetVal}</div>`;
         });
         html += `</div>`;
       }
 
       // Total exposure
       const totalNassau = (3 + presses.length) * nassauBetVal;
-      html += `<div style="margin-top:9px;text-align:right;font-family:Inter,sans-serif;font-size:12px;font-weight:700;color:#F4D988">Exposure: $${totalNassau}</div>`;
+      html += `<div style="margin-top:8px;text-align:right;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--page-text-muted)">Exposure: $${totalNassau}</div>`;
       html += `</div>`;
     }
 
@@ -3323,37 +2917,23 @@ export function renderRoundFeed(state) {
       const wolfState = gameState?.wolf || {};
       const nextHoleNum = latestHole + 1;
       const currentWolf = wolfOrder[(nextHoleNum - 1) % wolfOrder.length];
-      const wheelPlayers = wolfOrder.slice(0, 4);
-      const wheelPositions = [
-        'left:50%;top:0;transform:translateX(-50%)',
-        'right:0;top:50%;transform:translateY(-50%)',
-        'left:50%;bottom:0;transform:translateX(-50%)',
-        'left:0;top:50%;transform:translateY(-50%)'
-      ];
+      const wolfPointsPerHole = parseInt(config?.structure?.wolfPoints) || 1;
 
-      html += `<div style="background:linear-gradient(160deg,#1A472A,#0D2818);border:1px solid rgba(212,175,55,0.32);border-top:2px solid #D4AF37;border-radius:12px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 10px 24px rgba(0,0,0,0.3)">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #8B6914;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:Inter,sans-serif;font-size:15px;font-weight:700;color:#F6E7BC;letter-spacing:0.04em;text-transform:uppercase">Wolf</span>
-        <span style="font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:#0D2818;background:#D4AF37;padding:5px 8px;border-radius:999px;letter-spacing:0.08em;text-transform:uppercase">Hole ${nextHoleNum}</span>
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Wolf</span>
+        <span style="font-size:12px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.1);padding:3px 8px;border-radius:4px">Hole ${nextHoleNum}: ${escHtml(currentWolf.split(' ')[0])} is Wolf</span>
       </div>`;
 
-      html += `<div style="position:relative;height:190px;margin-bottom:10px;border-radius:10px;background:rgba(13,40,24,0.6);border:1px solid rgba(212,175,55,0.28);overflow:hidden">
-        <div style="position:absolute;left:50%;top:50%;width:130px;height:130px;border-radius:999px;transform:translate(-50%,-50%);border:1px solid rgba(212,175,55,0.35);background:radial-gradient(circle at center,rgba(212,175,55,0.12),rgba(26,71,42,0.18) 60%,rgba(13,40,24,0.05) 100%)"></div>
-        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:6px 10px;border-radius:999px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.35);font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:#F4D988;letter-spacing:0.08em;text-transform:uppercase">Rotation</div>`;
-      wheelPlayers.forEach((name, i) => {
+      // Rotation display
+      html += `<div style="display:flex;gap:6px;margin-bottom:10px">`;
+      wolfOrder.forEach((name, i) => {
         const isWolf = name === currentWolf;
-        const initials = escHtml(name.split(' ').map(v => v[0]).join('').slice(0, 2).toUpperCase());
-        html += `<div style="position:absolute;${wheelPositions[i]};width:58px;height:58px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:1px solid ${isWolf ? 'rgba(244,217,136,0.85)' : 'rgba(212,175,55,0.35)'};background:${isWolf ? 'linear-gradient(150deg,#D4AF37,#B7891E)' : 'linear-gradient(150deg,rgba(58,97,70,0.9),rgba(18,54,33,0.95))'};box-shadow:${isWolf ? '0 0 0 2px rgba(212,175,55,0.35)' : 'none'};font-family:Inter,sans-serif;font-size:16px;font-weight:700;color:${isWolf ? '#0D2818' : '#F3E7C7'}">
-          ${initials}
-          ${isWolf ? `<span style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-family:Inter,sans-serif;font-size:9px;line-height:1;font-weight:700;letter-spacing:0.08em;color:#F4D988;text-transform:uppercase;background:#0D2818;padding:2px 5px;border-radius:999px;border:1px solid rgba(212,175,55,0.5)" aria-label="Current Wolf">Crown</span>` : ''}
-          <span style="position:absolute;top:63px;left:50%;transform:translateX(-50%);font-family:Inter,sans-serif;font-size:9px;font-weight:700;color:#D8C58F;white-space:nowrap;letter-spacing:0.07em;text-transform:uppercase">${escHtml(name.split(' ')[0])}</span>
+        html += `<div style="flex:1;text-align:center;padding:8px 4px;border-radius:8px;${isWolf ? 'background:#8B6914;color:white' : 'background:var(--bg-secondary);color:var(--page-text-muted)'};font-size:12px;font-weight:${isWolf ? '800' : '600'}">
+          ${isWolf ? '\ud83d\udc3a ' : ''}${escHtml(name.split(' ')[0])}
         </div>`;
       });
       html += `</div>`;
-
-      if (wolfOrder.length > wheelPlayers.length) {
-        html += `<div style="margin-top:-2px;margin-bottom:8px;font-family:Inter,sans-serif;font-size:10px;color:#D8C58F;letter-spacing:0.08em;text-transform:uppercase">+${wolfOrder.length - wheelPlayers.length} more in rotation</div>`;
-      }
 
       // Wolf history (last few holes)
       const wolfPicks = wolfState.picks || {};
@@ -3364,10 +2944,10 @@ export function renderRoundFeed(state) {
           const pick = wolfPicks[h];
           const isLone = pick === 'lone' || pick === 'LONE_WOLF';
           const partner = pick && !isLone ? pick : null;
-          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;margin-bottom:6px;background:rgba(248,243,230,0.97);border:1px solid rgba(212,175,55,0.2);font-family:Inter,sans-serif;font-size:11px">
-            <span style="color:#5A634F;width:34px;font-weight:700">H${h}</span>
-            <span style="font-weight:700;color:#0D2818">${escHtml(wolf.split(' ')[0])}</span>
-            <span style="color:${isLone ? '#8A6A12' : '#5A634F'};font-weight:${isLone ? '700' : '600'};text-transform:uppercase;letter-spacing:0.05em">${isLone ? 'Lone Wolf' : partner ? 'Picked ' + escHtml(partner.split(' ')[0]) : '--'}</span>
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px">
+            <span style="color:var(--page-text-muted);width:28px">H${h}</span>
+            <span style="font-weight:600;color:var(--page-text)">${escHtml(wolf.split(' ')[0])}</span>
+            <span style="color:${isLone ? '#8B6914' : 'var(--page-text-muted)'};font-weight:${isLone ? '700' : '500'}">${isLone ? 'LONE WOLF \ud83d\udc3a' : partner ? 'Picked ' + escHtml(partner.split(' ')[0]) : '--'}</span>
           </div>`;
         });
       }
@@ -3376,7 +2956,7 @@ export function renderRoundFeed(state) {
       const hammerStart = holesPerRound - 1; // holes 17-18
       const holesUntilHammer = Math.max(0, hammerStart - latestHole);
       if (holesUntilHammer > 0 && holesUntilHammer <= 10) {
-        html += `<div style="margin-top:8px;text-align:center;font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#F4D988;background:rgba(212,175,55,0.14);padding:8px;border-radius:8px;letter-spacing:0.06em;text-transform:uppercase">
+        html += `<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.08);padding:6px;border-radius:6px">
           WOLF HAMMER in ${holesUntilHammer} hole${holesUntilHammer !== 1 ? 's' : ''} \u2022 4x value
         </div>`;
       }
@@ -3442,45 +3022,17 @@ export function renderRoundFeed(state) {
       const mpBet = parseInt(config?.structure?.matchPlayBet) || 10;
       const running = gameState.match_play.running;
       const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
-      const duelA = sorted[0] || null;
-      const duelB = sorted[1] || null;
 
-      html += `<div style="background:linear-gradient(160deg,#1A472A,#0D2818);border:1px solid rgba(212,175,55,0.32);border-top:2px solid #D4AF37;border-radius:12px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 10px 24px rgba(0,0,0,0.3)">`;
+      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #0369A1;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
       html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:Inter,sans-serif;font-size:15px;font-weight:700;color:#F6E7BC;letter-spacing:0.04em;text-transform:uppercase">Match Play</span>
-        <span style="font-family:Inter,sans-serif;font-size:11px;color:#D8C58F;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">$${mpBet}/match</span>
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Match Play</span>
+        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${mpBet}/match</span>
       </div>`;
-
-      if (duelA && duelB) {
-        const aName = escHtml(duelA[0].split(' ')[0]);
-        const bName = escHtml(duelB[0].split(' ')[0]);
-        const aPts = duelA[1] || 0;
-        const bPts = duelB[1] || 0;
-        const leadDiff = aPts - bPts;
-        const leadText = leadDiff > 0 ? `${Math.abs(leadDiff)} UP` : leadDiff < 0 ? `${Math.abs(leadDiff)} DN` : 'A/S';
-
-        html += `<div style="margin-bottom:10px;border-radius:11px;padding:12px 10px;background:rgba(13,40,24,0.55);border:1px solid rgba(212,175,55,0.28)">
-          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
-            <div style="text-align:center">
-              <div style="width:52px;height:52px;margin:0 auto 6px;border-radius:999px;border:1px solid rgba(212,175,55,0.45);background:linear-gradient(150deg,rgba(70,118,85,0.92),rgba(18,54,33,0.95));display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;font-size:17px;font-weight:700;color:#F3E7C7">${aName.slice(0, 1)}</div>
-              <div style="font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#E8DEC3;letter-spacing:0.05em;text-transform:uppercase">${aName}</div>
-            </div>
-            <div style="width:44px;height:44px;border-radius:999px;border:1px solid rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;color:#F4D988;background:rgba(13,40,24,0.8)">VS</div>
-            <div style="text-align:center">
-              <div style="width:52px;height:52px;margin:0 auto 6px;border-radius:999px;border:1px solid rgba(212,175,55,0.45);background:linear-gradient(150deg,rgba(70,118,85,0.92),rgba(18,54,33,0.95));display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;font-size:17px;font-weight:700;color:#F3E7C7">${bName.slice(0, 1)}</div>
-              <div style="font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#E8DEC3;letter-spacing:0.05em;text-transform:uppercase">${bName}</div>
-            </div>
-          </div>
-          <div style="margin-top:9px;text-align:center;font-family:Inter,sans-serif;font-size:24px;line-height:1;font-weight:700;color:#F4D988">${leadText}</div>
-          <div style="margin-top:5px;text-align:center;font-family:Inter,sans-serif;font-size:10px;font-weight:700;color:#D8C58F;letter-spacing:0.08em;text-transform:uppercase">Head-to-head duel</div>
-        </div>`;
-      }
-
       sorted.forEach(([name, pts], i) => {
         const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'A/S';
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;margin-bottom:${i < sorted.length - 1 ? '6px' : '0'};background:rgba(248,243,230,0.97);border:1px solid rgba(212,175,55,0.2)">
-          <span style="font-family:Inter,sans-serif;font-size:12px;font-weight:${i === 0 ? '700' : '600'};color:#0D2818;letter-spacing:0.05em;text-transform:uppercase">${escHtml(name.split(' ')[0])}</span>
-          <span style="font-family:Inter,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;color:${pts > 0 ? '#1A472A' : pts < 0 ? '#8B2D2D' : '#5A634F'};text-transform:uppercase">${status}</span>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
         </div>`;
       });
       html += `</div>`;
@@ -3712,7 +3264,7 @@ export function renderRoundFeed(state) {
       html += `</div>`;
       // AI Trash Talk
       if (scoredHoles.length >= 2) {
-        html += `<button id="ai-chirp-btn" onclick="window.MG.generateAIChirp()" style="width:100%;margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(212,160,23,0.12),rgba(212,160,23,0.04));border:1.5px solid var(--mg-gold);border-radius:8px;color:var(--mg-gold);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:56px;letter-spacing:0.5px">
+        html += `<button id="ai-chirp-btn" onclick="window.MG.generateAIChirp()" style="width:100%;margin-top:8px;padding:10px;background:linear-gradient(135deg,rgba(212,160,23,0.12),rgba(212,160,23,0.04));border:1.5px solid var(--mg-gold);border-radius:8px;color:var(--mg-gold);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;letter-spacing:0.5px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Generate Trash Talk
         </button>`;
@@ -3888,7 +3440,7 @@ export function renderRoundFeed(state) {
           html += `<div style="background:linear-gradient(135deg, rgba(212,160,23,0.08), rgba(212,160,23,0.02));border:1.5px solid var(--mg-gold);border-radius:10px;padding:14px;margin-bottom:8px">
             <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mg-gold-dim);margin-bottom:6px">Double or Nothing</div>
             <div style="font-size:13px;color:var(--mg-text);margin-bottom:10px">${escHtml(winners[0].name)} won <span style="font-family:'SF Mono',monospace;color:var(--win);font-weight:700">+$${topWinAmount}</span> this round. Run it back?</div>
-            <button onclick="window.MG.createDoubleOrNothing()" style="width:100%;padding:12px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;min-height:56px">
+            <button onclick="window.MG.createDoubleOrNothing()" style="width:100%;padding:12px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;min-height:44px">
               Double or Nothing \u2014 $${topWinAmount * 2} on Round ${roundNum + 1}
             </button>
           </div>`;
@@ -3907,7 +3459,7 @@ export function renderRoundFeed(state) {
           <div style="font-size:13px;color:var(--mg-text);margin-bottom:8px">${escHtml(prop.description)}</div>
           <div style="font-size:16px;font-weight:800;font-family:'SF Mono',monospace;color:var(--mg-gold);margin-bottom:8px">$${prop.amount || 0}</div>
           ${!alreadyAccepted && prop.creator !== bettorName
-            ? `<button onclick="window.MG.acceptProp('${prop.id}')" style="width:100%;padding:10px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;min-height:56px">Accept</button>`
+            ? `<button onclick="window.MG.acceptProp('${prop.id}')" style="width:100%;padding:10px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">Accept</button>`
             : `<div style="font-size:11px;color:var(--mg-text-muted);text-align:center;padding:6px">Waiting for opponent...</div>`
           }
         </div>`;
@@ -3936,7 +3488,7 @@ export function renderRoundFeed(state) {
       });
 
       // Side bet button
-      html += `<button onclick="window.MG.createSideBet()" style="width:100%;padding:10px;background:transparent;border:1.5px dashed var(--mg-gold);border-radius:8px;color:var(--mg-gold-dim);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.5px;min-height:56px">
+      html += `<button onclick="window.MG.createSideBet()" style="width:100%;padding:10px;background:transparent;border:1.5px dashed var(--mg-gold);border-radius:8px;color:var(--mg-gold-dim);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.5px;min-height:44px">
         + Propose a Side Bet
       </button>`;
 
@@ -3966,7 +3518,7 @@ export function renderRoundFeed(state) {
     // AI advisor
     if (scoredHoles.length === 0) {
       html += `<div style="padding:12px;background:rgba(212,160,23,0.04);border:1.5px solid var(--mg-gold);border-radius:8px;margin-bottom:8px">
-        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:56px">
+        <button onclick="window.MG.getAIGameAdvice()" style="width:100%;padding:10px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Recommend Games for This Group
         </button>
@@ -3985,7 +3537,7 @@ export function renderRoundFeed(state) {
         if (g === 'Nassau' && nassauBetAmt > 0) detail = ' $' + nassauBetAmt;
         if (g === 'Skins' && skinsBetAmt > 0) detail = ' $' + skinsBetAmt;
         html += `<button onclick="window.MG.toggleGame('${gId}')"
-          style="padding:8px 14px;background:rgba(212,160,23,0.15);color:var(--mg-gold-dim);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;min-height:56px;-webkit-tap-highlight-color:transparent">
+          style="padding:8px 14px;background:rgba(212,160,23,0.15);color:var(--mg-gold-dim);border:1.5px solid var(--mg-gold);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;min-height:44px;-webkit-tap-highlight-color:transparent">
           ${escHtml(g)}${detail}
           <span style="font-size:10px;opacity:.5">&times;</span>
         </button>`;
@@ -3997,12 +3549,12 @@ export function renderRoundFeed(state) {
     if (inactiveGames.length > 0 && !state._spectatorMode) {
       html += `<div style="margin-bottom:8px">
         <button onclick="document.getElementById('inactive-games-list').style.display=document.getElementById('inactive-games-list').style.display==='none'?'flex':'none'"
-          style="padding:8px 14px;background:none;color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:56px;-webkit-tap-highlight-color:transparent">+ Add Game</button>
+          style="padding:8px 14px;background:none;color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">+ Add Game</button>
         <div id="inactive-games-list" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px">`;
       inactiveGames.forEach(gId => {
         const label = allGameLabels[gId] || gId;
         html += `<button onclick="window.MG.toggleGame('${gId}')"
-          style="padding:8px 14px;background:var(--mg-surface);color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:56px;-webkit-tap-highlight-color:transparent">${escHtml(label)}</button>`;
+          style="padding:8px 14px;background:var(--mg-surface);color:var(--mg-text-muted);border:1.5px dashed var(--mg-border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent">${escHtml(label)}</button>`;
       });
       html += `</div></div>`;
     }
@@ -4019,7 +3571,7 @@ export function renderRoundFeed(state) {
         nassauOptions.forEach(amt => {
           const isActive = nassauBetAmt === amt;
           html += `<button onclick="window.MG.updateStakesQuick('nassau',${amt})"
-            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:56px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:44px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
         });
         html += `</div></div>`;
       }
@@ -4031,7 +3583,7 @@ export function renderRoundFeed(state) {
         skinsOptions.forEach(amt => {
           const isActive = skinsBetAmt === amt;
           html += `<button onclick="window.MG.updateStakesQuick('skins',${amt})"
-            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:56px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
+            style="flex:1;padding:10px 4px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid ${isActive ? 'var(--mg-gold)' : 'var(--mg-border)'};background:${isActive ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};color:${isActive ? 'var(--mg-gold)' : 'var(--mg-text-muted)'};min-height:44px;-webkit-tap-highlight-color:transparent">$${amt}</button>`;
         });
         html += `</div></div>`;
       }
@@ -4050,8 +3602,8 @@ export function renderRoundFeed(state) {
       <div style="font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:8px">Round Complete</div>
       <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <a href="#settle" style="text-decoration:none;display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;min-height:56px">Review Settlement</a>
-        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px">Edit Last Hole</button>
+        <a href="#settle" style="text-decoration:none;display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
       </div>
     </div>`;
   }
@@ -4071,7 +3623,7 @@ export function renderRoundFeed(state) {
         <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">${escHtml(nextRoundInfo.tees || '')} &middot; Par ${nextRoundInfo.par || 72}</div>
       </div>
       <button onclick="window.MG.startNextRound(${nextRound}, '${escHtml(nextRoundInfo.course || '').replace(/'/g, "\\'")}', '${escHtml(nextRoundInfo.courseId || '').replace(/'/g, "\\'")}')"
-        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px">
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px">
         Start Round ${nextRound}: ${escHtml(nextRoundInfo.course || 'Next Course')}
       </button>`;
     } else {
@@ -4082,7 +3634,7 @@ export function renderRoundFeed(state) {
         <div id="next-round-results"></div>
       </div>
       <button onclick="window.MG.startNextRound(${nextRound})"
-        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px">
+        style="width:100%;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px">
         Start Round ${nextRound}
       </button>`;
     }
@@ -4124,7 +3676,7 @@ function renderScoreModal(state, players) {
                  : hPar === 5 ? `<div style="width:5px;height:5px;border-radius:50%;background:${isActive ? 'var(--text-primary)' : 'var(--gold-primary)'};margin:0 auto;margin-top:1px"></div>`
                  : `<div style="width:5px;height:5px;margin-top:1px"></div>`;
     holePicker += `<button onclick="window.MG.setScoreModalHole(${h})"
-      style="min-width:56px;height:56px;border-radius:8px;border:2px solid ${isActive ? 'var(--mg-green)' : 'var(--mg-border)'};background:${isActive ? 'var(--mg-green)' : (hasScore ? 'rgba(35,134,54,0.08)' : 'transparent')};color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'};font-size:12px;font-weight:${isActive ? '700' : '500'};cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;line-height:1.1">
+      style="min-width:36px;height:44px;border-radius:8px;border:2px solid ${isActive ? 'var(--mg-green)' : 'var(--mg-border)'};background:${isActive ? 'var(--mg-green)' : (hasScore ? 'rgba(35,134,54,0.08)' : 'transparent')};color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'};font-size:12px;font-weight:${isActive ? '700' : '500'};cursor:pointer;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 0;line-height:1.1">
       <span>${h}</span>
       ${parDot}
       </button>`;
@@ -4187,7 +3739,7 @@ function renderScoreModal(state, players) {
           <div style="font-size:20px;font-weight:700;color:var(--mg-green)">Hole ${hole}</div>
           <div style="font-size:12px;color:var(--mg-text-muted)">Par ${par}${hcpRank !== null ? ` &nbsp;·&nbsp; HCP ${hcpRank}` : ''} &nbsp;·&nbsp; Enter gross scores</div>
         </div>
-        <button onclick="window.MG.closeScoreModal()" style="width:56px;height:56px;border:none;background:var(--mg-border);border-radius:50%;font-size:18px;cursor:pointer;color:var(--mg-text);line-height:1">×</button>
+        <button onclick="window.MG.closeScoreModal()" style="width:32px;height:32px;border:none;background:var(--mg-border);border-radius:50%;font-size:18px;cursor:pointer;color:var(--mg-text);line-height:1">×</button>
       </div>
       ${holePicker}
       <div>${playerRows}</div>
@@ -4580,10 +4132,7 @@ function renderAdminScores(state) {
 
   const selectedRound = state._adminRound || 1;
   const roundMatches = Object.values(state.matches).filter(m => m.round === selectedRound);
-  const allScored = roundMatches.every(m =>
-    m.scoreA !== null && m.scoreA !== undefined &&
-    m.scoreB !== null && m.scoreB !== undefined
-  );
+  const allScored = roundMatches.every(m => m.scoreA !== null && m.scoreA !== undefined);
   const allFinal = roundMatches.every(m => m.status === 'final');
   const finalCount = roundMatches.filter(m => m.status === 'final').length;
 
@@ -4611,11 +4160,11 @@ function renderAdminScores(state) {
       html += `<div style="display:flex;align-items:center;gap:2px;padding:4px 0;border-bottom:1px solid var(--mg-border);${isFinal ? 'opacity:0.6' : ''}">
         <div style="flex:1;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameA}/${tA.guest.split(" ").pop()}</div>
         <div style="display:flex;gap:2px">
-          <button class="mg-score-btn ${m.scoreA === 7 && m.scoreB === 3 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',7,3)" style="min-width:56px;min-height:56px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">7-3</span></button>
-          <button class="mg-score-btn ${m.scoreA === 6 && m.scoreB === 4 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',6,4)" style="min-width:56px;min-height:56px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">6-4</span></button>
-          <button class="mg-score-btn ${m.scoreA === 5 && m.scoreB === 5 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',5,5)" style="min-width:56px;min-height:56px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">5-5</span></button>
-          <button class="mg-score-btn ${m.scoreA === 4 && m.scoreB === 6 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',4,6)" style="min-width:56px;min-height:56px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">4-6</span></button>
-          <button class="mg-score-btn ${m.scoreA === 3 && m.scoreB === 7 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',3,7)" style="min-width:56px;min-height:56px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">3-7</span></button>
+          <button class="mg-score-btn ${m.scoreA === 7 && m.scoreB === 3 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',7,3)" style="min-width:36px;min-height:36px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">7-3</span></button>
+          <button class="mg-score-btn ${m.scoreA === 6 && m.scoreB === 4 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',6,4)" style="min-width:36px;min-height:36px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">6-4</span></button>
+          <button class="mg-score-btn ${m.scoreA === 5 && m.scoreB === 5 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',5,5)" style="min-width:36px;min-height:36px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">5-5</span></button>
+          <button class="mg-score-btn ${m.scoreA === 4 && m.scoreB === 6 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',4,6)" style="min-width:36px;min-height:36px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">4-6</span></button>
+          <button class="mg-score-btn ${m.scoreA === 3 && m.scoreB === 7 ? 'selected' : ''}" onclick="window.MG.setScoreFinal('${m.id}',3,7)" style="min-width:36px;min-height:36px;padding:2px;font-size:10px"><span class="score-val" style="font-size:11px">3-7</span></button>
         </div>
         <div style="flex:1;font-size:11px;font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameB}/${tB.guest.split(" ").pop()}</div>
         <div style="width:18px;text-align:center;font-size:12px">${isFinal ? '✓' : ''}</div>
@@ -5014,7 +4563,7 @@ function renderScrambleScoreEntry(state) {
     const hasScore = !!(holes[h]?.scores || holes[h]);
     const isActive = h === holeNum;
     html += `<button onclick="window.MG.setScorecardHole(${h})"
-      style="width:56px;height:56px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
+      style="width:36px;height:36px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
       border:2px solid ${isActive ? 'var(--mg-green)' : hasScore ? 'var(--mg-gold-dim)' : 'var(--mg-border)'};
       background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};
       color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'}">${h}</button>`;
@@ -5043,7 +4592,7 @@ function renderScrambleScoreEntry(state) {
     scores.forEach((s, i) => {
       const selected = currentScore === s;
       html += `<button onclick="window.MG.setScrambleScore('${escHtml(teamName).replace(/'/g, "\\'")}',${s})"
-        style="flex:1;min-height:56px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;
+        style="flex:1;min-height:48px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;
         border:2px solid ${selected ? 'var(--mg-gold)' : 'var(--mg-border)'};
         background:${selected ? 'var(--mg-gold)' : 'var(--mg-surface)'};
         color:${selected ? 'var(--mg-green)' : 'var(--mg-text)'};
@@ -5137,7 +4686,7 @@ function renderAdminScorecard(state) {
     const hasScore = !!holes[h];
     const isActive = h === holeNum;
     html += `<button onclick="window.MG.setScorecardHole(${h})"
-      style="width:56px;height:56px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
+      style="width:36px;height:36px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;
       border:2px solid ${isActive ? 'var(--mg-green)' : hasScore ? 'var(--mg-gold-dim)' : 'var(--mg-border)'};
       background:${isActive ? 'var(--mg-green)' : hasScore ? 'rgba(212,160,23,0.15)' : 'var(--mg-surface)'};
       color:${isActive ? 'var(--text-primary)' : 'var(--mg-text)'}">${h}</button>`;
@@ -5609,8 +5158,8 @@ function renderAdminSettings(state) {
     <div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:8px">Share Invite first, then copy the link if needed.</div>
     <div style="background:var(--mg-surface);border:1px solid var(--mg-border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:monospace;word-break:break-all;margin-bottom:8px">${joinUrl}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <button class="mg-btn mg-btn-primary" style="width:auto;padding:8px 14px;font-size:12px;min-height:56px" onclick="window.MG.shareInviteLink('${joinUrl}')">Share Invite</button>
-      <button class="mg-btn mg-btn-outline" style="width:auto;padding:8px 14px;font-size:12px;min-height:56px" onclick="navigator.clipboard.writeText('${joinUrl}').then(()=>window.MG.toast('Link copied!'))">Copy Link</button>
+      <button class="mg-btn mg-btn-primary" style="width:auto;padding:8px 14px;font-size:12px;min-height:44px" onclick="window.MG.shareInviteLink('${joinUrl}')">Share Invite</button>
+      <button class="mg-btn mg-btn-outline" style="width:auto;padding:8px 14px;font-size:12px;min-height:44px" onclick="navigator.clipboard.writeText('${joinUrl}').then(()=>window.MG.toast('Link copied!'))">Copy Link</button>
     </div>
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">
       <span style="white-space:nowrap;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--mg-surface);border:1px solid var(--mg-border)">No app download</span>
@@ -6022,7 +5571,7 @@ export function renderBetting(state) {
         letter-spacing: 0.5px;
         cursor: pointer;
         transition: all 0.2s ease;
-        min-height: 56px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -6042,7 +5591,7 @@ export function renderBetting(state) {
         letter-spacing: 0.5px;
         cursor: pointer;
         transition: all 0.2s ease;
-        min-height: 56px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -6062,7 +5611,7 @@ export function renderBetting(state) {
         letter-spacing: 0.5px;
         cursor: pointer;
         transition: all 0.2s ease;
-        min-height: 56px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -6196,7 +5745,15 @@ function renderMatchBets(state) {
       const isLive = m.status === "live";
 
       // Enhanced match styling
-      html += `<div class="mg-bar-match-card ${isLive ? 'live' : ''}" style="margin-bottom:${index < fMatches.length - 1 ? '12px' : '0'}">
+      html += `<div style="
+        background: ${isLive ? 'rgba(22,163,74,0.05)' : 'rgba(0,0,0,0.2)'};
+        border: 1px solid ${isLive ? '#16A34A' : '#2D5A3D'};
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: ${index < fMatches.length - 1 ? '12px' : '0'};
+        position: relative;
+        overflow: hidden;
+      ">
         ${isLive ? `
           <div style="
             position: absolute;
@@ -6231,24 +5788,34 @@ function renderMatchBets(state) {
           </div>
         ` : ''}
 
-        <div class="mg-bar-match-meta">
+        <div style="
+          color: #D4AF37;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+        ">
           Round ${m.round} • ${RT(m.round)} • HI: ${tA.combined} vs ${tB.combined}
         </div>
 
-        <div class="mg-bar-matchup">
-          <div class="mg-bar-team-name">${escHtml(nA)}</div>
-          <div class="mg-bar-vs">vs</div>
-          <div class="mg-bar-team-name right">${escHtml(nB)}</div>
-        </div>
-
-        <div class="mg-bar-odds-grid">
-          <button class="heritage-odds-chip mg-odds-btn mg-bar-odds-chip ${isSlipSelected(state, m.id, m.teamA) ? 'selected' : ''}"
-            data-slip-match-id="${m.id}"
-            data-slip-selection="${m.teamA}"
-            aria-pressed="${isSlipSelected(state, m.id, m.teamA) ? 'true' : 'false'}"
+        <div style="display: flex; gap: 8px; justify-content: space-between;">
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, m.teamA) ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
             onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamA},'${nA} ML',${decA},'${fmtMlA}'); if(navigator.vibrate) navigator.vibrate(25);"
-            onmouseover="this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.transform='translateY(0)'">
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
             <div class="odds-label" style="
               font-size: 11px;
               color: ${isSlipSelected(state, m.id, m.teamA) ? '#0D2818' : '#FFFFFF'};
@@ -6277,13 +5844,22 @@ function renderMatchBets(state) {
             ">Pays ${decA}x</div>
           </button>
 
-          <button class="heritage-odds-chip mg-odds-btn mg-bar-odds-chip ${isSlipSelected(state, m.id, 'draw') ? 'selected' : ''}"
-            data-slip-match-id="${m.id}"
-            data-slip-selection="draw"
-            aria-pressed="${isSlipSelected(state, m.id, 'draw') ? 'true' : 'false'}"
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, 'draw') ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
             onclick="window.MG.addToSlip('match_winner','${m.id}','draw','${F(m.flight).name.replace(" Flight","")} R${m.round} Draw',${decDraw},'${oddsDraw}'); if(navigator.vibrate) navigator.vibrate(25);"
-            onmouseover="this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.transform='translateY(0)'">
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
             <div class="odds-label" style="
               font-size: 11px;
               color: ${isSlipSelected(state, m.id, 'draw') ? '#0D2818' : '#FFFFFF'};
@@ -6309,13 +5885,22 @@ function renderMatchBets(state) {
             ">Pays ${decDraw}x</div>
           </button>
 
-          <button class="heritage-odds-chip mg-odds-btn mg-bar-odds-chip ${isSlipSelected(state, m.id, m.teamB) ? 'selected' : ''}"
-            data-slip-match-id="${m.id}"
-            data-slip-selection="${m.teamB}"
-            aria-pressed="${isSlipSelected(state, m.id, m.teamB) ? 'true' : 'false'}"
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, m.teamB) ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
             onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamB},'${nB} ML',${decB},'${fmtMlB}'); if(navigator.vibrate) navigator.vibrate(25);"
-            onmouseover="this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.transform='translateY(0)'">
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
             <div class="odds-label" style="
               font-size: 11px;
               color: ${isSlipSelected(state, m.id, m.teamB) ? '#0D2818' : '#FFFFFF'};
@@ -6408,9 +5993,6 @@ function renderFutureBets(state) {
         const won = skinsWon[o.name] || 0;
         const isSelected = isSlipSelected(state, 'skins_winner', o.name);
         html += `<button class="mg-odds-btn ${isSelected ? 'selected' : ''}"
-          data-slip-match-id="skins_winner"
-          data-slip-selection="${escHtml(o.name)}"
-          aria-pressed="${isSelected ? 'true' : 'false'}"
           onclick="window.MG.addToSlip('game_winner','skins_winner','${escHtml(o.name)}','${escHtml(o.name)} to win Skins',${o.decimal},'${o.americanStr}')"
           style="flex:1;min-width:42%">
           <div class="odds-label">${escHtml(o.name.split(' ').pop())}</div>
@@ -6441,9 +6023,6 @@ function renderFutureBets(state) {
           const scoreDisp = standing ? (standing.score > 0 ? '+' + standing.score : standing.score === 0 ? 'E' : String(standing.score)) : 'E';
           const isSelected = isSlipSelected(state, 'nassau_total_winner', o.name);
           html += `<button class="mg-odds-btn ${isSelected ? 'selected' : ''}"
-            data-slip-match-id="nassau_total_winner"
-            data-slip-selection="${escHtml(o.name)}"
-            aria-pressed="${isSelected ? 'true' : 'false'}"
             onclick="window.MG.addToSlip('game_winner','nassau_total_winner','${escHtml(o.name)}','${escHtml(o.name)} wins Nassau Total',${o.decimal},'${o.americanStr}')"
             style="flex:1;min-width:42%">
             <div class="odds-label">${escHtml(o.name.split(' ').pop())}</div>
@@ -6470,9 +6049,6 @@ function renderFutureBets(state) {
         const netDisp = net > 0 ? '+' + net : net === 0 ? 'E' : String(net);
         const isSelected = isSlipSelected(state, 'stroke_winner', o.name);
         html += `<button class="mg-odds-btn ${isSelected ? 'selected' : ''}"
-          data-slip-match-id="stroke_winner"
-          data-slip-selection="${escHtml(o.name)}"
-          aria-pressed="${isSelected ? 'true' : 'false'}"
           onclick="window.MG.addToSlip('game_winner','stroke_winner','${escHtml(o.name)}','${escHtml(o.name)} wins Stroke Play',${o.decimal},'${o.americanStr}')"
           style="flex:1;min-width:42%">
           <div class="odds-label">${escHtml(o.name.split(' ').pop())}</div>
@@ -6498,9 +6074,6 @@ function renderFutureBets(state) {
       const player = seasonData.leaderboard.find(p => p.name === o.name);
       const isSelected = isSlipSelected(state, 'season_stroke_winner', o.name);
       html += `<button class="mg-odds-btn ${isSelected ? 'selected' : ''}"
-        data-slip-match-id="season_stroke_winner"
-        data-slip-selection="${escHtml(o.name)}"
-        aria-pressed="${isSelected ? 'true' : 'false'}"
         onclick="window.MG.addToSlip('game_winner','season_stroke_winner','${escHtml(o.name)}','${escHtml(o.name)} wins Season',${o.decimal},'${o.americanStr}')"
         style="flex:1;min-width:42%">
         <div class="odds-label">${escHtml(o.name.split(' ').pop())}</div>
@@ -6528,11 +6101,7 @@ function renderFutureBets(state) {
         const americanNum = typeof american === 'string' ? parseInt(american.replace('+','')) : american;
         const decimal = mlToDecimal(americanNum);
         const americanStr = typeof american === 'number' ? (american > 0 ? `+${american}` : `${american}`) : `${american}`;
-        html += `<button class="mg-odds-btn ${isSlipSelected(state, fId, parseInt(teamId)) ? 'selected' : ''}"
-          data-slip-match-id="${fId}"
-          data-slip-selection="${teamId}"
-          aria-pressed="${isSlipSelected(state, fId, parseInt(teamId)) ? 'true' : 'false'}"
-          onclick="window.MG.addToSlip('flight_winner','${fId}',${teamId},'${TN(t)} — ${flight.name}',${decimal},'${americanStr}')" style="flex:1;min-width:45%">
+        html += `<button class="mg-odds-btn ${isSlipSelected(state, fId, parseInt(teamId)) ? 'selected' : ''}" onclick="window.MG.addToSlip('flight_winner','${fId}',${teamId},'${TN(t)} — ${flight.name}',${decimal},'${americanStr}')" style="flex:1;min-width:45%">
           <div class="odds-label">${TN(t)}</div>
           <div class="odds-line">${american}</div>
           <div class="odds-pays">HI: ${T(parseInt(teamId)).combined ?? 0} &bull; ${decimal}x</div>
@@ -6603,11 +6172,7 @@ function renderPropBets(state) {
           const americanNum = typeof american === 'string' ? parseInt(american.replace('+','')) : american;
           const dec = mlToDecimal(americanNum);
           const americanStr = typeof american === 'number' ? (american > 0 ? `+${american}` : `${american}`) : `${american}`;
-          html += `<button class="mg-odds-btn ${isSlipSelected(state, m.id + '_margin', outcome) ? 'selected' : ''}"
-            data-slip-match-id="${m.id}_margin"
-            data-slip-selection="${outcome}"
-            aria-pressed="${isSlipSelected(state, m.id + '_margin', outcome) ? 'true' : 'false'}"
-            onclick="event.stopPropagation();window.MG.addToSlip('match_margin','${m.id}','${outcome}','${data.label} (${flight.name.replace(" Flight","")} R${m.round})',${dec},'${americanStr}')" style="flex:1;min-width:18%;padding:4px 2px">
+          html += `<button class="mg-odds-btn ${isSlipSelected(state, m.id + '_margin', outcome) ? 'selected' : ''}" onclick="event.stopPropagation();window.MG.addToSlip('match_margin','${m.id}','${outcome}','${data.label} (${flight.name.replace(" Flight","")} R${m.round})',${dec},'${americanStr}')" style="flex:1;min-width:18%;padding:4px 2px">
             <div class="odds-label" style="font-size:9px">${data.label}</div>
             <div class="odds-line" style="font-size:13px">${american}</div>
             <div class="odds-pays">${dec}x</div>
@@ -6628,13 +6193,6 @@ function renderPropBets(state) {
 function isSlipSelected(state, matchId, selection) {
   if (!state._betSlip) return false;
   return state._betSlip.some(b => b.matchId === matchId && b.selection == selection);
-}
-
-function isOddsBetSlipSelected(state, player, betType, odds) {
-  if (!state._oddsBetSlip) return false;
-  return state._oddsBetSlip.player === player
-    && state._oddsBetSlip.betType === betType
-    && state._oddsBetSlip.odds === odds;
 }
 
 function renderBetSlip(state) {
@@ -6951,7 +6509,7 @@ export function renderCalcutta(state) {
       <div style="font-size:48px;margin-bottom:12px">&#9939;</div>
       <div style="font-size:16px;font-weight:600;color:var(--mg-text)">Auction has not started</div>
       <div style="font-size:13px;color:var(--mg-text-muted);margin-top:4px">${totalTeams > 0 ? totalTeams + ' teams available' : 'Teams will be loaded from event config'}</div>
-      ${isAdmin ? `<button class="mg-btn mg-btn-gold" style="margin-top:20px;padding:14px 28px;font-size:15px;min-height:56px" onclick="window.MG.calcuttaStart()">Start Auction</button>` : ''}
+      ${isAdmin ? `<button class="mg-btn mg-btn-gold" style="margin-top:20px;padding:14px 28px;font-size:15px;min-height:48px" onclick="window.MG.calcuttaStart()">Start Auction</button>` : ''}
     </div>`;
     return html;
   }
@@ -6993,7 +6551,7 @@ export function renderCalcutta(state) {
     html += `<div style="padding:0 20px 12px;display:flex;gap:8px;justify-content:center">`;
     increments.forEach(inc => {
       const newBid = currentAmt + inc;
-      html += `<button class="mg-btn" style="flex:1;padding:14px 8px;font-size:15px;font-weight:700;min-height:56px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:8px;cursor:pointer"
+      html += `<button class="mg-btn" style="flex:1;padding:14px 8px;font-size:15px;font-weight:700;min-height:48px;background:var(--mg-green);color:var(--text-primary);border:none;border-radius:8px;cursor:pointer"
         onclick="window.MG.calcuttaQuickBid(${newBid})">+$${inc}</button>`;
     });
     html += `</div>`;
@@ -7002,24 +6560,24 @@ export function renderCalcutta(state) {
     html += `<div style="padding:0 20px 16px">
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" id="calcutta-bidder" placeholder="Your Name"
-          style="flex:1;padding:12px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:56px;background:var(--mg-surface);color:var(--mg-text)"
+          style="flex:1;padding:12px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:48px;background:var(--mg-surface);color:var(--mg-text)"
           value="${escHtml(state._calcuttaBidder || state.bettorName || '')}">
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <div style="position:relative;flex:1">
           <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mg-text-muted);font-size:14px;font-weight:600">$</span>
           <input type="number" id="calcutta-amount" placeholder="Custom amount" min="${currentAmt + 1}"
-            style="width:100%;padding:12px 12px 12px 24px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:56px;background:var(--mg-surface);color:var(--mg-text)">
+            style="width:100%;padding:12px 12px 12px 24px;border:1px solid var(--mg-border);border-radius:8px;font-size:14px;min-height:48px;background:var(--mg-surface);color:var(--mg-text)">
         </div>
-        <button class="mg-btn mg-btn-gold" style="padding:12px 20px;font-size:14px;font-weight:700;min-height:56px;white-space:nowrap" onclick="window.MG.calcuttaPlaceBid()">Place Bid</button>
+        <button class="mg-btn mg-btn-gold" style="padding:12px 20px;font-size:14px;font-weight:700;min-height:48px;white-space:nowrap" onclick="window.MG.calcuttaPlaceBid()">Place Bid</button>
       </div>
     </div>`;
 
     // Admin controls
     if (isAdmin) {
       html += `<div style="padding:12px 20px 20px;border-top:1px solid var(--mg-border);display:flex;gap:8px">
-        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:700;min-height:56px;background:var(--gold-primary);color:var(--bg-secondary);border:none;border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaSold()">Sold!</button>
-        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:600;min-height:56px;background:var(--mg-surface);color:var(--mg-text);border:1px solid var(--mg-border);border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaNext()">Next Team</button>
+        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:700;min-height:48px;background:var(--gold-primary);color:var(--bg-secondary);border:none;border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaSold()">Sold!</button>
+        <button class="mg-btn" style="flex:1;padding:12px;font-size:14px;font-weight:600;min-height:48px;background:var(--mg-surface);color:var(--mg-text);border:1px solid var(--mg-border);border-radius:8px;cursor:pointer" onclick="window.MG.calcuttaNext()">Next Team</button>
       </div>`;
     }
 
@@ -7229,24 +6787,13 @@ export function renderSettlement(state) {
   const holes = state._holes || {};
   const config = state._config;
   const games = config?.games || {};
+  const holesPlayed = Object.keys(holes).length;
   const holesPerRound = config?.holesPerRound || 18;
-  const requiredEntities = getRequiredScoreEntitiesForView(config);
-  const completionMeta = getCompletedHolesMeta(holes, holesPerRound, requiredEntities);
-  const holesPlayed = completionMeta.completedCount;
   const hasSecondaryModules = Object.values(games).some(Boolean);
-  const secondaryModuleLabels = [];
-  if (games.skins) secondaryModuleLabels.push('Skins');
-  if (games.nassau) secondaryModuleLabels.push('Nassau');
-  if (games.wolf) secondaryModuleLabels.push('Wolf');
-  if (games.vegas) secondaryModuleLabels.push('Vegas');
-  if (games.nines) secondaryModuleLabels.push('9s');
-  if (games.scramble) secondaryModuleLabels.push('Scramble');
-  if (games.stroke_play) secondaryModuleLabels.push('Stroke play');
 
   const isTrophy = state._trophyMode;
 
   let html = '';
-  let settlementSecondaryDetailsHtml = '';
 
   if (isTrophy) {
     html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-gold),var(--mg-gold-dim));padding:20px;text-align:center;border:none">
@@ -7257,6 +6804,10 @@ export function renderSettlement(state) {
 
   html += `<div class="mg-section-title" style="display:flex;justify-content:space-between;align-items:center">
     <span>Settlement Card</span>
+    <div style="display:flex;gap:8px">
+      ${isTrophy ? '' : `<button class="mg-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--mg-surface);border:1px solid var(--mg-border);color:var(--mg-text)" onclick="window.MG.getRecap()">AI Recap</button>
+      `}
+    </div>
   </div>
   <div id="mg-recap-card" style="display:none"></div>`;
 
@@ -7274,33 +6825,24 @@ export function renderSettlement(state) {
   const settlePnL = computeRoundPnL(gameState, settlePlayers, games, config?.structure);
   const settleHasPnL = Object.values(settlePnL).some(v => v !== 0);
   const payPairs = computePayablePairs(settlePnL);
-  const shareState = state._settlementShareState || '';
-  const shareStateChip = shareState === 'share_in_progress'
-    ? `<div style="margin-top:8px;display:flex;justify-content:center"><span style="display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(59,130,246,0.12);color:#1D4ED8">Sharing...</span></div>`
-    : shareState === 'share_failed'
-      ? `<div style="margin-top:8px;display:flex;justify-content:center"><span style="display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(220,38,38,0.12);color:#B91C1C">Share failed - copy link</span></div>`
-      : '';
-  const settlementState = shareState === 'share_in_progress'
-    ? 'share_in_progress'
-    : shareState === 'share_failed'
-      ? 'share_failed'
-      : !completionMeta.roundComplete
-        ? 'blocked_incomplete_round'
-        : settleHasPnL
-          ? 'ready_with_payouts'
-          : 'ready_no_payout_changes';
 
-  html += `<div class="mg-card" data-settlement-state="${settlementState}" style="background:var(--mg-surface);border:1px solid var(--mg-gold-dim);padding:16px;text-align:center">
+  html += `<div class="mg-card" style="background:var(--mg-surface);border:1px solid var(--mg-gold-dim);padding:16px;text-align:center">
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mg-text-muted)">${escHtml(eventDate)}</div>
     <div style="font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin:4px 0">${escHtml(eventName)}</div>
     <div style="font-size:12px;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed !== 1 ? 's' : ''} played</div>
   </div>`;
 
-  if (!completionMeta.roundComplete) {
-    const remaining = completionMeta.incomplete
-      .filter(item => item.missingCount > 0)
-      .map(item => `Hole ${item.hole} (${item.missingCount} player${item.missingCount === 1 ? '' : 's'})`);
-    const blockerSummary = remaining.join(', ');
+  if (holesPlayed < holesPerRound) {
+    const settleNames = settlePlayers.map(p => p.name).filter(Boolean);
+    const remaining = [];
+    for (let h = 1; h <= holesPerRound; h++) {
+      const hs = holes[h]?.scores || holes[h] || {};
+      const missingCount = settleNames.filter(n => !(hs[n] >= 1 && hs[n] <= 15)).length;
+      if (missingCount > 0) {
+        remaining.push(`Hole ${h} (${missingCount} player${missingCount === 1 ? '' : 's'})`);
+      }
+    }
+    const blockerSummary = remaining.slice(0, 5).join(', ') + (remaining.length > 5 ? ', ...' : '');
     html += `<div class="mg-card" style="border:1px solid var(--mg-border);padding:18px;margin-top:8px">
       <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Settlement available after all holes are scored.</div>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Remaining: ${escHtml(blockerSummary || 'Scores still missing')}</div>
@@ -7352,19 +6894,19 @@ export function renderSettlement(state) {
 
       // Dark overlay with dramatic "FINAL RESULTS" header — Playfair Display
       html += `<!-- Settlement Ceremony Overlay -->
-      <div id="settlement-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#0D2818;z-index:9999;opacity:0;transition:opacity 1s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;overflow-y:auto">
-        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(212,175,55,0.05) 0px,rgba(212,175,55,0.05) 1px,transparent 1px,transparent 11px);pointer-events:none"></div>
-        <div id="final-results-header" style="font-family:Inter,sans-serif;font-size:42px;font-weight:700;color:#D4AF37;margin-bottom:8px;opacity:0;transform:translateY(20px);transition:all 1.2s ease;text-align:center;text-shadow:0 4px 20px rgba(212,175,55,0.4);letter-spacing:2px">
+      <div id="settlement-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1B3022;z-index:9999;opacity:0;transition:opacity 1s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;overflow-y:auto">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.03) 0px,rgba(197,160,89,0.03) 1px,transparent 1px,transparent 10px);pointer-events:none"></div>
+        <div id="final-results-header" style="font-family:var(--font-display);font-size:42px;font-weight:700;color:#C5A059;margin-bottom:8px;opacity:0;transform:translateY(20px);transition:all 1.2s ease;text-align:center;text-shadow:0 4px 20px rgba(197,160,89,0.4);letter-spacing:2px">
           FINAL RESULTS
         </div>
-        <div id="ceremony-event-subtitle" style="font-family:Inter,sans-serif;font-size:16px;color:rgba(245,247,243,0.72);opacity:0;transition:opacity 0.8s ease;margin-bottom:32px;text-align:center">
+        <div id="ceremony-event-subtitle" style="font-family:var(--font-display);font-size:16px;color:rgba(252,249,244,0.6);opacity:0;transition:opacity 0.8s ease;margin-bottom:32px;text-align:center">
           ${escHtml(eventName)}${courseName ? ' &middot; ' + escHtml(courseName) : ''}
         </div>
-        <div id="settlement-results-container" style="background:#1A472A;border:2px solid #D4AF37;border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
+        <div id="settlement-results-container" style="background:#FCF9F4;border:2px solid #C5A059;border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
           <div id="settlement-cards-container"></div>
         </div>
-        <div id="ceremony-tap-dismiss" style="opacity:0;transition:opacity 0.5s ease;margin-top:24px;font-size:12px;color:rgba(245,247,243,0.5);letter-spacing:2px;text-transform:uppercase;font-weight:600">Tap to continue</div>
-        <div id="settlement-close-btn" style="position:absolute;top:20px;right:20px;background:rgba(212,175,55,0.16);border:2px solid #D4AF37;color:#D4AF37;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;opacity:0;transition:opacity 0.5s ease;pointer-events:auto" onclick="window.MG.closeSettlementOverlay()">
+        <div id="ceremony-tap-dismiss" style="opacity:0;transition:opacity 0.5s ease;margin-top:24px;font-size:12px;color:rgba(252,249,244,0.4);letter-spacing:2px;text-transform:uppercase;font-weight:600">Tap to continue</div>
+        <div id="settlement-close-btn" style="position:absolute;top:20px;right:20px;background:rgba(197,160,89,0.2);border:2px solid #C5A059;color:#C5A059;border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;opacity:0;transition:opacity 0.5s ease;pointer-events:auto" onclick="window.MG.closeSettlementOverlay()">
           &times;
         </div>
       </div>`;
@@ -7379,26 +6921,27 @@ export function renderSettlement(state) {
 
       sortedPlayers.forEach((p, i) => {
         const money = settlePnL[p.name] || 0;
-        const moneyColor = money > 0 ? '#D4AF37' : money < 0 ? '#DC2626' : 'rgba(245,247,243,0.72)';
+        const moneyStr = money === 0 ? 'EVEN' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+        const moneyColor = money > 0 ? '#16A34A' : money < 0 ? '#DC2626' : '#8A8A85';
         const isWinner = i === 0 && money > 0;
         const playerId = `settlement-player-${i}`;
         const narrative = keyMoments[i % keyMoments.length];
         const position = sortedPlayers.length - i;
 
-        playerCardsHTML += `<div id="${playerId}" class="settlement-card-hidden" style="margin-bottom:12px;padding:14px 16px;border:2px solid ${isWinner ? '#D4AF37' : 'rgba(212,175,55,0.25)'};border-radius:12px;background:${isWinner ? 'linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.08))' : 'rgba(26,71,42,0.82)'};transition:all 0.8s ease">
+        playerCardsHTML += `<div id="${playerId}" class="settlement-card-hidden" style="margin-bottom:12px;padding:14px 16px;border:2px solid ${isWinner ? '#C5A059' : 'rgba(197,160,89,0.15)'};border-radius:12px;background:${isWinner ? 'linear-gradient(135deg,rgba(197,160,89,0.12),rgba(197,160,89,0.04))' : '#F5F1EA'};transition:all 0.8s ease">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="display:flex;align-items:center;gap:12px">
-              <div style="width:32px;height:32px;background:${isWinner ? '#D4AF37' : 'rgba(245,247,243,0.26)'};border-radius:50%;display:flex;align-items:center;justify-content:center;color:${isWinner ? '#0D2818' : '#F5F7F3'};font-weight:700;font-size:14px">
+              <div style="width:32px;height:32px;background:${isWinner ? '#C5A059' : '#8A8A85'};border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FCF9F4;font-weight:700;font-size:14px">
                 ${isWinner ? '\u{1F451}' : position}
               </div>
               <div>
-                <div style="font-size:18px;font-weight:700;color:#F5F7F3;font-family:Inter,sans-serif">${escHtml(p.name)}</div>
-                <div style="font-size:11px;color:rgba(245,247,243,0.62)">${narrative}</div>
+                <div style="font-size:18px;font-weight:700;color:#1C1C19;font-family:var(--font-display)">${escHtml(p.name)}</div>
+                <div style="font-size:11px;color:#8A8A85;font-style:italic">${narrative}</div>
               </div>
             </div>
             <div style="text-align:right">
-              <div class="settlement-money-value" data-target="${money}" style="font-size:26px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 12px rgba(212,175,55,0.45)' : ''}">EVEN</div>
-              ${isWinner ? '<div style="font-size:9px;color:#D4AF37;font-weight:800;text-transform:uppercase;letter-spacing:2px">CHAMPION</div>' : ''}
+              <div style="font-size:26px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 12px rgba(197,160,89,0.5)' : ''}">${moneyStr}</div>
+              ${isWinner ? '<div style="font-size:9px;color:#C5A059;font-weight:800;text-transform:uppercase;letter-spacing:2px">CHAMPION</div>' : ''}
             </div>
           </div>
         </div>`;
@@ -7410,89 +6953,24 @@ export function renderSettlement(state) {
           window.settlementRevealed = true;
           window.MG = window.MG || {};
 
-          window.MG.formatSettlementMoney = function(raw) {
-            if (raw === 0) return 'EVEN';
-            return raw > 0 ? '+$' + raw : '-$' + Math.abs(raw);
-          };
-
-          window.MG.animateSettlementMoney = function(cardEl, targetAmount, durationMs) {
-            var valueEl = cardEl && cardEl.querySelector('.settlement-money-value');
-            if (!valueEl) return;
-            var start = performance.now();
-            var duration = durationMs || 900;
-
-            function tick(now) {
-              var progress = Math.min(1, (now - start) / duration);
-              var eased = 1 - Math.pow(1 - progress, 3);
-              var current = Math.round(targetAmount * eased);
-              valueEl.textContent = window.MG.formatSettlementMoney(current);
-              if (progress < 1) requestAnimationFrame(tick);
-            }
-            requestAnimationFrame(tick);
-          };
-
           window.MG.createWinnerConfetti = function() {
-            if (window.MG && typeof window.MG.triggerConfettiBurst === 'function') {
-              window.MG.triggerConfettiBurst('round_settlement', { count: 130, originX: 0.5, originY: 0.2, lifeMs: 2400 });
-              return;
+            const container = document.createElement('div');
+            container.className = 'confetti-container';
+            document.body.appendChild(container);
+            const colors = ['confetti-gold', 'confetti-green', 'confetti-win', 'confetti-ivory'];
+            for (let i = 0; i < 120; i++) {
+              const piece = document.createElement('div');
+              piece.className = 'confetti-piece ' + colors[Math.floor(Math.random() * colors.length)];
+              piece.style.left = Math.random() * 100 + 'vw';
+              piece.style.top = '-20px';
+              piece.style.animationName = 'confettiFall' + (Math.floor(Math.random() * 5) + 1);
+              piece.style.animationDelay = Math.random() * 1.5 + 's';
+              piece.style.animationDuration = (3.5 + Math.random() * 1.5) + 's';
+              piece.style.animationTimingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+              piece.style.animationFillMode = 'forwards';
+              container.appendChild(piece);
             }
-            const canvas = document.createElement('canvas');
-            canvas.className = 'settlement-confetti-canvas';
-            document.body.appendChild(canvas);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            const palette = ['#D4AF37', '#1A472A', '#F5F7F3', '#22C55E'];
-            const dpr = Math.max(1, window.devicePixelRatio || 1);
-            let width = window.innerWidth;
-            let height = window.innerHeight;
-            canvas.width = Math.floor(width * dpr);
-            canvas.height = Math.floor(height * dpr);
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-            ctx.scale(dpr, dpr);
-
-            const pieces = Array.from({ length: 110 }).map(() => ({
-              x: width * 0.5 + (Math.random() - 0.5) * width * 0.3,
-              y: height * 0.18 + (Math.random() - 0.5) * 80,
-              vx: (Math.random() - 0.5) * 6.2,
-              vy: -5 - Math.random() * 7.5,
-              size: 4 + Math.random() * 7,
-              rot: Math.random() * Math.PI * 2,
-              vr: (Math.random() - 0.5) * 0.35,
-              color: palette[Math.floor(Math.random() * palette.length)],
-              drag: 0.986 + Math.random() * 0.01
-            }));
-
-            const gravity = 0.23;
-            const burstMs = 2400;
-            const startTs = performance.now();
-
-            function frame(now) {
-              const elapsed = now - startTs;
-              ctx.clearRect(0, 0, width, height);
-              pieces.forEach(piece => {
-                piece.vx *= piece.drag;
-                piece.vy += gravity;
-                piece.x += piece.vx;
-                piece.y += piece.vy;
-                piece.rot += piece.vr;
-
-                ctx.save();
-                ctx.translate(piece.x, piece.y);
-                ctx.rotate(piece.rot);
-                ctx.fillStyle = piece.color;
-                ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.6);
-                ctx.restore();
-              });
-
-              if (elapsed < burstMs) {
-                requestAnimationFrame(frame);
-              } else if (canvas.parentNode) {
-                canvas.parentNode.removeChild(canvas);
-              }
-            }
-            requestAnimationFrame(frame);
+            setTimeout(() => { if (container.parentNode) container.parentNode.removeChild(container); }, 6000);
           };
 
           window.MG.closeSettlementOverlay = function() {
@@ -7528,8 +7006,7 @@ export function renderSettlement(state) {
               id: `settlement-player-${i}`,
               isWinner: i === 0 && (settlePnL[p.name] || 0) > 0,
               name: p.name,
-              index: i,
-              amount: settlePnL[p.name] || 0
+              index: i
             })))};
 
             const revealOrder = [...players].reverse();
@@ -7539,18 +7016,18 @@ export function renderSettlement(state) {
                 const element = document.getElementById(player.id);
                 if (element) {
                   element.classList.remove('settlement-card-hidden');
-                  element.classList.add(player.isWinner ? 'settlement-winner-card' : 'settlement-card-reveal');
-                  window.MG.animateSettlementMoney(element, player.amount, player.isWinner ? 1200 : 850);
                   if (player.isWinner) {
+                    element.classList.add('settlement-winner-card');
                     setTimeout(() => {
                       window.MG.createWinnerConfetti();
-                      if (window.MG && typeof window.MG.playSound === 'function') window.MG.playSound('settlement_fanfare');
                       if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 250]);
                       setTimeout(() => {
                         closeBtn.style.opacity = '1';
                         tapDismiss.style.opacity = '1';
                       }, 2000);
                     }, 800);
+                  } else {
+                    element.classList.add('settlement-card-reveal');
                   }
                 }
               }, 2500 + (revealIndex * 1500));
@@ -7572,10 +7049,32 @@ export function renderSettlement(state) {
       </script>`;
     }
 
+    // ── Static Settlement Standings (always shown below ceremony) ──
+    html += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong)">
+      <div class="mg-card-header" style="margin-bottom:12px;font-family:var(--font-display);font-size:14px;letter-spacing:2px">FINAL STANDINGS</div>`;
+
+    sortedPlayers.forEach((p, i) => {
+      const money = settlePnL[p.name] || 0;
+      const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+      const moneyColor = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
+      const isWinner = i === 0 && money > 0;
+      const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
+      const medal = i < 3 ? medals[i] : '';
+
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${i < sortedPlayers.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}${isWinner ? 'background:rgba(197,160,89,0.06);margin:0 -16px;padding:10px 16px;border-radius:8px;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;width:24px;text-align:center">${medal || `<span style="font-size:12px;color:var(--mg-text-muted)">${i + 1}</span>`}</span>
+          <span style="font-size:15px;font-weight:${isWinner ? '700' : '500'};color:var(--text-primary);${isWinner ? 'font-family:var(--font-display);' : ''}">${escHtml(p.name)}</span>
+        </div>
+        <span style="font-size:${isWinner ? '22' : '18'}px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 8px rgba(197,160,89,0.3);' : ''}">${moneyStr}</span>
+      </div>`;
+    });
+    html += `</div>`;
+
     // ── WHO PAYS WHO — Enhanced with Venmo deep links, Zelle, and payment tracking ──
     if (payPairs.length > 0) {
       html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
-        <div class="mg-card-header" style="margin-bottom:4px">Who pays who</div>
+        <div class="mg-card-header" style="margin-bottom:4px">WHO PAYS WHO</div>
         <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:14px">Tap to open payment app with amount pre-filled</div>`;
 
       payPairs.forEach(({ from, to, amount }, pairIdx) => {
@@ -7611,7 +7110,7 @@ export function renderSettlement(state) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.59 3.47A5.1 5.1 0 0020.55.49C19.37.04 18-.08 16.6.02a7.36 7.36 0 00-4.87 2.65 7.36 7.36 0 00-4.87-2.65C5.48-.08 4.1.04 2.92.49A5.1 5.1 0 00-.12 3.47a8.55 8.55 0 00.37 5.21c1.2 2.86 3.86 5.68 7.9 8.37a3.78 3.78 0 004.23 0c4.04-2.69 6.7-5.51 7.9-8.37a8.55 8.55 0 00.37-5.21z"/></svg>
               Pay with Cash App</a>
             <button onclick="navigator.clipboard.writeText('${from.replace(/'/g, "\\'")} pays ${to.replace(/'/g, "\\'")} \$${amount} for ${eventName.replace(/'/g, "\\'")}');window.MG.setPaymentStatus&&window.MG.setPaymentStatus(${pairIdx},'Copied payment details')"
-              style="flex-basis:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary);color:var(--text-primary);padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--border);cursor:pointer;min-height:56px">
+              style="flex-basis:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary);color:var(--text-primary);padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--border);cursor:pointer;min-height:44px">
               Copy payment details</button>
           </div>
           <div id="payment-status-${pairIdx}" style="margin-top:8px;font-size:11px;font-weight:700;color:var(--mg-text-muted)"></div>
@@ -7628,21 +7127,9 @@ export function renderSettlement(state) {
       // Payment tracking script
       html += `<script>
         window.MG = window.MG || {};
-        window.MG.paymentStatusMeta = {
-          venmo: { color: 'var(--win)', bg: 'rgba(22,163,74,0.12)' },
-          cashapp: { color: '#16A34A', bg: 'rgba(22,163,74,0.12)' },
-          copied: { color: 'var(--gold-primary,#C5A059)', bg: 'rgba(197,160,89,0.12)' }
-        };
         window.MG.setPaymentStatus = function(pairIdx, text) {
           var chip = document.getElementById('payment-status-' + pairIdx);
-          if (!chip) return;
-          if (!text) {
-            chip.innerHTML = '';
-            return;
-          }
-          var mode = text.indexOf('Copied') === 0 ? 'copied' : (text.indexOf('Cash App') > -1 ? 'cashapp' : 'venmo');
-          var meta = (window.MG.paymentStatusMeta && window.MG.paymentStatusMeta[mode]) || { color: 'var(--text-secondary)', bg: 'rgba(107,114,128,0.12)' };
-          chip.innerHTML = '<span style="display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:' + meta.bg + ';color:' + meta.color + '">' + text + '</span>';
+          if (chip) chip.textContent = text || '';
         };
         window.MG.markPaymentSent = function(key, pairIdx) {
           try { localStorage.setItem(key, '1'); } catch(e) {}
@@ -7660,43 +7147,15 @@ export function renderSettlement(state) {
           }
         };
       </script>`;
-    } else {
-      html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
-        <div class="mg-card-header" style="margin-bottom:4px">Who pays who</div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">No transfers needed after netting balances.</div>
-      </div>`;
     }
 
     html += `<div style="display:flex;gap:10px;margin-top:12px">
       <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px">Share Results</button>
       <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">Export Card</button>
     </div>`;
-    html += shareStateChip;
-
-    // ── Static Settlement Standings (secondary detail after action row) ──
-    settlementSecondaryDetailsHtml += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:12px">
-      <div class="mg-card-header" style="margin-bottom:12px;font-family:var(--font-display);font-size:14px;letter-spacing:2px">FINAL STANDINGS</div>`;
-
-    sortedPlayers.forEach((p, i) => {
-      const money = settlePnL[p.name] || 0;
-      const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
-      const moneyColor = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
-      const isWinner = i === 0 && money > 0;
-      const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
-      const medal = i < 3 ? medals[i] : '';
-
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${i < sortedPlayers.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}${isWinner ? 'background:rgba(197,160,89,0.06);margin:0 -16px;padding:10px 16px;border-radius:8px;' : ''}">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:16px;width:24px;text-align:center">${medal || `<span style="font-size:12px;color:var(--mg-text-muted)">${i + 1}</span>`}</span>
-          <span style="font-size:15px;font-weight:${isWinner ? '700' : '500'};color:var(--text-primary);${isWinner ? 'font-family:var(--font-display);' : ''}">${escHtml(p.name)}</span>
-        </div>
-        <span style="font-size:${isWinner ? '22' : '18'}px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 8px rgba(197,160,89,0.3);' : ''}">${moneyStr}</span>
-      </div>`;
-    });
-    settlementSecondaryDetailsHtml += `</div>`;
 
     // ── Shareable Settlement Card (screenshot-friendly, fixed dimensions) ──
-    settlementSecondaryDetailsHtml += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
+    html += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
       <!-- Top Banner -->
       <div style="background:#1B3022;padding:20px 24px;position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.05) 0px,rgba(197,160,89,0.05) 1px,transparent 1px,transparent 10px)"></div>
@@ -7761,46 +7220,28 @@ export function renderSettlement(state) {
     </div>
     <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--mg-text-muted)">Screenshot this card for your group chat</div>`;
 
+    // ── Share + Create CTA row ──
+    html += `<div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px;letter-spacing:0.5px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Share Results</button>
+      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Export Card</button>
+    </div>
+    <a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}" style="display:block;text-align:center;margin-top:10px;padding:14px;background:rgba(27,48,34,0.06);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--green-primary);text-decoration:none">Create Your Own Outing &rarr;</a>`;
   }
 
-  if (!settleHasPnL) {
-    html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
-      <div class="mg-card-header" style="margin-bottom:4px">Who pays who</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Everyone is even. No payments due.</div>
-    </div>`;
-    html += `<div style="display:flex;gap:10px;margin-top:12px">
-      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px">Share Results</button>
-      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">Export Card</button>
-    </div>`;
-    html += shareStateChip;
-    settlementSecondaryDetailsHtml += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:12px">
-      <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px">No payout changes</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Share the card for the recap.</div>
-    </div>`;
-  }
-
-  const hasSecondaryDetails = hasSecondaryModules || !!settlementSecondaryDetailsHtml;
-  if (hasSecondaryDetails) {
-    const detailsSummary = secondaryModuleLabels.length > 0
-      ? `Details: ${secondaryModuleLabels.slice(0, 3).join(', ')}${secondaryModuleLabels.length > 3 ? ' +' + (secondaryModuleLabels.length - 3) : ''}`
-      : 'Settlement details';
+  if (hasSecondaryModules) {
     html += `<details class="mg-card" style="padding:12px" id="settlement-details-accordion">
-      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">${escHtml(detailsSummary)}</summary>
+      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">Game Details</summary>
       <div style="margin-top:10px"></div>`;
-    if (settlementSecondaryDetailsHtml) {
-      html += settlementSecondaryDetailsHtml;
-    }
-    if (!isTrophy) {
-      html += `<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="mg-btn" style="width:auto;padding:8px 14px;font-size:12px;background:var(--bg-tertiary);border:1px solid var(--mg-border);color:var(--mg-text);min-height:40px" onclick="window.MG.getRecap()">AI Recap</button>
-      </div>`;
-    }
   }
 
   // ── Skins ──
   if (games.skins && gameState.skins) {
     const s = gameState.skins;
-    const sHolesNorm = getSkinsHoles(gameState, holes, settlePlayers);
+    const sHolesNorm = getSkinsHoles(gameState, holes, players);
     const skinWinners = Object.entries(sHolesNorm).filter(([, d]) => d.winner);
     const carryovers = Object.entries(sHolesNorm).filter(([, d]) => d.carried);
     const totalPot = skinWinners.reduce((sum, [, d]) => sum + (d.potWon || 1), 0);
@@ -7994,7 +7435,7 @@ export function renderSettlement(state) {
     }
   }
 
-  if (hasSecondaryDetails) {
+  if (hasSecondaryModules) {
     html += `</details>`;
   }
 
@@ -8013,8 +7454,7 @@ export function renderSettlement(state) {
       sessionStorage.setItem(shownKey, '1');
       const eventUrl = location.href.replace(/#.*$/, '');
       const replayCloneSlug = state._slug || slug || 'event';
-      const origin = location.origin || 'https://betwaggle.com';
-      const referralUrl = `${origin}/create/?ref=${encodeURIComponent(replayCloneSlug)}`;
+      const referralUrl = 'https://betwaggle.com/create/?ref=' + encodeURIComponent(replayCloneSlug);
       html += `<div id="settle-share-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease">
         <div style="background:var(--bg-primary);border-radius:16px;max-width:380px;width:100%;padding:28px 24px;text-align:center">
           <div style="font-size:22px;font-weight:700;color:var(--bg-secondary);margin-bottom:4px">Round Complete</div>
@@ -8262,7 +7702,7 @@ function renderPlayerPicker(state) {
     html += `<div style="max-height:300px;overflow-y:auto;border:1px solid var(--mg-border);border-radius:10px;background:var(--mg-surface)">`;
     filtered.forEach(p => {
       const credits = p.credits !== undefined ? p.credits : 0;
-      html += `<button onclick="window.MG.setBettorName('${escHtml(p.name)}')" style="display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:12px 16px;border:none;border-bottom:1px solid var(--mg-border);background:transparent;cursor:pointer;font-size:14px;text-align:left;-webkit-tap-highlight-color:transparent">
+      html += `<button onclick="window.MG.setBettorName('${escHtml(p.name)}')" style="display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;padding:12px 16px;border:none;border-bottom:1px solid var(--mg-border);background:transparent;cursor:pointer;font-size:14px;text-align:left;-webkit-tap-highlight-color:transparent">
         <span style="font-weight:600;color:var(--mg-text)">${escHtml(p.name)}</span>
         <span style="font-size:12px;font-weight:700;color:var(--mg-gold-dim)">$${credits}</span>
       </button>`;
@@ -9008,7 +8448,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
       </button>`;
     if (!eventDate) {
       html += `<button onclick="window._tripScheduleTeeTime()"
-        style="width:100%;padding:12px;background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:14px;font-weight:600;color:var(--gold-bright);cursor:pointer;min-height:56px;-webkit-tap-highlight-color:transparent">
+        style="width:100%;padding:12px;background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:14px;font-weight:600;color:var(--gold-bright);cursor:pointer;min-height:48px;-webkit-tap-highlight-color:transparent">
         Schedule Tee Time
       </button>`;
     }
@@ -9063,7 +8503,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   } else if (state.adminAuthed || state._isAdmin) {
     // No course set — show course search for admin
     html += `<div style="background:var(--mg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:8px">Set Course</div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:8px">Set Course</div>
       <div style="position:relative">
         <input type="text" id="trip-course-search" placeholder="Search for a golf course..." oninput="window._tripCourseSearch(this.value)"
           style="width:100%;padding:12px 14px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary);box-sizing:border-box">
@@ -9076,7 +8516,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   html += `<div style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
       <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">The Field</span>
-      <span style="font-size:12px;color:var(--text-tertiary);font-family:'SF Mono',monospace">${sorted.length} players</span>
+      <span style="font-size:10px;color:var(--text-tertiary);font-family:'SF Mono',monospace">${sorted.length} players</span>
     </div>`;
 
   sorted.forEach((p, i) => {
@@ -9087,7 +8527,6 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     const isFavorite = odds.startsWith('-');
     const oddsColor = isFavorite ? 'white' : 'var(--text-secondary)';
     const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
-    const oddsSelected = isOddsBetSlipSelected(state, p.name, 'to_win', odds);
 
     // Card styles — FAV gets gold gradient, others get standard card
     const cardBg = isFav
@@ -9098,22 +8537,17 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     const badgeBg = isFav ? 'background:var(--gold-bright);color:var(--bg-secondary)' : i < 3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
 
     html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;position:relative">
-      ${isFav ? '<div style="position:absolute;top:10px;right:12px;font-size:12px;font-weight:800;letter-spacing:1px;color:var(--gold-bright);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:2px 6px;border-radius:4px">FAV</div>' : ''}
+      ${isFav ? '<div style="position:absolute;top:10px;right:12px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--gold-bright);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:2px 6px;border-radius:4px">FAV</div>' : ''}
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
           <div style="min-width:0">
             <div style="font-size:15px;font-weight:${isFav ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
-            <div style="font-size:12px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
+            <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-          <button class="mg-odds-btn mg-odds-btn--compact ${oddsSelected ? 'selected' : ''}"
-            data-odds-player="${escHtml(p.name)}"
-            data-odds-type="to_win"
-            data-odds-line="${odds}"
-            aria-pressed="${oddsSelected ? 'true' : 'false'}"
-            onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')">${odds}</button>
+          <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
         </div>
       </div>
     </div>`;
@@ -9125,7 +8559,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   html += `<div style="margin-bottom:10px">`;
   html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
     <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Opening Lines</span>
-    <span style="font-size:12px;color:var(--text-tertiary);font-style:italic">H2H spreads</span>
+    <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">H2H spreads</span>
   </div>`;
 
   // All H2H matchups — each as a card
@@ -9140,9 +8574,9 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
       const card = `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;min-height:56px;text-align:center;cursor:default;display:inline-flex;align-items:center;justify-content:center">-${spread}</button>
-          <span style="font-size:12px;color:var(--text-tertiary);font-weight:600">vs</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;min-height:56px;text-align:center;cursor:default;display:inline-flex;align-items:center;justify-content:center">+${spread}</button>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
+          <span style="font-size:11px;color:var(--text-tertiary);font-weight:600">vs</span>
+          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">+${spread}</button>
           <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
         </div>
       </div>`;
@@ -9170,7 +8604,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
       `${worstPlayer.name.split(' ')[0]} makes a birdie: Yes/No`,
     ];
     html += `<div style="margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);padding:0 2px 8px">Prop Bets</div>`;
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);padding:0 2px 8px">Prop Bets</div>`;
     propsList.forEach(prop => {
       html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
         <div style="font-size:13px;color:var(--text-primary);font-style:italic">${escHtml(prop)}</div>
@@ -9187,8 +8621,8 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   if (games.vegas) activeGamesList.push('Vegas');
   if (activeGamesList.length > 0) {
     html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px">
-      <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);width:100%;margin-bottom:2px">Games</span>
-      ${activeGamesList.map(g => `<span style="font-size:12px;font-weight:700;letter-spacing:0.5px;background:var(--bg-tertiary);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}</span>`).join('')}
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);width:100%;margin-bottom:2px">Games</span>
+      ${activeGamesList.map(g => `<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;background:var(--bg-tertiary);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}</span>`).join('')}
     </div>`;
   }
 
@@ -9196,7 +8630,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   {
     const feed = state._feed || [];
     html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">
-      <div style="font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:10px;display:flex;align-items:center;gap:6px">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--win);animation:wg-pulse 2s infinite"></span> Trash Talk
       </div>`;
     if (feed.length > 0) {
@@ -9205,7 +8639,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;background:var(--bg-tertiary)">
           <div style="width:28px;height:28px;min-width:28px;border-radius:50%;background:var(--mg-green);color:var(--text-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${escHtml(String(initial))}</div>
           <div style="flex:1;font-size:13px;color:var(--text-primary)">${escHtml(item.text || '')}</div>
-          <div style="font-size:12px;color:var(--text-tertiary);flex-shrink:0">${feedTimeAgo(item.ts)}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);flex-shrink:0">${feedTimeAgo(item.ts)}</div>
         </div>`;
       });
     } else {
@@ -9219,7 +8653,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     const shareText = `${eventName} \u2014 Lines are set. Who's taking the action?`;
     html += `<div style="display:flex;gap:8px;margin-bottom:10px">
       <button onclick="(function(){var t='${escHtml(shareText).replace(/'/g, "\\'")} '+location.href;if(navigator.share){navigator.share({title:'${escHtml(eventName).replace(/'/g, "\\'")}',text:t,url:location.href}).catch(function(){})}else{navigator.clipboard.writeText(t).then(function(){alert('Link copied!')})}})()"
-        style="flex:1;padding:14px;background:transparent;border:2px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;color:var(--gold-bright)">
+        style="flex:1;padding:14px;background:transparent;border:2px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:var(--gold-bright)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share This Page
       </button>
@@ -9250,7 +8684,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
             onkeydown="if(event.key==='Enter')window._tripGhinLookup()">
         </div>
         <button onclick="window._tripGhinLookup()"
-          style="width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px;-webkit-tap-highlight-color:transparent">
+          style="width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px;-webkit-tap-highlight-color:transparent">
           Look Up Handicap
         </button>
         <div id="trip-ghin-result" style="margin-top:8px;font-size:13px"></div>
@@ -9265,7 +8699,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         <div style="display:flex;gap:6px">
           <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:10px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary)">
           <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:70px;padding:10px 8px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
-          <button onclick="window.MG.addPlayerInline()" style="padding:10px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:56px">Add</button>
+          <button onclick="window.MG.addPlayerInline()" style="padding:10px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:48px">Add</button>
         </div>
       </div>
     </div>`;
@@ -9293,7 +8727,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
               const safeName = (c.club_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
               const safeId = (c.id || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
               return `<button onclick="window._tripSelectCourse('${safeName}','${safeId}')"
-                style="display:block;width:100%;text-align:left;padding:12px;margin-top:4px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-primary);min-height:56px">
+                style="display:block;width:100%;text-align:left;padding:12px;margin-top:4px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-primary);min-height:48px">
                 <div style="font-weight:700">${c.club_name || 'Unknown'}</div>
                 ${info ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${info}</div>` : ''}
                 ${loc ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:1px">${loc}</div>` : ''}
@@ -9359,7 +8793,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         resultEl.innerHTML = '<div style="background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:8px;padding:12px;margin-top:4px">' +
           '<div style="font-size:15px;font-weight:700;color:var(--text-primary)">' + (data.name || '') + '</div>' +
           '<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">HI: ' + (data.handicapIndex || 0) + (data.club ? ' | ' + data.club : '') + '</div>' +
-          '<button onclick="window._tripAddGhinPlayer()" style="margin-top:8px;width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">Add ' + firstName + ' to Group</button>' +
+          '<button onclick="window._tripAddGhinPlayer()" style="margin-top:8px;width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px">Add ' + firstName + ' to Group</button>' +
           '</div>';
         window._tripGhinData = data;
       } catch (e) {
@@ -9529,7 +8963,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
           <div style="font-size:24px;font-weight:900;color:#1A1A1A">$${amount}</div>
         </div>
         <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-          style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg-tertiary,#FFFFFF);color:var(--gold-primary,#C5A059);border:1.5px solid var(--border-strong,rgba(197,160,89,0.3));padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:56px">
+          style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg-tertiary,#FFFFFF);color:var(--gold-primary,#C5A059);border:1.5px solid var(--border-strong,rgba(197,160,89,0.3));padding:14px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:44px">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
           Venmo $${amount}
         </a>
@@ -9549,7 +8983,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
       </div>`;
     } else {
       html += `<div style="margin-bottom:10px">
-        <button onclick="window.MG.getRecap()" style="width:100%;padding:14px;background:var(--bg-tertiary,#FFFFFF);border:1.5px solid var(--gold-primary,#B8962E);border-radius:10px;color:#B8962E;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <button onclick="window.MG.getRecap()" style="width:100%;padding:14px;background:var(--bg-tertiary,#FFFFFF);border:1.5px solid var(--gold-primary,#B8962E);border-radius:10px;color:#B8962E;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Generate AI Recap
         </button>
@@ -9651,7 +9085,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
 
     html += `<div style="margin-bottom:10px">
       <button onclick="(function(){var t='${escHtml(shareText).replace(/'/g, "\\'")}\\n'+location.href;if(navigator.share){navigator.share({title:'${escHtml(eventName).replace(/'/g, "\\'")} - Results',text:t,url:location.href}).catch(function(){})}else{navigator.clipboard.writeText(t).then(function(){alert('Results copied!')})}})()"
-        style="width:100%;padding:14px;background:transparent;border:2px solid #B8962E;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;color:#B8962E">
+        style="width:100%;padding:14px;background:transparent;border:2px solid #B8962E;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;color:#B8962E">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Share Results
       </button>
@@ -9846,7 +9280,7 @@ export function renderOddsBetSlip(state) {
       </div>
     </div>
     <button onclick="window.MG.placeOddsBet()"
-      style="width:100%;padding:14px;border-radius:10px;border:none;background:${amount?'var(--gold-bright)':'var(--border)'};color:${amount?'var(--bg-primary, #111)':'var(--text-tertiary)'};font-size:16px;font-weight:800;cursor:${amount?'pointer':'default'};letter-spacing:0.5px;-webkit-tap-highlight-color:transparent;transition:all .15s;min-height:56px"
+      style="width:100%;padding:14px;border-radius:10px;border:none;background:${amount?'var(--gold-bright)':'var(--border)'};color:${amount?'var(--bg-primary, #111)':'var(--text-tertiary)'};font-size:16px;font-weight:800;cursor:${amount?'pointer':'default'};letter-spacing:0.5px;-webkit-tap-highlight-color:transparent;transition:all .15s;min-height:48px"
       ${amount?'':'disabled'}>
       ${amount ? 'Lock It In \u2014 \$' + amount + ' to win \$' + payout : 'Enter amount'}
     </button>
@@ -9927,6 +9361,7 @@ if (typeof window !== 'undefined') {
     // Add arrow indicator
     const arrow = document.createElement('div');
     arrow.className = `odds-arrow odds-arrow-${change.animationType} fade-out`;
+    arrow.innerHTML = change.animationType === 'up' ? '↑' : '↓';
     button.appendChild(arrow);
 
     // Clean up animations after they complete
