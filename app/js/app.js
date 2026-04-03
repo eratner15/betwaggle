@@ -37,8 +37,6 @@ function getEventInfo() {
 let state;
 let serverBets = [];  // Bets from ALL devices (fetched from server)
 let syncTimer = null;
-let sfxEnabled = false;
-let sfxAudioCtx = null;
 // Round mode — true for quick/buddies_trip events (2–8 players, no flights/matches)
 let isRoundMode = false;
 let isScrambleMode = false;
@@ -46,217 +44,9 @@ let isScrambleMode = false;
 const isTVMode = new URLSearchParams(location.search).has('tv');
 const app = document.getElementById("app");
 
-const SFX_STORAGE_KEY = 'waggle_sound_enabled';
-
-function readSfxPreference() {
-  try {
-    return localStorage.getItem(SFX_STORAGE_KEY) === '1';
-  } catch (e) {
-    return false;
-  }
-}
-
-function writeSfxPreference(enabled) {
-  try {
-    localStorage.setItem(SFX_STORAGE_KEY, enabled ? '1' : '0');
-  } catch (e) {
-    // no-op (private mode / storage disabled)
-  }
-}
-
-function ensureSfxAudioContext() {
-  if (sfxAudioCtx) return sfxAudioCtx;
-  const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) return null;
-  sfxAudioCtx = new Ctx();
-  return sfxAudioCtx;
-}
-
-function setSfxEnabled(enabled) {
-  sfxEnabled = !!enabled;
-  writeSfxPreference(sfxEnabled);
-  updateSfxToggleButton();
-  toast(sfxEnabled ? 'Sound on' : 'Sound off');
-  if (sfxEnabled) {
-    const ctx = ensureSfxAudioContext();
-    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-  }
-}
-
-function playUiSound(kind) {
-  if (!sfxEnabled) return;
-  const ctx = ensureSfxAudioContext();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-
-  const now = ctx.currentTime;
-  const out = ctx.createGain();
-  out.gain.value = 0.1;
-  out.connect(ctx.destination);
-
-  const tonesByKind = {
-    bet_placed: [[880, 0.05], [1320, 0.08]],
-    odds_shift: [[1080, 0.04]],
-    settlement_fanfare: [[523, 0.08], [659, 0.08], [784, 0.1], [1047, 0.16]]
-  };
-  const tones = tonesByKind[kind] || tonesByKind.odds_shift;
-
-  let t = now;
-  tones.forEach(([freq, dur], idx) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = idx === tones.length - 1 ? 'triangle' : 'sine';
-    osc.frequency.setValueAtTime(freq, t);
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(gain);
-    gain.connect(out);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
-    t += dur * 0.8;
-  });
-}
-
-function maybeVibrate(pattern) {
-  if (navigator.vibrate) navigator.vibrate(pattern);
-}
-
-function installOddsPressFeedback() {
-  if (window.__waggleOddsPressFeedbackBound) return;
-  window.__waggleOddsPressFeedbackBound = true;
-
-  const oddsSelector = '.mg-odds-btn, .wg-dash-odds-chip';
-
-  const clearPressed = (button) => {
-    if (!button) return;
-    button.classList.remove('odds-pressed');
-  };
-
-  document.addEventListener('pointerdown', (event) => {
-    const button = event.target.closest(oddsSelector);
-    if (!button) return;
-    button.classList.add('odds-pressed');
-  }, true);
-
-  document.addEventListener('pointerup', (event) => {
-    clearPressed(event.target.closest(oddsSelector));
-  }, true);
-
-  document.addEventListener('pointercancel', (event) => {
-    clearPressed(event.target.closest(oddsSelector));
-  }, true);
-
-  document.addEventListener('click', (event) => {
-    const button = event.target.closest(oddsSelector);
-    if (!button) return;
-    // Keep the pressed frame visible through click commit, then release.
-    requestAnimationFrame(() => clearPressed(button));
-  }, true);
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    const button = event.target.closest(oddsSelector);
-    if (!button) return;
-    button.classList.add('odds-pressed');
-  }, true);
-
-  document.addEventListener('keyup', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    clearPressed(event.target.closest(oddsSelector));
-  }, true);
-}
-
-function launchConfettiBurst(opts = {}) {
-  const count = Number.isFinite(opts.count) ? opts.count : 110;
-  const originX = Number.isFinite(opts.originX) ? opts.originX : 0.5;
-  const originY = Number.isFinite(opts.originY) ? opts.originY : 0.22;
-  const lifeMs = Number.isFinite(opts.lifeMs) ? opts.lifeMs : 2200;
-  const palette = ['#D4AF37', '#1A472A', '#F5F7F3', '#22C55E'];
-
-  const canvas = document.createElement('canvas');
-  canvas.className = 'settlement-confetti-canvas';
-  canvas.style.zIndex = '10020';
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  canvas.width = Math.floor(width * dpr);
-  canvas.height = Math.floor(height * dpr);
-  canvas.style.width = width + 'px';
-  canvas.style.height = height + 'px';
-  ctx.scale(dpr, dpr);
-
-  const pieces = Array.from({ length: count }).map(() => ({
-    x: width * originX + (Math.random() - 0.5) * width * 0.18,
-    y: height * originY + (Math.random() - 0.5) * 60,
-    vx: (Math.random() - 0.5) * 7.2,
-    vy: -4 - Math.random() * 7.5,
-    size: 4 + Math.random() * 7,
-    rot: Math.random() * Math.PI * 2,
-    vr: (Math.random() - 0.5) * 0.35,
-    color: palette[Math.floor(Math.random() * palette.length)],
-    drag: 0.986 + Math.random() * 0.012
-  }));
-
-  const gravity = 0.24;
-  const startedAt = performance.now();
-
-  function draw(now) {
-    const elapsed = now - startedAt;
-    ctx.clearRect(0, 0, width, height);
-    pieces.forEach(piece => {
-      piece.vx *= piece.drag;
-      piece.vy += gravity;
-      piece.x += piece.vx;
-      piece.y += piece.vy;
-      piece.rot += piece.vr;
-      ctx.save();
-      ctx.translate(piece.x, piece.y);
-      ctx.rotate(piece.rot);
-      ctx.fillStyle = piece.color;
-      ctx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.62);
-      ctx.restore();
-    });
-    if (elapsed < lifeMs) {
-      requestAnimationFrame(draw);
-    } else if (canvas.parentNode) {
-      canvas.parentNode.removeChild(canvas);
-    }
-  }
-
-  requestAnimationFrame(draw);
-}
-
-function ensureSfxToggleButton() {
-  let btn = document.getElementById('waggle-sfx-toggle');
-  if (btn) return btn;
-  btn = document.createElement('button');
-  btn.id = 'waggle-sfx-toggle';
-  btn.type = 'button';
-  btn.className = 'waggle-sfx-toggle';
-  btn.setAttribute('aria-label', 'Toggle sound effects');
-  btn.addEventListener('click', () => setSfxEnabled(!sfxEnabled));
-  document.body.appendChild(btn);
-  updateSfxToggleButton();
-  return btn;
-}
-
-function updateSfxToggleButton() {
-  const btn = document.getElementById('waggle-sfx-toggle');
-  if (!btn) return;
-  btn.classList.toggle('is-on', sfxEnabled);
-  btn.setAttribute('aria-pressed', sfxEnabled ? 'true' : 'false');
-  btn.textContent = sfxEnabled ? 'SFX ON' : 'SFX OFF';
-}
-
 // Initialize — async to load config first
 async function bootstrap() {
   const { slug, basePath } = getEventInfo();
-  sfxEnabled = readSfxPreference();
 
   // Load event config (teams, flights, pairings, scoring rules)
   let config;
@@ -392,28 +182,8 @@ async function bootstrap() {
 
   // Route
   window.addEventListener("hashchange", route);
-  installOddsPressFeedback();
   if (!location.hash) location.hash = "#dashboard";
   route();
-
-  // Round-mode score FAB shell (Sprint 3 canonical deep-link entry)
-  // This node is intentionally mounted once and updated in refresh().
-  if (!document.getElementById('score-fab')) {
-    const fab = document.createElement('button');
-    fab.id = 'score-fab';
-    fab.className = 'score-fab';
-    fab.type = 'button';
-    fab.style.display = 'none';
-    fab.setAttribute('aria-label', 'Open score entry');
-    fab.innerHTML = `
-      <span aria-hidden="true" style="font-size:16px;line-height:1">&#9971;</span>
-      <span id="score-fab-text">Open Score Entry</span>
-    `;
-    fab.addEventListener('click', () => {
-      if (window.MG?.openScoreComposer) window.MG.openScoreComposer('fab');
-    });
-    document.body.appendChild(fab);
-  }
 
   // #1: Event delegation for share buttons (avoids XSS from apostrophes in onclick)
   app.addEventListener('click', e => {
@@ -493,27 +263,9 @@ async function syncFromServer() {
       persist();
     }
 
-    const previousBetStatuses = new Map(
-      (state._serverBets || []).map((bet) => [bet.id, bet.status])
-    );
-
     // Store server bets for admin book view
     if (data.bets) {
       state._serverBets = data.bets;
-      const bettorName = String(state.bettorName || '').trim().toLowerCase();
-      const newlyWon = data.bets.filter((bet) => {
-        if (!bet || bet.status !== 'won') return false;
-        if (previousBetStatuses.get(bet.id) === 'won') return false;
-        if (!bettorName) return true;
-        return String(bet.bettor || '').trim().toLowerCase() === bettorName;
-      });
-      if (previousBetStatuses.size > 0 && newlyWon.length > 0) {
-        launchConfettiBurst({ count: 92, originX: 0.5, originY: 0.28 });
-        playUiSound('settlement_fanfare');
-        maybeVibrate([70, 60, 90]);
-        if (newlyWon.length === 1) toast('Bet won! Payout posted.');
-        else toast(`${newlyWon.length} bets won!`);
-      }
     }
 
     // Refresh player credits if logged in
@@ -564,12 +316,9 @@ async function syncFromServer() {
     const propsData = await Sync.fetchProps();
     if (propsData) state._props = propsData;
 
-    // Sync Calcutta auction state (only for member-guest events that use calcutta)
-    const _et = state._config?.event?.eventType || state._config?.eventType || '';
-    if (_et === 'member_guest') {
-      const calcuttaData = await Sync.apiFetch('calcutta');
-      if (calcuttaData) state._calcutta = calcuttaData;
-    }
+    // Sync Calcutta auction state
+    const calcuttaData = await Sync.apiFetch('calcutta');
+    if (calcuttaData) state._calcutta = calcuttaData;
 
     // Sync season data if this event is part of a season
     const seasonId = state._config?.seasonId;
@@ -604,7 +353,6 @@ async function flushMutationQueue() {
   try {
     const pending = await getPendingMutations();
     if (pending.length === 0) return;
-    state._inlineSyncState = 'syncing';
 
     let flushed = 0;
     for (const mutation of pending) {
@@ -613,7 +361,6 @@ async function flushMutationQueue() {
         switch (mutation.type) {
           case 'scores':
             result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores, mutation.ts);
-            if (result) state._inlineLastSavedHole = mutation.payload.holeNum;
             break;
           case 'bet':
             result = await Sync.submitBet(mutation.payload);
@@ -642,13 +389,6 @@ async function flushMutationQueue() {
 
     if (flushed > 0) {
       toast(`${flushed} offline change${flushed > 1 ? 's' : ''} synced!`);
-      state._inlineSyncState = 'synced';
-      setTimeout(() => {
-        if (state._inlineSyncState === 'synced') {
-          state._inlineSyncState = '';
-          refresh();
-        }
-      }, 2000);
       persist();
     }
   } catch (e) {
@@ -685,218 +425,6 @@ async function updateConnectivityIndicator() {
     dot.style.animation = 'waggle-pulse 2s ease-in-out infinite';
     dot.title = 'Connected';
   }
-}
-
-function detectDeviceType() {
-  const width = window.innerWidth || 1024;
-  if (width <= 767) return 'mobile';
-  if (width <= 1024) return 'tablet';
-  return 'desktop';
-}
-
-function getHoleScoresForEval(holes, holeNum) {
-  const holeData = holes?.[holeNum];
-  if (!holeData || typeof holeData !== 'object') return {};
-  if (holeData.scores && typeof holeData.scores === 'object') return holeData.scores;
-  return holeData;
-}
-
-function getRequiredScoreEntities() {
-  const cfg = state?._config || {};
-  if (cfg?.games?.scramble && Array.isArray(cfg?.scrambleTeams) && cfg.scrambleTeams.length > 0) {
-    return cfg.scrambleTeams
-      .map(t => (typeof t === 'string' ? t : (t?.name || '')))
-      .filter(Boolean);
-  }
-  const players = getPlayersFromConfig(cfg);
-  return players.map(p => p?.name).filter(Boolean);
-}
-
-function findNextIncompleteHole(holes, holesPerRound) {
-  const requiredEntities = getRequiredScoreEntities();
-  for (let h = 1; h <= holesPerRound; h++) {
-    const hs = getHoleScoresForEval(holes, h);
-    if (requiredEntities.length === 0) {
-      if (Object.keys(hs || {}).length === 0) return h;
-      continue;
-    }
-    const complete = requiredEntities.every(name => hs[name] >= 1 && hs[name] <= 15);
-    if (!complete) return h;
-  }
-  return null;
-}
-
-function countCompletedScoreHoles(holes, holesPerRound) {
-  const requiredEntities = getRequiredScoreEntities();
-  let completed = 0;
-  for (let h = 1; h <= holesPerRound; h++) {
-    const hs = getHoleScoresForEval(holes, h);
-    if (requiredEntities.length === 0) {
-      if (Object.keys(hs || {}).length > 0) completed++;
-      continue;
-    }
-    if (requiredEntities.every(name => hs[name] >= 1 && hs[name] <= 15)) completed++;
-  }
-  return completed;
-}
-
-function emitUxEvent(eventName, props = {}) {
-  try {
-    const eventSlug = state?._slug || '';
-    const payload = {
-      event: eventName,
-      event_slug: eventSlug,
-      ...props,
-      timestamp: Date.now()
-    };
-
-    window._mgAnalytics = window._mgAnalytics || [];
-    window._mgAnalytics.push(payload);
-
-    const telemetryBody = JSON.stringify({
-      event: eventName,
-      slug: eventSlug,
-      props,
-      timestamp: payload.timestamp
-    });
-    const endpoint = '/api/ux-telemetry';
-    if (navigator.sendBeacon) {
-      const blob = new Blob([telemetryBody], { type: 'application/json' });
-      navigator.sendBeacon(endpoint, blob);
-    } else {
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: telemetryBody,
-        keepalive: true
-      }).catch(() => {});
-    }
-  } catch (_) {
-    // Analytics should never block UX
-  }
-}
-
-function setSettlementShareState(status, autoClearMs = 0) {
-  state._settlementShareState = status || '';
-  refresh();
-  if (autoClearMs > 0) {
-    clearTimeout(state._settlementShareStateTimer);
-    state._settlementShareStateTimer = setTimeout(() => {
-      state._settlementShareState = '';
-      refresh();
-    }, autoClearMs);
-  }
-}
-
-function getSettlementSkinsHoles(gameState) {
-  const skins = gameState?.skins;
-  if (!skins) return {};
-
-  if (skins.holes && Object.keys(skins.holes).length > 0) return skins.holes;
-
-  if (Array.isArray(skins.history) && skins.history.length > 0) {
-    const holes = {};
-    skins.history.forEach((entry) => {
-      if (!entry || !entry.hole) return;
-      holes[entry.hole] = {
-        winner: entry.winner || null,
-        potWon: entry.pot || 1,
-        carried: !!entry.carry,
-        potBefore: entry.carry ? entry.pot : undefined
-      };
-    });
-    return holes;
-  }
-
-  return {};
-}
-
-function computePayablePairsFromPnL(pnl) {
-  const creditors = [];
-  const debtors = [];
-  Object.entries(pnl || {}).forEach(([name, value]) => {
-    const amountCents = Math.round((Number(value) || 0) * 100);
-    if (amountCents > 0) creditors.push({ name, amountCents });
-    if (amountCents < 0) debtors.push({ name, amountCents: -amountCents });
-  });
-
-  creditors.sort((a, b) => b.amountCents - a.amountCents);
-  debtors.sort((a, b) => b.amountCents - a.amountCents);
-
-  const payPairs = [];
-  let ci = 0;
-  let di = 0;
-  while (ci < creditors.length && di < debtors.length) {
-    const payCents = Math.min(creditors[ci].amountCents, debtors[di].amountCents);
-    if (payCents > 0) {
-      payPairs.push({
-        from: debtors[di].name,
-        to: creditors[ci].name,
-        amount: payCents / 100
-      });
-    }
-    creditors[ci].amountCents -= payCents;
-    debtors[di].amountCents -= payCents;
-    if (creditors[ci].amountCents <= 0) ci++;
-    if (debtors[di].amountCents <= 0) di++;
-  }
-  return payPairs;
-}
-
-function computeSettlementShareModel() {
-  const config = state?._config || {};
-  const games = config.games || {};
-  const structure = config.structure || {};
-  const gameState = state?._gameState || {};
-  const players = getPlayersFromConfig(config);
-  const pnl = computeRoundPnL(gameState, players, games, structure);
-  const payPairs = computePayablePairsFromPnL(pnl);
-  const skinsHoles = getSettlementSkinsHoles(gameState);
-
-  return { config, games, structure, gameState, players, pnl, payPairs, skinsHoles };
-}
-
-function isSprint3GameflowEnabled() {
-  const cfg = state?._config || {};
-  return !!(cfg?.featureFlags?.ux_sprint3_gameflow || cfg?.ux_sprint3_gameflow);
-}
-
-function captureLeaderboardPositions() {
-  const rows = document.querySelectorAll('.mg-premium-player-row[data-leaderboard-player]');
-  if (!rows.length) return null;
-  const positions = new Map();
-  rows.forEach((row) => {
-    const key = row.dataset.leaderboardPlayer;
-    if (!key) return;
-    positions.set(key, row.getBoundingClientRect().top);
-  });
-  return positions;
-}
-
-function animateLeaderboardReorder(prevPositions) {
-  if (!prevPositions || prevPositions.size === 0) return;
-  const rows = document.querySelectorAll('.mg-premium-player-row[data-leaderboard-player]');
-  rows.forEach((row) => {
-    const key = row.dataset.leaderboardPlayer;
-    const prevTop = prevPositions.get(key);
-    if (prevTop === undefined) return;
-    const nextTop = row.getBoundingClientRect().top;
-    const delta = prevTop - nextTop;
-    if (Math.abs(delta) < 1) return;
-    row.classList.remove('demo-leaderboard-moving');
-    row.style.transition = 'none';
-    row.style.transform = `translateY(${delta}px)`;
-    requestAnimationFrame(() => {
-      row.classList.add('demo-leaderboard-moving');
-      row.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
-      row.style.transform = 'translateY(0)';
-      setTimeout(() => {
-        row.classList.remove('demo-leaderboard-moving');
-        row.style.transition = '';
-        row.style.transform = '';
-      }, 460);
-    });
-  });
 }
 
 // Router
@@ -963,11 +491,6 @@ function route() {
       html = renderShootout(state);
       break;
     case "scorecard":
-      if (isRoundMode && isSprint3GameflowEnabled()) {
-        state._boardSubTab = 'score';
-        location.hash = '#dashboard';
-        return;
-      }
       html = isRoundMode ? renderCasualScorecard(state) : renderScorecard(state);
       break;
     case "settle":
@@ -980,52 +503,18 @@ function route() {
       html = renderDashboard(state);
   }
 
-  if (view === 'dashboard' && isRoundMode && !state._spectatorMode && !state._trophyMode && isSprint3GameflowEnabled()) {
-    const hole = state._inlineScore?.hole || 1;
-    const activeSubTab = state._boardSubTab || 'score';
-    const pendingSurface = state._scoreEntrySurfacePending;
-    const shouldTrackInlineImpression = !pendingSurface && activeSubTab === 'score' && !state._scoreEntryInlineImpressionTracked;
-    if (pendingSurface || shouldTrackInlineImpression) {
-      emitUxEvent('score_entry_opened', {
-        hole,
-        entry_surface: pendingSurface || 'inline',
-        device_type: detectDeviceType()
-      });
-      if (!pendingSurface) state._scoreEntryInlineImpressionTracked = true;
-    }
-    state._scoreEntrySurfacePending = null;
-  }
-
-  if (view === 'settle') {
-    const holesPerRound = state?._config?.holesPerRound || 18;
-    const holesPlayed = countCompletedScoreHoles(state?._holes || {}, holesPerRound);
-    const telemetryKey = `${state?._slug || 'event'}:${holesPlayed}`;
-    if (state._settlementViewedTelemetryKey !== telemetryKey) {
-      const players = getPlayersFromConfig(state._config || {});
-      const pnl = computeRoundPnL(state._gameState, players, state._config?.games || {}, state._config?.structure);
-      const hasPayouts = Object.values(pnl || {}).some(v => v !== 0);
-      emitUxEvent('settlement_viewed', {
-        holes_played: holesPlayed,
-        has_payouts: hasPayouts
-      });
-      state._settlementViewedTelemetryKey = telemetryKey;
-    }
-  }
-
   // Overlay name picker for round mode — only shows once, never again after dismissed
   if (isRoundMode && state._showIdentityPicker && !state._spectatorMode && !state._trophyMode) {
     html += renderNamePickerModal(state);
   }
-  // Overlay score entry modal if open (fallback/quick entry; skip for spectators)
-  // Sprint 3 keeps inline as canonical, but modal remains available as explicit fallback.
-  if (isRoundMode && state._scoreModal && !state._spectatorMode && (!isSprint3GameflowEnabled() || state._scoreModalExplicit === true)) {
+  // Overlay score entry modal if open (persists across tab switches, skip for spectators)
+  if (isRoundMode && state._scoreModal && !state._spectatorMode) {
     html += renderScoreEntryOverlay(state);
   }
 
   // Preserve scroll position across re-renders
   const scrollY = window.scrollY;
   const activeEl = document.activeElement?.id || null;
-  const leaderboardPositions = captureLeaderboardPositions();
 
   // DOM diffing: morph existing content instead of full innerHTML rebuild
   // This preserves scroll position, focus, touch highlights, and animations
@@ -1038,7 +527,6 @@ function route() {
     app.innerHTML = `<div class="mg-content">${html}</div>`;
   }
   updateNav(view);
-  animateLeaderboardReorder(leaderboardPositions);
 
   // Apply flash to player rows if data changed
   if (state._flashPlayers) {
@@ -1064,9 +552,6 @@ function route() {
     }
   }
 
-  ensureSfxToggleButton();
-  updateSfxToggleButton();
-
   // Auto-dismiss full-screen hole flash overlay — DISABLED (flash overlay removed)
   // const flashOverlay = document.getElementById('hole-flash-overlay');
   // if (flashOverlay) { ... }
@@ -1074,14 +559,16 @@ function route() {
   // Update floating score button (FAB)
   const fab = document.getElementById('score-fab');
   const fabText = document.getElementById('score-fab-text');
-  if (fab && isRoundMode && !state._trophyMode && isSprint3GameflowEnabled()) {
+  if (fab && isRoundMode && !state._trophyMode) {
     const holes = state._holes || {};
+    const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
     const holesPerRound = state._config?.holesPerRound || 18;
-    const roundComplete = findNextIncompleteHole(holes, holesPerRound) === null;
+    const latestHole = scoredHoles.length > 0 ? Math.max(...scoredHoles) : 0;
+    const roundComplete = scoredHoles.length >= holesPerRound;
     if (roundComplete) {
       fab.style.display = 'none';
     } else {
-      const nextHole = state._inlineScore?.hole || findNextIncompleteHole(holes, holesPerRound) || 1;
+      const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
       const pars = state._config?.coursePars || [];
       const par = pars[nextHole - 1] || 4;
       fab.style.display = 'flex';
@@ -1279,81 +766,14 @@ function shiftML(ml, adj) {
   return result;
 }
 
-function cssEsc(value) {
-  const raw = String(value ?? '');
-  if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(raw);
-  return raw.replace(/["\\]/g, '\\$&');
-}
-
-function setPressedState(button, pressed) {
-  if (!button) return;
-  button.classList.toggle('selected', pressed);
-  button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
-}
-
-function paintSlipSelection(matchId, selection, pressed, type) {
-  const escapedMatch = cssEsc(matchId);
-  const escapedSelection = cssEsc(selection);
-  if (type === 'match_winner') {
-    document
-      .querySelectorAll(`.mg-odds-btn[data-slip-match-id="${escapedMatch}"]`)
-      .forEach((btn) => setPressedState(btn, false));
-  }
-  document
-    .querySelectorAll(`.mg-odds-btn[data-slip-match-id="${escapedMatch}"][data-slip-selection="${escapedSelection}"]`)
-    .forEach((btn) => setPressedState(btn, pressed));
-}
-
-function paintOddsPickSelection(player, betType, odds, pressed) {
-  const escapedPlayer = cssEsc(player);
-  const escapedType = cssEsc(betType);
-  const escapedOdds = cssEsc(odds);
-  document
-    .querySelectorAll(`.mg-odds-btn[data-odds-player="${escapedPlayer}"][data-odds-type="${escapedType}"][data-odds-line="${escapedOdds}"]`)
-    .forEach((btn) => setPressedState(btn, pressed));
-}
-
-function getOddsButtonsForAnimation(playerName, newOdds) {
-  const escapedPlayer = cssEsc(playerName);
-  const escapedOdds = cssEsc(newOdds);
-  let targets = Array.from(
-    document.querySelectorAll(`.mg-odds-btn[data-odds-player="${escapedPlayer}"][data-odds-line="${escapedOdds}"]`)
-  );
-  if (targets.length === 0) {
-    targets = Array.from(
-      document.querySelectorAll(`.mg-odds-btn[data-odds-player="${escapedPlayer}"]`)
-    );
-  }
-  return targets;
-}
-
 // ===== PUBLIC API (window.MG) =====
 window.MG = {
   nav(hash) {
     location.hash = hash;
   },
 
-  toggleSoundEffects() {
-    setSfxEnabled(!sfxEnabled);
-  },
-
-  setSoundEffectsEnabled(enabled) {
-    setSfxEnabled(!!enabled);
-  },
-
-  playSound(kind) {
-    playUiSound(kind);
-  },
-
-  triggerConfettiBurst(reason, options = {}) {
-    launchConfettiBurst({ ...options, reason });
-  },
-
   setBoardTab(tab) {
     state._boardSubTab = tab;
-    if (tab === 'score' && isSprint3GameflowEnabled() && isRoundMode) {
-      state._scoreEntrySurfacePending = 'inline';
-    }
     route();
   },
 
@@ -1734,8 +1154,7 @@ window.MG = {
   async shareReplayInvite() {
     const eventName = state._config?.event?.name || 'this event';
     const slug = state._slug || '';
-    const origin = location.origin || 'https://betwaggle.com';
-    const replayUrl = `${origin}/create?clone=${encodeURIComponent(slug)}`;
+    const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(slug)}`;
     const text = [
       `Run it back at ${eventName}?`,
       'Same group, same format, new round.',
@@ -1751,27 +1170,68 @@ window.MG = {
   },
 
   // ─── Settlement Card ───
-  trackSettlementPaymentCta(provider, amount) {
-    emitUxEvent('settlement_payment_cta_clicked', {
-      provider,
-      amount: Number(amount) || 0
-    });
-  },
-
   async shareSettlement() {
     if (navigator.vibrate) navigator.vibrate(30);
-    setSettlementShareState('share_in_progress');
-    const {
-      config,
-      games,
-      structure,
-      gameState: gs,
-      players,
-      pnl,
-      payPairs: pairs,
-      skinsHoles
-    } = computeSettlementShareModel();
-    const eventName = config?.event?.name || 'Golf Event';
+    const eventName = state._config?.event?.name || 'Golf Event';
+    const url = location.href.replace(/#.*$/, '');
+    const config = state._config || {};
+    const games = config.games || {};
+    const structure = config.structure || {};
+
+    // Build share text with standings + payments
+    const { computeRoundPnLShare, computePayablePairsShare, getPlayersShare } = (() => {
+      // Inline helpers since we can't import from views.js here
+      const players = (config.players || config.roster || []).map(p => ({
+        name: p.name || p.member, handicapIndex: p.handicapIndex ?? p.handicap ?? 0
+      })).filter(p => p.name);
+      const pnl = {};
+      players.forEach(p => { pnl[p.name] = 0; });
+      const gs = state._gameState;
+      const skinsBet = parseInt(structure.skinsBet) || 5;
+      const nassauBet = parseInt(structure.nassauBet) || 10;
+      const n = players.length;
+      if (games.skins && gs?.skins?.holes) {
+        Object.values(gs.skins.holes).forEach(h => {
+          if (h.winner && pnl.hasOwnProperty(h.winner)) {
+            const pot = h.potWon || 1;
+            pnl[h.winner] += pot * (n - 1) * skinsBet;
+            players.forEach(p => { if (p.name !== h.winner) pnl[p.name] -= pot * skinsBet; });
+          }
+        });
+      }
+      if (games.nassau && gs?.nassau) {
+        const nas = gs.nassau;
+        [nas.frontWinner, nas.backWinner, nas.totalWinner].forEach(winner => {
+          if (!winner) return;
+          players.forEach(p => {
+            if (p.name === winner) pnl[p.name] += nassauBet * (n - 1);
+            else pnl[p.name] -= nassauBet;
+          });
+        });
+      }
+      // Payable pairs
+      const creditors = [], debtors = [];
+      Object.entries(pnl).forEach(([name, val]) => {
+        const r = Math.round(val);
+        if (r > 0) creditors.push({ name, amount: r });
+        else if (r < 0) debtors.push({ name, amount: -r });
+      });
+      creditors.sort((a,b) => b.amount - a.amount);
+      debtors.sort((a,b) => b.amount - a.amount);
+      const txns = [];
+      let i = 0, j = 0;
+      while (i < creditors.length && j < debtors.length) {
+        const pay = Math.min(creditors[i].amount, debtors[j].amount);
+        if (pay > 0) txns.push({ from: debtors[j].name, to: creditors[i].name, amount: pay });
+        creditors[i].amount -= pay; debtors[j].amount -= pay;
+        if (creditors[i].amount <= 0) i++; if (debtors[j].amount <= 0) j++;
+      }
+      return { computeRoundPnLShare: pnl, computePayablePairsShare: txns, getPlayersShare: players };
+    })();
+
+    const pnl = computeRoundPnLShare;
+    const pairs = computePayablePairsShare;
+    const players = getPlayersShare;
     const sorted = [...players].sort((a,b) => (pnl[b.name]||0) - (pnl[a.name]||0));
 
     const stakeParts = [];
@@ -1780,9 +1240,9 @@ window.MG = {
     if (games.wolf) stakeParts.push('Wolf');
     if (games.vegas) stakeParts.push('Vegas');
 
+    const gs = state._gameState;
     const holes = state._holes || {};
-    const holesPerRound = config?.holesPerRound || 18;
-    const holesPlayed = countCompletedScoreHoles(holes, holesPerRound);
+    const holesPlayed = Object.keys(holes).length;
     const eventDate = config?.event?.dates?.day1 || '';
 
     // ── Build premium share text ──
@@ -1813,8 +1273,8 @@ window.MG = {
     }
 
     // Skins highlights
-    if (games.skins && Object.keys(skinsHoles).length > 0) {
-      const skinWinners = Object.entries(skinsHoles).filter(([, d]) => d.winner);
+    if (games.skins && gs?.skins?.holes) {
+      const skinWinners = Object.entries(gs.skins.holes).filter(([, d]) => d.winner);
       if (skinWinners.length > 0) {
         lines.push('\u{1F4B0} SKINS');
         const tally = {};
@@ -1828,7 +1288,7 @@ window.MG = {
           .forEach(([name, data]) => {
             lines.push(`   ${name}: \u00d7${data.total} (H${data.holes.join(', H')})`);
           });
-        const carries = Object.entries(skinsHoles).filter(([, d]) => d.carried);
+        const carries = Object.entries(gs.skins.holes).filter(([, d]) => d.carried);
         if (carries.length > 0) {
           lines.push(`   Carried: H${carries.map(([h]) => h).join(', H')}`);
         }
@@ -1899,65 +1359,87 @@ window.MG = {
     } catch {} // Non-blocking — share works without recap
 
     if (state._slug) {
-      const origin = location.origin || 'https://betwaggle.com';
-      const replayUrl = `${origin}/create?clone=${encodeURIComponent(state._slug)}`;
+      const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(state._slug)}`;
       lines.push('Round complete. Replay open.');
       lines.push(`Replay: ${replayUrl}`);
       lines.push('');
     }
 
     // Footer
-    const origin = location.origin || 'https://betwaggle.com';
     lines.push('\u2500'.repeat(24));
     lines.push(`Powered by Waggle \u26F3`);
-    lines.push(origin);
+    lines.push(`https://betwaggle.com`);
 
     const text = lines.join('\n');
 
-    const copyLinkFallback = async (successToast = 'Results copied!') => {
-      try {
-        await navigator.clipboard?.writeText(text);
-        emitUxEvent('settlement_shared', { method: 'copy_link' });
-        toast(successToast);
-        setSettlementShareState('', 2500);
-        return true;
-      } catch (_) {
-        toast('Share failed - copy link unavailable');
-        setSettlementShareState('share_failed', 5000);
-        return false;
-      }
-    };
-
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${eventName} \u2014 Settlement`,
-          text: text,
-          url: origin
-        });
-        emitUxEvent('settlement_shared', { method: 'native_share' });
-        setSettlementShareState('', 2500);
-      } catch (_) {
-        await copyLinkFallback('Results copied!');
-      }
+      navigator.share({
+        title: `${eventName} \u2014 Settlement`,
+        text: text,
+        url: 'https://betwaggle.com'
+      }).catch(() => {
+        navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
+      });
     } else {
-      await copyLinkFallback('Results copied to clipboard!');
+      navigator.clipboard?.writeText(text).then(() => toast('Results copied to clipboard!')).catch(() => {});
     }
   },
 
   // ─── Export Settlement Card as Image ───
   exportSettlementCard() {
     if (navigator.vibrate) navigator.vibrate(30);
-    const {
-      config,
-      games,
-      structure,
-      gameState: gs,
-      players,
-      pnl,
-      payPairs,
-      skinsHoles
-    } = computeSettlementShareModel();
+    const config = state._config || {};
+    const games = config.games || {};
+    const structure = config.structure || {};
+    const gs = state._gameState;
+
+    // --- Compute P&L (same logic as shareSettlement) ---
+    const players = (config.players || config.roster || []).map(p => ({
+      name: p.name || p.member, handicapIndex: p.handicapIndex ?? p.handicap ?? 0
+    })).filter(p => p.name);
+    const pnl = {};
+    players.forEach(p => { pnl[p.name] = 0; });
+    const n = players.length;
+    const skinsBet = parseInt(structure.skinsBet) || 5;
+    const nassauBet = parseInt(structure.nassauBet) || 10;
+
+    if (games.skins && gs?.skins?.holes) {
+      Object.values(gs.skins.holes).forEach(h => {
+        if (h.winner && pnl.hasOwnProperty(h.winner)) {
+          const pot = h.potWon || 1;
+          pnl[h.winner] += pot * (n - 1) * skinsBet;
+          players.forEach(p => { if (p.name !== h.winner) pnl[p.name] -= pot * skinsBet; });
+        }
+      });
+    }
+    if (games.nassau && gs?.nassau) {
+      const nas = gs.nassau;
+      [nas.frontWinner, nas.backWinner, nas.totalWinner].forEach(winner => {
+        if (!winner) return;
+        players.forEach(p => {
+          if (p.name === winner) pnl[p.name] += nassauBet * (n - 1);
+          else pnl[p.name] -= nassauBet;
+        });
+      });
+    }
+
+    // Payment pairs
+    const creditors = [], debtors = [];
+    Object.entries(pnl).forEach(([name, val]) => {
+      const r = Math.round(val);
+      if (r > 0) creditors.push({ name, amount: r });
+      else if (r < 0) debtors.push({ name, amount: -r });
+    });
+    creditors.sort((a,b) => b.amount - a.amount);
+    debtors.sort((a,b) => b.amount - a.amount);
+    const payPairs = [];
+    let ci = 0, di = 0;
+    while (ci < creditors.length && di < debtors.length) {
+      const pay = Math.min(creditors[ci].amount, debtors[di].amount);
+      if (pay > 0) payPairs.push({ from: debtors[di].name, to: creditors[ci].name, amount: pay });
+      creditors[ci].amount -= pay; debtors[di].amount -= pay;
+      if (creditors[ci].amount <= 0) ci++; if (debtors[di].amount <= 0) di++;
+    }
 
     const sortedPlayers = [...players].sort((a,b) => (pnl[b.name]||0) - (pnl[a.name]||0));
     const hasPnL = Object.values(pnl).some(v => v !== 0);
@@ -1967,9 +1449,9 @@ window.MG = {
 
     // --- Skins summary ---
     const skinsSummary = [];
-    if (games.skins && Object.keys(skinsHoles).length > 0) {
+    if (games.skins && gs?.skins?.holes) {
       const tally = {};
-      Object.entries(skinsHoles).filter(([,d]) => d.winner).forEach(([h, d]) => {
+      Object.entries(gs.skins.holes).filter(([,d]) => d.winner).forEach(([h, d]) => {
         if (!tally[d.winner]) tally[d.winner] = { holes: [], total: 0 };
         tally[d.winner].holes.push(parseInt(h));
         tally[d.winner].total += (d.potWon || 1);
@@ -2328,14 +1810,13 @@ window.MG = {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           const eventName = state._config?.event?.name || 'Golf Event';
-          const shareUrl = location.origin || 'https://betwaggle.com';
+          const shareUrl = 'https://betwaggle.com';
           await navigator.share({
             files: [file],
             title: eventName + ' \u2014 Settlement',
             text: eventName + ' \u2014 Final standings and settlement. Powered by Waggle.',
             url: shareUrl
           });
-          emitUxEvent('settlement_shared', { method: 'native_share' });
           return;
         } catch (e) {
           // User cancelled or share failed, fall through to download
@@ -2353,7 +1834,6 @@ window.MG = {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast('Settlement card saved!');
-      emitUxEvent('settlement_shared', { method: 'image_export' });
     }, 'image/png');
   },
 
@@ -2656,9 +2136,6 @@ window.MG = {
 
     await syncFromServer();
     refresh();
-    playUiSound('settlement_fanfare');
-    maybeVibrate([110, 80, 140]);
-    launchConfettiBurst({ count: 120, originX: 0.5, originY: 0.2, lifeMs: 2400 });
     toast(`Round ${round} settled — ${roundMatches.length} matches final`);
   },
 
@@ -2849,18 +2326,6 @@ window.MG = {
     refresh();
   },
 
-  pickNameFromModalAnimated(name) {
-    const overlay = document.getElementById('wg-identity-overlay');
-    if (!overlay) {
-      this.pickNameFromModal(name);
-      return;
-    }
-    if (overlay.dataset.closing === '1') return;
-    overlay.dataset.closing = '1';
-    overlay.classList.add('is-closing');
-    setTimeout(() => this.pickNameFromModal(name), 220);
-  },
-
   // Pick name from the first-load modal (round mode only)
   pickNameFromModal(name) {
     const slug = state._slug || 'event';
@@ -2892,86 +2357,23 @@ window.MG = {
   },
 
   // ── Player Score Entry (round mode — no PIN required) ──
-  openScoreComposer(surface = 'inline') {
-    if (!isSprint3GameflowEnabled()) {
-      this.openScoreModal();
-      return;
-    }
-    const holes = state._holes || {};
-    const holesPerRound = state._config?.holesPerRound || 18;
-    const nextHole = findNextIncompleteHole(holes, holesPerRound) || holesPerRound;
-    if (!state._inlineScore) {
-      const existing = getHoleScoresForEval(holes, nextHole);
-      state._inlineScore = { hole: nextHole, scores: { ...existing } };
-    } else if (!Number.isInteger(state._inlineScore.hole) || state._inlineScore.hole < 1 || state._inlineScore.hole > holesPerRound) {
-      const existing = getHoleScoresForEval(holes, nextHole);
-      state._inlineScore = { hole: nextHole, scores: { ...existing } };
-    } else {
-      // Preserve in-progress composer edits so FAB deep-links back to the active hole state.
-      if (!state._inlineScore.scores || typeof state._inlineScore.scores !== 'object') {
-        const existing = getHoleScoresForEval(holes, state._inlineScore.hole);
-        state._inlineScore.scores = { ...existing };
-      }
-    }
-    state._scoreModal = null;
-    state._scoreModalExplicit = false;
-    state._inlineScoreInvalid = {};
-    if ((isRoundMode || isScrambleMode) && state._boardSubTab !== 'score') {
-      state._boardSubTab = 'score';
-    }
-    state._scoreEntrySurfacePending = isRoundMode ? surface : null;
-    if ((isRoundMode || isScrambleMode) && location.hash.split('/')[0] !== '#dashboard') {
-      location.hash = '#dashboard';
-      return;
-    }
-    route();
-    setTimeout(() => {
-      const scoreSection = document.getElementById('board-card-score-entry');
-      if (scoreSection) {
-        scoreSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Sprint 3: deep-link into the active composer state and focus the next missing score.
-        setTimeout(() => {
-          const inputs = Array.from(document.querySelectorAll('[data-inline-score-input="1"]'));
-          if (!inputs.length) return;
-          const firstMissing = inputs.find(input => String(input.value || '').trim() === '');
-          const firstInvalid = inputs.find(input => {
-            const raw = String(input.value || '').trim();
-            const n = parseInt(raw, 10);
-            return raw !== '' && !(/^\d+$/.test(raw) && n >= 1 && n <= 15);
-          });
-          const target = firstInvalid || firstMissing || inputs[0];
-          if (target && typeof target.focus === 'function') {
-            target.focus();
-            if (typeof target.select === 'function') target.select();
-          }
-        }, 120);
-      } else if (surface === 'modal') {
-        this.openScoreModal('modal');
-      }
-    }, 0);
-  },
-
-  openScoreModal(source = 'modal') {
+  openScoreModal() {
     // Determine next unscored hole
     const holes = state._holes || {};
-    const holesPerRound = state._config?.holesPerRound || 18;
-    const nextHole = findNextIncompleteHole(holes, holesPerRound) || holesPerRound;
-    const existing = getHoleScoresForEval(holes, nextHole);
+    let nextHole = 1;
+    for (let h = 1; h <= 18; h++) {
+      if (!holes[h] || !holes[h].scores || Object.keys(holes[h].scores).length === 0) {
+        nextHole = h;
+        break;
+      }
+      if (h === 18) nextHole = 18;
+    }
+    const existing = holes[nextHole]?.scores || {};
     state._scoreModal = { hole: nextHole, scores: { ...existing } };
-    state._scoreModalExplicit = true;
-    emitUxEvent('score_entry_opened', {
-      hole: nextHole,
-      entry_surface: source === 'fab' ? 'fab' : 'modal',
-      device_type: detectDeviceType()
-    });
     refresh();
-  },
-  openScoreModalQuick() {
-    this.openScoreModal('modal');
   },
   closeScoreModal() {
     state._scoreModal = null;
-    state._scoreModalExplicit = false;
     refresh();
   },
   setScoreModalHole(h) {
@@ -3102,8 +2504,7 @@ window.MG = {
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
       if (!state._holes) state._holes = {};
-      const existingHole = state._holes[hole] || {};
-      state._holes[hole] = { ...existingHole, scores: { ...scores } };
+      state._holes[hole] = { ...scores };
       state._scoreModal = null;
       toast('Saved offline — will sync when connected');
       persist();
@@ -3130,21 +2531,17 @@ window.MG = {
     // Load existing stats for this hole or clear
     const existingStats = (state._holes || {})[newHole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
-    state._inlineScoreInvalid = {};
-    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
   inlineScoreSetHole(h) {
     const holeNum = parseInt(h);
     const holesPerRound = state._config?.holesPerRound || 18;
     if (isNaN(holeNum) || holeNum < 1 || holeNum > holesPerRound) return;
-    const existing = getHoleScoresForEval(state._holes || {}, holeNum);
+    const existing = (state._holes || {})[holeNum]?.scores || {};
     state._inlineScore = { hole: holeNum, scores: { ...existing } };
     // Load existing stats for this hole or clear
     const existingStats = (state._holes || {})[holeNum]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
-    state._inlineScoreInvalid = {};
-    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
 
@@ -3155,47 +2552,11 @@ window.MG = {
     if (navigator.vibrate) navigator.vibrate(30);
     toast(`Jumped to Hole ${holeNum}`);
   },
-  inlineScoreInput(player, rawValue) {
-    if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
-    if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
-    if (state._inlineSyncState === 'error') state._inlineSyncState = '';
-
-    const raw = String(rawValue ?? '').trim();
-    const n = parseInt(raw, 10);
-    const isInteger = /^\d+$/.test(raw);
-    const isValid = isInteger && n >= 1 && n <= 15;
-
-    if (raw === '') {
-      delete state._inlineScore.scores[player];
-      delete state._inlineScoreInvalid[player];
-    } else if (isValid) {
-      state._inlineScore.scores[player] = n;
-      delete state._inlineScoreInvalid[player];
-    } else {
-      delete state._inlineScore.scores[player];
-      state._inlineScoreInvalid[player] = true;
-    }
-
-    const requiredInputs = document.querySelectorAll('[data-inline-score-input="1"]');
-    const requiredEntities = getRequiredScoreEntities();
-    const playerCountTotal = Math.max(requiredInputs.length || 0, requiredEntities.length || 0);
-    emitUxEvent('score_input_changed', {
-      hole: state._inlineScore.hole || 1,
-      player_count_filled: Object.keys(state._inlineScore.scores || {}).length,
-      player_count_total: playerCountTotal
-    });
-
-    clearTimeout(window._inlineTypeTimer);
-    window._inlineTypeTimer = setTimeout(() => refresh(), 250);
-  },
   inlineScoreSet(player, val) {
     if (!state._inlineScore) return;
     const n = parseInt(val);
-    if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
-    if (state._inlineSyncState === 'error') state._inlineSyncState = '';
     if (!isNaN(n) && n >= 1 && n <= 15) {
       state._inlineScore.scores[player] = n;
-      delete state._inlineScoreInvalid[player];
       // Warn on outlier scores (triple bogey or worse)
       const hole = state._inlineScore.hole;
       const pars = state._config?.coursePars || state._config?.course?.pars || [];
@@ -3205,74 +2566,10 @@ window.MG = {
       }
     } else {
       delete state._inlineScore.scores[player];
-      state._inlineScoreInvalid[player] = true;
     }
-    const requiredInputs = document.querySelectorAll('[data-inline-score-input="1"]');
-    const requiredEntities = getRequiredScoreEntities();
-    const playerCountTotal = Math.max(requiredInputs.length || 0, requiredEntities.length || 0);
-    emitUxEvent('score_input_changed', {
-      hole: state._inlineScore.hole || 1,
-      player_count_filled: Object.keys(state._inlineScore.scores || {}).length,
-      player_count_total: playerCountTotal
-    });
     // Defer refresh so rapid taps don't lag
     clearTimeout(window._inlineScoreRefreshTimer);
     window._inlineScoreRefreshTimer = setTimeout(() => refresh(), 150);
-  },
-
-  inlineScoreSaveAttempt() {
-    if (state._inlineSyncState === 'syncing') return;
-    const inputs = Array.from(document.querySelectorAll('[data-inline-score-input="1"]'));
-    if (inputs.length === 0) {
-      this.inlineScoreSave();
-      return;
-    }
-
-    if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
-    const invalidInputs = [];
-    inputs.forEach(input => {
-      const raw = String(input.value || '').trim();
-      const n = parseInt(raw, 10);
-      const valid = /^\d+$/.test(raw) && n >= 1 && n <= 15;
-      const playerName = input.getAttribute('data-player-name');
-      if (!valid) {
-        invalidInputs.push(input);
-        if (playerName) state._inlineScoreInvalid[playerName] = true;
-      } else if (playerName) {
-        delete state._inlineScoreInvalid[playerName];
-      }
-    });
-
-    if (invalidInputs.length > 0) {
-      emitUxEvent('score_save_attempted', {
-        hole: state._inlineScore?.hole || 1,
-        is_valid: false,
-        is_offline: !Sync.isOnline()
-      });
-      refresh();
-      setTimeout(() => {
-        invalidInputs[0].focus();
-        invalidInputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 0);
-      toast('Enter 1-15');
-      return;
-    }
-    this.inlineScoreSave();
-  },
-
-  inlineScoreKeyboardSave() {
-    const requiredEntities = getRequiredScoreEntities();
-    const scores = state._inlineScore?.scores || {};
-    const hasInlineInvalid = Object.values(state._inlineScoreInvalid || {}).some(Boolean);
-    const allRequiredValid = requiredEntities.length > 0
-      ? requiredEntities.every(name => scores[name] >= 1 && scores[name] <= 15)
-      : Object.keys(scores).length > 0;
-    if (!hasInlineInvalid && allRequiredValid) {
-      this.inlineScoreSave();
-      return;
-    }
-    // Sprint 3: invalid keyboard submit should focus first invalid input.
-    this.inlineScoreSaveAttempt();
   },
 
   // Premium score entry with haptic feedback and auto-advance
@@ -3510,7 +2807,16 @@ window.MG = {
   },
 
   inlineScoreType(player, value) {
-    this.inlineScoreInput(player, value);
+    const n = parseInt(value);
+    if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
+    if (isNaN(n) || n < 1 || n > 15) {
+      delete state._inlineScore.scores[player];
+    } else {
+      state._inlineScore.scores[player] = n;
+    }
+    // Defer re-render to avoid losing focus during typing
+    clearTimeout(window._inlineTypeTimer);
+    window._inlineTypeTimer = setTimeout(() => refresh(), 400);
   },
   inlineScoreToggle9(side) {
     if (!state._inlineScore) return;
@@ -3520,61 +2826,17 @@ window.MG = {
     } else if (side === 'back' && h <= 9) {
       state._inlineScore.hole = 10;
     }
-    const existing = getHoleScoresForEval(state._holes || {}, state._inlineScore.hole);
+    const existing = (state._holes || {})[state._inlineScore.hole]?.scores || {};
     state._inlineScore.scores = { ...existing };
     // Load existing stats for the new hole
     const existingStats = (state._holes || {})[state._inlineScore.hole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
-    state._inlineScoreInvalid = {};
-    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
   async inlineScoreSave() {
     if (!state._inlineScore) return;
-    if (state._inlineSyncState === 'syncing') return;
     const { hole, scores } = state._inlineScore;
-    const requiredEntities = getRequiredScoreEntities();
-    const missingRequired = requiredEntities.filter(name => !(scores[name] >= 1 && scores[name] <= 15));
-    const hasInlineInvalid = Object.values(state._inlineScoreInvalid || {}).some(Boolean);
-    if ((requiredEntities.length > 0 && missingRequired.length > 0) || hasInlineInvalid) {
-      if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
-      missingRequired.forEach(name => { state._inlineScoreInvalid[name] = true; });
-      emitUxEvent('score_save_attempted', {
-        hole,
-        is_valid: false,
-        is_offline: !Sync.isOnline()
-      });
-      refresh();
-      setTimeout(() => {
-        const scoreInputs = Array.from(document.querySelectorAll('[data-inline-score-input="1"]'));
-        const firstInvalidInput = scoreInputs.find(input => {
-          const playerName = input.getAttribute('data-player-name');
-          return !!(playerName && state._inlineScoreInvalid?.[playerName]);
-        }) || scoreInputs.find(input => {
-          const raw = String(input.value || '').trim();
-          const n = parseInt(raw, 10);
-          return !(/^\d+$/.test(raw) && n >= 1 && n <= 15);
-        });
-        if (firstInvalidInput) {
-          firstInvalidInput.focus();
-          firstInvalidInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 0);
-      toast('Enter 1-15');
-      return;
-    }
     if (Object.keys(scores).length === 0) { toast('Enter at least one score'); return; }
-    emitUxEvent('score_save_attempted', {
-      hole,
-      is_valid: true,
-      is_offline: !Sync.isOnline()
-    });
-    const isRetrySave = state._inlineSyncState === 'queued' || state._inlineSyncState === 'error';
-    clearTimeout(state._inlineSyncStateTimer);
-    state._inlineSyncState = 'syncing';
-    refresh();
-    const saveStart = Date.now();
-    if (!state._roundStartedAt) state._roundStartedAt = saveStart;
 
     // Capture stats for this hole before clearing
     const holeStats = state._inlineScoreStats && Object.keys(state._inlineScoreStats).length > 0
@@ -3605,15 +2867,6 @@ window.MG = {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
-        state._inlineSyncState = 'synced';
-        state._inlineLastSavedHole = hole;
-        clearTimeout(state._inlineSyncStateTimer);
-        state._inlineSyncStateTimer = setTimeout(() => {
-          if (state._inlineSyncState === 'synced') {
-            state._inlineSyncState = '';
-            refresh();
-          }
-        }, 1800);
 
         // Store undo data before advancing
         state._lastScoredHole = { hole, scores: { ...scores }, stats: holeStats ? JSON.parse(JSON.stringify(holeStats)) : null };
@@ -3636,61 +2889,32 @@ window.MG = {
         // Auto-advance to next unscored hole
         const holesPerRound = state._config?.holesPerRound || 18;
         const holes = state._holes || {};
-        const nextHole = findNextIncompleteHole(holes, holesPerRound);
-        emitUxEvent('score_save_succeeded', {
-          hole,
-          latency_ms: Date.now() - saveStart,
-          auto_advanced: !!nextHole
-        });
+        let nextHole = null;
+        for (let h = 1; h <= holesPerRound; h++) {
+          if (!holes[h] || !holes[h].scores || Object.keys(holes[h].scores).length === 0) {
+            nextHole = h;
+            break;
+          }
+        }
         if (nextHole) {
-          const existingNext = getHoleScoresForEval(holes, nextHole);
+          const existingNext = holes[nextHole]?.scores || {};
           state._inlineScore = { hole: nextHole, scores: { ...existingNext } };
           // Load existing stats for next hole or clear
           const nextStats = holes[nextHole]?.stats || {};
           state._inlineScoreStats = Object.keys(nextStats).length > 0 ? JSON.parse(JSON.stringify(nextStats)) : {};
-          state._inlineScoreInvalid = {};
         } else {
           state._inlineScore = null; // round complete
           state._inlineScoreStats = {};
-          state._inlineScoreInvalid = {};
-          emitUxEvent('round_completed', {
-            holes_per_round: holesPerRound,
-            duration_sec_from_first_save: state._roundStartedAt ? Math.round((Date.now() - state._roundStartedAt) / 1000) : 0
-          });
         }
         refresh();
       } else {
         throw new Error('submit returned null');
       }
     } catch (e) {
-      const isOffline = !Sync.isOnline();
-      if (!isOffline) {
-        emitUxEvent('score_save_failed', {
-          hole,
-          error_code: e?.message || 'save_failed',
-          is_retry: isRetrySave
-        });
-      }
-      if (!isOffline) {
-        clearTimeout(state._inlineSyncStateTimer);
-        state._inlineSyncState = 'error';
-        toast('Save failed — Try again');
-        refresh();
-        return;
-      }
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
-      emitUxEvent('score_save_failed', {
-        hole,
-        error_code: 'offline_queued',
-        is_retry: isRetrySave
-      });
       if (!state._holes) state._holes = {};
-      const existingHole = state._holes[hole] || {};
-      state._holes[hole] = { ...existingHole, scores: { ...scores } };
-      clearTimeout(state._inlineSyncStateTimer);
-      state._inlineSyncState = 'queued';
-      state._inlineLastSavedHole = hole;
+      state._holes[hole] = { ...scores };
       // Store stats locally even when offline
       if (holeStats) {
         if (!state._holes[hole] || typeof state._holes[hole] !== 'object') {
@@ -3699,22 +2923,22 @@ window.MG = {
         state._holes[hole].stats = holeStats;
       }
       if (navigator.vibrate) navigator.vibrate(30);
-      toast('Offline — score queued');
+      toast('Saved offline — will sync when connected');
       // Auto-advance
       const holesPerRound = state._config?.holesPerRound || 18;
-      const nextHole = findNextIncompleteHole(state._holes, holesPerRound);
+      let nextHole = null;
+      for (let h = 1; h <= holesPerRound; h++) {
+        if (!state._holes[h] || !state._holes[h].scores || Object.keys(state._holes[h].scores).length === 0) {
+          nextHole = h;
+          break;
+        }
+      }
       if (nextHole) {
         state._inlineScore = { hole: nextHole, scores: {} };
         state._inlineScoreStats = {};
-        state._inlineScoreInvalid = {};
       } else {
         state._inlineScore = null;
         state._inlineScoreStats = {};
-        state._inlineScoreInvalid = {};
-        emitUxEvent('round_completed', {
-          holes_per_round: holesPerRound,
-          duration_sec_from_first_save: state._roundStartedAt ? Math.round((Date.now() - state._roundStartedAt) / 1000) : 0
-        });
       }
       persist();
       updateConnectivityIndicator();
@@ -3723,16 +2947,6 @@ window.MG = {
   },
 
   // ── Undo Last Hole ──
-  editLastScoredHole() {
-    if (!state._lastScoredHole) return;
-    const last = state._lastScoredHole;
-    state._inlineScore = { hole: last.hole, scores: { ...(last.scores || {}) } };
-    state._inlineScoreStats = last.stats ? JSON.parse(JSON.stringify(last.stats)) : {};
-    state._inlineScoreInvalid = {};
-    location.hash = '#dashboard';
-    refresh();
-  },
-
   async undoLastHole() {
     const last = state._lastScoredHole;
     if (!last) { toast('Nothing to undo'); return; }
@@ -3823,7 +3037,6 @@ window.MG = {
 
     const idx = state._betSlip.findIndex(b => b.matchId === matchId && b.selection == selection);
     if (idx >= 0) {
-      paintSlipSelection(matchId, selection, false, type);
       state._betSlip.splice(idx, 1);
       saveBetSlip();
       refresh();
@@ -3831,11 +3044,9 @@ window.MG = {
     }
 
     if (type === "match_winner") {
-      paintSlipSelection(matchId, selection, false, type);
       state._betSlip = state._betSlip.filter(b => b.matchId !== matchId || b.type !== "match_winner");
     }
 
-    paintSlipSelection(matchId, selection, true, type);
     state._betSlip.push({
       type,
       matchId,
@@ -3952,8 +3163,7 @@ window.MG = {
     // Enhanced bet confirmation ceremony
     if (placed > 0) {
       // Stronger haptic feedback - triple pulse
-      maybeVibrate([100, 50, 100, 50, 100]);
-      playUiSound('bet_placed');
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
 
       // Gold pulse animation on bet slip button
       const betButton = document.querySelector('[onclick="window.MG.placeBets()"]');
@@ -4226,7 +3436,7 @@ window.MG = {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${d.name} \u2014 ${headline}`, text, url: eventUrl });
+        await navigator.share({ title: `${d.name} \u2014 ${headline}`, text, url: 'https://betwaggle.com' });
         if (overlay) overlay.remove();
         return;
       } catch {}
@@ -4837,26 +4047,6 @@ window.MG = {
 
   // Open odds bet slip for tappable odds
   openOddsBetSlip(player, betType, odds) {
-    const isSamePick = state._oddsBetSlip
-      && state._oddsBetSlip.player === player
-      && state._oddsBetSlip.betType === betType
-      && state._oddsBetSlip.odds === odds;
-
-    if (isSamePick) {
-      paintOddsPickSelection(player, betType, odds, false);
-      delete state._oddsBetSlip;
-      delete state._oddsBetSlipAmount;
-      maybeVibrate(16);
-      refresh();
-      return;
-    }
-
-    if (state._oddsBetSlip) {
-      const prev = state._oddsBetSlip;
-      paintOddsPickSelection(prev.player, prev.betType, prev.odds, false);
-    }
-
-    paintOddsPickSelection(player, betType, odds, true);
     state._oddsBetSlip = {
       player: player,
       betType: betType,
@@ -4865,7 +4055,7 @@ window.MG = {
     state._oddsBetSlipAmount = 10; // Default bet amount
 
     // Haptic feedback for opening bet slip
-    maybeVibrate(30);
+    if (navigator.vibrate) navigator.vibrate(30);
 
     refresh();
 
@@ -4884,53 +4074,9 @@ window.MG = {
   },
 
   closeOddsBetSlip() {
-    if (state._oddsBetSlip) {
-      paintOddsPickSelection(state._oddsBetSlip.player, state._oddsBetSlip.betType, state._oddsBetSlip.odds, false);
-    }
     delete state._oddsBetSlip;
     delete state._oddsBetSlipAmount;
     refresh();
-  },
-
-  triggerOddsAnimations(movements) {
-    if (!Array.isArray(movements) || movements.length === 0) return;
-    const hasSignificantMove = movements.some((move) => (move.oddsChange || 0) >= 25);
-    if (hasSignificantMove) {
-      playUiSound('odds_shift');
-      maybeVibrate(18);
-    }
-
-    movements.forEach((move, index) => {
-      const buttons = getOddsButtonsForAnimation(move.playerName, move.newOdds);
-      if (!buttons.length) return;
-
-      const slideClass = move.animationType === 'up' ? 'odds-slide-up' : 'odds-slide-down';
-      const flashClass = move.flashType === 'green' ? 'odds-flash-green' : 'odds-flash-red';
-      const startDelay = Math.min(index * 70, 280);
-
-      buttons.forEach((btn) => {
-        setTimeout(() => {
-          btn.classList.remove('odds-slide-up', 'odds-slide-down', 'odds-flash-green', 'odds-flash-red', 'odds-move-pulse');
-          // Reflow so repeated movements replay smoothly.
-          void btn.offsetWidth;
-          btn.classList.add(slideClass, flashClass, 'odds-move-pulse');
-
-          const existingArrow = btn.querySelector('.odds-arrow');
-          if (existingArrow) existingArrow.remove();
-
-          const arrow = document.createElement('span');
-          arrow.className = `odds-arrow ${move.animationType === 'up' ? 'odds-arrow-up' : 'odds-arrow-down'}`;
-          arrow.setAttribute('aria-hidden', 'true');
-          btn.appendChild(arrow);
-
-          setTimeout(() => arrow.classList.add('fade-out'), 320);
-          setTimeout(() => {
-            btn.classList.remove('odds-slide-up', 'odds-slide-down', 'odds-flash-green', 'odds-flash-red', 'odds-move-pulse');
-            if (arrow.parentNode) arrow.remove();
-          }, 1400);
-        }, startDelay);
-      });
-    });
   },
 
   async placeOddsBet() {
@@ -4940,8 +4086,7 @@ window.MG = {
     if (!slip || !amount || amount <= 0) return;
 
     // Bet confirmation ceremony - enhanced haptic feedback
-    maybeVibrate([100, 50, 100]);
-    playUiSound('bet_placed');
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
     const betData = {
       type: slip.betType === 'to_win' ? 'player_winner' : 'head_to_head',
@@ -5087,176 +4232,10 @@ if (document.readyState === 'loading') {
 
 // Demo auto-simulation for live sportsbook feel
 let demoSimTimer = null;
-const DEMO_LIVE_SLUGS = new Set([
-  'demo-buddies',
-  'demo-scramble',
-  'demo-skins',
-  'demo-nassau',
-  'demo-wolf',
-  'demo-match-play',
-  'legends-trip',
-  'stag-night',
-  'augusta-scramble',
-  'masters-member-guest'
-]);
-
-function getDemoPlayersFromState() {
-  const fromConfigPlayers = Array.isArray(state?._config?.players) ? state._config.players : [];
-  if (fromConfigPlayers.length > 0) return fromConfigPlayers;
-  const derivedPlayers = getPlayersFromConfig(state?._config);
-  if (!Array.isArray(derivedPlayers)) return [];
-  return derivedPlayers
-    .map((p) => {
-      if (!p) return null;
-      if (typeof p === 'string') return { name: p };
-      if (typeof p.name === 'string' && p.name.trim()) return { ...p, name: p.name.trim() };
-      return null;
-    })
-    .filter(Boolean);
-}
-
-function parseToParLabel(value) {
-  const raw = String(value || '').trim().toUpperCase();
-  if (!raw || raw === '--') return null;
-  if (raw === 'E') return 0;
-  const parsed = Number(raw.replace('+', ''));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function formatToParLabel(value) {
-  if (!Number.isFinite(value)) return '--';
-  if (value === 0) return 'E';
-  return value > 0 ? `+${value}` : String(value);
-}
-
-function toParColor(value) {
-  if (!Number.isFinite(value)) return '#FFFFFF';
-  if (value < 0) return '#D4AF37';
-  if (value > 0) return '#FF7B7B';
-  return '#FFFFFF';
-}
-
-function parseAmericanOdds(oddsStr) {
-  const raw = String(oddsStr || '').trim().toUpperCase();
-  if (!raw || raw === 'EVEN') return 0;
-  const parsed = Number(raw.replace('+', ''));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function formatAmericanOddsFromInt(value) {
-  if (!Number.isFinite(value) || value === 0) return 'EVEN';
-  return value > 0 ? `+${value}` : String(value);
-}
-
-function runDemoMotionCue(opts = {}) {
-  const rows = Array.from(document.querySelectorAll('.mg-premium-player-row[data-leaderboard-player]'));
-  if (rows.length === 0) return;
-
-  // Step 1: pick one player and tick their displayed to-par score.
-  const pickedRow = rows[Math.floor(Math.random() * rows.length)];
-  const scoreEl = pickedRow.querySelector('.mg-premium-player-to-par');
-  const playerName = pickedRow.dataset.leaderboardPlayer || '';
-  let scoreDelta = 0;
-  if (scoreEl) {
-    const currentScore = parseToParLabel(scoreEl.dataset.scoreValue ?? scoreEl.textContent);
-    const baselineScore = Number.isFinite(currentScore) ? currentScore : 0;
-    scoreDelta = Math.random() < 0.58 ? -1 : 1;
-    const nextScore = Math.max(-12, Math.min(20, baselineScore + scoreDelta));
-    scoreEl.textContent = formatToParLabel(nextScore);
-    scoreEl.dataset.scoreValue = String(nextScore);
-    scoreEl.style.color = toParColor(nextScore);
-    pickedRow.dataset.leaderboardScore = String(nextScore);
-    scoreEl.classList.remove('demo-score-tick');
-    void scoreEl.offsetWidth;
-    scoreEl.classList.add('demo-score-tick');
-    pickedRow.classList.add('demo-row-hot');
-    setTimeout(() => {
-      scoreEl.classList.remove('demo-score-tick');
-      pickedRow.classList.remove('demo-row-hot');
-    }, 620);
-  }
-
-  // Step 2: reorder leaderboard rows by current displayed score.
-  const parent = rows[0]?.parentElement;
-  if (parent) {
-    const before = new Map(rows.map((row) => [row, row.getBoundingClientRect().top]));
-    const sortedRows = [...rows].sort((a, b) => {
-      const av = parseToParLabel(a.dataset.leaderboardScore ?? a.querySelector('.mg-premium-player-to-par')?.dataset.scoreValue) ?? 999;
-      const bv = parseToParLabel(b.dataset.leaderboardScore ?? b.querySelector('.mg-premium-player-to-par')?.dataset.scoreValue) ?? 999;
-      return av - bv;
-    });
-    sortedRows.forEach((row) => parent.appendChild(row));
-    sortedRows.forEach((row) => {
-      const prevTop = before.get(row);
-      if (prevTop === undefined) return;
-      const nextTop = row.getBoundingClientRect().top;
-      const delta = prevTop - nextTop;
-      if (Math.abs(delta) < 1) return;
-      row.style.transition = 'none';
-      row.style.transform = `translateY(${delta}px)`;
-      requestAnimationFrame(() => {
-        row.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
-        row.style.transform = 'translateY(0)';
-        setTimeout(() => {
-          row.style.transition = '';
-          row.style.transform = '';
-        }, 460);
-      });
-    });
-  }
-
-  // Step 3: move one visible odds chip and replay existing odds animation classes.
-  const oddsButtons = Array.from(document.querySelectorAll('.mg-odds-btn[data-odds-player]'));
-  if (!oddsButtons.length) return;
-  const oddsBtn = oddsButtons.find((btn) => btn.dataset.oddsPlayer === playerName) || oddsButtons[Math.floor(Math.random() * oddsButtons.length)];
-  if (!oddsBtn) return;
-  const oldOdds = oddsBtn.dataset.oddsLine || oddsBtn.textContent.trim();
-  const oldNum = parseAmericanOdds(oldOdds);
-  if (oldNum === null) return;
-  const baseStep = [10, 20, 25, 30, 40][Math.floor(Math.random() * 5)];
-  const dir = scoreDelta < 0 ? -1 : 1;
-  const nextNum = shiftML(oldNum, dir * baseStep);
-  if (nextNum === oldNum) return;
-  const nextOdds = formatAmericanOddsFromInt(nextNum);
-  oddsBtn.dataset.oddsLine = nextOdds;
-  if (!oddsBtn.querySelector('.odds-line')) oddsBtn.textContent = nextOdds;
-
-  const movement = {
-    playerName: oddsBtn.dataset.oddsPlayer || playerName || '',
-    newOdds: nextOdds,
-    animationType: nextNum < oldNum ? 'up' : 'down',
-    flashType: nextNum < oldNum ? 'green' : 'red'
-  };
-  if (window.MG?.triggerOddsAnimations) {
-    window.MG.triggerOddsAnimations([movement]);
-  }
-
-  if (Math.abs(nextNum - oldNum) >= 35 || opts.forceCardPulse) {
-    const needle = (movement.playerName || '').toLowerCase();
-    let touched = false;
-    document.querySelectorAll('.mg-bet-card').forEach((card) => {
-      if (needle && !card.textContent.toLowerCase().includes(needle)) return;
-      touched = true;
-      card.classList.remove('odds-impact');
-      void card.offsetWidth;
-      card.classList.add('odds-impact');
-      setTimeout(() => card.classList.remove('odds-impact'), 900);
-    });
-    if (!touched) {
-      const fallback = document.querySelector('.mg-bet-card');
-      if (fallback) {
-        fallback.classList.remove('odds-impact');
-        void fallback.offsetWidth;
-        fallback.classList.add('odds-impact');
-        setTimeout(() => fallback.classList.remove('odds-impact'), 900);
-      }
-    }
-  }
-}
 
 function startDemoAutoSimulation(slug) {
   // Only run on demo pages
-  const isDemoPage = DEMO_LIVE_SLUGS.has(slug);
+  const isDemoPage = ['demo-buddies', 'demo-scramble', 'legends-trip', 'stag-night', 'augusta-scramble', 'masters-member-guest'].includes(slug);
   if (!isDemoPage) return;
 
   console.log('[waggle] Starting auto-simulation for demo:', slug);
@@ -5268,12 +4247,8 @@ function startDemoAutoSimulation(slug) {
 
   // Run simulation every 8 seconds with 60% activity chance
   demoSimTimer = setInterval(() => {
-    if (Math.random() > 0.6) {
-      if (Math.random() < 0.55) runDemoMotionCue();
-      return; // Skip 40% of cycles for realistic pacing
-    }
+    if (Math.random() > 0.6) return; // Skip 40% of cycles for realistic pacing
     generateDemoActivity(slug);
-    setTimeout(() => runDemoMotionCue(), 120);
   }, 8000);
 
   // Initialize feed with sample content immediately
@@ -5284,8 +4259,9 @@ function startDemoAutoSimulation(slug) {
 }
 
 function generateDemoActivity(slug) {
-  const players = getDemoPlayersFromState();
-  if (players.length === 0) return;
+  if (!state?._config?.players) return;
+
+  const players = state._config.players;
   const eventType = Math.random();
 
   if (eventType < 0.25) {
@@ -5395,7 +4371,6 @@ function generateScoreUpdate(players, slug) {
   }
 
   route();
-  setTimeout(() => runDemoMotionCue(), 120);
 }
 
 function generateFakeChirp(players, slug) {
@@ -5507,7 +4482,6 @@ function generateOddsMovement(players, slug) {
   triggerOddsMovementAnimation(movement.direction, betType);
 
   route();
-  setTimeout(() => runDemoMotionCue({ forceCardPulse: true }), 120);
 }
 
 function generatePressEvent(players, slug) {
@@ -5552,10 +4526,9 @@ function generatePressEvent(players, slug) {
 }
 
 function initializeDemoFeed(slug) {
-  if (state._feed.length > 0) return;
+  if (!state?._config?.players || state._feed.length > 0) return;
 
-  const players = getDemoPlayersFromState();
-  if (players.length === 0) return;
+  const players = state._config.players;
   const initialContent = [
     {
       type: 'score',
@@ -5597,17 +4570,15 @@ function initializeDemoFeed(slug) {
 }
 
 function triggerOddsMovementAnimation(direction, betType) {
-  // Legacy helper retained for older demo hooks.
+  // Find odds buttons and add flash animation based on movement direction
   setTimeout(() => {
-    const oddsButtons = document.querySelectorAll('.mg-odds-btn');
+    const oddsButtons = document.querySelectorAll('.odds-btn, .bet-odd, [class*="odd"]');
     oddsButtons.forEach(btn => {
       if (Math.random() < 0.3) { // Only animate some odds for realism
-        const slideClass = direction === 'down' ? 'odds-slide-up' : 'odds-slide-down';
-        const flashClass = direction === 'down' ? 'odds-flash-green' : 'odds-flash-red';
-        btn.classList.add(slideClass, flashClass, 'odds-move-pulse');
+        btn.classList.add(direction === 'down' ? 'odds-flash-green' : 'odds-flash-red');
         setTimeout(() => {
-          btn.classList.remove('odds-slide-up', 'odds-slide-down', 'odds-flash-green', 'odds-flash-red', 'odds-move-pulse');
-        }, 1300);
+          btn.classList.remove('odds-flash-green', 'odds-flash-red');
+        }, 1500);
       }
     });
   }, 100);
