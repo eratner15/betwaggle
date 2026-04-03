@@ -30,7 +30,7 @@
   <link rel="icon" type="image/jpeg" href="/favicon-180.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgA.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtY.woff2" as="font" type="font/woff2" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,7 +57,6 @@
       background: var(--ivory);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
       /* Subtle paper grain — like heavy-stock scorecard paper */
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
       background-size: 256px 256px;
@@ -81,17 +80,6 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
-      min-height: 56px;
-      padding: 8px 0;
-    }
-    .nav-logo-img {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.2);
-      box-shadow: 0 4px 14px rgba(0,0,0,.3);
-      object-fit: cover;
-      flex-shrink: 0;
     }
     .nav-logo span {
       font-family: 'Playfair Display', serif;
@@ -109,22 +97,12 @@
       letter-spacing: .08em;
       text-transform: uppercase;
       padding: 12px 4px 12px;
-      min-height: 56px;
+      min-height: 44px;
       display: flex;
       align-items: center;
       transition: color .15s;
     }
     .nav-demo:hover { color: var(--gold); }
-
-    a[href],
-    button {
-      transition: transform .12s ease, filter .12s ease;
-    }
-    a[href]:active,
-    button:active {
-      transform: scale(0.98);
-      filter: brightness(1.05);
-    }
 
     .nav-links {
       display: flex;
@@ -216,38 +194,28 @@
     }
 
     .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #D4AF37 0%, #C5A059 100%);
+      display: inline-block;
+      background: var(--gold);
       color: var(--forest);
       font-size: 17px;
       font-weight: 700;
       letter-spacing: .04em;
       padding: 18px 40px;
-      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       transition: background .15s, transform .15s, box-shadow .2s;
       box-shadow: 0 4px 20px rgba(201,168,76,.35);
     }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #E2C66A 0%, #C5A059 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(201,168,76,.4);
-    }
+    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
 
     .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: inline-block;
       background: rgba(255,255,255,.05);
       color: rgba(255,255,255,.8);
       font-size: 15px;
       font-weight: 600;
       letter-spacing: .03em;
       padding: 14px 32px;
-      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       border: 1.5px solid rgba(255,255,255,.3);
@@ -278,7 +246,6 @@
       border-radius: 14px 14px 0 0;
       width: 100%;
       max-width: 340px;
-      min-height: 420px;
       overflow: hidden;
       box-shadow: 0 -8px 48px rgba(0,0,0,.4), 0 0 0 1.5px var(--gold);
     }
@@ -297,7 +264,7 @@
       letter-spacing: .03em;
     }
     .mockup-event-meta {
-      font-size: 12px;
+      font-size: 11px;
       color: rgba(255,255,255,.45);
       margin-top: 3px;
       letter-spacing: .04em;
@@ -319,10 +286,10 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    .match-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
     .live-dot {
       display: flex; align-items: center; gap: 5px;
-      font-size: 12px; font-weight: 700; color: var(--gold);
+      font-size: 10px; font-weight: 700; color: var(--gold);
       letter-spacing: .06em; text-transform: uppercase;
     }
     .live-dot::before {
@@ -344,7 +311,7 @@
       justify-content: space-between;
     }
     .team-name { font-size: 13px; color: var(--text); font-weight: 600; }
-    .team-hi { font-size: 12px; color: var(--muted); margin-left: 5px; }
+    .team-hi { font-size: 11px; color: var(--muted); margin-left: 5px; }
     .odds-pill {
       font-size: 14px;
       font-weight: 700;
@@ -469,15 +436,11 @@
     .mockup-btn {
       flex: 1;
       padding: 10px;
-      min-height: 56px;
       border-radius: 5px;
       font-size: 12px;
       font-weight: 600;
       text-align: center;
       letter-spacing: .03em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
     }
     .mockup-btn-primary { background: var(--gold); color: var(--forest); font-weight: 700; }
     .mockup-btn-secondary { background: #fff; color: var(--forest); border: 1px solid var(--rule); font-weight: 600; }
@@ -651,7 +614,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      min-height: 56px;
       padding: 16px 12px;
       background: none;
       border: none;
@@ -683,7 +645,7 @@
       flex-shrink: 0;
     }
     .format-player-badge {
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: .05em;
       color: var(--gold-dk);
       font-weight: 600;
@@ -730,10 +692,9 @@
       text-decoration: underline;
       text-underline-offset: 3px;
       transition: color .12s;
-      display: inline-flex;
-      align-items: center;
+      display: inline-block;
       padding: 12px 0;
-      min-height: 56px;
+      min-height: 44px;
     }
     .format-guide-link:hover {
       color: var(--gold-dk);
@@ -795,7 +756,7 @@
     }
 
     .price-type {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -849,15 +810,13 @@
     }
 
     .price-cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: block;
       background: var(--forest);
       margin-top: auto;
       color: #fff;
       text-align: center;
       padding: 14px;
-      min-height: 56px;
+      min-height: 48px;
       font-size: 13px;
       font-weight: 600;
       letter-spacing: .04em;
@@ -921,11 +880,9 @@
       letter-spacing: .04em;
       border-bottom: 1px solid rgba(255,255,255,.15);
       padding: 12px 4px;
-      min-height: 56px;
-      min-width: 56px;
+      min-height: 44px;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       transition: color .12s;
     }
     .final-links a:hover { color: rgba(255,255,255,.7); }
@@ -943,7 +900,7 @@
       color: rgba(255,255,255,.25);
       letter-spacing: .04em;
     }
-    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 12px 8px; min-height: 56px; min-width: 56px; display: inline-flex; align-items: center; justify-content: center; }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
     footer a:hover { color: rgba(255,255,255,.6); }
 
     /* Entrance animations */
@@ -1302,26 +1259,9 @@
 
     /* Nav: hide secondary links on small screens */
     @media (max-width: 600px) {
-      nav {
-        padding: 14px;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .nav-links {
-        width: 100%;
-        gap: 8px;
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-      .nav-demo {
-        width: 100%;
-        font-size: 12px;
-        padding: 0 10px;
-        min-height: 56px;
-        border: 1px solid rgba(255,255,255,.22);
-        border-radius: 6px;
-        justify-content: center;
-      }
+      nav { padding: 16px 16px; }
+      .nav-links { gap: 10px; }
+      .nav-demo { font-size: 11px; padding: 10px 2px; }
     }
 
     /* Hero: tighter on mobile */
@@ -1329,9 +1269,9 @@
       .hero { padding: 80px 16px 0; }
       .hero-inner { gap: 32px; }
       .hero-copy { padding-bottom: 8px; }
-      .hero-kicker { font-size: 12px; letter-spacing: .1em; margin-bottom: 14px; }
-      .hero-sub { font-size: 14px; margin-bottom: 20px; }
-      .hero-fine { font-size: 12px; }
+      .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
+      .hero-sub { font-size: 15px; margin-bottom: 20px; }
+      .hero-fine { font-size: 11px; }
       /* CTA full-width on mobile */
       .btn-primary { display: block; text-align: center; padding: 16px 24px; font-size: 16px; }
       /* Mockup: constrain and add breathing room */
@@ -1354,38 +1294,7 @@
       .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
       .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
       .proof-num { font-size: 28px; }
-      .proof-label { font-size: 12px; }
-    }
-
-    @media (max-width: 600px) {
-      #sound-toggle {
-        min-width: 56px !important;
-        min-height: 56px !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
-      }
-
-      .section a[href="/courses/"],
-      .section a[href="/create/"],
-      .final-cta a {
-        min-height: 56px !important;
-        min-width: 56px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-
-      [style*="font-size:10px"],
-      [style*="font-size:11px"] {
-        font-size: 12px !important;
-      }
-
-      .mockup-body [style*="font-size:10px"],
-      .mockup-body [style*="font-size:11px"],
-      #demo-ui [style*="font-size:10px"],
-      #demo-ui [style*="font-size:11px"] {
-        font-size: 12px !important;
-      }
+      .proof-label { font-size: 11px; }
     }
 
     /* Body sections: less padding on mobile */
@@ -1467,13 +1376,12 @@
   </style>
 
   <!-- Google Ads gtag.js (replace AW-PLACEHOLDER with your Google Ads ID) -->
-  <!-- Google Ads: uncomment when real ID is set
-  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=AW-PLACEHOLDER"></script> -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-PLACEHOLDER"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    // gtag('config', 'AW-PLACEHOLDER') // TODO: replace with real Google Ads ID;
+    gtag('config', 'AW-PLACEHOLDER');
   </script>
 
   <!-- Meta Pixel (replace PIXEL_PLACEHOLDER with your Meta Pixel ID) -->
@@ -1486,7 +1394,7 @@
   t.src=v;s=b.getElementsByTagName(e)[0];
   s.parentNode.insertBefore(t,s)}(window, document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
-  // fbq('init', 'PIXEL_PLACEHOLDER') // TODO: replace with real Meta Pixel ID;
+  fbq('init', 'PIXEL_PLACEHOLDER');
   fbq('track', 'PageView');
   </script>
 
@@ -1496,11 +1404,10 @@
   <!-- NAV -->
   <nav>
     <a class="nav-logo" href="/">
-      <img class="nav-logo-img" src="/logo-nav.jpg" alt="Waggle logo" loading="eager" decoding="async">
       <span>Waggle</span>
     </a>
     <div class="nav-links">
-      <a class="nav-demo" href="/demo/">Try the Demo</a>
+      <a class="nav-demo" href="/courses/">Find a Course</a>
       <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32/event</a>
     </div>
   </nav>
@@ -1517,9 +1424,9 @@
         <div class="hero-actions">
           <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32/event</a>
           <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
-          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; $32/event</span>
+          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
           <div style="margin-top:10px;text-align:center">
-            <a href="/demo/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:56px">Try the Demo</a>
+            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:44px">Already playing? Find your match &rarr;</a>
           </div>
         </div>
       </div>
@@ -2367,7 +2274,7 @@
           <div style="font-weight:700;color:var(--forest);margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
           Par 72 &middot; Slope 155 &middot; Rating 76.4
         </div>
-        <a href="/courses/" style="display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:10px 14px;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
+        <a href="/courses/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
       </div>
       <div style="background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:28px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:12px">GHIN Integration</div>
@@ -2376,7 +2283,7 @@
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
           <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
         </div>
-        <a href="/create/" style="display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:10px 14px;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32/event</a>
       </div>
     </div>
   </div>
@@ -2413,21 +2320,21 @@
 
       <div class="pricing-grid">
         <div class="price-card">
-          <span class="price-type">Event Pass</span>
-          <div class="price-amount" style="font-size:2.2rem">$32/event</div>
-          <span class="price-period">under $8/person for a foursome</span>
+          <span class="price-type">Weekend Warrior</span>
+          <div class="price-amount" style="font-size:2.2rem">Free</div>
+          <span class="price-period">casual rounds, always free</span>
           <div class="price-details">
             <span class="price-detail">All 12 game formats, live scoring</span>
             <span class="price-detail">Hole-by-hole scorecard + game summaries</span>
             <span class="price-detail">Perfect for a spontaneous money match</span>
-            <span class="price-detail">One setup link for the entire group</span>
+            <span class="price-detail">No payment, no account required</span>
           </div>
           <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
           <div class="price-amount">$32/event</div>
-          <span class="price-period">$32/event &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
+          <span class="price-period">per event &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
           <div class="price-details">
             <span class="price-detail">All 8 formats with live scoring + betting</span>
             <span class="price-detail">GHIN lookup, handicaps auto-filled, no typing</span>
@@ -2437,12 +2344,12 @@
             <span class="price-detail">Any phone, no app required</span>
           </div>
           <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
-          <div class="price-amount">$149/season pass</div>
-          <span class="price-period">$149/season pass, unlimited events &amp; players</span>
+          <div class="price-amount">$149/season</div>
+          <span class="price-period">per season, unlimited events &amp; players</span>
           <div class="price-details">
             <span class="price-detail">Team scramble with live leaderboard</span>
             <span class="price-detail">Closest to pin and longest drive tracking</span>
@@ -2452,7 +2359,7 @@
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
           <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
         </div>
       </div>
 
@@ -2474,16 +2381,16 @@
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
           <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32/event and sets up the outing. Everyone else joins from the same shared link.</p>
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32/event and sets up the outing. Everyone else joins free via a shared link.</p>
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule)">
           <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            Can I test the demo first?
+            Can I try it free first?
             <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
           </button>
           <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Start with the interactive demo, then set up your group at $32/event when you are ready. The full flow includes GHIN auto-lookup, AI pairings, live betting odds, and settlement cards.</p>
+            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Free rounds include all 12 game formats with live scoring. The paid tier adds GHIN auto-lookup, AI pairings, live betting odds, and the settlement card.</p>
           </div>
         </div>
         <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
@@ -2577,6 +2484,7 @@
               <div class="format-best-for">Best for: Groups who want structured betting with escalation potential.</div>
               <a href="/games/nassau/" class="format-guide-link">Read the full guide</a>
               <a href="/cards/nassau/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
+              <a href="/cards/nassau/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
             </div>
           </div>
         </div>
@@ -2598,6 +2506,7 @@
               <div class="format-best-for">Best for: Large groups where any player can steal a hole.</div>
               <a href="/games/skins/" class="format-guide-link">Read the full guide</a>
               <a href="/cards/skins/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
+              <a href="/cards/skins/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
             </div>
           </div>
         </div>
@@ -2618,6 +2527,7 @@
               <p>Rotating wolf chooses a partner after seeing each tee shot -- or goes Lone Wolf for double stakes.</p>
               <div class="format-best-for">Best for: Groups who enjoy strategy and reading opponents.</div>
               <a href="/games/wolf/" class="format-guide-link">Read the full guide</a>
+              <a href="/cards/wolf/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
               <a href="/cards/wolf/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
             </div>
           </div>
@@ -2720,6 +2630,7 @@
               <div class="format-best-for">Best for: Two players or two teams who want direct competition.</div>
               <a href="/games/match-play/" class="format-guide-link">Read the full guide</a>
               <a href="/cards/match-play/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
+              <a href="/cards/match-play/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
             </div>
           </div>
         </div>
@@ -2791,12 +2702,12 @@
       <p>One link. Every format. Automatic settlement.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
         <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32/event</a>
-        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">$32/event &middot; No credit card required</span>
+        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">Free for casual rounds &middot; No credit card required</span>
       </div>
       <div class="final-links">
         <a href="/demo/">Try the Demo</a>
-        <a href="/create/">Set Up Your Event &mdash; $32/event</a>
-        <a href="/create/?tier=season">Set Up Your Season &mdash; $149/season pass</a>
+        <a href="/overview/">Setup guide</a>
+        <a href="/games/">Game rules</a>
       </div>
     </div>
   </div>
@@ -2832,8 +2743,8 @@
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
         <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32/event</a>
-        <a href="/demo/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Try the Demo</a>
-        <a href="/create/?tier=season" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Season &mdash; $149/season pass</a>
+        <a href="/courses/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
+        <a href="/overview/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
       <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>
