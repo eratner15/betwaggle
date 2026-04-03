@@ -482,7 +482,7 @@
         <h2>What are you running?</h2>
         <p class="desc">This determines the default format and scoring. You can customize everything later.</p>
         <div class="type-grid">${types.map(t=>`
-          <div class="type-card ${W.type===t.id?'selected':''}" onclick="${(t.id==='quick'||t.id==='trip')?`showQuickStart('${t.id}')`:`W.type='${t.id}';render();upNav()`}">
+          <div class="type-card ${W.type===t.id?'selected':''}" onclick="${(t.id==='quick'||t.id==='trip')?`showQuickStart('${t.id}')`:`W.type='${t.id}';W.step=1;render();upNav()`}">
             <div class="type-icon">${t.icon}</div>
             <div style="flex:1"><h3>${t.name}${t.badge?` <span style="font-size:10px;font-weight:700;background:var(--gold);color:var(--dark);padding:2px 7px;border-radius:10px;vertical-align:middle;letter-spacing:0.5px">${t.badge}</span>`:''}</h3><p>${t.desc}</p></div>
           </div>`).join('')}
