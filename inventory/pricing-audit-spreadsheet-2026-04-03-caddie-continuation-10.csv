@@ -1,0 +1,9 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,Primary pricing + CTA,$32/event + $149/season pass,$32/event + $149/season pass,correct,"live check 2026-04-03T21:10Z",No $199 found
+/tour/,Comparison pricing row,$149/season + $32/event,$149/season pass + $32/event,mixed,"live /tour line 295",Amount correct; season wording non-canonical
+/pricing/,Season CTA + fallback text,$149/season,$149/season pass,incorrect,"live /pricing lines 790,967,968",Regression persists (BET-446)
+/demo/,Primary CTA + support copy,$32/event,$32/event,correct,"live /demo lines 448,451",Aligned
+/pro/,Revenue + calculator text,$149/season pass primary + $149/season calculator,$149/season pass,mixed,"live /pro lines 1082,1105,1312",Primary phrase fixed; calculator wording still mixed
+core CTA labels,Season CTA text across pages,mixed $149/season and $149/season pass,$149/season pass,mixed,"live /tour /pricing /",Not fully normalized
+emails/templates,Drip and outreach references,$32/event + $149/season pass references,$32/event + $149/season pass,mixed,"source scan /emails",Copy mostly aligned; funnel delivery remains separate
+JSON/JS hardcoded labels,worker/create string variants,$149/season variants,$149/season pass,mixed,"source scan",Price amounts correct (14900/3200)

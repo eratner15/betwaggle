@@ -364,6 +364,46 @@
       <div class="tab-panel" id="panel-import">
         <div class="panel-section">
           <h3>Import Course Leads</h3>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px">
+            Auto-load source: <code>/data/course-leads-enriched.json</code>
+          </p>
+          <div id="import-autoload-status" style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Loading enriched leads...</div>
+          <div style="overflow-x:auto;margin-bottom:16px">
+            <table class="data-table" id="import-state-table">
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Total Leads</th>
+                  <th>With Email</th>
+                  <th>Email Coverage</th>
+                </tr>
+              </thead>
+              <tbody id="import-state-tbody">
+                <tr><td colspan="4" style="color:var(--text-dim)">No enriched leads loaded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div class="field" style="margin-bottom:0">
+              <label>State Campaign Target</label>
+              <select id="import-send-state">
+                <option value="">Select state</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Template</label>
+              <select id="import-send-template">
+                <option value="scramble-pitch.html">Scramble Pitch (cold outreach)</option>
+                <option value="affiliate-invite.html">Affiliate Invite</option>
+                <option value="follow-up.html">Follow Up</option>
+                <option value="scramble-season-newsletter.html">Scramble Season Newsletter</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row" style="margin-bottom:16px">
+            <button class="btn btn-gold" id="import-send-btn" onclick="sendImportStateCampaign()">Send Campaign</button>
+          </div>
+          <div class="msg" id="import-send-msg"></div>
           <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Paste a JSON array of leads. Each lead should have: course_name, club_name, city, state, pro_name, pro_email, website, segment (public/private/resort/semi-private).</p>
           <div class="field">
             <label>JSON Data</label>
@@ -478,6 +518,7 @@
 
   <script>
     var PIN = '';
+    var IMPORT_ENRICHED_LEADS = [];
 
     // Auth
     document.getElementById('pin-input').addEventListener('keydown', function(e) {
@@ -515,6 +556,7 @@
         document.getElementById('pin-input').value = saved;
         authenticate();
       }
+      autoLoadEnrichedLeads();
     })();
 
     // Tabs
@@ -713,6 +755,116 @@
             document.getElementById('leaderboard-tbody').innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">No affiliates yet.</td></tr>';
           }
         });
+    }
+
+    function normalizeLeadState(raw) {
+      return String(raw || '').trim().toUpperCase();
+    }
+
+    function hasLeadEmail(lead) {
+      var email = String((lead && (lead.pro_email || lead.email || lead.contact_email)) || '').trim();
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function renderImportStateCoverage() {
+      var tbody = document.getElementById('import-state-tbody');
+      var stateSelect = document.getElementById('import-send-state');
+      if (!tbody || !stateSelect) return;
+
+      var byState = {};
+      IMPORT_ENRICHED_LEADS.forEach(function(lead) {
+        var state = normalizeLeadState(lead.state);
+        if (!state) return;
+        if (!byState[state]) byState[state] = { state: state, total: 0, withEmail: 0 };
+        byState[state].total += 1;
+        if (hasLeadEmail(lead)) byState[state].withEmail += 1;
+      });
+
+      var rows = Object.keys(byState).sort().map(function(state) { return byState[state]; });
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-dim)">No state coverage data.</td></tr>';
+        stateSelect.innerHTML = '<option value="">Select state</option>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function(row) {
+        var pct = row.total > 0 ? ((row.withEmail / row.total) * 100).toFixed(1) + '%' : '0%';
+        return '<tr>'
+          + '<td>' + row.state + '</td>'
+          + '<td>' + row.total + '</td>'
+          + '<td>' + row.withEmail + '</td>'
+          + '<td>' + pct + '</td>'
+          + '</tr>';
+      }).join('');
+
+      stateSelect.innerHTML = '<option value="">Select state</option>' + rows.map(function(row) {
+        var label = row.state + ' (' + row.withEmail + '/' + row.total + ' emails)';
+        return '<option value="' + row.state + '">' + label + '</option>';
+      }).join('');
+    }
+
+    function autoLoadEnrichedLeads() {
+      var statusEl = document.getElementById('import-autoload-status');
+      var textarea = document.getElementById('import-json');
+      fetch('/data/course-leads-enriched.json', { cache: 'no-store' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          IMPORT_ENRICHED_LEADS = Array.isArray(data) ? data : [];
+          if (textarea) textarea.value = JSON.stringify(IMPORT_ENRICHED_LEADS, null, 2);
+          if (statusEl) statusEl.textContent = 'Loaded ' + IMPORT_ENRICHED_LEADS.length + ' enriched leads from /data/course-leads-enriched.json';
+          renderImportStateCoverage();
+        })
+        .catch(function(err) {
+          IMPORT_ENRICHED_LEADS = [];
+          if (statusEl) statusEl.textContent = 'Could not auto-load /data/course-leads-enriched.json (' + err.message + ')';
+          renderImportStateCoverage();
+        });
+    }
+
+    function sendImportStateCampaign() {
+      var btn = document.getElementById('import-send-btn');
+      var msgEl = document.getElementById('import-send-msg');
+      var state = normalizeLeadState(document.getElementById('import-send-state').value);
+      var template = document.getElementById('import-send-template').value;
+      msgEl.className = 'msg';
+      msgEl.style.display = 'none';
+
+      if (!state) {
+        msgEl.className = 'msg error';
+        msgEl.textContent = 'Select a state before sending.';
+        return;
+      }
+      if (!template) {
+        msgEl.className = 'msg error';
+        msgEl.textContent = 'Select a template.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      apiPost('/api/admin/outreach/send', {
+        state: state,
+        template: template,
+        leads: IMPORT_ENRICHED_LEADS
+      }).then(function(data) {
+        btn.disabled = false;
+        btn.textContent = 'Send Campaign';
+        if (data && data.ok) {
+          msgEl.className = 'msg success';
+          msgEl.textContent = 'State ' + state + ': attempted ' + (data.attempted || 0) + ', sent ' + (data.sent || 0) + ', failed ' + (data.failed || 0) + '.';
+        } else {
+          msgEl.className = 'msg error';
+          msgEl.textContent = (data && data.error) ? data.error : 'Send failed.';
+        }
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Send Campaign';
+        msgEl.className = 'msg error';
+        msgEl.textContent = 'Network error: ' + err.message;
+      });
     }
   </script>
 </body>

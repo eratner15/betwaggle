@@ -1,0 +1,36 @@
+page,purpose,should_be_public,http_status,pricing_status,link_status,notes,last_checked_et
+/,Homepage,yes,200,copy_mismatch,working,"",2026-04-03 17:10 ET
+/about/,Content/marketing page,yes,301,n/a,redirect,"redirects to https://betwaggle.com/tour/",2026-04-03 17:10 ET
+/ads/,Internal docs/ops route,no,404,n/a,blocked_or_missing,"",2026-04-03 17:10 ET
+/affiliate/,Affiliate landing,yes,200,n/a,working,"duplicate route with /affiliates/",2026-04-03 17:10 ET
+/affiliates/,Affiliate landing,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/courses/,Course discovery,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/create/,Event setup flow,yes,200,copy_mismatch,working,"",2026-04-03 17:10 ET
+/demo/,Interactive product demo,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/games/,Game formats hub,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/games/banker/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/best-ball/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/bingo-bango-bongo/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/bloodsome/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/chapman/,Content/marketing page,yes,301,n/a,redirect,"redirects to https://betwaggle.com/games/best-ball/",2026-04-03 17:10 ET
+/games/match-play/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/nassau/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/round-robin/,Content/marketing page,yes,301,n/a,redirect,"redirects to https://betwaggle.com/games/nassau/",2026-04-03 17:10 ET
+/games/scramble/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/skins/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/stableford/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/stroke-play/,Content/marketing page,yes,301,n/a,redirect,"redirects to https://betwaggle.com/games/match-play/",2026-04-03 17:10 ET
+/games/vegas/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/games/wolf/,Content/marketing page,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/gtm/,Internal docs/ops route,no,404,n/a,blocked_or_missing,"",2026-04-03 17:10 ET
+/guides/,SEO guides hub,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/guides/best-golf-betting-games-for-a-foursome/,Content/marketing page,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/guides/golf-trip-betting-formats/,Content/marketing page,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/guides/how-to-run-a-charity-golf-scramble/,Content/marketing page,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/guides/how-to-settle-golf-bets/,Content/marketing page,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/join/,Content/marketing page,yes,301,n/a,redirect,"redirects to https://betwaggle.com/register/",2026-04-03 17:10 ET
+/marketing/,Internal docs/ops route,no,404,n/a,blocked_or_missing,"",2026-04-03 17:10 ET
+/my-events/,Player event list,yes,200,event_only,working,"",2026-04-03 17:10 ET
+/overview/,Feature overview,yes,200,n/a,working,"",2026-04-03 17:10 ET
+/pricing/,Pricing and checkout entry,yes,200,copy_mismatch,working,"",2026-04-03 17:10 ET
+/tour/,Product tour and pricing compare,yes,200,copy_mismatch,working,"",2026-04-03 17:10 ET

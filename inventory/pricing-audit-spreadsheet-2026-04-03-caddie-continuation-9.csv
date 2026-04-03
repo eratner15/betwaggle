@@ -1,0 +1,9 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,Primary pricing + CTA,$32/event + $149/season pass,$32/event + $149/season pass,correct,"live check 2026-04-03T20:57Z",No $199 found
+/tour/,Comparison table + CTA,$32/event + $149/season,$32/event + $149/season pass,mixed,"live /tour line 295",Amount correct but wording lacks 'pass'
+/pricing/,Season CTA and JS fallback,$149/season,$149/season pass,incorrect,"live /pricing lines 790,967,968",Regression still active (BET-446)
+/demo/,Primary CTA,$32/event,$32/event,correct,"live /demo line 448",Demo pricing correct
+/pro/,Revenue copy + calculator,$149/season pass primary + $149/season calculator,$149/season pass,mixed,"live /pro lines 1082,1105,1312",Primary copy fixed; calculator wording still mixed
+CTA text (core),Season CTA labels,mixed $149/season vs $149/season pass,$149/season pass,mixed,"live / and /pricing and /tour",Sitewide wording not fully normalized
+emails/templates,Drip + outreach references,$32/event + $149/season pass references,$32/event + $149/season pass,mixed,"source scan /emails",Copy mostly aligned; send pipeline still separate concern
+worker.js/create/index.html,Hardcoded label strings,$149/season variants,$149/season pass,mixed,"source scan",Numeric pricing constants remain correct

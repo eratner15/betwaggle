@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0D2818">
+  <title>Affiliate Dashboard | BetWaggle</title>
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0D2818;
+      --bg-light: #133521;
+      --surface: #1A472A;
+      --surface-light: #245835;
+      --gold: #C9A84C;
+      --gold-dim: #A68B3A;
+      --cream: #F5F0E8;
+      --cream-dim: #D9D2C5;
+      --text: #F5F0E8;
+      --text-secondary: #A8B5A0;
+      --border: rgba(201,168,76,0.2);
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .header-logo img { height: 32px; width: 32px; }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+    }
+    .header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* Login screen */
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+      margin-top: 40px;
+      box-shadow: var(--shadow);
+    }
+    .login-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .login-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    .login-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .login-input-row input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-light);
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-input-row input::placeholder { color: var(--text-secondary); }
+    .login-input-row input:focus { border-color: var(--gold); }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--bg);
+    }
+    .btn-gold:hover { background: var(--gold-dim); }
+    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+    }
+    .btn-outline:hover { background: rgba(201,168,76,0.1); }
+
+    .error-msg {
+      color: #EF4444;
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Dashboard */
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .login-card.hidden { display: none; }
+
+    .ref-link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .ref-link-card label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .ref-link-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ref-link-row input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-light);
+      color: var(--gold);
+      font-size: 13px;
+      font-family: 'Inter', monospace;
+      outline: none;
+    }
+    .copy-btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--gold);
+      color: var(--bg);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: var(--gold-dim); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1.1;
+    }
+    .stat-card .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    .stat-card.highlight {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(201,168,76,0.08) 100%);
+    }
+
+    .payout-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .payout-info .payout-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .payout-info .payout-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .payout-msg {
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+    .payout-msg.success { color: #22C55E; }
+    .payout-msg.error { color: #EF4444; }
+
+    /* Referral table */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .table-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--gold);
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--bg-light);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: rgba(201,168,76,0.04); }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .status-badge.pending {
+      background: rgba(234,179,8,0.15);
+      color: #EAB308;
+    }
+    .status-badge.paid {
+      background: rgba(34,197,94,0.15);
+      color: #22C55E;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .logout-row {
+      text-align: center;
+      margin-top: 8px;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: 'Inter', sans-serif;
+    }
+    .logout-btn:hover { color: var(--text); }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container { padding: 16px 12px 32px; }
+      .stats-grid { gap: 8px; }
+      .stat-card { padding: 14px 10px; }
+      .stat-card .stat-value { font-size: 24px; }
+      .payout-section { flex-direction: column; text-align: center; }
+      .login-input-row { flex-direction: column; }
+      .login-input-row .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">
+      <img src="/waggle_logo.jpg" alt="BetWaggle">
+      <h1>Affiliate Dashboard</h1>
+    </div>
+    <p>Track referrals, commissions & payouts</p>
+  </div>
+
+  <div class="container">
+    <!-- Login -->
+    <div class="login-card" id="login-card">
+      <h2>Welcome Back</h2>
+      <p>Enter your affiliate code to view your dashboard.</p>
+      <div class="login-input-row">
+        <input type="text" id="code-input" placeholder="Your affiliate code" autocomplete="off" spellcheck="false">
+        <button class="btn btn-gold" id="login-btn" onclick="loadDashboard()">View Dashboard</button>
+      </div>
+      <div class="error-msg" id="login-error"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+
+      <!-- Referral link -->
+      <div class="ref-link-card">
+        <label>Your Referral Link</label>
+        <div class="ref-link-row">
+          <input type="text" id="ref-link" readonly>
+          <button class="copy-btn" id="copy-btn" onclick="copyLink()">Copy</button>
+        </div>
+        <div style="margin-top: 10px;">
+          <label>Affiliate Code</label>
+          <span id="display-code" style="color: var(--gold); font-family: monospace; font-size: 14px;"></span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-referrals">--</div>
+          <div class="stat-label">Total Referrals</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-value" id="stat-earned">--</div>
+          <div class="stat-label">Total Earned</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-paid">--</div>
+          <div class="stat-label">Paid Out</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-pending">--</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+
+      <!-- Payout -->
+      <div class="payout-section" id="payout-section">
+        <div class="payout-info">
+          <div class="payout-amount" id="payout-amount">$0.00</div>
+          <div class="payout-label">Available for payout</div>
+        </div>
+        <button class="btn btn-gold" id="payout-btn" onclick="requestPayout()">Request Payout</button>
+      </div>
+      <div class="payout-msg" id="payout-msg"></div>
+
+      <!-- Referral history -->
+      <div class="table-card">
+        <h3>Referral History</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Date</th>
+                <th>Commission</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="referral-tbody">
+              <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <div class="logout-row">
+        <button class="logout-btn" onclick="logout()">Switch affiliate account</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    let currentCode = '';
+
+    // On load, check localStorage or URL param
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = params.get('code');
+      const savedCode = localStorage.getItem('waggle_affiliate_code');
+      const code = urlCode || savedCode;
+
+      if (code) {
+        document.getElementById('code-input').value = code;
+        loadDashboard();
+      }
+
+      // Enter key triggers login
+      document.getElementById('code-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loadDashboard();
+      });
+    })();
+
+    function fmt(cents) {
+      return '$' + (cents / 100).toFixed(2);
+    }
+
+    async function loadDashboard() {
+      const codeInput = document.getElementById('code-input');
+      const code = codeInput.value.trim().toLowerCase();
+      if (!code) {
+        showLoginError('Please enter your affiliate code.');
+        return;
+      }
+
+      const loginBtn = document.getElementById('login-btn');
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="spinner"></span>';
+      hideLoginError();
+
+      try {
+        const resp = await fetch(API_BASE + '/api/affiliates/stats?code=' + encodeURIComponent(code));
+        const data = await resp.json();
+
+        if (!data.ok) {
+          showLoginError(data.error || 'Affiliate code not found.');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'View Dashboard';
+          return;
+        }
+
+        currentCode = code;
+        localStorage.setItem('waggle_affiliate_code', code);
+
+        // Update URL without reload
+        const newUrl = window.location.pathname + '?code=' + encodeURIComponent(code);
+        window.history.replaceState({}, '', newUrl);
+
+        renderDashboard(data);
+      } catch (err) {
+        showLoginError('Network error. Please try again.');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'View Dashboard';
+      }
+    }
+
+    function renderDashboard(data) {
+      const aff = data.affiliate;
+      const referrals = data.referrals || [];
+
+      // Show dashboard, hide login
+      document.getElementById('login-card').classList.add('hidden');
+      document.getElementById('dashboard').classList.add('active');
+
+      // Referral link & code
+      document.getElementById('ref-link').value = data.link;
+      document.getElementById('display-code').textContent = aff.code;
+
+      // Stats
+      document.getElementById('stat-referrals').textContent = aff.total_referrals || 0;
+      document.getElementById('stat-earned').textContent = fmt(aff.total_payout_cents || 0);
+      document.getElementById('stat-paid').textContent = fmt(aff.paid_out_cents || 0);
+      document.getElementById('stat-pending').textContent = fmt(data.pending_cents || 0);
+
+      // Payout
+      const owed = data.owed_cents || 0;
+      document.getElementById('payout-amount').textContent = fmt(owed);
+      const payoutBtn = document.getElementById('payout-btn');
+      if (owed < 2000) {
+        payoutBtn.disabled = true;
+        payoutBtn.title = 'Minimum $20 required';
+      } else {
+        payoutBtn.disabled = false;
+        payoutBtn.title = '';
+      }
+
+      // Referral table
+      const tbody = document.getElementById('referral-tbody');
+      if (referrals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No referrals yet. Share your link to get started!</td></tr>';
+      } else {
+        tbody.innerHTML = referrals.map(function(r) {
+          const date = r.created_at ? new Date(r.created_at + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--';
+          const statusClass = r.status === 'paid' ? 'paid' : 'pending';
+          return '<tr>' +
+            '<td>' + escHtml(r.event_slug || '--') + '</td>' +
+            '<td>' + date + '</td>' +
+            '<td>' + fmt(r.commission_cents || 0) + '</td>' +
+            '<td><span class="status-badge ' + statusClass + '">' + escHtml(r.status || 'pending') + '</span></td>' +
+            '</tr>';
+        }).join('');
+      }
+    }
+
+    function copyLink() {
+      const input = document.getElementById('ref-link');
+      navigator.clipboard.writeText(input.value).then(function() {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+      }).catch(function() {
+        input.select();
+        document.execCommand('copy');
+        var btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+      });
+    }
+
+    async function requestPayout() {
+      const btn = document.getElementById('payout-btn');
+      const msgEl = document.getElementById('payout-msg');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+      msgEl.style.display = 'none';
+
+      try {
+        const resp = await fetch(API_BASE + '/api/affiliates/payout-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: currentCode })
+        });
+        const data = await resp.json();
+
+        if (data.ok) {
+          msgEl.className = 'payout-msg success';
+          msgEl.textContent = 'Payout request submitted! We will process it within 3-5 business days.';
+          msgEl.style.display = 'block';
+        } else {
+          msgEl.className = 'payout-msg error';
+          msgEl.textContent = data.error || 'Failed to submit payout request.';
+          msgEl.style.display = 'block';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        msgEl.className = 'payout-msg error';
+        msgEl.textContent = 'Network error. Please try again.';
+        msgEl.style.display = 'block';
+        btn.disabled = false;
+      }
+
+      btn.textContent = 'Request Payout';
+    }
+
+    function logout() {
+      localStorage.removeItem('waggle_affiliate_code');
+      currentCode = '';
+      window.history.replaceState({}, '', window.location.pathname);
+      document.getElementById('login-card').classList.remove('hidden');
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('code-input').value = '';
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = 'View Dashboard';
+      document.getElementById('payout-msg').style.display = 'none';
+    }
+
+    function showLoginError(msg) {
+      var el = document.getElementById('login-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideLoginError() {
+      document.getElementById('login-error').style.display = 'none';
+    }
+
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

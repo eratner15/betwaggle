@@ -1,0 +1,13 @@
+page,check,result,evidence,notes
+/,no_legacy_199,pass,"live / grep 2026-04-03 23:13Z",No $199 found
+/,event_cta_$32_event,pass,"live / lines 1547|1561|2468|2482|2504|2836",Event CTA uses canonical $32/event
+/,season_copy_$149_season_pass,fail,"live / lines 2487|2488|2504",Still uses $149/season
+/tour/,no_legacy_199,pass,"live /tour/ grep 2026-04-03 23:13Z",No $199 found
+/tour/,event_cta_$32_event,pass,"live /tour/ lines 131|210|272|304",Event CTA uses canonical $32/event
+/tour/,season_copy_$149_season_pass,fail,"live /tour/ line 295",Comparison row still uses $149/season
+/pricing/,no_legacy_199,pass,"live /pricing/ grep 2026-04-03 23:14Z",No $199 found
+/pricing/,event_cta_$32_event,pass,"live /pricing/ lines 720|754|775|912|922",Event CTA uses canonical $32/event
+/pricing/,season_copy_$149_season_pass,fail,"live /pricing/ lines 7|11|12|22|23|728|785|794|802|803|860|884|954|959|971|972|980",Live still uses $149/season everywhere
+/demo/,no_legacy_199,pass,"live /demo/ grep 2026-04-03 23:13Z",No $199 found
+/demo/,event_cta_$32_event,pass,"live /demo/ lines 448|451",CTA and support text use canonical $32/event
+/demo/,season_copy_$149_season_pass,pass,"live /demo/ grep 2026-04-03 23:13Z",No season pricing copy on page

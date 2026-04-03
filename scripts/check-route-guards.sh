@@ -29,13 +29,13 @@ assert_code() {
 
 echo "Checking route guards against ${BASE_URL}"
 
-# Public aliases must always be hidden.
-assert_code 404 /marketing
-assert_code 404 /marketing/
-assert_code 404 /gtm
-assert_code 404 /gtm/
-assert_code 404 /ads
-assert_code 404 /ads/
+# Public aliases should explicitly redirect to the private paths.
+assert_code 302 /marketing
+assert_code 302 /marketing/
+assert_code 302 /gtm
+assert_code 302 /gtm/
+assert_code 302 /ads
+assert_code 302 /ads/
 
 # Private aliases must return 404 without auth.
 assert_code 404 /marketing-private/

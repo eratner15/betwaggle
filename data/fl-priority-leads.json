@@ -498,5 +498,16 @@
     "contact_email": "events@emeraldbaygolfclub.com",
     "segment": "corporate_outing",
     "notes": "Robert Cupp design in the Panhandle. Popular for Destin-area corporate retreats and buddy trips."
+  },
+  {
+    "name": "Turnberry Isle Resort - Soffer Course",
+    "club": "Turnberry Isle Miami",
+    "city": "Aventura",
+    "state": "FL",
+    "website": "https://www.jwturnberry.com",
+    "contact_email": "solson@jwturnberry.com",
+    "pro_name": "Sean Olson",
+    "segment": "resort",
+    "notes": "Direct contact - Sean Olson. JW Marriott Turnberry Isle, two championship courses. Corporate events and member-guest tournaments."
   }
 ]

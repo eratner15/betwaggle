@@ -1,0 +1,19 @@
+page,purpose,should_be_public,http_status,redirect_target,pricing_status,link_status,notes,last_checked_utc
+/,Homepage conversion entry,yes,200,,incorrect,working,"Season card says '$149/season'",2026-04-03T23:15:40Z
+/create/,Event setup + payment handoff,yes,200,,correct,working,"Public flow references /api/create-checkout only",2026-04-03T23:15:40Z
+/tour/,Product tour/comparison,yes,200,,incorrect,working,"Price row still '$149/season' + '$32/event'",2026-04-03T23:15:40Z
+/pricing/,Canonical pricing page,yes,200,,incorrect,working,"Season CTA/card/fallback copy still '$149/season'",2026-04-03T23:15:40Z
+/demo/,Interactive demo page,yes,200,,correct,working,"CTA '$32/event' present; page up",2026-04-03T23:15:40Z
+/affiliates/,Canonical affiliate route,yes,200,,n/a,working,"Primary affiliate endpoint",2026-04-03T23:15:40Z
+/affiliate/,Legacy affiliate alias,yes (legacy),301,https://betwaggle.com/affiliates/,n/a,working,"Redirect now in place",2026-04-03T23:15:40Z
+/marketing/,Internal docs alias,no,404,,n/a,broken (expected),"Not publicly accessible",2026-04-03T23:15:40Z
+/gtm/,Internal docs alias,no,404,,n/a,broken (expected),"Not publicly accessible",2026-04-03T23:15:40Z
+/ads/,Internal docs alias,no,404,,n/a,broken (expected),"Not publicly accessible",2026-04-03T23:15:40Z
+/marketing-private/,Internal private route,no,200,,n/a,working (exposed),"Still publicly reachable",2026-04-03T23:15:40Z
+/gtm-private/,Internal private route,no,200,,n/a,working (exposed),"Still publicly reachable",2026-04-03T23:15:40Z
+/ads-private/,Internal private route,no,200,,n/a,working (exposed),"Still publicly reachable",2026-04-03T23:15:40Z
+/join/,Legacy conversion URL,yes (legacy),301,https://betwaggle.com/create/,n/a,working,"Now redirects instead of 404",2026-04-03T23:15:40Z
+/about/,Legacy marketing URL,yes (legacy),301,https://betwaggle.com/overview/,n/a,working,"Now redirects instead of 404",2026-04-03T23:15:40Z
+/games/stroke-play/,Legacy game URL,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:15:40Z
+/games/round-robin/,Legacy game URL,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:15:40Z
+/games/chapman/,Legacy game URL,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:15:40Z

@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /marketing/
+Disallow: /gtm/
+Disallow: /ads/
+Disallow: /affiliate/
 
 User-agent: GPTBot
 Allow: /

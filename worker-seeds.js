@@ -5,6 +5,43 @@ function randomPin() {
   return String(1000 + Math.floor(Math.random() * 9000));
 }
 
+function clampGolfScore(par, delta) {
+  return Math.max(2, par + delta);
+}
+
+function buildFullStrokeScores(seedScores, playerNames, pars) {
+  const full = {};
+  for (const [hole, scores] of Object.entries(seedScores || {})) {
+    full[Number(hole)] = { ...scores };
+  }
+  for (let h = 1; h <= pars.length; h++) {
+    if (full[h]) continue;
+    const par = pars[h - 1] || 4;
+    full[h] = {};
+    playerNames.forEach((name, i) => {
+      const pattern = (h * 3 + i * 2) % 7;
+      const delta = pattern <= 1 ? -1 : pattern >= 5 ? 1 : 0;
+      full[h][name] = clampGolfScore(par, delta);
+    });
+  }
+  return full;
+}
+
+function buildFullScrambleScores(seedHoleScores, teamCount, pars) {
+  const full = (seedHoleScores || []).map(row => row.slice());
+  for (let h = full.length + 1; h <= pars.length; h++) {
+    const par = pars[h - 1] || 4;
+    const row = [];
+    for (let i = 0; i < teamCount; i++) {
+      const pattern = (h + i * 3) % 8;
+      const delta = pattern <= 2 ? -1 : pattern >= 6 ? 1 : 0;
+      row.push(clampGolfScore(par, delta));
+    }
+    full.push(row);
+  }
+  return full;
+}
+
 async function seedDemoBuddies(env) {
   const KEY = 'config:demo-buddies';
   const existing = await env.MG_BOOK.get(KEY);
@@ -46,17 +83,18 @@ async function seedDemoBuddies(env) {
     11: { 'Jake Sullivan': 3, 'Ryan Costa': 4, 'Mike Torres': 2, 'Dan Keller': 3 },
     12: { 'Jake Sullivan': 4, 'Ryan Costa': 6, 'Mike Torres': 5, 'Dan Keller': 5 }
   };
+  const completeScores = buildFullStrokeScores(scores, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scores)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (12 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`demo-buddies:holes`, JSON.stringify(holes));
 
   // Compute basic game state for skins
   const gameState = { skins: { history: [], pot: 1 } };
-  for (let h = 1; h <= 12; h++) {
-    const hScores = scores[h];
+  for (let h = 1; h <= pars.length; h++) {
+    const hScores = completeScores[h];
     const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
     const minScore = Math.min(...entries.map(e => e.score));
     const winners = entries.filter(e => e.score === minScore);
@@ -121,18 +159,19 @@ async function seedDemoScramble(env) {
     /*8 p5*/ [4, 5, 4, 4, 5, 4, 5, 4],
     /*9 p4*/ [3, 4, 4, 3, 4, 4, 3, 4],
   ];
+  const completeHoleScores = buildFullScrambleScores(holeScores, teamNames.length, pars);
 
   const holes = {};
   const totals = {};
   teamNames.forEach(t => { totals[t] = 0; });
 
-  for (let h = 1; h <= 9; h++) {
+  for (let h = 1; h <= pars.length; h++) {
     const s = {};
     teamNames.forEach((t, i) => {
-      s[t] = holeScores[h - 1][i];
-      totals[t] += holeScores[h - 1][i];
+      s[t] = completeHoleScores[h - 1][i];
+      totals[t] += completeHoleScores[h - 1][i];
     });
-    holes[h] = { scores: s, timestamp: Date.now() - (9 - h) * 600000 };
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - h) * 600000 };
   }
   await env.MG_BOOK.put('demo-scramble:holes', JSON.stringify(holes));
 
@@ -143,9 +182,9 @@ async function seedDemoScramble(env) {
 
   // Build per-hole results for the scramble engine state
   const scrambleHoles = {};
-  for (let h = 1; h <= 9; h++) {
+  for (let h = 1; h <= pars.length; h++) {
     scrambleHoles[h] = {};
-    teamNames.forEach((t, i) => { scrambleHoles[h][t] = holeScores[h - 1][i]; });
+    teamNames.forEach((t, i) => { scrambleHoles[h][t] = completeHoleScores[h - 1][i]; });
   }
 
   const gameState = {
@@ -414,10 +453,11 @@ async function seedLegendsTrip(env) {
     13: { 'Tiger Woods': 4, 'Phil Mickelson': 4, 'Jordan Spieth': 3, 'Rickie Fowler': 4 },
     14: { 'Tiger Woods': 4, 'Phil Mickelson': 5, 'Jordan Spieth': 4, 'Rickie Fowler': 5 }
   };
+  const completeScores = buildFullStrokeScores(scoreData, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scoreData)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (14 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
@@ -425,8 +465,8 @@ async function seedLegendsTrip(env) {
   const skinsBet = 10;
   const numPlayers = 4;
   const gameState = { skins: { history: [], pot: 1 } };
-  for (let h = 1; h <= 14; h++) {
-    const hScores = scoreData[h];
+  for (let h = 1; h <= pars.length; h++) {
+    const hScores = completeScores[h];
     const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
     const minScore = Math.min(...entries.map(e => e.score));
     const winners = entries.filter(e => e.score === minScore);
@@ -598,18 +638,19 @@ async function seedAugustaScramble(env) {
     /*11 p4*/ [ 3,  4,  3,  4,  4,  4,  4,  3,  4,  4,  3,  4 ],
     /*12 p3*/ [ 2,  3,  3,  3,  2,  3,  3,  3,  3,  2,  3,  2 ],
   ];
+  const completeHoleScores = buildFullScrambleScores(holeScores, teamNames.length, pars);
 
   const holes = {};
   const totals = {};
   teamNames.forEach(t => { totals[t] = 0; });
 
-  for (let h = 1; h <= 12; h++) {
+  for (let h = 1; h <= pars.length; h++) {
     const s = {};
     teamNames.forEach((t, i) => {
-      s[t] = holeScores[h - 1][i];
-      totals[t] += holeScores[h - 1][i];
+      s[t] = completeHoleScores[h - 1][i];
+      totals[t] += completeHoleScores[h - 1][i];
     });
-    holes[h] = { scores: s, timestamp: Date.now() - (12 - h) * 600000 };
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - h) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
@@ -619,9 +660,9 @@ async function seedAugustaScramble(env) {
     .map((entry, i) => ({ ...entry, position: i + 1 }));
 
   const scrambleHoles = {};
-  for (let h = 1; h <= 12; h++) {
+  for (let h = 1; h <= pars.length; h++) {
     scrambleHoles[h] = {};
-    teamNames.forEach((t, i) => { scrambleHoles[h][t] = holeScores[h - 1][i]; });
+    teamNames.forEach((t, i) => { scrambleHoles[h][t] = completeHoleScores[h - 1][i]; });
   }
 
   const gameState = {
@@ -691,10 +732,11 @@ async function seedMastersMG(env) {
     9:  { 'Rory McIlroy': 4, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 4 },
     10: { 'Rory McIlroy': 3, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 4, 'Justin Thomas': 4, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 3 },
   };
+  const completeScores = buildFullStrokeScores(scoreData, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scoreData)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (10 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
@@ -702,8 +744,8 @@ async function seedMastersMG(env) {
   const skinsBet = 50;
   const numPlayers = 8;
   const gameState = { skins: { history: [], pot: 1 } };
-  for (let h = 1; h <= 10; h++) {
-    const hScores = scoreData[h];
+  for (let h = 1; h <= pars.length; h++) {
+    const hScores = completeScores[h];
     const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
     const minScore = Math.min(...entries.map(e => e.score));
     const winners = entries.filter(e => e.score === minScore);
@@ -838,16 +880,17 @@ async function seedDemoSkins(env) {
     7: { 'Mike Reynolds': 3, 'Danny Torres': 3, 'Chris Lane': 3, 'Jake Walsh': 2 },
     8: { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 4 }
   };
+  const completeScores = buildFullStrokeScores(scores, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scores)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (8 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
   const gameState = { skins: { history: [], pot: 1 } };
-  for (let h = 1; h <= 8; h++) {
-    const entries = players.map(p => ({ name: p.name, score: scores[h][p.name] }));
+  for (let h = 1; h <= pars.length; h++) {
+    const entries = players.map(p => ({ name: p.name, score: completeScores[h][p.name] }));
     const min = Math.min(...entries.map(e => e.score));
     const winners = entries.filter(e => e.score === min);
     if (winners.length === 1) {
@@ -902,10 +945,11 @@ async function seedDemoNassau(env) {
     6: { 'Mike Reynolds': 4, 'Danny Torres': 5, 'Chris Lane': 4, 'Jake Walsh': 4 },
     7: { 'Mike Reynolds': 5, 'Danny Torres': 4, 'Chris Lane': 4, 'Jake Walsh': 5 }
   };
+  const completeScores = buildFullStrokeScores(scores, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scores)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (7 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
@@ -956,10 +1000,11 @@ async function seedDemoWolf(env) {
     5: { 'Mike Reynolds': 4, 'Danny Torres': 3, 'Chris Lane': 5, 'Jake Walsh': 4 },
     6: { 'Mike Reynolds': 4, 'Danny Torres': 4, 'Chris Lane': 5, 'Jake Walsh': 3 }
   };
+  const completeScores = buildFullStrokeScores(scores, players.map(p => p.name), pars);
 
   const holes = {};
-  for (const [h, s] of Object.entries(scores)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (6 - parseInt(h)) * 600000 };
+  for (const [h, s] of Object.entries(completeScores)) {
+    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
   }
   await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 

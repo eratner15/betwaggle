@@ -1,0 +1,14 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,primary event CTAs,$32/event,$32/event,correct,"index.html:1554,1568,2475,2489,2843,2848",Event pricing copy is canonical
+/,season CTA,$149/season pass,$149/season pass,correct,"index.html:2504",Season wording canonical on homepage
+/tour/,event CTA set,$32/event,$32/event,correct,"tour/index.html:131,210,272,304",No $199 detected
+/tour/,pricing row season wording,$149/season,$149/season pass,incorrect,"tour/index.html:295",Wording drift remains in comparison table
+/pricing/,event CTAs,$32/event,$32/event,correct,"pricing/index.html:720,754,775,912,922",Event pricing copy is canonical
+/pricing/,season CTA + fallback text,$149/season pass,$149/season pass,correct,"pricing/index.html:794,971,972",Season wording canonical in visible CTA + JS fallback
+/demo/,primary conversion CTA,$32/event,$32/event,correct,"demo/index.html:448,451",Demo page pricing copy aligned
+/emails/,event CTA templates,$32/event,$32/event,correct,"emails/drip-03-feature-spotlight.html:57; emails/drip-04-urgency.html:39; emails/drip-05-last-chance.html:48",Drip CTA copy aligned
+/emails/,season wording in templates,$149/season,$149/season pass,incorrect,"emails/SEQUENCE.md:25; emails/affiliate-welcome.html:50; emails/outreach/fl-charity-sequence.html:38; emails/outreach/sc-nc-premium-sequence.html:11|37|81",Multiple templates still use non-canonical season wording
+/worker.js,pricing constants,14900 and 3200,14900 and 3200,correct,"worker.js:2315,5909",Amounts align with canonical economics
+/worker.js,season label string,Waggle Season Pass ($149/season),Waggle Season Pass ($149/season pass),incorrect,"worker.js:2319",Label wording non-canonical even though amount is correct
+/create/,per-player calculator,3200 basis ($32/event),3200 basis ($32/event),correct,"create/index.html:2214",No hardcoded $29 found in current path
+/site-wide legacy check,$199,$199 should not appear,correct,"repo rg scan 2026-04-03",No $199 found in main workspace source or core live pages

@@ -1,0 +1,16 @@
+path,purpose,should_be_public,http_status,pricing_status,links_status,notes,last_checked_utc
+/,Homepage conversion page,yes,200,correct,working,"$32/event + $149/season pass visible",2026-04-03T21:10:00Z
+/tour/,Product tour,yes,200,mixed,working,"shows $149/season wording",2026-04-03T21:10:00Z
+/pricing/,Pricing/checkout page,yes,200,incorrect,working,"season CTA shows $149/season",2026-04-03T21:10:00Z
+/demo/,Demo directory,yes,200,correct,working,"$32/event CTA",2026-04-03T21:10:00Z
+/pro/,Affiliate page,yes,200,mixed,working,"primary season pass copy + calculator uses $149/season",2026-04-03T21:10:00Z
+/affiliate/,Affiliate tool,yes (temporary),200,n/a,working,"duplicate with /affiliates/",2026-04-03T21:10:00Z
+/affiliates/,Affiliate landing,yes,200,n/a,working,"duplicate with /affiliate/",2026-04-03T21:10:00Z
+/marketing/,Internal route,no,404,n/a,blocked,"not publicly exposed",2026-04-03T21:10:00Z
+/gtm/,Internal route,no,404,n/a,blocked,"not publicly exposed",2026-04-03T21:10:00Z
+/ads/,Internal route,no,404,n/a,blocked,"not publicly exposed",2026-04-03T21:10:00Z
+/join/,Legacy alias,yes (redirect),301,n/a,working,"redirects to /register/",2026-04-03T21:10:00Z
+/about/,Legacy alias,yes (redirect),301,n/a,working,"redirects to /tour/",2026-04-03T21:10:00Z
+/games/stroke-play/,Legacy alias,yes (redirect),301,n/a,working,"redirects to /games/match-play/",2026-04-03T21:10:00Z
+/games/round-robin/,Legacy alias,yes (redirect),301,n/a,working,"redirects to /games/nassau/",2026-04-03T21:10:00Z
+/games/chapman/,Legacy alias,yes (redirect),301,n/a,working,"redirects to /games/best-ball/",2026-04-03T21:10:00Z

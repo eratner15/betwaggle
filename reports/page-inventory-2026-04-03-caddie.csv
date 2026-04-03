@@ -1,0 +1,28 @@
+page,purpose,should_be_public,live_http_status,pricing_status,link_status,notes
+/,Homepage marketing + primary CTA,yes,200,incorrect (season wording),working,Uses $32/event correctly but season copy is $149/season not $149/season pass
+/tour/,Product tour + comparison table,yes,200,incorrect (season wording),working,No $199 found; season row is $149/season
+/pricing/,Dedicated pricing + season CTA,yes,200,incorrect (season wording),working,Multiple $149/season strings in metadata and CTA text
+/demo/,Interactive demo index,yes,200,correct,working,CTA shows $32/event
+/create/,Event creation flow + checkout entry,yes,200,incorrect (season wording),working,Scramble badge/review card use $149/season
+/affiliates/,Affiliate landing page,yes,200,n/a,working,Canonical affiliate marketing page currently live
+/affiliate/,Legacy affiliate route (dashboard surface),no (should redirect to /affiliates/),200,n/a,duplicate route conflict,Should be canonicalized to avoid duplicate public route
+/overview/,Operations guide/how-to,yes,200,n/a,working,Public help content reachable
+/games/,Game guide hub,yes,200,n/a,working,Legacy deep links now 301 not 404
+/games/stroke-play/,Legacy game URL,yes (redirect),301,n/a,redirects,Redirects to /games/match-play/
+/games/round-robin/,Legacy game URL,yes (redirect),301,n/a,redirects,Redirects to /games/nassau/
+/games/chapman/,Legacy game URL,yes (redirect),301,n/a,redirects,Redirects to /games/best-ball/
+/join/,Legacy join entry,yes (redirect),301,n/a,redirects,Redirects to /register/
+/about/,Legacy about route,yes (redirect),301,n/a,redirects,Redirects to /tour/
+/register/,Registration flow,yes,200,n/a,working,Route healthy
+/demo-buddies/,Demo variant,yes,200,n/a,working,Route healthy (visual parity still QA-owned)
+/demo-scramble/,Demo variant,yes,200,n/a,working,Route healthy (visual parity still QA-owned)
+/my-events/,Organizer events dashboard,yes,200,n/a,working,CTA includes $32/event
+/partner/,Partner dashboard,yes,200,n/a,working,No direct pricing drift observed in scan
+/pro/,Pro/marketing surface,yes,200,n/a,working,No direct pricing strings in sampled scan
+/courses/,Course discovery/content,yes,200,n/a,working,Public route healthy
+/guides/,Guides hub,yes,200,n/a,working,Public route healthy
+/b/,Alternate marketing landing page,yes,200,needs separate pricing audit,working,Backlog bug exists for stale pricing risk (BET-316)
+/marketing-private/,Internal docs/tools,no,200,n/a,exposed,Publicly accessible internal page
+/gtm-private/,Internal GTM planning,no,200,n/a,exposed,Publicly accessible internal page
+/ads-private/,Internal ads planning,no,200,n/a,exposed,Publicly accessible internal page
+/inventory/,Internal inventory ops,no,200,n/a,exposed,Publicly accessible internal page

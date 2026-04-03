@@ -83,6 +83,7 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      min-height: 56px;
     }
     .nav-logo span {
       font-family: 'Playfair Display', serif;
@@ -99,10 +100,11 @@
       text-decoration: none;
       letter-spacing: .08em;
       text-transform: uppercase;
-      padding: 12px 4px 12px;
-      min-height: 44px;
+      padding: 12px 6px;
+      min-height: 56px;
       display: flex;
       align-items: center;
+      justify-content: center;
       transition: color .15s;
     }
     .nav-demo:hover { color: var(--gold); }
@@ -153,7 +155,7 @@
 
     .hero-kicker {
       display: inline-block;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -200,14 +202,17 @@
     }
 
     .btn-primary {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: var(--gold);
       color: var(--dark);
       font-size: 17px;
       font-weight: 700;
       letter-spacing: .04em;
       padding: 18px 40px;
-      border-radius: 6px;
+      min-height: 56px;
+      border-radius: 8px;
       text-decoration: none;
       transition: background .15s, transform .15s, box-shadow .2s;
       box-shadow: 0 4px 20px rgba(201,168,76,.35);
@@ -215,14 +220,17 @@
     .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
 
     .btn-secondary {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: rgba(255,255,255,.05);
       color: rgba(255,255,255,.8);
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: .03em;
       padding: 14px 32px;
-      border-radius: 6px;
+      min-height: 56px;
+      border-radius: 8px;
       text-decoration: none;
       border: 1.5px solid rgba(255,255,255,.3);
       transition: all .15s;
@@ -230,10 +238,22 @@
     .btn-secondary:hover { border-color: rgba(255,255,255,.6); color: #fff; background: rgba(255,255,255,.05); }
 
     .hero-fine {
-      font-size: 13px;
+      font-size: 12px;
       color: rgba(255,255,255,.45);
       letter-spacing: .04em;
       font-weight: 500;
+    }
+
+    .hero-utility-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 56px;
+      padding: 0 10px;
+      font-size: 12px;
+      color: var(--gold-dk);
+      text-decoration: none;
+      letter-spacing: .04em;
     }
 
     /* ──────────────────────────────────────────
@@ -269,7 +289,7 @@
       letter-spacing: .03em;
     }
     .mockup-event-meta {
-      font-size: 11px;
+      font-size: 12px;
       color: rgba(255,255,255,.4);
       margin-top: 3px;
       letter-spacing: .04em;
@@ -279,7 +299,7 @@
     .mockup-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
 
     .settle-label {
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 700;
       color: var(--gold);
       letter-spacing: .1em;
@@ -328,7 +348,7 @@
       padding: 9px;
       text-align: center;
       border-radius: 5px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .02em;
     }
@@ -338,7 +358,7 @@
     .mockup-footer {
       padding: 12px 18px 18px;
       text-align: center;
-      font-size: 10px;
+      font-size: 12px;
       color: rgba(255,255,255,.3);
       letter-spacing: .03em;
     }
@@ -457,7 +477,7 @@
       box-shadow: 0 4px 24px rgba(201,168,76,.15);
     }
     .compare-col-title {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -525,6 +545,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 16px 12px;
+      min-height: 56px;
       background: none;
       border: none;
       cursor: pointer;
@@ -555,7 +576,7 @@
       flex-shrink: 0;
     }
     .format-player-badge {
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: .05em;
       color: var(--gold-dk);
       font-weight: 600;
@@ -565,7 +586,7 @@
       white-space: nowrap;
     }
     .format-math-badge {
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: .05em;
       color: var(--red);
       font-weight: 700;
@@ -607,10 +628,13 @@
       margin-bottom: 10px;
     }
     .format-guide-link {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--forest);
       text-decoration: underline;
       text-underline-offset: 3px;
+      min-height: 56px;
+      display: inline-flex;
+      align-items: center;
       transition: color .12s;
     }
     .format-guide-link:hover {
@@ -673,7 +697,7 @@
     }
 
     .price-type {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -695,7 +719,7 @@
     }
 
     .price-period {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--muted);
       font-weight: 300;
       margin-bottom: 20px;
@@ -711,7 +735,7 @@
     }
 
     .price-detail {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-2);
       font-weight: 400;
       display: flex;
@@ -733,12 +757,16 @@
       color: #fff;
       text-align: center;
       padding: 14px;
-      min-height: 48px;
-      font-size: 13px;
+      min-height: 56px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: .04em;
       text-decoration: none;
       text-transform: uppercase;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: background .15s;
     }
     .price-cta:hover { background: var(--green-mid); }
@@ -791,13 +819,13 @@
       justify-content: center;
     }
     .final-links a {
-      font-size: 13px;
+      font-size: 14px;
       color: rgba(255,255,255,.4);
       text-decoration: none;
       letter-spacing: .04em;
       border-bottom: 1px solid rgba(255,255,255,.15);
-      padding: 12px 4px;
-      min-height: 44px;
+      padding: 12px 8px;
+      min-height: 56px;
       display: inline-flex;
       align-items: center;
       transition: color .12s;
@@ -817,8 +845,44 @@
       color: rgba(255,255,255,.25);
       letter-spacing: .04em;
     }
-    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 8px; min-height: 56px; display: inline-flex; align-items: center; }
     footer a:hover { color: rgba(255,255,255,.6); }
+
+    .faq-item > button {
+      min-height: 56px;
+      font-size: 15px;
+    }
+
+    .price-demo-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 56px;
+      font-size: 14px;
+      color: var(--gold-dk);
+      text-decoration: none;
+      margin-top: 8px;
+      padding: 0 10px;
+    }
+
+    .final-cta-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 56px;
+    }
+
+    .footer-link {
+      min-height: 56px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-2);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 0 10px;
+    }
 
     /* Entrance animations */
     @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -832,16 +896,16 @@
     @media (max-width: 600px) {
       nav { padding: 16px 16px; }
       .nav-links { gap: 10px; }
-      .nav-demo { font-size: 11px; padding: 10px 2px; }
+      .nav-demo { font-size: 12px; padding: 10px 4px; }
     }
 
     @media (max-width: 600px) {
       .hero { padding: 80px 16px 0; }
       .hero-inner { gap: 32px; }
       .hero-copy { padding-bottom: 8px; }
-      .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
+      .hero-kicker { font-size: 12px; letter-spacing: .1em; margin-bottom: 14px; }
       .hero-sub { font-size: 15px; margin-bottom: 20px; }
-      .hero-fine { font-size: 11px; }
+      .hero-fine { font-size: 12px; }
       .btn-primary { display: block; text-align: center; padding: 16px 24px; font-size: 16px; }
       .mockup { max-width: 300px; }
     }
@@ -861,7 +925,7 @@
       .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
       .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
       .proof-num { font-size: 28px; }
-      .proof-label { font-size: 11px; }
+      .proof-label { font-size: 12px; }
     }
 
     @media (max-width: 600px) {
@@ -897,7 +961,7 @@
     @media (max-width: 600px) {
       .formats-table td { padding: 12px 8px; font-size: 13px; }
       .format-name { font-size: 14px; }
-      .format-desc { font-size: 12px; line-height: 1.5; }
+      .format-desc { font-size: 14px; line-height: 1.5; }
     }
 
     @media (max-width: 600px) {
@@ -950,7 +1014,7 @@
     </a>
     <div class="nav-links">
       <a class="nav-demo" href="/courses/">Find a Course</a>
-      <a class="nav-demo" href="/create/">Get Started</a>
+      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32/event</a>
     </div>
   </nav>
 
@@ -963,11 +1027,11 @@
         <h1><em>"Who owes what?"</em><br>is the worst part of<br>every <span class="gold">golf trip.</span></h1>
         <p class="hero-sub">Nassau, skins, wolf, presses, carry-overs, side bets. You ran six games across 18 holes. Now someone has to do the math. Or you could just use Waggle.</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary" style="text-align:center">Never Do Golf Math Again</a>
-          <a href="/demo/" class="btn-secondary" style="text-align:center">See a Live Settlement</a>
-          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
+          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32/event</a>
+          <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
+          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; $32/event</span>
           <div style="margin-top:10px;text-align:center">
-            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em">Already playing? Find your match &rarr;</a>
+            <a href="/my-events/" class="hero-utility-link">Already playing? Find your match &rarr;</a>
           </div>
         </div>
       </div>
@@ -1155,7 +1219,7 @@
             <span class="price-detail">Perfect for a spontaneous money match</span>
             <span class="price-detail">No payment, no account required</span>
           </div>
-          <a href="/create/" class="price-cta">Start a Free Round</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
@@ -1169,13 +1233,13 @@
             <span class="price-detail">Shareable settlement card at round end</span>
             <span class="price-detail">Any phone, no app required</span>
           </div>
-          <a href="/create/" class="price-cta">Create Your Outing</a>
-          <a href="/demo-buddies/#dashboard" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none">See it live →</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
+          <a href="/demo-buddies/#dashboard" class="price-demo-link">Try the Demo</a>
         </div>
         <div class="price-card">
           <span class="price-type">Outing &middot; Scramble &middot; Member-Guest</span>
-          <div class="price-amount">$149</div>
-          <span class="price-period">per event, unlimited teams &amp; players</span>
+          <div class="price-amount">$149/season</div>
+          <span class="price-period">$149/season, unlimited teams &amp; players</span>
           <div class="price-details">
             <span class="price-detail">Team scramble with live leaderboard</span>
             <span class="price-detail">Closest to pin and longest drive tracking</span>
@@ -1184,8 +1248,8 @@
             <span class="price-detail">Flight assignments and pairing management</span>
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
-          <a href="/create/" class="price-cta">Create Your Outing</a>
-          <a href="/demo-scramble/#dashboard" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none">See it live →</a>
+          <a href="/pricing/" class="price-cta">Set Up Your Season &mdash; $149/season</a>
+          <a href="/demo-scramble/#dashboard" class="price-demo-link">Try the Demo</a>
         </div>
       </div>
 
@@ -1251,7 +1315,7 @@
   <!-- HOW IT WORKS — dark band -->
   <div style="background:var(--dark);padding:64px 20px">
     <div style="max-width:720px;margin:0 auto">
-      <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px">How It Works</span>
+      <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px">How It Works</span>
       <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,40px);color:#fff;line-height:1.15;margin-bottom:48px">Four steps.<br>Zero math at the bar.</h2>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
         <div style="text-align:center">
@@ -1515,11 +1579,11 @@
       <h2>The trip is in six weeks.<br>Kill the spreadsheet today.</h2>
       <p>One link. Every format. Automatic settlement. No arguments at the bar.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--dark);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Never Do Golf Math Again</a>
-        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">Free for casual rounds &middot; No credit card required</span>
+        <a href="/create/" class="final-cta-primary" style="background:var(--gold);color:var(--dark);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32/event</a>
+        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">$32/event &middot; No app download</span>
       </div>
       <div class="final-links">
-        <a href="/demo/">See it live first</a>
+        <a href="/demo/">Try the Demo</a>
         <a href="/overview/">Setup guide</a>
         <a href="/games/">Game rules</a>
       </div>
@@ -1544,7 +1608,7 @@
       document.getElementById('email-input').disabled = true;
       btn.textContent = 'Sent';
     } catch(err) {
-      btn.textContent = 'Get Started';
+      btn.textContent = 'Set Up Your Event — $32/event';
       btn.disabled = false;
     }
   }
@@ -1556,12 +1620,12 @@
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The end of golf math.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
-        <a href="/courses/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
-        <a href="/overview/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
+        <a href="/create/" class="footer-link">Set Up Your Event &mdash; $32/event</a>
+        <a href="/courses/" class="footer-link">Find a Course</a>
+        <a href="/overview/" class="footer-link">Setup Guide</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
-      <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>
+      <p style="font-size:12px;color:var(--muted);margin:0">betwaggle.com</p>
     </div>
   </footer>
 

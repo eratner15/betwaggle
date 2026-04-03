@@ -220,16 +220,18 @@ const shouldAdvance = Date.now() - mockMatch.lastHoleTime > scaledDuration;
 assert(shouldAdvance, 'Match should advance to next hole after scaled duration');
 
 // Test hole result simulation
+// Use a larger sample to reduce random variance and avoid flaky boundary failures.
+const holeOutcomeSamples = 500;
 let totalHoleResults = 0;
 let halvedHoles = 0;
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < holeOutcomeSamples; i++) {
   const random = Math.random();
   if (random < 0.425) totalHoleResults++; // Team A wins
   else if (random < 0.85) totalHoleResults++; // Team B wins
   else halvedHoles++; // Halved
 }
-const halvedPercentage = halvedHoles / 100;
-assert(halvedPercentage > 0.1 && halvedPercentage < 0.25, `Halved holes should be realistic (~15%, got ${(halvedPercentage * 100).toFixed(1)}%)`);
+const halvedPercentage = halvedHoles / holeOutcomeSamples;
+assert(halvedPercentage >= 0.1 && halvedPercentage <= 0.25, `Halved holes should be realistic (~15%, got ${(halvedPercentage * 100).toFixed(1)}%)`);
 
 console.log(`  • Match progression timing: ✓ (${(scaledDuration/1000).toFixed(0)}s scaled hole duration)`);
 console.log(`  • Hole outcomes: ${halvedPercentage * 100}% halved holes`);

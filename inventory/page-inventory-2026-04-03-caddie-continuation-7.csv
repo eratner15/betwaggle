@@ -1,0 +1,45 @@
+route,source_file,purpose,should_be_public,live_status_code,final_url,pricing_status,link_status,notes
+/,index.html,Homepage,yes,200,https://betwaggle.com/,reviewed,working,
+/about/,(redirect route),Public page,yes,200,https://betwaggle.com/tour/,n/a,working,Legacy route now redirects to active page
+/admin/outreach/,admin/outreach/index.html,Public page,yes,200,https://betwaggle.com/admin/outreach/,n/a,working,
+/ads-private/,ads-private/index.html,Internal ads docs (should be private),no,200,https://betwaggle.com/ads-private/,n/a,working,Internal page publicly reachable (access control gap)
+/affiliate/,affiliate/index.html,Affiliate program,yes,200,https://betwaggle.com/affiliate/,n/a,working,
+/affiliate/dashboard.html,affiliate/dashboard.html,Affiliate program,yes,200,https://betwaggle.com/affiliate/dashboard,n/a,working,
+/affiliates/,affiliates/index.html,Affiliate landing (duplicate path),yes,200,https://betwaggle.com/affiliates/,n/a,working,Duplicate surface with /affiliate/
+/affiliates/dashboard.html,affiliates/dashboard.html,Affiliate landing (duplicate path),yes,200,https://betwaggle.com/affiliate/dashboard,n/a,working,
+/b/,b/index.html,Brand/landing variant,yes,200,https://betwaggle.com/b/,n/a,working,
+/courses/,courses/index.html,Public page,yes,200,https://betwaggle.com/courses/,n/a,working,
+/create/,create/index.html,Event setup flow,yes,200,https://betwaggle.com/create/,reviewed,working,
+/demo/,demo/index.html,Interactive demo launcher,yes,200,https://betwaggle.com/demo/,reviewed,working,
+/games/,games/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/,n/a,working,
+/games/banker/,games/banker/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/banker/,n/a,working,
+/games/best-ball/,games/best-ball/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/best-ball/,n/a,working,
+/games/bingo-bango-bongo/,games/bingo-bango-bongo/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/bingo-bango-bongo/,n/a,working,
+/games/bloodsome/,games/bloodsome/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/bloodsome/,n/a,working,
+/games/chapman/,(legacy redirect route),Game explainer/content,yes,200,https://betwaggle.com/games/best-ball/,n/a,working,Legacy route now redirects to active page
+/games/match-play/,games/match-play/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/match-play/,n/a,working,
+/games/nassau/,games/nassau/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/nassau/,n/a,working,
+/games/round-robin/,(legacy redirect route),Game explainer/content,yes,200,https://betwaggle.com/games/nassau/,n/a,working,Legacy route now redirects to active page
+/games/scramble/,games/scramble/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/scramble/,n/a,working,
+/games/skins/,games/skins/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/skins/,n/a,working,
+/games/stableford/,games/stableford/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/stableford/,n/a,working,
+/games/stroke-play/,(legacy redirect route),Game explainer/content,yes,200,https://betwaggle.com/games/match-play/,n/a,working,Legacy route now redirects to active page
+/games/vegas/,games/vegas/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/vegas/,n/a,working,
+/games/wolf/,games/wolf/index.html,Game explainer/content,yes,200,https://betwaggle.com/games/wolf/,n/a,working,
+/gtm-private/,gtm-private/index.html,Internal GTM docs (should be private),no,200,https://betwaggle.com/gtm-private/,n/a,working,Internal page publicly reachable (access control gap)
+/guides/,guides/index.html,SEO guide/content,yes,200,https://betwaggle.com/guides/,n/a,working,
+/guides/best-golf-betting-games-for-a-foursome/,guides/best-golf-betting-games-for-a-foursome/index.html,SEO guide/content,yes,200,https://betwaggle.com/guides/best-golf-betting-games-for-a-foursome/,n/a,working,
+/guides/golf-trip-betting-formats/,guides/golf-trip-betting-formats/index.html,SEO guide/content,yes,200,https://betwaggle.com/guides/golf-trip-betting-formats/,n/a,working,
+/guides/how-to-run-a-charity-golf-scramble/,guides/how-to-run-a-charity-golf-scramble/index.html,SEO guide/content,yes,200,https://betwaggle.com/guides/how-to-run-a-charity-golf-scramble/,n/a,working,
+/guides/how-to-settle-golf-bets/,guides/how-to-settle-golf-bets/index.html,SEO guide/content,yes,200,https://betwaggle.com/guides/how-to-settle-golf-bets/,n/a,working,
+/join/,(redirect route),Public page,yes,200,https://betwaggle.com/register/,n/a,working,Legacy route now redirects to active page
+/marketing-private/,marketing-private/index.html,Internal marketing docs (should be private),no,200,https://betwaggle.com/marketing-private/,n/a,working,Internal page publicly reachable (access control gap)
+/my-events/,my-events/index.html,Public page,yes,200,https://betwaggle.com/my-events/,n/a,working,
+/overview/,overview/index.html,Public page,yes,200,https://betwaggle.com/overview/,n/a,working,
+/partner/,partner/index.html,Public page,yes,200,https://betwaggle.com/partner/,n/a,working,
+/pricing/,pricing/index.html,Pricing page,yes,200,https://betwaggle.com/pricing/,reviewed,working,
+/pro/,pro/index.html,Pro/partner page,yes,200,https://betwaggle.com/pro/,n/a,working,
+/register/,register/index.html,Public page,yes,200,https://betwaggle.com/register/,n/a,working,
+/share/,share/index.html,Public page,yes,200,https://betwaggle.com/share/,n/a,working,
+/tour/,tour/index.html,Product tour,yes,200,https://betwaggle.com/tour/,reviewed,working,
+/walkthrough/,walkthrough/index.html,Product walkthrough,yes,200,https://betwaggle.com/walkthrough/,n/a,working,

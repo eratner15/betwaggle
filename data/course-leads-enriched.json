@@ -1,0 +1,72 @@
+[
+  {
+    "name": "TPC Sawgrass (Stadium)",
+    "club": "TPC Sawgrass",
+    "city": "Ponte Vedra Beach",
+    "state": "FL",
+    "website": "https://www.tpcsawgrassgolfclub.com",
+    "contact_email": "golf@tpcsawgrassgolfclub.com",
+    "segment": "public",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "Colonial Country Club",
+    "club": "Colonial Country Club",
+    "city": "Fort Worth",
+    "state": "TX",
+    "website": "https://www.colonialcc.com",
+    "contact_email": "membership@colonialcc.com",
+    "segment": "private",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "TPC Scottsdale (Stadium Course)",
+    "club": "TPC Scottsdale",
+    "city": "Scottsdale",
+    "state": "AZ",
+    "website": "https://www.tpcscottsdalegolfclub.com",
+    "contact_email": "golf@tpcscottsdalegolfclub.com",
+    "segment": "public",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "Pebble Beach Golf Links",
+    "club": "Pebble Beach Golf Links",
+    "city": "Pebble Beach",
+    "state": "CA",
+    "website": "https://www.pebblebeachgolfclub.com",
+    "contact_email": "golf@pebblebeachgolfclub.com",
+    "segment": "public",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "Harbour Town Golf Links",
+    "club": "Harbour Town Golf Links",
+    "city": "Hilton Head Island",
+    "state": "SC",
+    "website": "https://www.harbourtowngolfclub.com",
+    "contact_email": "golf@harbourtowngolfclub.com",
+    "segment": "public",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "Pinehurst Resort & Country Club (No. 2)",
+    "club": "Pinehurst Resort & Country Club",
+    "city": "Pinehurst",
+    "state": "NC",
+    "website": "https://www.pinehurstcc.com",
+    "contact_email": "membership@pinehurstcc.com",
+    "segment": "private",
+    "pro_name_guess": "Head Professional"
+  },
+  {
+    "name": "Augusta National Golf Club",
+    "club": "Augusta National Golf Club",
+    "city": "Augusta",
+    "state": "GA",
+    "website": "https://www.augustanationalgolfclub.com",
+    "contact_email": "golf@augustanationalgolfclub.com",
+    "segment": "public",
+    "pro_name_guess": "Head Professional"
+  }
+]

@@ -700,7 +700,7 @@
         <button type="submit" class="form-submit" id="submitBtn">Apply Now</button>
       </form>
 
-      <div class="form-result" id="formResult"></div>
+      <div class="form-result" id="formResult" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -749,16 +749,25 @@
 
         if (data.ok) {
           result.className = 'form-result success';
-          result.innerHTML = 'You are in. Your affiliate link is ready:' +
-            '<span class="affiliate-link" onclick="copyLink(this)" title="Click to copy">' + data.link + '</span>' +
-            '<span style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px;display:block;">Click the link to copy it to your clipboard.</span>';
+          result.style.display = 'block';
+          if (data.link) {
+            result.innerHTML = 'You are in. Your affiliate link is ready:' +
+              '<span class="affiliate-link" onclick="copyLink(this)" title="Click to copy">' + data.link + '</span>' +
+              '<span style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px;display:block;">Click the link to copy it to your clipboard.</span>';
+          } else if (data.existing) {
+            result.innerHTML = 'You are already registered. We found your existing affiliate account and will resend your link to your email inbox.';
+          } else {
+            result.innerHTML = 'You are in. Your affiliate account has been created successfully.';
+          }
           document.getElementById('affiliateForm').style.display = 'none';
         } else {
           result.className = 'form-result error';
+          result.style.display = 'block';
           result.textContent = data.error || 'Something went wrong. Please try again.';
         }
       } catch (err) {
         result.className = 'form-result error';
+        result.style.display = 'block';
         result.textContent = 'Network error. Please try again.';
       }
 

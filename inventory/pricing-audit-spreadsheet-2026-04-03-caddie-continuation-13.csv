@@ -1,0 +1,12 @@
+page,element,current_price,correct_price,status,source_evidence,notes
+/,Season card amount and period,"$149/season","$149/season pass",incorrect,"live / lines 2471-2472",Amount correct but wording missing "pass"
+/tour/,Pricing comparison row,"$149/season and $32/event","$149/season pass and $32/event",incorrect,"live /tour/ line 295",Legacy $199 issue not present; wording still non-canonical
+/pricing/,Hero/meta/plan table/season CTA,"$149/season and $32/event","$149/season pass and $32/event",incorrect,"pricing/index.html lines 7,11,12,22,23,724,781,790,798,856,880,950,955,967,968,976",Most visible canonical drift in current source and live page
+/demo/,Primary CTA,"$32/event","$32/event",correct,"live /demo/ line 448",No season price shown on demo CTA
+core CTA buttons,Event setup CTAs on / /tour/ /pricing/ /demo,"Set Up Your Event — $32/event","Set Up Your Event — $32/event",correct,"live checks on /,/tour/,/pricing/,/demo/",Event CTA copy is consistent
+season CTA button,/pricing season CTA,"Set Up Your Season — $149/season","Set Up Your Season — $149/season pass",incorrect,"live /pricing lines 790,967,968",Season CTA is currently non-canonical
+email templates,emails/*.html and emails/outreach/*,"$32/event and/or $149/season pass","$32/event and/or $149/season pass",correct,"rg -P emails for '$149/season(?! pass)' returned no matches",Pricing copy appears normalized in current email templates
+create/index.html,Plan badge and pricing tile,"$149/season","$149/season pass",incorrect,"create/index.html lines 494,2642",Create flow still uses old season wording
+worker.js labels/prompts,WAGGLE_LABELS and ad prompt strings,"$149/season","$149/season pass",incorrect,"worker.js lines 2184,2187,4625,4630",Backend copy surfaces still drift from canonical wording
+JSON/JS hardcoded amounts,Checkout and pricing constants,"3200 and 14900 cents","$32/event and $149/season pass",correct,"worker.js line 2183 and CHECKOUT_TIERS",Numeric amounts are correct even where wording is not
+legacy $199 check,All audited sources and live pages,"No $199 found","No $199 expected",correct,"rg scan + live checks on /,/tour/,/pricing/,/demo/",Known $199 inconsistency did not reproduce in this run

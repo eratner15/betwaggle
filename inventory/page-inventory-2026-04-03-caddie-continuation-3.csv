@@ -1,0 +1,15 @@
+url,purpose,public_vs_internal,http_status,redirect_location,link_status,pricing_status
+https://betwaggle.com/,Homepage,public,200,,working,correct
+https://betwaggle.com/tour/,Tour walkthrough,public,200,,working,correct
+https://betwaggle.com/pricing/,Pricing page,public,200,,working,correct
+https://betwaggle.com/demo/,Interactive demo,public,200,,working,correct
+https://betwaggle.com/affiliate/,Affiliate alias (duplicate route),public,200,,working,duplicate_noncanonical
+https://betwaggle.com/affiliates/,Affiliate program canonical,public,200,,working,correct_or_n/a
+https://betwaggle.com/marketing/,Internal docs alias,internal_should_be_private,404,,not_exposed,correct_or_n/a
+https://betwaggle.com/gtm/,Internal GTM alias,internal_should_be_private,404,,not_exposed,correct_or_n/a
+https://betwaggle.com/ads/,Internal ads alias,internal_should_be_private,404,,not_exposed,correct_or_n/a
+https://betwaggle.com/join/,Legacy join route,public,301,https://betwaggle.com/register/,redirect,correct_or_n/a
+https://betwaggle.com/about/,Legacy about route,public,301,https://betwaggle.com/tour/,redirect,correct_or_n/a
+https://betwaggle.com/games/stroke-play/,Legacy game route,public,301,https://betwaggle.com/games/match-play/,redirect,correct_or_n/a
+https://betwaggle.com/games/round-robin/,Legacy game route,public,301,https://betwaggle.com/games/nassau/,redirect,correct_or_n/a
+https://betwaggle.com/games/chapman/,Legacy game route,public,301,https://betwaggle.com/games/best-ball/,redirect,correct_or_n/a

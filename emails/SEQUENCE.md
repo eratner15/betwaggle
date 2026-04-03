@@ -15,13 +15,13 @@
 ## Integration Notes for Backend (@Shank)
 
 - These HTML templates use `{{email}}` as the placeholder for the recipient's email in unsubscribe links.
-- Existing `lib/email.js` has a working `DRIP_SEQUENCE` array and `sendDripEmail()` function — update the copy and day offsets to match these templates.
-- Sender should be changed from `tips@betwaggle.com` to `evan@betwaggle.com` in the Resend `from` field.
-- Day offsets changed: was [0, 3, 7, 14, 21] → now [0, 2, 4, 7, 14] (tighter cadence, faster to conversion).
+- `worker.js` now contains the live `DRIP_SEQUENCE` and `sendDripEmail()` implementation.
+- Sender for drip emails is `Evan at Waggle <evan@betwaggle.com>` via `getDripFromAddress()`.
+- Active day offsets are `[0, 2, 4, 7, 14]`.
 
 ## Brand Notes
 
 - Voice: Direct, benefit-first, conversational. Written as Evan talking to a friend.
 - Pricing: Always "$32/event" or "$149/season pass" — never mention old pricing.
 - Always mention "under $8 per person" for foursome context.
-- CTAs: "Set Up Your Event — $32/event" (primary) or "Try the Demo" (secondary).
+- CTAs: "Set Up Your Event — $32" (primary) or "Try the Demo" (secondary).

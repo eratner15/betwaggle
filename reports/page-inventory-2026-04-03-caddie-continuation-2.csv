@@ -1,0 +1,48 @@
+page,purpose,should_be_public,http_status,pricing_status,link_status,notes,checked_at
+/,homepage,yes,200,correct,working,"",2026-04-03T15:08:53Z
+/about/,public page,yes,301,n/a,redirect,"legacy path now redirects",2026-04-03T15:08:53Z
+/ads-private/,internal docs mirror,no,200,n/a,working,"publicly accessible internal path",2026-04-03T15:08:53Z
+/affiliate/,affiliate landing,yes,200,n/a,working,"duplicate route with /affiliates/",2026-04-03T15:08:53Z
+/affiliates/,affiliate landing,yes,200,n/a,working,"duplicate route with /affiliate/",2026-04-03T15:08:53Z
+/app/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/b/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/courses/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/create/,event create flow,yes,200,correct,working,"",2026-04-03T15:08:53Z
+/demo/,demo launcher,yes,200,correct,working,"",2026-04-03T15:08:53Z
+/games/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/banker/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/best-ball/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/bingo-bango-bongo/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/bloodsome/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/chapman/,game format page,yes,301,n/a,redirect,"legacy path now redirects",2026-04-03T15:08:53Z
+/games/match-play/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/nassau/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/round-robin/,game format page,yes,301,n/a,redirect,"legacy path now redirects",2026-04-03T15:08:53Z
+/games/scramble/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/skins/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/stableford/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/stroke-play/,game format page,yes,301,n/a,redirect,"legacy path now redirects",2026-04-03T15:08:53Z
+/games/vegas/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/games/wolf/,game format page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/gtm-private/,internal docs mirror,no,200,n/a,working,"publicly accessible internal path",2026-04-03T15:08:53Z
+/guides/,guide content page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/guides/best-golf-betting-games-for-a-foursome/,guide content page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/guides/golf-trip-betting-formats/,guide content page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/guides/how-to-run-a-charity-golf-scramble/,guide content page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/guides/how-to-settle-golf-bets/,guide content page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/inventory/,internal reporting index,no,200,n/a,working,"",2026-04-03T15:08:53Z
+/join/,public page,yes,301,n/a,redirect,"legacy path now redirects",2026-04-03T15:08:53Z
+/marketing-private/,internal docs mirror,no,200,n/a,working,"publicly accessible internal path",2026-04-03T15:08:53Z
+/mclemore/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/my-events/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/overview/,ops guide,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/partner/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/pricing/,pricing page,yes,200,correct,working,"",2026-04-03T15:08:53Z
+/pro/,public page,yes,200,incorrect,working,"live copy shows $149 per scramble event (should be $149/season pass)",2026-04-03T15:08:53Z
+/register/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/share/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/tour/,product tour,yes,200,correct,working,"",2026-04-03T15:08:53Z
+/walkthrough/,public page,yes,200,n/a,working,"",2026-04-03T15:08:53Z
+/marketing/,legacy internal alias,no,404,n/a,broken,"currently 404 (preferred over exposed internal docs)",2026-04-03T15:08:53Z
+/gtm/,legacy internal alias,no,404,n/a,broken,"currently 404 (preferred over exposed internal docs)",2026-04-03T15:08:53Z
+/ads/,legacy internal alias,no,404,n/a,broken,"currently 404 (preferred over exposed internal docs)",2026-04-03T15:08:54Z

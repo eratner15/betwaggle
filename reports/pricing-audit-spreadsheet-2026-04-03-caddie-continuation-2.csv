@@ -1,0 +1,15 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,Hero + pricing cards + footer CTAs,"$32/event and $149/season pass","$32/event and $149/season pass",correct,"live / grep lines 1504,1516,2444,2799",Canonical pricing present
+/tour/,Comparison table + CTAs,"$32/event and $149/season pass","$32/event and $149/season pass",correct,"live /tour/ grep lines 131,210,272,295",Known $199 drift not reproduced
+/pricing/,Hero + plan cards + checkout CTA,"$32/event and $149/season pass","$32/event and $149/season pass",correct,"live /pricing/ grep lines 715,730,772,781",No $9.99 or $199 found
+/demo/,Primary CTA + support copy,"$32/event","$32/event",correct,"live /demo/ grep lines 448,451",No season pricing claim on demo page
+sitewide core pages,Legacy premium price check,"No $199 found","No $199 anywhere",correct,"rg '$199' in core files",Historical mismatch appears resolved
+homepage CTA buttons,All pricing CTAs,"Set Up Your Event — $32/event; Set Up Your Season — $149/season pass","same",correct,"index.html:2798,2799,2834,2836",CTA consistency confirmed
+/tour CTA buttons,All pricing CTAs,"Set Up Your Event — $32/event","same",correct,"tour/index.html:131,210,272,304",CTA consistency confirmed
+/pricing CTA buttons,All pricing CTAs,"Set Up Your Event — $32/event; Set Up Your Season — $149/season pass","same",correct,"pricing/index.html:707,741,762,781,899,909,910",CTA consistency confirmed
+emails/drip-*.html,Nurture pricing language,"$32/event present; no legacy conflicts","$32/event and/or $149/season pass",correct,"emails/drip-01..05 scans",Nurture still operationally blocked by send pipeline not content
+emails/outreach/*.html,Sales pricing language,"$32/event and $149/season pass","$32/event and $149/season pass",correct,"ca-golf, fl-charity, sc-nc, follow-up",Pricing copy aligned
+emails/affiliate-welcome.html,Affiliate payout examples,"$32/event and $149/season pass references","$32/event and $149/season pass",correct,"emails/affiliate-welcome.html:49-50",Values align with canonical pricing
+create/index.html,Create flow plan badges + summary,"$32/event and $149/season pass","$32/event and $149/season pass",correct,"create/index.html:494,2374,2642",No $29 drift in this file snapshot
+worker.js,Checkout labels and ad prompt wording,"$149/season in labels/prompts","$149/season pass",incorrect,"worker.js:2159,2162,4471,4476",Backend text normalization still needed for full consistency
+any JSON/JS hardcodes,Price constants,"amount=3200/14900 with labels","$32/event and $149/season pass",mixed,"worker.js PRICING matrix","Amounts are correct; some label strings are not canonical

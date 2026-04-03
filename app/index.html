@@ -179,9 +179,918 @@
   </script>
 
   <script type="module" src="/app/js/app.js"></script>
+  <script type="module">
+    import { initDemoSimulation, initWaggleUxPolish } from '/app/js/demo-simulation.js';
+
+    function initUxEnhancements() {
+      initWaggleUxPolish();
+      initDemoSimulation();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initUxEnhancements, { once: true });
+    } else {
+      initUxEnhancements();
+    }
+  </script>
+  <script>
+    (function() {
+      var reservedRoots = {
+        app: true, create: true, ads: true, marketing: true, courses: true, overview: true,
+        tour: true, gtm: true, api: true, join: true, affiliate: true, affiliates: true,
+        health: true, go: true, demo: true, pricing: true, pro: true, walkthrough: true
+      };
+
+      function getEventSlug() {
+        try {
+          var m = (location.pathname || '').match(/^\/([a-z0-9_-]+)(?:\/|$)/i);
+          if (!m) return '';
+          var slug = (m[1] || '').toLowerCase();
+          return reservedRoots[slug] ? '' : slug;
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function currentHoleFromDom() {
+        try {
+          var txt = document.body && document.body.textContent ? document.body.textContent : '';
+          var m = txt.match(/Hole\s+(\d+)\s+of\s+(\d+)/i);
+          if (m) return parseInt(m[1], 10) || 1;
+          return 1;
+        } catch (_) {
+          return 1;
+        }
+      }
+
+      function holeCountFromDom() {
+        try {
+          var txt = document.body && document.body.textContent ? document.body.textContent : '';
+          var m = txt.match(/Hole\s+(\d+)\s+of\s+(\d+)/i);
+          if (m) return parseInt(m[2], 10) || 18;
+          return 18;
+        } catch (_) {
+          return 18;
+        }
+      }
+
+      function holesPlayedFromDom() {
+        try {
+          var txt = document.body && document.body.textContent ? document.body.textContent : '';
+          var m = txt.match(/(\d+)\s+holes?\s+played/i);
+          if (m) return parseInt(m[1], 10) || 0;
+          return 0;
+        } catch (_) {
+          return 0;
+        }
+      }
+
+      function completedAndRemainingFromDom() {
+        try {
+          var txt = document.body && document.body.textContent ? document.body.textContent : '';
+          var m = txt.match(/(\d+)\s+complete\s*[•·]\s*(\d+)\s+left/i);
+          if (m) {
+            return {
+              completed: Math.max(0, parseInt(m[1], 10) || 0),
+              remaining: Math.max(0, parseInt(m[2], 10) || 0)
+            };
+          }
+          var hole = currentHoleFromDom();
+          var holes = holeCountFromDom();
+          var completed = Math.max(0, Math.min(holes, hole - 1));
+          return { completed: completed, remaining: Math.max(0, holes - completed) };
+        } catch (_) {
+          return { completed: 0, remaining: 0 };
+        }
+      }
+
+      function isSprint3Enabled() {
+        try {
+          var qp = new URLSearchParams(location.search || '');
+          var qpFlag = String(qp.get('ux_sprint3_gameflow') || '').trim();
+          if (qpFlag === '1' || qpFlag === 'true') return true;
+          if (qpFlag === '0' || qpFlag === 'false') return false;
+          var raw = localStorage.getItem('mg_state');
+          if (!raw) return false;
+          var parsed = JSON.parse(raw);
+          var cfg = parsed && parsed._config ? parsed._config : {};
+          var ff = cfg.featureFlags || {};
+          if (typeof ff.ux_sprint3_gameflow === 'boolean') return ff.ux_sprint3_gameflow;
+          if (typeof cfg.ux_sprint3_gameflow === 'boolean') return cfg.ux_sprint3_gameflow;
+          return false;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function getDeviceType() {
+        var w = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        return w <= 768 ? 'mobile' : 'desktop';
+      }
+
+      function postUxEvent(eventName, props) {
+        if (!isSprint3Enabled()) return;
+        var slug = getEventSlug();
+        if (!slug || !eventName) return;
+        var payload = JSON.stringify({
+          event: eventName,
+          slug: slug,
+          props: props || {},
+          timestamp: Date.now()
+        });
+        try {
+          if (navigator.sendBeacon) {
+            var blob = new Blob([payload], { type: 'application/json' });
+            navigator.sendBeacon('/api/ux-telemetry', blob);
+            return;
+          }
+        } catch (_) {}
+        fetch('/api/ux-telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true
+        }).catch(function() {});
+      }
+
+      function countFilledPlayers() {
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-inline-score-input="1"]'));
+        var filled = 0;
+        for (var i = 0; i < inputs.length; i++) {
+          var n = parseInt(inputs[i].value, 10);
+          if (!isNaN(n) && n >= 1 && n <= 15) filled++;
+        }
+        return { filled: filled, total: inputs.length };
+      }
+
+      function validateInlineInputs() {
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-inline-score-input="1"]'));
+        var firstInvalid = null;
+        for (var i = 0; i < inputs.length; i++) {
+          var raw = String(inputs[i].value || '').trim();
+          var isInteger = /^\d+$/.test(raw);
+          var n = isInteger ? Number(raw) : NaN;
+          var valid = raw !== '' && isInteger && !isNaN(n) && n >= 1 && n <= 15;
+          inputs[i].setAttribute('aria-invalid', valid ? 'false' : 'true');
+          if (!valid && !firstInvalid) firstInvalid = inputs[i];
+        }
+        return { valid: !firstInvalid, firstInvalid: firstInvalid };
+      }
+
+      function findSaveHoleButton() {
+        var buttons = Array.prototype.slice.call(document.querySelectorAll('button'));
+        for (var i = 0; i < buttons.length; i++) {
+          var t = (buttons[i].textContent || '').trim();
+          if (/^Save Hole\s+\d+/i.test(t)) return buttons[i];
+        }
+        return null;
+      }
+
+      function ensureInlineError(input, show) {
+        if (!input || !input.parentElement) return;
+        var existing = input.parentElement.querySelector('.mg-s3-inline-error');
+        if (!show) {
+          if (existing) existing.remove();
+          return;
+        }
+        if (!existing) {
+          existing = document.createElement('div');
+          existing.className = 'mg-s3-inline-error';
+          existing.textContent = 'Enter 1-15';
+          input.parentElement.appendChild(existing);
+        }
+      }
+
+      function getInputPlayerLabel(input, idx) {
+        if (!input) return 'P' + (idx + 1);
+        var raw = String(
+          input.getAttribute('data-player-short-name') ||
+          input.getAttribute('data-player-name') ||
+          input.getAttribute('name') ||
+          input.getAttribute('aria-label') ||
+          input.getAttribute('placeholder') ||
+          ''
+        ).trim();
+        if (!raw) return 'P' + (idx + 1);
+        var words = raw.replace(/score|strokes?|player|input/ig, '').trim().split(/\s+/).filter(Boolean);
+        if (!words.length) return 'P' + (idx + 1);
+        if (words.length === 1) return words[0].slice(0, 8);
+        return (words[0][0] || '').toUpperCase() + (words[words.length - 1][0] || '').toUpperCase();
+      }
+
+      function ensureProgressStrip(inputs, allValid) {
+        if (!inputs || !inputs.length) return;
+        var first = inputs[0];
+        var host = first.closest('[data-inline-score-row="1"], .premium-scorecard, .scorecard, .card, .content, .tab-content') || first.parentElement;
+        if (!host) return;
+        var strip = host.querySelector('[data-mg-s3-progress-strip="1"]');
+        if (!strip) {
+          strip = document.createElement('div');
+          strip.setAttribute('data-mg-s3-progress-strip', '1');
+          strip.className = 'mg-s3-progress-strip';
+          host.insertBefore(strip, host.firstChild);
+        }
+        var hole = currentHoleFromDom();
+        var holeCount = holeCountFromDom();
+        var counts = completedAndRemainingFromDom();
+        var missing = [];
+        for (var i = 0; i < inputs.length; i++) {
+          var raw = String(inputs[i].value || '').trim();
+          var n = parseInt(raw, 10);
+          var valid = /^\d+$/.test(raw) && !isNaN(n) && n >= 1 && n <= 15;
+          if (!valid) missing.push(getInputPlayerLabel(inputs[i], i));
+        }
+        var status = allValid
+          ? 'All scores in • ready to save'
+          : ('Waiting on ' + missing.length + ' score' + (missing.length === 1 ? '' : 's'));
+        var missingLine = missing.length ? ('Missing: ' + missing.join(', ')) : '';
+        strip.innerHTML = ''
+          + '<div class="mg-s3-progress-row-1">Hole ' + hole + ' of ' + holeCount + '</div>'
+          + '<div class="mg-s3-progress-row-2">' + counts.completed + ' complete • ' + counts.remaining + ' left</div>'
+          + '<div class="mg-s3-progress-row-3">' + status + '</div>'
+          + (missingLine ? '<div class="mg-s3-progress-row-4">' + missingLine + '</div>' : '');
+        strip.classList.toggle('is-ready', !!allValid);
+      }
+
+      function ensureSyncChip(saveBtn) {
+        if (!saveBtn || !saveBtn.parentElement) return;
+        var wrap = saveBtn.parentElement;
+        var chip = wrap.querySelector('[data-mg-s3-sync-chip="1"]');
+        if (!chip) {
+          chip = document.createElement('div');
+          chip.setAttribute('data-mg-s3-sync-chip', '1');
+          chip.className = 'mg-s3-sync-chip';
+          wrap.appendChild(chip);
+        }
+        var now = Date.now();
+        var state = window.__mgS3SyncState || '';
+        if (!navigator.onLine && (state === 'queued' || state === 'saving')) {
+          chip.textContent = 'Queued';
+          chip.className = 'mg-s3-sync-chip is-queued';
+          return;
+        }
+        if (state === 'saving' && (now - (window.__mgS3SyncStateTs || 0) < 5000)) {
+          chip.textContent = 'Syncing';
+          chip.className = 'mg-s3-sync-chip is-syncing';
+          return;
+        }
+        chip.textContent = 'Synced';
+        chip.className = 'mg-s3-sync-chip is-synced';
+      }
+
+      function showPaymentStatusChip(button, text) {
+        if (!button || !button.parentElement || !text) return;
+        var existing = button.parentElement.querySelector('[data-mg-s3-payment-status="1"]');
+        if (!existing) {
+          existing = document.createElement('div');
+          existing.setAttribute('data-mg-s3-payment-status', '1');
+          existing.className = 'mg-s3-payment-status';
+          button.parentElement.appendChild(existing);
+        }
+        existing.textContent = text;
+      }
+
+      function showToastFallback(message) {
+        if (!message) return;
+        if (window.MG && typeof window.MG.toast === 'function') {
+          window.MG.toast(message);
+          return;
+        }
+        var toast = document.getElementById('mg-toast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(function() {
+          toast.classList.remove('show');
+        }, 2200);
+      }
+
+      async function copyTextFallback(text) {
+        var value = String(text || '');
+        if (!value) return false;
+        try {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(value);
+            return true;
+          }
+        } catch (_) {}
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = value;
+          ta.setAttribute('readonly', 'readonly');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          var copied = document.execCommand('copy');
+          ta.remove();
+          return !!copied;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      async function copySettlementLinkFallback() {
+        var target = (location.origin || '') + (location.pathname || '') + '#settle';
+        return copyTextFallback(target);
+      }
+
+      function findSettlementBlockedNode() {
+        var nodes = Array.prototype.slice.call(document.querySelectorAll('div, p, h2, h3'));
+        for (var i = 0; i < nodes.length; i++) {
+          var txt = (nodes[i].textContent || '').trim();
+          if (/^Settlement available after all holes are scored\.?$/i.test(txt)) return nodes[i];
+        }
+        return null;
+      }
+
+      function ensureSettlementBlockerSummary() {
+        if (!/^#settle\b/.test(location.hash || '')) return;
+        var blockedNode = findSettlementBlockedNode();
+        if (!blockedNode || !blockedNode.parentElement) return;
+        var counts = completedAndRemainingFromDom();
+        var hole = currentHoleFromDom();
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-inline-score-input="1"]'));
+        var missingPlayers = 0;
+        for (var i = 0; i < inputs.length; i++) {
+          var raw = String(inputs[i].value || '').trim();
+          var n = parseInt(raw, 10);
+          var valid = /^\d+$/.test(raw) && !isNaN(n) && n >= 1 && n <= 15;
+          if (!valid) missingPlayers++;
+        }
+        var summary = blockedNode.parentElement.querySelector('[data-mg-s3-settlement-blocked-summary="1"]');
+        if (!summary) {
+          summary = document.createElement('div');
+          summary.setAttribute('data-mg-s3-settlement-blocked-summary', '1');
+          summary.className = 'mg-s3-settlement-blocked-summary';
+          blockedNode.parentElement.appendChild(summary);
+        }
+        var remainingCopy = '';
+        if (missingPlayers > 0) {
+          remainingCopy = 'Remaining: Hole ' + hole + ' (' + missingPlayers + ' player' + (missingPlayers === 1 ? '' : 's') + ')';
+        } else {
+          remainingCopy = 'Remaining: ' + counts.remaining + ' hole' + (counts.remaining === 1 ? '' : 's') + ' need scoring completion.';
+        }
+        summary.textContent = remainingCopy;
+      }
+
+      function ensureAdminSettleHelperCopy() {
+        var settleButtons = Array.prototype.slice.call(document.querySelectorAll('button'));
+        for (var s = 0; s < settleButtons.length; s++) {
+          var btnText = (settleButtons[s].textContent || '').trim();
+          if (/^Settle Round\b/i.test(btnText)) {
+            var helperId = 'mg-s3-settle-helper-' + s;
+            var existingHelper = settleButtons[s].parentElement && settleButtons[s].parentElement.querySelector('[data-mg-s3-settle-helper="1"]');
+            if (!existingHelper) {
+              var helper = document.createElement('div');
+              helper.setAttribute('data-mg-s3-settle-helper', '1');
+              helper.id = helperId;
+              helper.textContent = 'Finalizes remaining matches and settles active bets.';
+              helper.style.cssText = 'margin-top:6px;font-size:11px;color:var(--text-secondary);line-height:1.35';
+              if (settleButtons[s].parentElement) settleButtons[s].parentElement.appendChild(helper);
+            }
+          }
+        }
+      }
+
+      function ensureRoundCompletePanel() {
+        if (/^#settle\b/.test(location.hash || '')) return;
+        var hasInputs = document.querySelectorAll('[data-inline-score-input="1"]').length > 0;
+        if (hasInputs) return;
+
+        var reviewLink = null;
+        var links = Array.prototype.slice.call(document.querySelectorAll('a[href="#settle"]'));
+        for (var i = 0; i < links.length; i++) {
+          if (/^Review Settlement$/i.test((links[i].textContent || '').trim())) {
+            reviewLink = links[i];
+            break;
+          }
+        }
+        if (!reviewLink) return;
+
+        var host = reviewLink.closest('.mg-card, #board-card-score-entry, .mg-content, .tab-content') || reviewLink.parentElement;
+        if (!host) return;
+        var panel = host.querySelector('[data-mg-s3-complete-panel="1"]');
+        if (!panel) {
+          panel = document.createElement('div');
+          panel.setAttribute('data-mg-s3-complete-panel', '1');
+          panel.className = 'mg-s3-complete-panel';
+          reviewLink.parentElement.insertBefore(panel, reviewLink);
+        }
+        var holeCount = holeCountFromDom();
+        var lastHole = Math.max(1, holeCount);
+        panel.innerHTML = ''
+          + '<div class="mg-s3-complete-title">Round Complete</div>'
+          + '<div class="mg-s3-complete-subtitle">All ' + holeCount + ' holes scored</div>'
+          + '<div class="mg-s3-complete-actions">'
+          + '  <a href="#settle" class="mg-s3-complete-primary">Review Settlement</a>'
+          + '  <button type="button" class="mg-s3-complete-secondary" data-mg-s3-edit-last-hole="1">Edit Last Hole</button>'
+          + '</div>';
+        var editBtn = panel.querySelector('[data-mg-s3-edit-last-hole="1"]');
+        if (editBtn && !editBtn.hasAttribute('data-mg-s3-bound')) {
+          editBtn.setAttribute('data-mg-s3-bound', '1');
+          editBtn.addEventListener('click', function() {
+            var mg = window.MG || {};
+            if (typeof mg.setTab === 'function') mg.setTab('dashboard');
+            if (typeof mg.setBoardTab === 'function') mg.setBoardTab('score');
+            if (typeof mg.inlineScoreSetHole === 'function') {
+              mg.inlineScoreSetHole(lastHole);
+            } else if (typeof mg.setScorecardHole === 'function') {
+              mg.setScorecardHole(lastHole);
+            }
+          });
+        }
+      }
+
+      function isShareExportRow(el) {
+        if (!el) return false;
+        var buttons = el.querySelectorAll(':scope > button');
+        if (!buttons || buttons.length !== 2) return false;
+        var txtA = (buttons[0].textContent || '').toLowerCase();
+        var txtB = (buttons[1].textContent || '').toLowerCase();
+        return txtA.indexOf('share results') !== -1 && txtB.indexOf('export card') !== -1;
+      }
+
+      function ensureSettlementActionFirst() {
+        if (!/^#settle\b/.test(location.hash || '')) return;
+        var app = document.getElementById('app');
+        if (!app) return;
+        var cards = Array.prototype.slice.call(app.querySelectorAll('.mg-card'));
+        if (!cards.length) return;
+
+        var payCard = null;
+        var standingsCard = null;
+        var eventHeaderCard = null;
+        for (var i = 0; i < cards.length; i++) {
+          var text = String(cards[i].textContent || '');
+          if (!payCard && /WHO PAYS WHO/i.test(text)) payCard = cards[i];
+          if (!standingsCard && /FINAL STANDINGS/i.test(text)) standingsCard = cards[i];
+          if (!eventHeaderCard && /\bhole(?:s)? played\b/i.test(text) && !/WHO PAYS WHO|FINAL STANDINGS/i.test(text)) eventHeaderCard = cards[i];
+        }
+        if (!payCard || !eventHeaderCard) return;
+
+        if (eventHeaderCard.nextElementSibling !== payCard) {
+          eventHeaderCard.parentElement.insertBefore(payCard, eventHeaderCard.nextElementSibling);
+        }
+
+        var actionRows = [];
+        var divs = Array.prototype.slice.call(app.querySelectorAll('div'));
+        for (var d = 0; d < divs.length; d++) {
+          if (isShareExportRow(divs[d])) actionRows.push(divs[d]);
+        }
+        if (actionRows.length > 0) {
+          var primary = actionRows[0];
+          primary.setAttribute('data-mg-s3-primary-actions', '1');
+          if (payCard.nextElementSibling !== primary) {
+            payCard.parentElement.insertBefore(primary, payCard.nextElementSibling);
+          }
+          for (var a = 0; a < actionRows.length; a++) {
+            if (actionRows[a] === primary) continue;
+            actionRows[a].style.display = 'none';
+          }
+        }
+
+        if (standingsCard && payCard.compareDocumentPosition(standingsCard) & Node.DOCUMENT_POSITION_PRECEDING) {
+          var target = payCard.nextElementSibling;
+          if (target && isShareExportRow(target)) target = target.nextElementSibling;
+          payCard.parentElement.insertBefore(standingsCard, target || null);
+        }
+      }
+
+      function applySprint3UiState() {
+        if (!isSprint3Enabled()) return;
+        ensureSettlementBlockerSummary();
+        ensureSettlementActionFirst();
+        ensureRoundCompletePanel();
+        ensureAdminSettleHelperCopy();
+
+        var forceAllErrors = window.__mgS3ForceAllInlineErrors === true;
+
+        var saveBtn = findSaveHoleButton();
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-inline-score-input="1"]'));
+        if (!saveBtn || inputs.length === 0) return;
+
+        var validCount = 0;
+        var firstInvalid = null;
+        for (var i = 0; i < inputs.length; i++) {
+          var raw = String(inputs[i].value || '').trim();
+          var isInteger = /^\d+$/.test(raw);
+          var n = isInteger ? Number(raw) : NaN;
+          var hasValue = raw !== '';
+          var valid = hasValue && isInteger && !isNaN(n) && n >= 1 && n <= 15;
+          if (valid) validCount++;
+          if (!valid && !firstInvalid) firstInvalid = inputs[i];
+          inputs[i].setAttribute('aria-invalid', valid ? 'false' : 'true');
+          inputs[i].setAttribute('inputmode', 'numeric');
+          inputs[i].setAttribute('pattern', '[0-9]*');
+          inputs[i].setAttribute('min', '1');
+          inputs[i].setAttribute('max', '15');
+          inputs[i].setAttribute('step', '1');
+          var showError = (!valid && hasValue) || (!hasValue && forceAllErrors);
+          ensureInlineError(inputs[i], showError);
+        }
+
+        var allValid = validCount === inputs.length;
+        ensureProgressStrip(inputs, allValid);
+        saveBtn.disabled = !allValid;
+        saveBtn.style.minHeight = '56px';
+        saveBtn.style.touchAction = 'manipulation';
+        saveBtn.style.opacity = allValid ? '1' : '0.6';
+        saveBtn.setAttribute('aria-disabled', allValid ? 'false' : 'true');
+        ensureSyncChip(saveBtn);
+        if (!saveBtn.hasAttribute('data-mg-s3-save-guard')) {
+          saveBtn.setAttribute('data-mg-s3-save-guard', '1');
+          saveBtn.addEventListener('click', function(ev) {
+            if (!saveBtn.disabled) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            window.__mgS3ForceAllInlineErrors = true;
+            var validation = validateInlineInputs();
+            applySprint3UiState();
+            if (validation.firstInvalid) {
+              validation.firstInvalid.focus();
+              validation.firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, true);
+        }
+
+        var bar = saveBtn.parentElement;
+        if (bar) {
+          var isMobile = getDeviceType() === 'mobile';
+          bar.classList.toggle('mg-s3-save-bar-mobile', isMobile);
+          bar.classList.toggle('mg-s3-save-bar-desktop', !isMobile);
+        }
+      }
+
+      function installSprint3Styles() {
+        if (document.getElementById('mg-s3-shim-style')) return;
+        var style = document.createElement('style');
+        style.id = 'mg-s3-shim-style';
+        style.textContent = [
+          '.mg-s3-inline-error{font-size:10px;color:#DC2626;margin-top:4px;font-weight:700}',
+          '.mg-s3-progress-strip{background:#0d2818;color:#e9f7ef;border:1px solid rgba(212,175,55,.42);border-radius:12px;padding:10px 12px;margin:0 0 10px 0;line-height:1.25}',
+          '.mg-s3-progress-strip.is-ready{background:#1a472a;border-color:#D4AF37}',
+          '.mg-s3-progress-row-1{font-size:13px;font-weight:700}',
+          '.mg-s3-progress-row-2{font-size:12px;opacity:.92;margin-top:3px}',
+          '.mg-s3-progress-row-3{font-size:12px;margin-top:4px;font-weight:700}',
+          '.mg-s3-progress-row-4{font-size:11px;margin-top:3px;opacity:.9}',
+          '.mg-s3-sync-chip{display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;margin-top:8px}',
+          '.mg-s3-sync-chip.is-queued{background:rgba(217,119,6,.15);color:#92400e;border:1px solid rgba(217,119,6,.35)}',
+          '.mg-s3-sync-chip.is-syncing{background:rgba(37,99,235,.14);color:#1d4ed8;border:1px solid rgba(37,99,235,.32)}',
+          '.mg-s3-sync-chip.is-synced{background:rgba(22,163,74,.14);color:#166534;border:1px solid rgba(22,163,74,.32)}',
+          '.mg-s3-payment-status{font-size:11px;line-height:1.2;margin-top:6px;color:#166534;font-weight:700}',
+          '.mg-s3-settlement-blocked-summary{margin-top:8px;padding:9px 10px;border-radius:10px;background:rgba(180,83,9,.12);border:1px solid rgba(180,83,9,.35);color:#92400e;font-size:12px;font-weight:700;line-height:1.35}',
+          '.mg-s3-save-bar-mobile{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(250,250,247,.0),rgba(250,250,247,.98) 24%,rgba(250,250,247,1));padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)!important;z-index:25}',
+          '.mg-s3-save-bar-desktop{position:sticky;top:0;background:#FAFAF7;z-index:15}',
+          '.mg-s3-complete-panel{margin:0 0 12px 0;padding:14px;border-radius:12px;border:1px solid rgba(212,175,55,.45);background:linear-gradient(135deg,#0D2818,#1A472A);color:#F5F8F6}',
+          '.mg-s3-complete-title{font-size:18px;line-height:1.2;font-weight:800}',
+          '.mg-s3-complete-subtitle{font-size:13px;opacity:.92;margin-top:6px}',
+          '.mg-s3-complete-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}',
+          '.mg-s3-complete-primary{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;min-height:56px;padding:12px 14px;border-radius:10px;background:#D4AF37;color:#0D2818;font-size:14px;font-weight:800;text-decoration:none}',
+          '.mg-s3-complete-secondary{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;min-height:56px;padding:12px 14px;border-radius:10px;border:1px solid rgba(212,175,55,.45);background:rgba(255,255,255,.08);color:#F5F8F6;font-size:14px;font-weight:700;cursor:pointer}'
+        ].join('');
+        document.head.appendChild(style);
+      }
+
+      function installWhenReady() {
+        var attempts = 0;
+        var maxAttempts = 220;
+        var installTimer = setInterval(function() {
+          attempts++;
+          var mg = window.MG;
+          if (!mg || typeof mg !== 'object') {
+            if (attempts >= maxAttempts) clearInterval(installTimer);
+            return;
+          }
+
+          if (mg.__sprint3UxShimInstalled) {
+            clearInterval(installTimer);
+            return;
+          }
+          mg.__sprint3UxShimInstalled = true;
+          clearInterval(installTimer);
+          installSprint3Styles();
+
+          // Canonical FAB path: open dashboard score composer state.
+          var originalOpenScoreComposer = typeof mg.openScoreComposer === 'function' ? mg.openScoreComposer : null;
+          mg.openScoreComposer = function(surface) {
+            var entrySurface = surface || 'fab';
+            postUxEvent('score_entry_opened', {
+              event_slug: getEventSlug(),
+              hole: currentHoleFromDom(),
+              entry_surface: entrySurface,
+              device_type: getDeviceType()
+            });
+
+            if (originalOpenScoreComposer) {
+              return originalOpenScoreComposer.call(mg, surface);
+            }
+
+            if (typeof mg.setTab === 'function') mg.setTab('dashboard');
+            if (typeof mg.setBoardTab === 'function') mg.setBoardTab('score');
+            requestAnimationFrame(function() {
+              var first = document.querySelector('[data-inline-score-input="1"]');
+              if (first) {
+                first.focus();
+                if (typeof first.select === 'function') first.select();
+                first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            });
+          };
+
+          // Canonicalize modal entry into inline score composer.
+          var originalSetScoreModalHole = typeof mg.setScoreModalHole === 'function' ? mg.setScoreModalHole : null;
+          if (originalSetScoreModalHole) {
+            mg.setScoreModalHole = function(hole) {
+              postUxEvent('score_entry_opened', {
+                event_slug: getEventSlug(),
+                hole: Number(hole) || currentHoleFromDom(),
+                entry_surface: 'modal',
+                device_type: getDeviceType()
+              });
+              if (typeof mg.setTab === 'function') mg.setTab('dashboard');
+              if (typeof mg.setBoardTab === 'function') mg.setBoardTab('score');
+              if (typeof mg.inlineScoreSetHole === 'function') {
+                mg.inlineScoreSetHole(Number(hole) || currentHoleFromDom());
+                return;
+              }
+              return originalSetScoreModalHole.apply(mg, arguments);
+            };
+          }
+
+          // Backward-compat aliases referenced by views.js.
+          if (typeof mg.inlineScoreInput !== 'function' && typeof mg.inlineScoreType === 'function') {
+            mg.inlineScoreInput = function(player, value) {
+              mg.inlineScoreType(player, value);
+              var counts = countFilledPlayers();
+              postUxEvent('score_input_changed', {
+                event_slug: getEventSlug(),
+                hole: currentHoleFromDom(),
+                player_count_filled: counts.filled,
+                player_count_total: counts.total
+              });
+            };
+          }
+
+          if (typeof mg.inlineScoreSaveAttempt !== 'function' && typeof mg.inlineScoreSave === 'function') {
+            mg.inlineScoreSaveAttempt = async function() {
+              var validation = validateInlineInputs();
+              var holeBefore = currentHoleFromDom();
+              var hadInputsBefore = document.querySelectorAll('[data-inline-score-input="1"]').length > 0;
+
+              if (!validation.valid) {
+                applySprint3UiState();
+                postUxEvent('score_save_attempted', {
+                  event_slug: getEventSlug(),
+                  hole: holeBefore,
+                  is_valid: false,
+                  is_offline: !navigator.onLine
+                });
+                if (validation.firstInvalid) {
+                  validation.firstInvalid.focus();
+                  validation.firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+              }
+
+              var t0 = Date.now();
+              window.__mgS3SyncState = navigator.onLine ? 'saving' : 'queued';
+              window.__mgS3SyncStateTs = Date.now();
+              postUxEvent('score_save_attempted', {
+                event_slug: getEventSlug(),
+                hole: holeBefore,
+                is_valid: true,
+                is_offline: !navigator.onLine
+              });
+              if (!navigator.onLine) {
+                showToastFallback('Offline — score queued');
+              }
+
+              try {
+                await mg.inlineScoreSave();
+                window.__mgS3ForceAllInlineErrors = false;
+                applySprint3UiState();
+                var latency = Date.now() - t0;
+                var holeAfter = currentHoleFromDom();
+                var autoAdvanced = holeAfter !== holeBefore;
+                postUxEvent('score_save_succeeded', {
+                  event_slug: getEventSlug(),
+                  hole: holeBefore,
+                  latency_ms: latency,
+                  auto_advanced: autoAdvanced
+                });
+                window.__mgS3SaveRetryPending = false;
+                window.__mgS3SyncState = 'synced';
+                window.__mgS3SyncStateTs = Date.now();
+
+                var firstSaveKey = 'waggle_sprint3_first_save_ts_' + (getEventSlug() || 'event');
+                var firstSave = parseInt(localStorage.getItem(firstSaveKey) || '0', 10);
+                if (!firstSave) {
+                  localStorage.setItem(firstSaveKey, String(Date.now()));
+                  firstSave = Date.now();
+                }
+                var hasInputsAfter = document.querySelectorAll('[data-inline-score-input="1"]').length > 0;
+                if (hadInputsBefore && !hasInputsAfter) {
+                  postUxEvent('round_completed', {
+                    event_slug: getEventSlug(),
+                    holes_per_round: holeCountFromDom(),
+                    duration_sec_from_first_save: Math.max(0, Math.round((Date.now() - firstSave) / 1000))
+                  });
+                }
+              } catch (err) {
+                window.__mgS3SyncState = navigator.onLine ? 'error' : 'queued';
+                window.__mgS3SyncStateTs = Date.now();
+                applySprint3UiState();
+                showToastFallback('Try again');
+                postUxEvent('score_save_failed', {
+                  event_slug: getEventSlug(),
+                  hole: holeBefore,
+                  error_code: (err && err.message ? String(err.message).slice(0, 64) : 'save_failed'),
+                  is_retry: window.__mgS3SaveRetryPending === true
+                });
+                window.__mgS3SaveRetryPending = true;
+                throw err;
+              }
+            };
+          }
+
+          // Settlement hooks expected by views.js button handlers.
+          mg.trackSettlementPaymentCta = function(provider, amount) {
+            postUxEvent('settlement_payment_cta_clicked', {
+              event_slug: getEventSlug(),
+              provider: provider === 'cashapp' ? 'cashapp' : 'venmo',
+              amount: Number(amount) || 0
+            });
+          };
+
+          var originalShareSettlement = typeof mg.shareSettlement === 'function' ? mg.shareSettlement : null;
+          if (originalShareSettlement) {
+            mg.shareSettlement = async function() {
+              var usedNative = !!navigator.share;
+              try {
+                var result = await originalShareSettlement.apply(mg, arguments);
+                postUxEvent('settlement_shared', {
+                  event_slug: getEventSlug(),
+                  method: usedNative ? 'native_share' : 'copy_link'
+                });
+                return result;
+              } catch (err) {
+                var copied = await copySettlementLinkFallback();
+                showToastFallback(copied ? 'Share failed - copied link' : 'Share failed - try again');
+                if (copied) {
+                  postUxEvent('settlement_shared', {
+                    event_slug: getEventSlug(),
+                    method: 'copy_link'
+                  });
+                  return;
+                }
+                throw err;
+              }
+            };
+          }
+
+          var originalExportSettlementCard = typeof mg.exportSettlementCard === 'function' ? mg.exportSettlementCard : null;
+          if (originalExportSettlementCard) {
+            mg.exportSettlementCard = function() {
+              var result = originalExportSettlementCard.apply(mg, arguments);
+              postUxEvent('settlement_shared', {
+                event_slug: getEventSlug(),
+                method: 'image_export'
+              });
+              return result;
+            };
+          }
+
+          var settlementViewedOnce = false;
+          var inlineEntryTracked = false;
+          function maybeTrackSettlementViewed() {
+            if (settlementViewedOnce) return;
+            if (!/^#settle\b/.test(location.hash || '')) return;
+            var hasHeader = document.body && /Settlement Card/i.test(document.body.textContent || '');
+            if (!hasHeader) return;
+            settlementViewedOnce = true;
+            var payoutRows = document.querySelectorAll('[id^="pay-pair-"]').length;
+            postUxEvent('settlement_viewed', {
+              event_slug: getEventSlug(),
+              holes_played: holesPlayedFromDom(),
+              has_payouts: payoutRows > 0
+            });
+          }
+          function maybeTrackInlineEntryOpened() {
+            if (inlineEntryTracked) return;
+            var count = document.querySelectorAll('[data-inline-score-input="1"]').length;
+            if (!count) return;
+            inlineEntryTracked = true;
+            postUxEvent('score_entry_opened', {
+              event_slug: getEventSlug(),
+              hole: currentHoleFromDom(),
+              entry_surface: 'inline',
+              device_type: getDeviceType()
+            });
+          }
+          window.addEventListener('hashchange', maybeTrackSettlementViewed);
+          window.addEventListener('online', applySprint3UiState);
+          window.addEventListener('offline', applySprint3UiState);
+          var inputTelemetryTimer = null;
+          document.addEventListener('input', function(ev) {
+            if (ev && ev.target && ev.target.matches && ev.target.matches('[data-inline-score-input="1"]')) {
+              if (String(ev.target.value || '').trim() !== '') {
+                window.__mgS3ForceAllInlineErrors = false;
+              }
+              applySprint3UiState();
+              if (inputTelemetryTimer) clearTimeout(inputTelemetryTimer);
+              inputTelemetryTimer = setTimeout(function() {
+                var counts = countFilledPlayers();
+                postUxEvent('score_input_changed', {
+                  event_slug: getEventSlug(),
+                  hole: currentHoleFromDom(),
+                  player_count_filled: counts.filled,
+                  player_count_total: counts.total
+                });
+              }, 120);
+            }
+          }, true);
+          var lastOddsTapHapticAt = 0;
+          function clearPressedOddsButtons() {
+            var pressed = document.querySelectorAll('.mg-odds-btn.odds-pressed');
+            for (var i = 0; i < pressed.length; i++) {
+              pressed[i].classList.remove('odds-pressed');
+            }
+          }
+          document.addEventListener('pointerdown', function(ev) {
+            var btn = ev && ev.target && ev.target.closest ? ev.target.closest('.mg-odds-btn') : null;
+            if (!btn) return;
+            btn.classList.add('odds-pressed');
+            if (navigator.vibrate) {
+              var now = Date.now();
+              if (now - lastOddsTapHapticAt > 80) {
+                navigator.vibrate(10);
+                lastOddsTapHapticAt = now;
+              }
+            }
+          }, true);
+          document.addEventListener('pointerup', clearPressedOddsButtons, true);
+          document.addEventListener('pointercancel', clearPressedOddsButtons, true);
+          document.addEventListener('click', function(ev) {
+            var btn = ev && ev.target && ev.target.closest ? ev.target.closest('button') : null;
+            if (!btn) return;
+            var txt = (btn.textContent || '').trim();
+            if (/^Pay with Venmo$/i.test(txt)) {
+              showPaymentStatusChip(btn, 'Opened Venmo');
+            } else if (/^Pay with Cash App$/i.test(txt)) {
+              showPaymentStatusChip(btn, 'Copied payment details');
+            }
+          }, true);
+          document.addEventListener('keydown', function(ev) {
+            if (!ev || ev.key !== 'Enter') return;
+            if (getDeviceType() !== 'desktop') return;
+            var t = ev.target;
+            if (!t || !t.matches || !t.matches('[data-inline-score-input="1"]')) return;
+            var save = findSaveHoleButton();
+            if (!save) return;
+            ev.preventDefault();
+            if (save.disabled) {
+              window.__mgS3ForceAllInlineErrors = true;
+              applySprint3UiState();
+              var validation = validateInlineInputs();
+              if (validation.firstInvalid) validation.firstInvalid.focus();
+              return;
+            }
+            save.click();
+          }, true);
+          var scoreFab = document.getElementById('score-fab');
+          if (scoreFab && !scoreFab.getAttribute('onclick')) {
+            scoreFab.addEventListener('click', function() {
+              if (window.MG && typeof window.MG.openScoreComposer === 'function') {
+                window.MG.openScoreComposer('fab');
+              }
+            });
+          }
+          var uiObserver = new MutationObserver(function() {
+            applySprint3UiState();
+            maybeTrackSettlementViewed();
+            maybeTrackInlineEntryOpened();
+          });
+          uiObserver.observe(document.body, { childList: true, subtree: true, attributes: true });
+          applySprint3UiState();
+          setInterval(maybeTrackSettlementViewed, 1200);
+          setInterval(applySprint3UiState, 1000);
+          setInterval(maybeTrackInlineEntryOpened, 1000);
+        }, 120);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', installWhenReady);
+      } else {
+        installWhenReady();
+      }
+    })();
+  </script>
   <script>
     // Nuclear cache buster — force fresh on stale mobile clients
-    var MG_VERSION = 35;
+    var MG_VERSION = 36;
     var storedVer = parseInt(localStorage.getItem('mg_sw_ver') || '0');
     if (storedVer < MG_VERSION) {
       // Nuke everything and reload

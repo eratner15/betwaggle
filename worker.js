@@ -10,6 +10,42 @@ function sanitizeName(raw) {
   return String(raw || '').replace(/<[^>]*>/g, '').replace(/[^\w\s'.,-]/g, '').trim().slice(0, 50);
 }
 
+function getKnownDemoSeedMap(env) {
+  return {
+    'pga-frisco-2026': () => seedFriscoV2(env),
+    'cabot-citrus-invitational': () => seedDemoEvent(env),
+    'demo-buddies': () => seedDemoBuddies(env),
+    'demo-scramble': () => seedDemoScramble(env),
+    'legends-trip': () => seedLegendsTrip(env),
+    'stag-night': () => seedStagNight(env),
+    'augusta-scramble': () => seedAugustaScramble(env),
+    'masters-member-guest': () => seedMastersMG(env),
+    'weekend-warrior': () => seedWeekendWarrior(env),
+    'demo-skins': () => seedDemoSkins(env),
+    'demo-nassau': () => seedDemoNassau(env),
+    'demo-wolf': () => seedDemoWolf(env),
+    'demo-match-play': () => seedDemoMatchPlay(env),
+  };
+}
+
+async function seedKnownDemoSlug(env, slug) {
+  const seedMap = getKnownDemoSeedMap(env);
+  if (!slug || !seedMap[slug]) return false;
+  await seedMap[slug]();
+  return true;
+}
+
+function isKnownDemoSlug(env, slug) {
+  const seedMap = getKnownDemoSeedMap(env);
+  return !!(slug && seedMap[slug]);
+}
+
+function hasAnyScores(scores) {
+  if (!scores || typeof scores !== 'object') return false;
+  if (Array.isArray(scores)) return scores.length > 0;
+  return Object.keys(scores).length > 0;
+}
+
 // Simple HTML tag stripper for server-side sanitization
 function stripHtml(str) {
   return String(str || '').replace(/<[^>]*>/g, '').trim();
@@ -22,11 +58,15 @@ const PRIVATE_ROUTE_PREFIXES = [
   '/admin/outreach/',
 ];
 
-const BLOCKED_PUBLIC_ROUTE_PREFIXES = [
-  '/marketing/',
-  '/gtm/',
-  '/ads/',
+const PRIVATE_ALIAS_PREFIX_REWRITES = [
+  { aliasPrefix: '/marketing/', privatePrefix: '/marketing-private/' },
+  { aliasPrefix: '/gtm/', privatePrefix: '/gtm-private/' },
+  { aliasPrefix: '/ads/', privatePrefix: '/ads-private/' },
 ];
+
+const LEGACY_HARD_404_PATHS = new Set([
+  '/join',
+]);
 
 function normalizeRoutePathname(pathname) {
   let normalized = String(pathname || '/');
@@ -37,6 +77,15 @@ function normalizeRoutePathname(pathname) {
   normalized = normalized.replace(/\/{2,}/g, '/').toLowerCase();
   if (!normalized.endsWith('/')) normalized = `${normalized}/`;
   return normalized;
+}
+
+function isCheckoutSuccessUiPath(pathname) {
+  const normalized = normalizeRoutePathname(pathname);
+  return (
+    normalized === '/checkout/success/' ||
+    normalized === '/checkout/success/index/' ||
+    normalized === '/checkout/success/index.html/'
+  );
 }
 
 function getLegacyAffiliateCanonicalPath(pathname) {
@@ -68,9 +117,14 @@ function isPrivateRoutePath(pathname) {
   return /(^|\/)[^/]*-private(\/|$)/.test(normalized);
 }
 
-function isBlockedPublicRoutePath(pathname) {
+function getPrivateAliasRedirectPath(pathname) {
   const normalized = normalizeRoutePathname(pathname);
-  return BLOCKED_PUBLIC_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  for (const { aliasPrefix, privatePrefix } of PRIVATE_ALIAS_PREFIX_REWRITES) {
+    if (!normalized.startsWith(aliasPrefix)) continue;
+    const suffix = normalized.slice(aliasPrefix.length);
+    return `${privatePrefix}${suffix}`.replace(/\/{2,}/g, '/');
+  }
+  return null;
 }
 
 function hasPrivateRouteAccess(request, url, env) {
@@ -111,6 +165,10 @@ function privateRouteNotFound() {
 function isProductionHostname(hostname) {
   const host = String(hostname || '').toLowerCase();
   return host === 'betwaggle.com' || host === 'www.betwaggle.com';
+}
+
+function isGhinDebugEnabled(env) {
+  return String(env?.ENABLE_GHIN_DEBUG || '').trim() === '1';
 }
 
 function hasApiAdminAccess(request, url, env) {
@@ -160,6 +218,76 @@ function withSyncHeaders(response, syncMeta) {
     statusText: response.statusText,
     headers,
   });
+}
+
+const LIVE_DEMO_SLUGS = new Set([
+  'demo-buddies',
+  'demo-scramble',
+  'legends-trip',
+  'stag-night',
+  'augusta-scramble',
+  'masters-member-guest',
+]);
+
+function hashString32(input) {
+  let hash = 2166136261;
+  const str = String(input || '');
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function buildDemoLiveHoles(slug, holes, eventConfig) {
+  if (!LIVE_DEMO_SLUGS.has(slug)) return holes || {};
+
+  const source = (holes && typeof holes === 'object') ? holes : {};
+  const nextHoles = { ...source };
+  const players = (eventConfig?.players || eventConfig?.roster || [])
+    .map(p => p?.name || p?.member)
+    .filter(Boolean);
+  if (players.length === 0) return nextHoles;
+
+  const maxHole = Number(eventConfig?.holesPerRound) > 0
+    ? Number(eventConfig.holesPerRound)
+    : 18;
+  const pars = Array.isArray(eventConfig?.course?.pars)
+    ? eventConfig.course.pars
+    : (Array.isArray(eventConfig?.coursePars) ? eventConfig.coursePars : []);
+
+  const existingHoleNums = Object.keys(source)
+    .map(k => Number.parseInt(k, 10))
+    .filter(n => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+  const seededHoles = existingHoleNums.length ? existingHoleNums[existingHoleNums.length - 1] : 0;
+  if (seededHoles >= maxHole) return nextHoles;
+
+  const remaining = maxHole - seededHoles;
+  const bucket = Math.floor(Date.now() / 30000);
+  const syntheticHoleCount = Math.max(1, Math.min(remaining, (bucket % remaining) + 1));
+  const now = Date.now();
+
+  for (let i = 1; i <= syntheticHoleCount; i++) {
+    const holeNum = seededHoles + i;
+    const holeKey = String(holeNum);
+    if (nextHoles[holeKey]) continue;
+
+    const rawPar = Number(pars[holeNum - 1]);
+    const par = Number.isFinite(rawPar) ? rawPar : 4;
+    const scores = {};
+    for (const playerName of players) {
+      const roll = hashString32(`${slug}:${playerName}:${holeNum}`) % 100;
+      const delta = roll < 12 ? -1 : roll < 72 ? 0 : roll < 93 ? 1 : 2;
+      scores[playerName] = Math.max(2, Math.min(9, par + delta));
+    }
+    nextHoles[holeKey] = {
+      scores,
+      timestamp: now - ((syntheticHoleCount - i) * 30000),
+    };
+  }
+
+  return nextHoles;
 }
 
 // Generate random 4-digit admin PIN (1000-9999)
@@ -220,13 +348,19 @@ export default {
       });
     }
 
-    // Route guard for internal/private pages: hide via 404 unless explicitly authenticated.
-    if (isPrivateRoutePath(url.pathname) && !hasPrivateRouteAccess(request, url, env)) {
-      return privateRouteNotFound();
+    // Legacy aliases are private. Return 404 unless explicitly authenticated.
+    const privateAliasRedirectPath = getPrivateAliasRedirectPath(url.pathname);
+    if (privateAliasRedirectPath) {
+      if (!hasPrivateRouteAccess(request, url, env)) {
+        return privateRouteNotFound();
+      }
+      const redirectUrl = new URL(request.url);
+      redirectUrl.pathname = privateAliasRedirectPath;
+      return Response.redirect(redirectUrl.toString(), 302);
     }
 
-    // Explicitly block legacy/public aliases for internal pages.
-    if (isBlockedPublicRoutePath(url.pathname)) {
+    // Route guard for internal/private pages: hide via 404 unless explicitly authenticated.
+    if (isPrivateRoutePath(url.pathname) && !hasPrivateRouteAccess(request, url, env)) {
       return privateRouteNotFound();
     }
 
@@ -301,6 +435,7 @@ export default {
 
     // GET /api/ghin/debug — test auth and search (dev only)
     if (url.pathname === '/api/ghin/debug') {
+      if (!isGhinDebugEnabled(env)) return privateRouteNotFound();
       if (isProductionHostname(url.hostname)) return privateRouteNotFound();
       if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
@@ -531,11 +666,19 @@ export default {
         if (typeof props.holes_per_round !== 'undefined') props.holes_per_round = Math.max(1, parseInt(props.holes_per_round, 10) || 18);
         if (typeof props.duration_sec_from_first_save !== 'undefined') props.duration_sec_from_first_save = Math.max(0, parseInt(props.duration_sec_from_first_save, 10) || 0);
         if (typeof props.amount !== 'undefined') props.amount = Math.max(0, Number(props.amount) || 0);
+        if (typeof props.is_valid !== 'undefined') props.is_valid = !!props.is_valid;
+        if (typeof props.is_offline !== 'undefined') props.is_offline = !!props.is_offline;
+        if (typeof props.auto_advanced !== 'undefined') props.auto_advanced = !!props.auto_advanced;
+        if (typeof props.has_payouts !== 'undefined') props.has_payouts = !!props.has_payouts;
 
         // Canonical enum cleanup.
         if (typeof props.entry_surface === 'string') {
           const entrySurface = props.entry_surface.toLowerCase();
           props.entry_surface = ['inline', 'modal', 'fab'].includes(entrySurface) ? entrySurface : 'inline';
+        }
+        if (typeof props.device_type === 'string') {
+          const deviceType = props.device_type.toLowerCase();
+          props.device_type = ['mobile', 'desktop'].includes(deviceType) ? deviceType : 'desktop';
         }
         if (typeof props.provider === 'string') {
           const provider = props.provider.toLowerCase();
@@ -588,15 +731,24 @@ export default {
     }
 
     // ===== CHECKOUT SUCCESS PAGE (UI ROUTE) =====
-    if (url.pathname === '/checkout/success' && request.method === 'GET') {
+    if (request.method === 'GET' && isCheckoutSuccessUiPath(url.pathname)) {
+      const normalizedCheckoutPath = normalizeRoutePathname(url.pathname);
+      if (
+        normalizedCheckoutPath === '/checkout/success/index/' ||
+        normalizedCheckoutPath === '/checkout/success/index.html/'
+      ) {
+        return Response.redirect(`https://betwaggle.com/checkout/success${url.search}`, 301);
+      }
       const sessionId = String(url.searchParams.get('session_id') || '').trim();
       const expectedTier = String(url.searchParams.get('tier') || '').trim().toLowerCase();
       const expectedEventSlug = String(url.searchParams.get('eventSlug') || '').trim().toLowerCase();
-      ctx.waitUntil(trackFunnelEvent(env, 'checkout_success_page_view', {
-        sessionId,
-        expectedTier,
-        expectedEventSlug,
-      }));
+      if (ctx?.waitUntil) {
+        ctx.waitUntil(trackFunnelEvent(env, 'checkout_success_page_view', {
+          sessionId,
+          expectedTier,
+          expectedEventSlug,
+        }));
+      }
       return handleCheckoutSuccessPage(url);
     }
 
@@ -610,26 +762,36 @@ export default {
       if (resp) return resp;
     }
 
+    // /join and /join/ — legacy join root (no slug) should never 404.
+    if (url.pathname === '/join' || url.pathname === '/join/') {
+      return Response.redirect(`https://betwaggle.com/create/${url.search}`, 301);
+    }
+
     // /join/:slug — player self-registration page (must be before SPA match)
     const joinMatch = url.pathname.match(/^\/join\/([a-z0-9_-]+)\/?$/);
     if (joinMatch) {
       return handleWaggleJoinPage(joinMatch[1], env);
     }
 
+    // QA baseline: these legacy routes must be explicit 404s, not redirects.
+    const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
+    if (LEGACY_HARD_404_PATHS.has(normalizedPath)) {
+      return privateRouteNotFound();
+    }
+
     // ===== FRIENDLY REDIRECTS for common dead-end routes (must be before SPA match) =====
     // Keep legacy aliases mapped to explicit canonical pages (not broad section hubs).
     const friendlyRedirects = {
+      '/about': '/overview/',
       '/find': '/my-events/',
       '/new': '/create/',
       '/setup': '/create/',
       '/guide': '/overview/',
       '/rules': '/games/',
-      '/help': '/overview/',
-      '/join': '/register/',
-      '/about': '/tour/',
       '/games/stroke-play': '/games/match-play/',
       '/games/round-robin': '/games/nassau/',
       '/games/chapman': '/games/best-ball/',
+      '/help': '/overview/',
     };
     const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
     if (redirectTarget) {
@@ -638,7 +800,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'pricing', 'api', 'app', 'season', 'games', 'guides', 'cards', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'checkout', 'courses', 'pricing', 'api', 'app', 'season', 'games', 'guides', 'cards', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -698,24 +860,10 @@ export default {
         let configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
         // Seed known demo events if config not found (mirrors serveEventHtml seeding)
         if (!configRaw) {
-          const seedMap = {
-            'pga-frisco-2026': () => seedFriscoV2(env),
-            'cabot-citrus-invitational': () => seedDemoEvent(env),
-            'demo-buddies': () => seedDemoBuddies(env),
-            'demo-scramble': () => seedDemoScramble(env),
-            'legends-trip': () => seedLegendsTrip(env),
-            'stag-night': () => seedStagNight(env),
-            'augusta-scramble': () => seedAugustaScramble(env),
-            'masters-member-guest': () => seedMastersMG(env),
-            'weekend-warrior': () => seedWeekendWarrior(env),
-            'demo-skins': () => seedDemoSkins(env),
-            'demo-nassau': () => seedDemoNassau(env),
-            'demo-wolf': () => seedDemoWolf(env),
-            'demo-match-play': () => seedDemoMatchPlay(env),
-          };
-          if (seedMap[slug]) {
-            try { await seedMap[slug](); configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text'); } catch {}
-          }
+          try {
+            const seeded = await seedKnownDemoSlug(env, slug);
+            if (seeded) configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+          } catch {}
         }
         if (!configRaw) {
           return new Response(JSON.stringify({ error: 'Event not found' }), {
@@ -1208,6 +1356,26 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
+    // /games/* — game guide pages (static, canonical trailing slash + explicit index.html)
+    // Cloudflare static assets do not always resolve directory indexes on their own.
+    if (url.pathname === '/games') {
+      return Response.redirect(new URL('/games/', request.url).toString(), 301);
+    }
+    if (url.pathname === '/games/') {
+      const gamesReq = new Request(new URL('/games/index.html', request.url), request);
+      return env.ASSETS.fetch(gamesReq);
+    }
+    const gameGuideMatch = url.pathname.match(/^\/games\/([a-z0-9-]+)\/?$/);
+    if (gameGuideMatch) {
+      const slug = gameGuideMatch[1];
+      const canonicalPath = `/games/${slug}/`;
+      if (url.pathname !== canonicalPath) {
+        return Response.redirect(new URL(`${canonicalPath}${url.search}`, request.url).toString(), 301);
+      }
+      const guideReq = new Request(new URL(`/games/${slug}/index.html`, request.url), request);
+      return env.ASSETS.fetch(guideReq);
+    }
+
     // / — landing page (A/B test: 50/50 split, sticky via cookie)
     // Homepage — serve main index.html (A/B test disabled for stability)
     // To re-enable A/B: uncomment and test thoroughly before deploying
@@ -1243,15 +1411,7 @@ export default {
       if (isProductionHostname(url.hostname)) return privateRouteNotFound();
       if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const slug = url.searchParams.get('slug');
-      const seedMap = {
-        'cabot-citrus-invitational': () => seedDemoEvent(env),
-        'demo-buddies': () => seedDemoBuddies(env),
-        'demo-scramble': () => seedDemoScramble(env),
-        'demo-skins': () => seedDemoSkins(env),
-        'demo-nassau': () => seedDemoNassau(env),
-        'demo-wolf': () => seedDemoWolf(env),
-        'demo-match-play': () => seedDemoMatchPlay(env),
-      };
+      const seedMap = getKnownDemoSeedMap(env);
       if (!slug || !seedMap[slug]) {
         return new Response(JSON.stringify({ error: 'Pass ?slug=demo-buddies (or other demo slug)', available: Object.keys(seedMap) }), { headers: { 'Content-Type': 'application/json' } });
       }
@@ -2804,6 +2964,9 @@ function handleCheckoutSuccessPage(url) {
 // ─── Subscription Handlers ────────────────────────────────────────────────
 
 async function createSeasonPassCheckoutResponse(env, email, sourceTag = 'subscribe_season') {
+  if (!isValidEmailAddress(email)) {
+    return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400, headers: EVENT_CORS });
+  }
   const tierConfig = CHECKOUT_TIERS.season;
   const stripeBody = new URLSearchParams({
     'payment_method_types[]': 'card',
@@ -2844,6 +3007,9 @@ async function handleSubscribe(request, env) {
   const email = (body.email || '').trim().toLowerCase();
   const plan = String(body.plan || 'monthly').trim().toLowerCase();
   if (!email) return new Response(JSON.stringify({ error: 'Email required' }), { status: 400, headers: EVENT_CORS });
+  if (!isValidEmailAddress(email)) {
+    return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400, headers: EVENT_CORS });
+  }
 
   // Canonical season pass checkout is one-time $149 regardless of subscription config.
   if (plan === 'season' || plan === 'season_pass' || plan === 'season-pass') {
@@ -3056,12 +3222,21 @@ async function handleCreateCheckout(request, env) {
     source: config?.meta?.source || {},
   });
 
-  const isFreeType = config.event?.eventType === 'quick' || (config.event?.eventType === 'buddies_trip' && !env.STRIPE_SECRET_KEY);
-  if (isFreeType) {
-    return handleCreateEventFromConfig(config, env);
+  const allowUnpaidEventCreation = String(env.ALLOW_UNPAID_EVENT_CREATION || '').trim() === '1';
+  const hasStripe = !!String(env.STRIPE_SECRET_KEY || '').trim();
+  if (!hasStripe && !allowUnpaidEventCreation) {
+    return new Response(JSON.stringify({
+      error: 'Payments not configured',
+      code: 'PAYMENTS_NOT_CONFIGURED',
+    }), { status: 503, headers: EVENT_CORS });
   }
 
-  if (!env.STRIPE_SECRET_KEY) {
+  // Explicit override for emergency/dev workflows only.
+  if (allowUnpaidEventCreation) {
+    config.meta = {
+      ...(config.meta || {}),
+      paidVia: config.meta?.paidVia || 'override_unpaid_creation',
+    };
     return handleCreateEventFromConfig(config, env);
   }
 
@@ -3156,6 +3331,10 @@ async function handleCreateCheckout(request, env) {
     'metadata[ref_code]': config.meta?.source?.ref || config.meta?.ref_code || '',
     'metadata[promo_code]': promoCode || '',
   });
+  if (adminEmail) {
+    stripeBody.set('customer_email', adminEmail);
+    stripeBody.set('metadata[organizer_email]', adminEmail);
+  }
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
@@ -3185,6 +3364,7 @@ async function handleResumeCheckout(url, env) {
   if (!env.STRIPE_SECRET_KEY) return Response.redirect('https://betwaggle.com/create/', 302);
 
   const config = JSON.parse(configRaw);
+  const adminEmail = (config.event?.adminContact || '').trim().toLowerCase();
   const eventType = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
   const amount = config.meta?.actualAmountCents || (WAGGLE_PRICES[eventType] ?? 3200);
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
@@ -3204,6 +3384,10 @@ async function handleResumeCheckout(url, env) {
     'metadata[event_name]': config.event?.name || '',
     'metadata[event_type]': eventType,
   });
+  if (adminEmail) {
+    stripeBody.set('customer_email', adminEmail);
+    stripeBody.set('metadata[organizer_email]', adminEmail);
+  }
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
@@ -4392,14 +4576,9 @@ async function handleCreateEventFromConfig(config, env) {
 }
 
 async function handleCreateEvent(request, env) {
-  let config;
-  try { config = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
-  const url = new URL(request.url);
-  const refCandidate = url.searchParams.get('ref') || config?.meta?.source?.ref || config?.meta?.ref_code || '';
-  if (refCandidate) {
-    await applyAffiliateRefToConfig(config, env, refCandidate);
-  }
-  return handleCreateEventFromConfig(config, env);
+  // Legacy compatibility route:
+  // force all non-free event creation through checkout to prevent unpaid activations.
+  return handleCreateCheckout(request, env);
 }
 
 async function trackFunnelEvent(env, eventName, details = {}) {
@@ -6281,46 +6460,8 @@ async function serveEventHtml(slug, request, env) {
 
   // If config not found, try seeding known events synchronously then retry
   if (!configRaw) {
-    if (slug === 'pga-frisco-2026') {
-      await seedFriscoV2(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'cabot-citrus-invitational') {
-      await seedDemoEvent(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-buddies') {
-      await seedDemoBuddies(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-scramble') {
-      await seedDemoScramble(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'legends-trip') {
-      await seedLegendsTrip(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'stag-night') {
-      await seedStagNight(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'augusta-scramble') {
-      await seedAugustaScramble(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'masters-member-guest') {
-      await seedMastersMG(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'weekend-warrior') {
-      await seedWeekendWarrior(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-skins') {
-      await seedDemoSkins(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-nassau') {
-      await seedDemoNassau(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-wolf') {
-      await seedDemoWolf(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    } else if (slug === 'demo-match-play') {
-      await seedDemoMatchPlay(env);
-      configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-    }
+    const seeded = await seedKnownDemoSlug(env, slug).catch(() => false);
+    if (seeded) configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
   }
 
   if (!configRaw) {
@@ -7303,9 +7444,69 @@ async function handleEventApi(slug, path, request, env, ctx) {
 
   // GET /state
   if (path === 'state' && request.method === 'GET') {
-    const [bets, scores, settings] = await Promise.all([env.MG_BOOK.get(`${K}:bets`, 'json'), env.MG_BOOK.get(`${K}:scores`, 'json'), env.MG_BOOK.get(`${K}:settings`, 'json')]);
+    let cfg = eventConfig;
+    if (!cfg) {
+      const seeded = await seedKnownDemoSlug(env, K).catch(() => false);
+      if (seeded) {
+        const refreshedRaw = await env.MG_BOOK.get(`config:${K}`, 'text');
+        if (refreshedRaw) {
+          try { cfg = JSON.parse(refreshedRaw); } catch {}
+        }
+      }
+    }
+
+    let [bets, scores, settings, kvPlayers, gameState, holes] = await Promise.all([
+      env.MG_BOOK.get(`${K}:bets`, 'json'),
+      env.MG_BOOK.get(`${K}:scores`, 'json'),
+      env.MG_BOOK.get(`${K}:settings`, 'json'),
+      env.MG_BOOK.get(`${K}:players`, 'json'),
+      env.MG_BOOK.get(`${K}:game-state`, 'json'),
+      env.MG_BOOK.get(`${K}:holes`, 'json'),
+    ]);
+
+    // Demo integrity guard:
+    // if a known demo slug has drifted into partial KV state, reseed once and re-read.
+    const hasScoreSignals = hasAnyScores(scores) || hasAnyScores(holes) || hasAnyScores(gameState);
+    const demoNeedsHydration = isKnownDemoSlug(env, K) && (!cfg || !hasScoreSignals);
+    if (demoNeedsHydration) {
+      const hydrated = await seedKnownDemoSlug(env, K).catch(() => false);
+      if (hydrated) {
+        const [refreshedCfgRaw, refreshedBets, refreshedScores, refreshedSettings, refreshedPlayers, refreshedGameState, refreshedHoles] = await Promise.all([
+          env.MG_BOOK.get(`config:${K}`, 'text'),
+          env.MG_BOOK.get(`${K}:bets`, 'json'),
+          env.MG_BOOK.get(`${K}:scores`, 'json'),
+          env.MG_BOOK.get(`${K}:settings`, 'json'),
+          env.MG_BOOK.get(`${K}:players`, 'json'),
+          env.MG_BOOK.get(`${K}:game-state`, 'json'),
+          env.MG_BOOK.get(`${K}:holes`, 'json'),
+        ]);
+        if (refreshedCfgRaw) {
+          try { cfg = JSON.parse(refreshedCfgRaw); } catch {}
+        }
+        bets = refreshedBets;
+        scores = refreshedScores;
+        settings = refreshedSettings;
+        kvPlayers = refreshedPlayers;
+        gameState = refreshedGameState;
+        holes = refreshedHoles;
+      }
+    }
+
+    const players = Array.isArray(kvPlayers)
+      ? kvPlayers
+      : (kvPlayers && typeof kvPlayers === 'object')
+        ? Object.values(kvPlayers)
+        : Array.isArray(cfg?.players)
+          ? cfg.players
+          : Array.isArray(cfg?.roster)
+            ? cfg.roster
+            : [];
     const sync = await getEventSyncMeta(env, K);
     return new Response(JSON.stringify({
+      config: cfg || null,
+      players,
+      gameState: gameState || {},
+      holes: holes || [],
       bets: bets || [],
       scores: scores || {},
       settings: settings || { announcements: [], lockedMatches: [], oddsOverrides: {} },
@@ -7891,8 +8092,9 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // GET /game-state
   if (path === 'game-state' && request.method === 'GET') {
     const [holes, gameState] = await Promise.all([env.MG_BOOK.get(`${K}:holes`, 'json'), env.MG_BOOK.get(`${K}:game-state`, 'json')]);
+    const liveDemoHoles = buildDemoLiveHoles(slug, holes || {}, eventConfig);
     const sync = await getEventSyncMeta(env, K);
-    return withSyncHeaders(new Response(JSON.stringify({ holes: holes || {}, gameState: gameState || {} }), { headers: EVENT_CORS }), sync);
+    return withSyncHeaders(new Response(JSON.stringify({ holes: liveDemoHoles, gameState: gameState || {} }), { headers: EVENT_CORS }), sync);
   }
 
   // POST /event/press — public auto-press endpoint (no admin auth needed)
@@ -9598,6 +9800,13 @@ function normalizeEmailCaptureText(value, fallback, maxLen = 120) {
   return clean.slice(0, maxLen) || String(fallback || '').trim() || 'landing_page';
 }
 
+function buildEmailCaptureId(normalizedEmail) {
+  const safe = String(normalizedEmail || '').toLowerCase().replace(/[^a-z0-9@._+-]/g, '');
+  if (!safe) return `ec_${createOpaqueId()}`;
+  const compact = safe.replace(/[^a-z0-9]/g, '').slice(0, 24);
+  return `ec_${compact || createOpaqueId()}`;
+}
+
 async function sha256Hex(value) {
   try {
     const bytes = new TextEncoder().encode(String(value || ''));
@@ -9714,6 +9923,7 @@ async function enforceEmailCaptureRateLimit(env, request) {
 async function triggerCaptureDripWelcome(env, {
   kvKey,
   normalizedEmail,
+  emailCaptureId,
   source,
   requestId,
   emailHash,
@@ -9727,12 +9937,17 @@ async function triggerCaptureDripWelcome(env, {
     latestRecord.drip_step = Math.max(1, Number(latestRecord.drip_step || 0));
     latestRecord.drip_started_at = nowIso;
     latestRecord.last_drip_trigger_at = nowIso;
+    const nextStep = DRIP_SEQUENCE[Math.max(1, Number(latestRecord.drip_step || 0))] || null;
+    latestRecord.drip_next_step_due_at = nextStep ? new Date(Date.parse(nowIso) + (nextStep.dayOffset * 24 * 60 * 60 * 1000)).toISOString() : null;
+    latestRecord.drip_schedule_version = 1;
     await env.MG_BOOK.put(kvKey, JSON.stringify(latestRecord));
   }
 
   console.log('email_capture_drip_triggered', JSON.stringify({
+    emailCaptureId: emailCaptureId || null,
     requestId,
     emailHash,
+    triggerOutcome: 'sent',
     resendStatus: resendResult?.status || null,
     suppressionKey,
   }));
@@ -9800,16 +10015,23 @@ async function handleEmailCapture(request, env, ctx) {
       const existing = await kvGetJsonSafe(env, kvKey);
       const baseSource = normalizeEmailCaptureText(source, existing?.source || 'landing_page', 80);
       const baseSourcePage = normalizeEmailCaptureText(source_page || source, existing?.source_page || baseSource || 'landing_page', 240);
+      const emailCaptureId = existing?.email_capture_id || buildEmailCaptureId(normalizedEmail);
+      const nowTs = Date.parse(nowIso);
+      const currentStepForSchedule = Math.max(0, Number(existing?.drip_step || 0));
+      const nextStepForSchedule = DRIP_SEQUENCE[currentStepForSchedule] || null;
 
       if (existing) {
         const updated = {
           ...existing,
+          email_capture_id: emailCaptureId,
           source: baseSource,
           source_page: baseSourcePage,
           game_interest: game_interest ?? existing.game_interest ?? null,
           course_interest: course_interest ?? existing.course_interest ?? null,
           opted_in_newsletter: opted_in_newsletter === false ? false : (existing.opted_in_newsletter !== false),
           captured_at: nowIso,
+          drip_schedule_version: 1,
+          drip_next_step_due_at: nextStepForSchedule ? new Date(nowTs + (nextStepForSchedule.dayOffset * 24 * 60 * 60 * 1000)).toISOString() : null,
         };
         stage = 'kv_write_existing';
         await env.MG_BOOK.put(kvKey, JSON.stringify(updated));
@@ -9849,6 +10071,7 @@ async function handleEmailCapture(request, env, ctx) {
             const dripJob = triggerCaptureDripWelcome(env, {
               kvKey,
               normalizedEmail,
+              emailCaptureId,
               source: updated.source,
               requestId,
               emailHash,
@@ -9856,8 +10079,10 @@ async function handleEmailCapture(request, env, ctx) {
             }).catch(async (err) => {
               await env.MG_BOOK.delete(suppressionKey).catch(() => {});
               console.error('email_capture_drip_failed', JSON.stringify({
+                emailCaptureId,
                 requestId,
                 emailHash,
+                triggerOutcome: 'failed',
                 resendStatus: err?.resendStatus || null,
                 message: err?.message || String(err),
               }));
@@ -9874,6 +10099,7 @@ async function handleEmailCapture(request, env, ctx) {
                 suppressed: false,
                 idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
               },
+              emailCaptureId,
               requestId,
               emailHash,
             }), { headers: EMAIL_CORS });
@@ -9887,6 +10113,7 @@ async function handleEmailCapture(request, env, ctx) {
               suppressed: true,
               idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
             },
+            emailCaptureId,
             requestId,
             emailHash,
           }), { headers: EMAIL_CORS });
@@ -9897,12 +10124,14 @@ async function handleEmailCapture(request, env, ctx) {
           message: 'Already subscribed',
           stored: { kv: true, d1: d1Stored },
           drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
+          emailCaptureId,
           requestId,
           emailHash,
         }), { headers: EMAIL_CORS });
       }
 
       const record = {
+        email_capture_id: buildEmailCaptureId(normalizedEmail),
         email: normalizedEmail,
         source: baseSource,
         source_page: baseSourcePage,
@@ -9913,6 +10142,8 @@ async function handleEmailCapture(request, env, ctx) {
         captured_at: nowIso,
         drip_started_at: nowIso,
         drip_step: 0,
+        drip_schedule_version: 1,
+        drip_next_step_due_at: nowIso,
         converted: false,
       };
 
@@ -9934,6 +10165,7 @@ async function handleEmailCapture(request, env, ctx) {
           ok: true,
           stored: { kv: true, d1: d1Stored },
           drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
+          emailCaptureId: record.email_capture_id,
           requestId,
           emailHash,
         }), { headers: EMAIL_CORS });
@@ -9961,6 +10193,7 @@ async function handleEmailCapture(request, env, ctx) {
             suppressed: true,
             idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
           },
+          emailCaptureId: record.email_capture_id,
           requestId,
           emailHash,
         }), { headers: EMAIL_CORS });
@@ -9979,6 +10212,7 @@ async function handleEmailCapture(request, env, ctx) {
           triggerCaptureDripWelcome(env, {
             kvKey,
             normalizedEmail,
+            emailCaptureId: record.email_capture_id,
             source: record.source,
             requestId,
             emailHash,
@@ -9986,8 +10220,10 @@ async function handleEmailCapture(request, env, ctx) {
           }).catch(async (err) => {
             await env.MG_BOOK.delete(suppressionKey).catch(() => {});
             console.error('email_capture_drip_failed', JSON.stringify({
+              emailCaptureId: record.email_capture_id,
               requestId,
               emailHash,
+              triggerOutcome: 'failed',
               resendStatus: err?.resendStatus || null,
               message: err?.message || String(err),
             }));
@@ -10001,6 +10237,7 @@ async function handleEmailCapture(request, env, ctx) {
             suppressed: false,
             idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
           },
+          emailCaptureId: record.email_capture_id,
           requestId,
           emailHash,
         }), { headers: EMAIL_CORS });
@@ -10011,6 +10248,7 @@ async function handleEmailCapture(request, env, ctx) {
         await triggerCaptureDripWelcome(env, {
           kvKey,
           normalizedEmail,
+          emailCaptureId: record.email_capture_id,
           source: record.source,
           requestId,
           emailHash,
@@ -10023,6 +10261,7 @@ async function handleEmailCapture(request, env, ctx) {
           code: 'DRIP_TRIGGER_FAILED',
           requestId,
           emailHash,
+          emailCaptureId: record.email_capture_id,
           resendStatus: err?.resendStatus || null,
           stored: { kv: true, d1: d1Stored },
         }), { status: 502, headers: EMAIL_CORS });
@@ -10036,6 +10275,7 @@ async function handleEmailCapture(request, env, ctx) {
           suppressed: false,
           idempotencyWindowSeconds: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS,
         },
+        emailCaptureId: record.email_capture_id,
         requestId,
         emailHash,
       }), { headers: EMAIL_CORS });
@@ -10092,7 +10332,7 @@ const DRIP_SEQUENCE = [
   },
   { // Step 3: Day 7
     dayOffset: 7,
-    subject: 'Your buddies trip is coming up. Lock in $32.',
+    subject: 'Your buddies trip is coming up. Lock in $32/event.',
     templateFile: '/emails/drip-04-urgency.html'
   },
   { // Step 4: Day 14
@@ -10215,6 +10455,10 @@ async function processDripEmails(env) {
           summary.attempted += 1;
           await sendDripEmail(env, record.email, currentStep, record.source);
           record.drip_step = currentStep + 1;
+          record.last_drip_trigger_at = new Date(now).toISOString();
+          record.drip_schedule_version = 1;
+          const upcomingStep = DRIP_SEQUENCE[record.drip_step] || null;
+          record.drip_next_step_due_at = upcomingStep ? new Date(new Date(record.drip_started_at || record.captured_at || record.created_at || new Date(now).toISOString()).getTime() + (upcomingStep.dayOffset * 24 * 60 * 60 * 1000)).toISOString() : null;
           await env.MG_BOOK.put(key.name, JSON.stringify(record));
           summary.sent += 1;
         } catch (e) {

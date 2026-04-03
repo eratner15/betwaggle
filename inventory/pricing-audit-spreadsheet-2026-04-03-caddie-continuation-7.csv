@@ -1,0 +1,10 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,Hero + pricing cards + CTA,$32/event + $149/season pass,$32/event + $149/season pass,correct,"live check 2026-04-03T20:22Z",No $199 found
+/tour/,Comparison row + CTA,$32/event + $149/season pass,$32/event + $149/season pass,correct,"live check 2026-04-03T20:22Z",Historical $199 mismatch not reproduced
+/pricing/,Hero + plan cards + CTAs,$32/event + $149/season pass,$32/event + $149/season pass,correct,"live check 2026-04-03T20:22Z",No $199 found
+/demo/,Primary CTA,$32/event,$32/event,correct,"live check 2026-04-03T20:22Z",Demo pricing copy consistent
+/pro/,Affiliate revenue section,"$149/season pass" plus formula text using "$149/season",$149/season pass,mixed,"live /pro lines 1082,1105,1312",No longer shows "$149 per scramble event"; formula copy still uses "$149/season"
+CTA text (core pages),Setup buttons and season CTA,"Set Up Your Event — $32/event" and "Set Up Your Season — $149/season pass",same,correct,"live checks / and /pricing",CTA consistency confirmed
+emails/templates,Drip + outreach pricing language,$32/event and $149/season pass references,$32/event and $149/season pass,mixed,"source scan /emails",Template copy mostly aligned; operational delivery still separate concern
+worker.js/create/index.html,Hardcoded label strings,contains $149/season variants,$149/season pass,mixed,"source scan",Amounts correct; wording normalization backlog
+JSON/JS price constants,14900/3200 cent values,14900/3200 cent values,$149/season pass and $32/event,correct,"source scan",Numeric pricing constants remain correct

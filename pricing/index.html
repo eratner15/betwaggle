@@ -115,6 +115,8 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      min-height: 56px;
+      padding: 0 10px;
     }
     .nav-logo span {
       font-family: 'Playfair Display', serif;
@@ -131,10 +133,11 @@
       text-decoration: none;
       letter-spacing: .08em;
       text-transform: uppercase;
-      padding: 12px 4px;
-      min-height: 44px;
+      padding: 12px 12px;
+      min-height: 56px;
       display: flex;
       align-items: center;
+      justify-content: center;
       transition: color .15s;
     }
     .nav-link:hover { color: var(--gold); }
@@ -173,7 +176,7 @@
 
     .hero-kicker {
       display: inline-block;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -258,7 +261,7 @@
       transform: translateX(-50%);
       background: var(--gold);
       color: var(--forest);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -361,7 +364,11 @@
       border-radius: 10px;
       font-size: 15px;
       font-weight: 700;
+      min-height: 56px;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: transform .15s, box-shadow .15s, background .15s;
     }
     .btn-pricing:hover {
@@ -457,7 +464,7 @@
     .comparison-table .section-row td {
       background: var(--ivory);
       font-weight: 700;
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
@@ -500,6 +507,8 @@
       justify-content: space-between;
       gap: 16px;
       user-select: none;
+      min-height: 56px;
+      padding: 12px 0;
     }
 
     .faq-q::after {
@@ -570,15 +579,18 @@
     }
 
     .btn-gold-lg {
-      display: inline-block;
+      display: inline-flex;
       background: var(--gold);
       color: var(--forest);
       padding: 18px 44px;
       border-radius: 8px;
       font-weight: 700;
       font-size: 16px;
+      min-height: 56px;
       text-decoration: none;
       letter-spacing: .04em;
+      align-items: center;
+      justify-content: center;
       transition: transform .2s, box-shadow .2s, background .15s;
       box-shadow: 0 4px 24px rgba(201,168,76,.35);
     }
@@ -628,10 +640,11 @@
       text-decoration: none;
       font-size: 13px;
       font-weight: 600;
-      padding: 8px 4px;
-      min-height: 44px;
+      padding: 8px 12px;
+      min-height: 56px;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       transition: color .15s;
     }
     .footer-links a:hover { color: rgba(255,255,255,.6); }
@@ -645,7 +658,7 @@
     }
 
     .footer-copy {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
     }
 
@@ -704,7 +717,7 @@
     </a>
     <div class="nav-links">
       <a class="nav-link" href="/demo/">Try the Demo</a>
-      <a class="nav-link" href="/create/">Set Up Your Event &mdash; $32/event</a>
+      <a class="nav-link" href="/create/">Set Up Your Event &mdash; $32</a>
     </div>
   </nav>
 
@@ -713,7 +726,7 @@
     <div class="hero-inner">
       <div class="hero-kicker">Simple pricing</div>
       <h1>$32/event or <em>$149/season pass.</em></h1>
-      <p class="hero-sub">Direct pricing. Pick event pass for one trip or season pass for recurring play.</p>
+      <p class="hero-sub">Direct pricing. Pick event pricing for one trip or season pricing for recurring play.</p>
     </div>
   </section>
   <div class="curve"></div>
@@ -738,7 +751,7 @@
           <li><span class="check">&#10003;</span> Works on every phone</li>
           <li><span class="check">&#10003;</span> No app download</li>
         </ul>
-        <a href="/create/?tier=event" class="btn-pricing outline">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/?tier=event" class="btn-pricing outline">Set Up Your Event &mdash; $32</a>
       </div>
 
       <!-- Buddies Trip — $32/event -->
@@ -759,7 +772,7 @@
           <li><span class="check">&#10003;</span> Settlement cards with Venmo deep links</li>
         </ul>
         <div class="pricing-promo">Use code <code>FIRSTTRIP</code> for 50% off</div>
-        <a href="/create/?tier=buddies" class="btn-pricing primary">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/?tier=buddies" class="btn-pricing primary">Set Up Your Event &mdash; $32</a>
       </div>
 
       <!-- Season Pass -->
@@ -787,7 +800,7 @@
         <div class="pricing-tagline">Tournament-grade tooling for clubs and larger groups.</div>
         <div class="pricing-price">
           <div class="pricing-amount">$149/season pass</div>
-          <div class="pricing-period">unlimited events</div>
+          <div class="pricing-period">$149/season pass unlimited events</div>
         </div>
         <ul class="pricing-features">
           <li><span class="check">&#10003;</span> Up to 48 teams</li>
@@ -865,7 +878,7 @@
 
     <div class="faq-item">
       <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-        Can I switch to a season pass later?
+        Can I switch to a season plan later?
       </div>
       <div class="faq-a">
         Yes. Start with $32/event anytime, then switch to $149/season pass when your group wants recurring events. Your event data stays intact.
@@ -896,7 +909,7 @@
     <div class="bottom-cta-inner">
       <h2>Ready to run your sportsbook?</h2>
       <p>Set up in 2 minutes. No app download. Every phone.</p>
-      <a href="/create/" class="btn-gold-lg">Set Up Your Event &mdash; $32/event</a>
+      <a href="/create/" class="btn-gold-lg">Set Up Your Event &mdash; $32</a>
     </div>
   </section>
 
@@ -906,8 +919,7 @@
       <div class="footer-brand">Waggle</div>
       <div class="footer-tagline">The sportsbook for your golf trip.</div>
       <div class="footer-links">
-        <a href="/create/">Set Up Your Event &mdash; $32/event</a>
-        <a href="/create/?tier=season">Set Up Your Season &mdash; $149/season pass</a>
+        <a href="/create/">Set Up Your Event &mdash; $32</a>
         <a href="/demo/">Try the Demo</a>
       </div>
       <div class="footer-rule"></div>
@@ -939,7 +951,7 @@
       const monthBtn = document.getElementById('toggleMonthly');
       const annualBtn = document.getElementById('toggleAnnual');
       priceEl.textContent = '149';
-      periodEl.textContent = 'per season';
+      periodEl.textContent = '$149/season pass';
       if (monthBtn) { monthBtn.style.background = 'transparent'; monthBtn.style.color = '#666'; monthBtn.style.fontWeight = '400'; }
       if (annualBtn) { annualBtn.style.background = '#C9A84C'; annualBtn.style.color = '#0D2818'; annualBtn.style.fontWeight = '600'; }
     }
@@ -965,7 +977,7 @@
     if (params.get('subscribed') === 'true') {
       const banner = document.createElement('div');
       banner.style.cssText = 'background:#C9A84C;color:#0D2818;text-align:center;padding:16px;font-weight:700;font-size:16px;position:fixed;top:0;left:0;right:0;z-index:1000';
-      banner.textContent = 'Season Pass activated at $149/season pass. Create unlimited events at betwaggle.com/create';
+      banner.textContent = 'Season access activated at $149/season pass. Create unlimited events at betwaggle.com/create';
       document.body.prepend(banner);
       setTimeout(() => banner.remove(), 8000);
     }

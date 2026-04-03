@@ -1,0 +1,14 @@
+page,element,current_price,correct_price,status,notes
+/,Hero CTA + pricing cards + footer CTAs,$32/event and $149/season,$32/event and $149/season,OK,No drift found in homepage pricing copy
+/tour/,All CTA buttons and comparison pricing row,$32/event and $149/season,$32/event and $149/season,OK,Previously reported $199 not present in current source or live page
+/pricing/,Meta tags hero cards CTA buttons and season switcher text,$32/event and $149/season,$32/event and $149/season,OK,All canonical references aligned
+/demo/,Bottom conversion CTA + helper text,$32/event,$32/event,OK,Demo conversion copy aligned
+/create/,Quick-start cards and plan badges,$32/event and $149/season,$32/event and $149/season,OK,Event/season tier copy consistent
+worker.js,CHECKOUT_TIERS + WAGGLE_PRICES + checkout labels,$32/event and $149/season,$32/event and $149/season,OK,3200 and 14900 cent values are canonical
+emails/drip-*.html,Drip templates pricing references,None,None,OK,No conflicting price literals found in drip templates
+worker.js transactional email,Live-event activation email,None,None,OK,No price text in activation email template
+waggle-paperclip-company-plan.md,Company plan pricing bullet,$149/event,$149/season,Mismatch,Internal planning doc uses outdated value
+/gtm-private/index.html,GTM margin and subscription narrative,$149/event,$149/season,Mismatch,Private GTM doc still uses old event pricing model
+/docs/gtm-strategy.md,Strategy pricing lines,$149/event,$149/season,Mismatch,Internal doc mismatch
+/docs/ad-creatives.md,Ad copy table subline,$149/event,$149/season,Mismatch,Internal ad copy mismatch
+/docs/AFFILIATE-ENGINE-PROMPT.md,Target segment pricing bullets,$149/event,$149/season,Mismatch,Internal prompt mismatch

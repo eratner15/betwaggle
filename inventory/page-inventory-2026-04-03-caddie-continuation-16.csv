@@ -1,0 +1,17 @@
+page,purpose,should_be_public,http_status,redirect_target,pricing_status,link_status,notes,last_checked_utc
+/,Homepage conversion entrypoint,yes,200,,correct,working,"Core CTA pricing aligned ($32/event, $149/season pass)",2026-04-03T23:27:41Z
+/tour/,Product tour + format comparison,yes,200,,incorrect,working,"Comparison row still uses '$149/season' wording",2026-04-03T23:27:41Z
+/pricing/,Canonical pricing + checkout entry,yes,200,,correct,working,"Season CTA/fallback now '$149/season pass'",2026-04-03T23:27:41Z
+/demo/,Demo directory page,yes,200,,correct,working,"CTA helper copy is '$32/event'",2026-04-03T23:27:41Z
+/demo-buddies/,Interactive buddies demo,yes,200,,n/a,working,"Loads and reachable",2026-04-03T23:27:41Z
+/demo-scramble/,Interactive scramble demo,yes,200,,n/a,working,"Loads and reachable",2026-04-03T23:27:41Z
+/affiliate/,Legacy affiliate alias,yes (legacy),301,https://betwaggle.com/affiliates/,n/a,working,"Canonical redirect now active",2026-04-03T23:27:41Z
+/affiliates/,Affiliate landing page,yes,200,,n/a,working,"Primary affiliate route",2026-04-03T23:27:41Z
+/marketing/,Internal docs alias,no,404,,n/a,blocked (expected),"Not publicly accessible",2026-04-03T23:27:41Z
+/gtm/,Internal docs alias,no,404,,n/a,blocked (expected),"Not publicly accessible",2026-04-03T23:27:41Z
+/ads/,Internal docs alias,no,404,,n/a,blocked (expected),"Not publicly accessible",2026-04-03T23:27:41Z
+/join/,Legacy conversion alias,yes (legacy),301,https://betwaggle.com/create/,n/a,working,"No longer 404; redirects",2026-04-03T23:27:41Z
+/about/,Legacy marketing alias,yes (legacy),301,https://betwaggle.com/overview/,n/a,working,"No longer 404; redirects",2026-04-03T23:27:41Z
+/games/stroke-play/,Legacy game slug,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:27:41Z
+/games/round-robin/,Legacy game slug,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:27:41Z
+/games/chapman/,Legacy game slug,yes (legacy),404,,n/a,broken,"Still 404",2026-04-03T23:27:41Z

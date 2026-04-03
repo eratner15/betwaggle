@@ -1,0 +1,42 @@
+url,purpose,public_vs_internal,http_status,redirect_location,link_status,pricing_check_scope,pricing_status,notes,last_checked_et
+https://betwaggle.com/,Homepage,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:44
+https://betwaggle.com/about/,Legacy route,public_legacy,301,https://betwaggle.com/tour/,working,not_pricing_page,n/a,"redirects to https://betwaggle.com/tour/",2026-04-03 16:27:44
+https://betwaggle.com/ads-private/,Internal private page,internal_should_not_be_public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:45
+https://betwaggle.com/ads/,Internal alias route,internal_should_not_be_public,404,,broken,not_pricing_page,n/a,"",2026-04-03 16:27:45
+https://betwaggle.com/affiliate/,Legacy affiliate route,public_legacy,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:45
+https://betwaggle.com/affiliates/,Affiliate landing page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:45
+https://betwaggle.com/b/,Alternate landing page,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:46
+https://betwaggle.com/courses/,Course directory,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:46
+https://betwaggle.com/create/,Create flow,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:46
+https://betwaggle.com/demo/,Interactive demo,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:46
+https://betwaggle.com/games/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:47
+https://betwaggle.com/games/banker/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:47
+https://betwaggle.com/games/best-ball/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:47
+https://betwaggle.com/games/bingo-bango-bongo/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:47
+https://betwaggle.com/games/bloodsome/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:48
+https://betwaggle.com/games/chapman/,Legacy route,public_legacy,301,https://betwaggle.com/games/best-ball/,working,not_pricing_page,n/a,"redirects to https://betwaggle.com/games/best-ball/",2026-04-03 16:27:48
+https://betwaggle.com/games/match-play/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:48
+https://betwaggle.com/games/nassau/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:48
+https://betwaggle.com/games/round-robin/,Legacy route,public_legacy,301,https://betwaggle.com/games/nassau/,working,not_pricing_page,n/a,"redirects to https://betwaggle.com/games/nassau/",2026-04-03 16:27:49
+https://betwaggle.com/games/scramble/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:49
+https://betwaggle.com/games/skins/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:49
+https://betwaggle.com/games/stableford/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:49
+https://betwaggle.com/games/stroke-play/,Legacy route,public_legacy,301,https://betwaggle.com/games/match-play/,working,not_pricing_page,n/a,"redirects to https://betwaggle.com/games/match-play/",2026-04-03 16:27:50
+https://betwaggle.com/games/vegas/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:50
+https://betwaggle.com/games/wolf/,Game format page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:50
+https://betwaggle.com/gtm-private/,Internal private page,internal_should_not_be_public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:50
+https://betwaggle.com/gtm/,Internal alias route,internal_should_not_be_public,404,,broken,not_pricing_page,n/a,"",2026-04-03 16:27:51
+https://betwaggle.com/guides/,Guide content page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:51
+https://betwaggle.com/guides/best-golf-betting-games-for-a-foursome/,Guide content page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:51
+https://betwaggle.com/guides/golf-trip-betting-formats/,Guide content page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:51
+https://betwaggle.com/guides/how-to-run-a-charity-golf-scramble/,Guide content page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:52
+https://betwaggle.com/guides/how-to-settle-golf-bets/,Guide content page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:52
+https://betwaggle.com/join/,Legacy route,public_legacy,301,https://betwaggle.com/register/,working,not_pricing_page,n/a,"redirects to https://betwaggle.com/register/",2026-04-03 16:27:52
+https://betwaggle.com/marketing-private/,Internal private page,internal_should_not_be_public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:53
+https://betwaggle.com/marketing/,Internal alias route,internal_should_not_be_public,404,,broken,not_pricing_page,n/a,"",2026-04-03 16:27:54
+https://betwaggle.com/my-events/,User event list,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:54
+https://betwaggle.com/overview/,Overview page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:54
+https://betwaggle.com/pricing/,Pricing + checkout,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:54
+https://betwaggle.com/pro/,Pro / calculator page,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:55
+https://betwaggle.com/tour/,Product tour,public,200,,working,requires_pricing_validation,correct_or_n/a,"",2026-04-03 16:27:55
+https://betwaggle.com/walkthrough/,Walkthrough page,public,200,,working,not_pricing_page,n/a,"",2026-04-03 16:27:55

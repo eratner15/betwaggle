@@ -866,7 +866,7 @@ body {
   text-align: center;
   padding: 12px 12px;
   min-width: 56px;
-  min-height: 56px;
+  min-height: var(--mg-touch-target) !important;
   transition: transform .12s ease-out, border-color .15s ease-out, background-color .15s ease-out, box-shadow .15s ease-out;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -884,7 +884,8 @@ body {
 .mg-odds-btn.odds-pressed {
   transform: scale(0.97);
   background: var(--bg-hover);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.32);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 8px 16px rgba(0, 0, 0, 0.32);
 }
 .mg-odds-btn:focus-visible {
   outline: 2px solid var(--gold-bright);
@@ -1178,6 +1179,12 @@ body {
 }
 .mg-premium-player-row.demo-row-hot {
   animation: demoRowHotPulse 0.72s ease-out;
+}
+.mg-premium-player-row,
+.mg-leaderboard-row,
+.tv-row {
+  transition: transform 0.52s cubic-bezier(0.2, 0.85, 0.2, 1), box-shadow 0.22s ease;
+  will-change: transform;
 }
 .mg-premium-player-row.demo-leaderboard-moving {
   z-index: 2;
@@ -2443,6 +2450,18 @@ hr.mg-divider {
   border-color: var(--mg-gold);
 }
 
+/* Sprint 3: enforce Waggle touch target minimum for mobile inline score inputs */
+@media (max-width: 768px) {
+  [data-inline-score-input="1"] {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+}
+
 .mg-inline-score-pill {
   width: 64px;
   height: 64px;
@@ -2875,6 +2894,8 @@ body.tv-mode #app {
 
 .settlement-money-value {
   will-change: contents, transform;
+  display: inline-block;
+  transition: color 0.25s ease, transform 0.25s ease;
 }
 
 .settlement-confetti-canvas {
@@ -3195,6 +3216,61 @@ body.tv-mode #app {
   to { opacity: 0; }
 }
 
+/* BET-480: DraftKings-style odds affordance polish */
+.mg-odds-btn,
+.heritage-odds-chip,
+.mg-bar-odds-chip {
+  min-width: var(--mg-touch-target);
+  min-height: var(--mg-touch-target);
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+.mg-odds-btn {
+  background: #1A472A;
+  border-color: rgba(212, 175, 55, 0.34);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  transition: transform 120ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.mg-odds-btn:hover:not(:active) {
+  background: rgba(212, 175, 55, 0.14);
+  border-color: #D4AF37;
+  box-shadow: 0 9px 18px rgba(0, 0, 0, 0.32);
+  transform: translateY(-1px);
+}
+
+.mg-odds-btn:active,
+.mg-odds-btn.odds-pressed {
+  transform: scale(0.96);
+  background: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+.mg-odds-btn:focus-visible {
+  outline: 2px solid #D4AF37;
+  outline-offset: 2px;
+}
+
+.mg-odds-btn.selected {
+  background: #D4AF37;
+  border-color: #D4AF37;
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.45), 0 10px 22px rgba(0, 0, 0, 0.34);
+  transform: translateY(-1px);
+}
+
+.mg-odds-btn.selected .odds-line,
+.mg-odds-btn.selected .odds-label,
+.mg-odds-btn.selected .odds-pays {
+  color: #0D2818;
+}
+
+.mg-odds-btn.selected::after {
+  background: #0D2818;
+  color: #D4AF37;
+  box-shadow: 0 0 0 1px rgba(13, 40, 24, 0.45);
+}
+
 /* Fixed utility toggle for optional sound effects (muted by default) */
 .waggle-sfx-toggle {
   position: fixed;
@@ -3213,6 +3289,8 @@ body.tv-mode #app {
   line-height: 1.1;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+  font-family: Inter, sans-serif;
+  letter-spacing: 0.06em;
 }
 
 .waggle-sfx-toggle.is-on {

@@ -1,0 +1,15 @@
+page,element,current_price,correct_price,status,evidence,notes
+/,Hero + pricing cards + footer CTA,$32/event and $149/season pass,$32/event and $149/season pass,correct,"live grep / lines 1504,1518,2444,2799",No $199 found
+/tour/,Pricing comparison row + CTAs,$32/event and $149/season pass,$32/event and $149/season pass,correct,"live grep /tour/ lines 131,210,272,295",Known $199 issue not present in current live page
+/pricing/,Hero + plan cards + checkout CTA,$32/event and $149/season pass,$32/event and $149/season pass,correct,"live grep /pricing/ lines 715,772,781,847,910",No $199 found
+/demo/,Demo CTA + support copy,$32/event,$32/event,correct,"live grep /demo/ lines 448,451",No conflicting price copy on demo page
+sitewide core pages,Legacy premium price check,No $199 in / /tour/ /pricing/ /demo,No $199 anywhere in audited core pages,correct,"curl+rg live scan 2026-04-03T19:42Z",Core marketing pricing amount is aligned
+homepage CTA buttons,All major CTA labels,Set Up Your Event — $32/event and Set Up Your Season — $149/season pass,same,correct,"live / lines 1504,1518,2799,2836",CTA language aligned to canonical
+/tour/ CTA buttons,All visible CTAs,Set Up Your Event — $32/event,same,correct,"live /tour/ lines 131,210,272,304",No stale $199 CTA found
+/pricing/ CTA buttons,All visible CTAs,Set Up Your Event — $32/event and Set Up Your Season — $149/season pass,same,correct,"live /pricing/ lines 741,762,781,899,910",CTA language aligned
+emails/drip-*.html,Nurture pricing language,$32/event and $149/season pass references,$32/event and $149/season pass,mixed,"source scan emails/drip + outreach",Copy largely aligned; operational risk is delivery pipeline not template copy
+emails/outreach/*.html,Outbound pricing language,$32/event and $149/season pass references,$32/event and $149/season pass,mixed,"source scan outreach templates",Affiliate payout copy uses per-event commission values by design
+worker.js,Checkout labels/prompts,$149/season string variants,$149/season pass wording,incorrect,"worker.js lines ~2161-2164,4497,4502",Amounts are correct (14900/3200) but wording is not canonical everywhere
+create/index.html,Plan badges + summary,$32/event and $149/season strings,$32/event and $149/season pass,mixed,"create/index.html lines 494,2642",Amount correct; season label normalization recommended
+/pro/,Affiliate revenue copy,$149 per scramble event,$149/season pass,incorrect,"live /pro/ lines 1082+",Public copy conflicts with canonical season-pass framing
+any JSON/JS hardcodes,Price constants,amount=3200 and 14900 with mixed labels,$32/event and $149/season pass,mixed,"worker.js PRICING/WAGGLE_LABELS",Numeric pricing correct; text normalization backlog remains

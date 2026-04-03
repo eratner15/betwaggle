@@ -1,0 +1,42 @@
+path,purpose,intended_visibility,live_status,pricing_status,link_status,notes,last_checked
+/,Homepage and primary conversion funnel,public,200,correct,working,"$32/event + $149/season pass copy visible",2026-04-03T15:35:00-04:00
+/create/,Event creation flow,public,200,not_applicable,working,"Core conversion path",2026-04-03T15:35:00-04:00
+/pricing/,Pricing detail and checkout entry,public,200,correct,working,"Canonical pricing currently live",2026-04-03T15:35:00-04:00
+/tour/,Feature tour and package comparison,public,200,correct,working,"No $199 observed",2026-04-03T15:35:00-04:00
+/demo/,Demo launcher,public,200,correct,working,"CTA shows $32/event",2026-04-03T15:35:00-04:00
+/pro/,Affiliate/pro landing,public,200,review_needed,working,"Pricing language should be rechecked against season pass standard",2026-04-03T15:35:00-04:00
+/affiliate/,Legacy affiliate entrypoint,public_canonical_candidate,200,not_applicable,duplicate,"Duplicates /affiliates/",2026-04-03T15:35:00-04:00
+/affiliates/,Primary affiliate landing,public,200,not_applicable,working,"Canonical should be this route",2026-04-03T15:35:00-04:00
+/register/,Signup/registration route,public,200,not_applicable,working,"/join/ redirects here",2026-04-03T15:35:00-04:00
+/join/,Legacy join route,public_redirect,301,not_applicable,redirects,"Redirect target: /register/",2026-04-03T15:35:00-04:00
+/about/,Legacy about route,public_redirect,301,not_applicable,redirects,"Redirect target: /tour/",2026-04-03T15:35:00-04:00
+/games/,Games index,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/nassau/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/skins/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/scramble/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/best-ball/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/wolf/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/vegas/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/match-play/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/stableford/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/banker/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/bloodsome/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/bingo-bango-bongo/,Game rules page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/games/stroke-play/,Legacy game route,public_redirect,301,not_applicable,redirects,"Redirect target: /games/match-play/",2026-04-03T15:35:00-04:00
+/games/round-robin/,Legacy game route,public_redirect,301,not_applicable,redirects,"Redirect target currently configured",2026-04-03T15:35:00-04:00
+/games/chapman/,Legacy game route,public_redirect,301,not_applicable,redirects,"Redirect target currently configured",2026-04-03T15:35:00-04:00
+/guides/,SEO guides index,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/guides/how-to-run-a-charity-golf-scramble/,SEO guide,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/guides/golf-trip-betting-formats/,SEO guide,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/guides/how-to-settle-golf-bets/,SEO guide,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/guides/best-golf-betting-games-for-a-foursome/,SEO guide,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/overview/,Overview page,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/courses/,Course finder/listing,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/my-events/,User event lookup,public,200,not_applicable,working,"In sitemap",2026-04-03T15:35:00-04:00
+/partner/,Partner intake,public,200,not_applicable,working,"Links to /affiliates/",2026-04-03T15:35:00-04:00
+/walkthrough/,Auto-play product walkthrough,public,200,not_applicable,working,"Known UX bugs tracked separately",2026-04-03T15:35:00-04:00
+/marketing-private/,Internal marketing docs,internal_should_be_private,200,not_applicable,exposed,"Publicly reachable internal route",2026-04-03T15:35:00-04:00
+/gtm-private/,Internal GTM docs,internal_should_be_private,200,not_applicable,exposed,"Publicly reachable internal route",2026-04-03T15:35:00-04:00
+/ads-private/,Internal ads docs,internal_should_be_private,200,not_applicable,exposed,"Publicly reachable internal route",2026-04-03T15:35:00-04:00
+/inventory/,Internal operations artifacts,internal_should_be_private,200,not_applicable,exposed,"Publicly reachable operational data",2026-04-03T15:35:00-04:00
+/admin/outreach/,Internal outreach admin,internal_should_be_private,200,not_applicable,exposed,"Publicly reachable admin route",2026-04-03T15:35:00-04:00

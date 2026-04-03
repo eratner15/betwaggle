@@ -1,0 +1,25 @@
+page,element,current_price,correct_price,status
+LIVE /,Season Pass card amount,"$149/season","$149/season pass",wrong
+LIVE /,Season Pass card period,"$149/season, unlimited events & players","$149/season pass",wrong
+LIVE /,Primary CTA text,"Set Up Your Event — $32/event","$32/event",ok
+LIVE /tour/,Pricing comparison row (season),"$149/season","$149/season pass",wrong
+LIVE /tour/,Pricing comparison row (event),"$32/event","$32/event",ok
+LIVE /tour/,CTA text,"Set Up Your Event — $32/event","$32/event",ok
+LIVE /pricing/,Hero copy,"$32/event or $149/season","$32/event or $149/season pass",wrong
+LIVE /pricing/,Meta description,"$32/event or $149/season","$32/event or $149/season pass",wrong
+LIVE /pricing/,Season period label,"$149/season","$149/season pass",wrong
+LIVE /pricing/,Season CTA button,"Set Up Your Season — $149/season","Set Up Your Season — $149/season pass",wrong
+LIVE /pricing/,Comparison table season price,"$149/season","$149/season pass",wrong
+LIVE /pricing/,Event CTA text,"Set Up Your Event — $32/event","$32/event",ok
+LIVE /demo/,Demo CTA text,"Set Up Your Event — $32/event","$32/event",ok
+LIVE /demo/,Helper text,"$32/event when you're ready","$32/event",ok
+SOURCE index.html,Season Pass card amount,"$149/season pass","$149/season pass",ok
+SOURCE tour/index.html,Pricing row season,"$149/season pass","$149/season pass",ok
+SOURCE pricing/index.html,Hero copy,"$32/event or $149/season pass","$32/event or $149/season pass",ok
+SOURCE pricing/index.html,Season CTA button,"Set Up Your Season — $149/season pass","Set Up Your Season — $149/season pass",ok
+SOURCE emails/outreach/fl-charity-sequence.html,Recurring tournaments bullet,"$149/season","$149/season pass",wrong
+SOURCE emails/outreach/sc-nc-premium-sequence.html,Recurring groups copy,"$149/season","$149/season pass",wrong
+SOURCE emails/affiliate-welcome.html,Commission payout tier copy,"$149/season","$149/season pass",wrong
+SOURCE worker.js,Plan labels (member_guest/scramble/season),"$149/season","$149/season pass",wrong
+SOURCE worker.js,Event labels,"$32/event","$32/event",ok
+SOURCE (core pages + worker + emails),Legacy $199 references,"none found","none found",ok
