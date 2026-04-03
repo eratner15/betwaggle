@@ -2014,26 +2014,26 @@
             <div class="auto-match-header">Next Hole Winner</div>
             <div class="auto-match-options">
               <div class="auto-bet-option" id="auto-bet-a">
-                <div class="auto-bet-team">Eagles</div>
-                <div class="auto-bet-odds" id="odds-eagles">+120</div>
+                <div class="auto-bet-team">Wolves</div>
+                <div class="auto-bet-odds" id="odds-wolves">+120</div>
               </div>
               <div class="auto-bet-option" id="auto-bet-b">
-                <div class="auto-bet-team">Birdies</div>
-                <div class="auto-bet-odds" id="odds-birdies">-140</div>
+                <div class="auto-bet-team">Falcons</div>
+                <div class="auto-bet-odds" id="odds-falcons">-140</div>
               </div>
             </div>
           </div>
 
           <div class="auto-bet-slip" id="auto-slip">
             <div class="auto-slip-header">Bet Placed!</div>
-            <div class="auto-slip-detail">Eagles +120 • $25 to win $30</div>
+            <div class="auto-slip-detail">Wolves +120 • $25 to win $30</div>
           </div>
         </div>
 
         <div class="auto-demo-settlement" id="auto-settlement">
           <div class="auto-settlement-banner">
             <div class="auto-settlement-title">Hole Complete!</div>
-            <div class="auto-settlement-result">Eagles Win the Hole</div>
+            <div class="auto-settlement-result">Wolves Win the Hole</div>
             <div class="auto-settlement-payout">You Won $30!</div>
           </div>
         </div>
@@ -2046,14 +2046,14 @@
   (function() {
     var autoDemoState = {
       players: [
-        { name: 'Eagles', score: -12, pos: 1 },
-        { name: 'Birdies', score: -10, pos: 2 },
-        { name: 'Pars', score: -8, pos: 3 },
-        { name: 'Bogeys', score: -5, pos: 4 }
+        { name: 'Wolves', score: -12, pos: 1 },
+        { name: 'Falcons', score: -10, pos: 2 },
+        { name: 'Mustangs', score: -8, pos: 3 },
+        { name: 'Vipers', score: -5, pos: 4 }
       ],
       currentHole: 14,
-      eaglesOdds: 120,
-      birdiesOdds: -140,
+      wolvesOdds: 120,
+      falconsOdds: -140,
       isActive: false,
       hasPlayed: false,
       timeouts: []
@@ -2065,10 +2065,10 @@
     var autoSettlement = document.getElementById('auto-settlement');
     var autoSlip = document.getElementById('auto-slip');
     var autoHole = document.getElementById('auto-hole');
-    var eaglesOddsEl = document.getElementById('odds-eagles');
-    var birdiesOddsEl = document.getElementById('odds-birdies');
-    var betEagles = document.getElementById('auto-bet-a');
-    var betBirdies = document.getElementById('auto-bet-b');
+    var wolvesOddsEl = document.getElementById('odds-wolves');
+    var falconsOddsEl = document.getElementById('odds-falcons');
+    var betWolves = document.getElementById('auto-bet-a');
+    var betFalcons = document.getElementById('auto-bet-b');
 
     // Render initial leaderboard
     function renderLeaderboard() {
@@ -2096,25 +2096,25 @@
 
     // Update odds with animation
     function updateOdds() {
-      // Eagles odds improve (lower positive = better for bettor)
-      autoDemoState.eaglesOdds = 110;
-      // Birdies odds worsen (higher negative = worse for bettor)
-      autoDemoState.birdiesOdds = -155;
+      // Wolves odds improve (lower positive = better for bettor)
+      autoDemoState.wolvesOdds = 110;
+      // Falcons odds worsen (higher negative = worse for bettor)
+      autoDemoState.falconsOdds = -155;
 
-      if (eaglesOddsEl) {
-        eaglesOddsEl.textContent = '+' + autoDemoState.eaglesOdds;
-        flashOdds(eaglesOddsEl, true);
+      if (wolvesOddsEl) {
+        wolvesOddsEl.textContent = '+' + autoDemoState.wolvesOdds;
+        flashOdds(wolvesOddsEl, true);
       }
-      if (birdiesOddsEl) {
-        birdiesOddsEl.textContent = autoDemoState.birdiesOdds;
-        flashOdds(birdiesOddsEl, false);
+      if (falconsOddsEl) {
+        falconsOddsEl.textContent = autoDemoState.falconsOdds;
+        flashOdds(falconsOddsEl, false);
       }
     }
 
     // Show bet placement
     function placeBet() {
-      if (betEagles) {
-        betEagles.classList.add('selected');
+      if (betWolves) {
+        betWolves.classList.add('selected');
       }
       if (autoSlip) {
         autoSlip.classList.add('visible');
@@ -2123,8 +2123,8 @@
 
     // Show settlement
     function showSettlement() {
-      // Update scores - Eagles win the hole
-      autoDemoState.players[0].score = -13; // Eagles improve
+      // Update scores - Wolves win the hole
+      autoDemoState.players[0].score = -13; // Wolves improve
       autoDemoState.currentHole = 15;
 
       if (autoHole) {
@@ -2161,8 +2161,8 @@
       autoDemoState.isActive = false;
       autoDemoState.players[0].score = -12;
       autoDemoState.currentHole = 14;
-      autoDemoState.eaglesOdds = 120;
-      autoDemoState.birdiesOdds = -140;
+      autoDemoState.wolvesOdds = 120;
+      autoDemoState.falconsOdds = -140;
 
       // Clear all timeouts
       autoDemoState.timeouts.forEach(clearTimeout);
@@ -2170,10 +2170,10 @@
 
       // Reset UI
       if (autoHole) autoHole.textContent = '14';
-      if (eaglesOddsEl) eaglesOddsEl.textContent = '+120';
-      if (birdiesOddsEl) birdiesOddsEl.textContent = '-140';
+      if (wolvesOddsEl) wolvesOddsEl.textContent = '+120';
+      if (falconsOddsEl) falconsOddsEl.textContent = '-140';
 
-      if (betEagles) betEagles.classList.remove('selected');
+      if (betWolves) betWolves.classList.remove('selected');
       if (autoSlip) autoSlip.classList.remove('visible');
       if (autoSettlement) autoSettlement.classList.remove('visible');
 
