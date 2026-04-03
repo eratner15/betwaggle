@@ -7,9 +7,726 @@ let _teams = {};
 let _flights = {};
 let _oddsHistory = {}; // Track previous odds: { matchKey: { mlA, mlB, probA, probB, timestamp } }
 
+// ---- demo simulation state ---------------------------------
+let _demoMode = false;
+let _simulationTimer = null;
+let _simulationSpeed = 1; // 1x = real time, 2x = 2x speed, etc.
+let _virtualPlayers = [];
+let _simulationState = {
+  holesSimulated: {},  // Track simulated holes per match
+  lastOddsUpdate: {},  // Last odds movement timestamp per match
+  betActivity: []      // Recent virtual bet activity
+};
+
 export function setConfig(config) {
   _teams = config.teams;
   _flights = config.flights;
+
+  // Demo configuration
+  if (config.demoMode !== undefined) {
+    setDemoMode(config.demoMode, config.simulationSpeed || 1);
+  }
+  if (config.virtualPlayers) {
+    _virtualPlayers = config.virtualPlayers;
+  }
+}
+
+// ---- demo mode management -----------------------------------
+
+export function setDemoMode(enabled, speed = 1) {
+  if (_demoMode === enabled) return;
+
+  _demoMode = enabled;
+  _simulationSpeed = Math.max(0.1, Math.min(10, speed)); // Clamp between 0.1x and 10x
+
+  if (_demoMode) {
+    console.log(`[Betting] Demo mode ENABLED (${_simulationSpeed}x speed)`);
+    startSimulation();
+  } else {
+    console.log('[Betting] Demo mode DISABLED');
+    stopSimulation();
+  }
+}
+
+export function isDemoMode() {
+  return _demoMode;
+}
+
+export function getSimulationSpeed() {
+  return _simulationSpeed;
+}
+
+// Clear simulation state for fresh demo starts
+export function resetSimulation() {
+  _simulationState = {
+    holesSimulated: {},
+    lastOddsUpdate: {},
+    betActivity: []
+  };
+  _oddsHistory = {};
+}
+
+// Start the simulation timer loop
+function startSimulation() {
+  if (_simulationTimer) return;
+
+  const interval = Math.max(50, Math.round(2000 / _simulationSpeed)); // Min 50ms, scales with speed
+  _simulationTimer = setInterval(() => {
+    try {
+      runSimulationCycle();
+    } catch (err) {
+      console.error('[Betting] Simulation error:', err);
+    }
+  }, interval);
+}
+
+// Stop the simulation timer
+function stopSimulation() {
+  if (_simulationTimer) {
+    clearInterval(_simulationTimer);
+    _simulationTimer = null;
+  }
+}
+
+// Main simulation cycle - runs every 2 seconds (scaled by speed)
+function runSimulationCycle() {
+  if (!_demoMode) return;
+
+  const now = Date.now();
+
+  // 1. Simulate natural odds movement for all active matches
+  simulateOddsFluctuations(now);
+
+  // 2. Generate virtual bet activity
+  simulateVirtualBetting(now);
+
+  // 3. Advance match states progressively
+  simulateMatchProgression(now);
+}
+
+// ---- virtual player generators ------------------------------
+
+// Generate realistic virtual players with diverse betting patterns
+export function generateVirtualPlayers(count = 12) {
+  const namePool = [
+    'BigDog47', 'ProGolfer3', 'ChipMaster', 'BirdieKing', 'EagleEye88', 'FairwayFinder',
+    'GolfPro21', 'SandTrap', 'GreenReader', 'LongDrive', 'ShortGame', 'ClutchPutter',
+    'TourPro', 'WeekendWarrior', 'ClubChamp', 'ScratchGolfer', 'Bogey4Life', 'ParSeeker'
+  ];
+
+  const personalities = [
+    { risk: 'conservative', avgBet: 25, frequency: 0.3, favorites: true, name: 'Conservative' },
+    { risk: 'moderate', avgBet: 50, frequency: 0.6, favorites: false, name: 'Moderate' },
+    { risk: 'aggressive', avgBet: 100, frequency: 0.9, favorites: false, name: 'Aggressive' },
+    { risk: 'whale', avgBet: 500, frequency: 0.4, favorites: false, name: 'High Roller' }
+  ];
+
+  const players = [];
+  for (let i = 0; i < count; i++) {
+    const personality = personalities[i % personalities.length];
+    const variance = 0.7 + Math.random() * 0.6; // 0.7-1.3x multiplier
+
+    players.push({
+      id: `virtual_${i + 1}`,
+      name: namePool[i % namePool.length],
+      bankroll: Math.round(personality.avgBet * (10 + Math.random() * 20)), // 10-30x avg bet
+      personality: personality.name,
+      avgBetSize: Math.round(personality.avgBet * variance),
+      bettingFrequency: Math.max(0.1, personality.frequency * variance), // Chance per cycle
+      favoritesBias: personality.favorites, // Prefers betting favorites vs underdogs
+      lastBetTime: 0, // Throttle betting
+      totalBets: 0,
+      wins: 0,
+      losses: 0
+    });
+  }
+
+  return players;
+}
+
+// Get random virtual player weighted by their betting frequency
+function getRandomVirtualPlayer() {
+  if (_virtualPlayers.length === 0) return null;
+
+  const weights = _virtualPlayers.map(p => p.bettingFrequency);
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  let random = Math.random() * totalWeight;
+
+  for (let i = 0; i < _virtualPlayers.length; i++) {
+    random -= weights[i];
+    if (random <= 0) return _virtualPlayers[i];
+  }
+
+  return _virtualPlayers[_virtualPlayers.length - 1];
+}
+
+// Generate realistic bet size for a virtual player
+function generateBetSize(player, odds) {
+  // Base bet around their average with variance
+  let betSize = player.avgBetSize * (0.5 + Math.random());
+
+  // Adjust based on odds confidence (better odds = bigger bets for some)
+  if (player.personality === 'Aggressive' || player.personality === 'High Roller') {
+    if (Math.abs(odds.mlA) < 200 || Math.abs(odds.mlB) < 200) { // Close to even
+      betSize *= (1.2 + Math.random() * 0.5); // Bet more on close matches
+    }
+  }
+
+  // Ensure they don't bet more than they have
+  betSize = Math.min(betSize, player.bankroll * 0.3); // Max 30% of bankroll
+
+  // Round to realistic amounts
+  if (betSize < 25) return Math.round(betSize / 5) * 5; // $5 increments
+  if (betSize < 100) return Math.round(betSize / 10) * 10; // $10 increments
+  return Math.round(betSize / 25) * 25; // $25 increments
+}
+
+// ---- odds fluctuation simulation ----------------------------
+
+// Simulate natural market-driven odds movement
+function simulateOddsFluctuations(now) {
+  Object.keys(_teams).forEach((teamAId, index) => {
+    Object.keys(_teams).forEach((teamBId, subIndex) => {
+      if (teamAId >= teamBId || subIndex <= index) return; // Avoid duplicates and self-matches
+
+      const matchKey = getMatchKey(teamAId, teamBId);
+      const lastUpdate = _simulationState.lastOddsUpdate[matchKey] || 0;
+
+      // Only update odds every 8-15 seconds (scaled by simulation speed)
+      const updateInterval = (8000 + Math.random() * 7000) / _simulationSpeed;
+      if (now - lastUpdate < updateInterval) return;
+
+      // Get current odds (this will store in history automatically)
+      const currentOdds = getMatchMoneyline(teamAId, teamBId);
+
+      // Apply market simulation - slight random walk with mean reversion
+      const baseProb = currentOdds.probA;
+
+      // Market "noise" - random small movements ±1-3%
+      const noise = (Math.random() - 0.5) * 0.06; // ±3% max
+
+      // Longer-term drift - simulate changing market sentiment
+      const drift = generateMarketDrift(matchKey, now);
+
+      // Mean reversion - prevents odds from drifting too far from true handicap odds
+      const trueOdds = calculateTrueHandicapOdds(teamAId, teamBId);
+      const reversion = (trueOdds.probA - baseProb) * 0.02; // 2% pull toward true odds
+
+      // Combine all factors
+      let newProb = baseProb + noise + drift + reversion;
+
+      // Clamp to reasonable bounds (keep within ±15% of original true odds)
+      const minProb = Math.max(0.05, trueOdds.probA * 0.85);
+      const maxProb = Math.min(0.95, trueOdds.probA * 1.15);
+      newProb = Math.max(minProb, Math.min(maxProb, newProb));
+
+      // Only update if change is meaningful (>1% probability shift)
+      if (Math.abs(newProb - baseProb) > 0.01) {
+        // Apply the simulated odds by temporarily overriding
+        const simId = `sim_${teamAId}_${teamBId}`;
+        const probB = 1 - newProb;
+        const mlA = probToML(newProb);
+        const mlB = probToML(probB);
+
+        // Store the simulated odds as an override
+        _oddsOverrides[simId] = { mlA, mlB };
+
+        // Get the odds again to trigger delta calculation and history storage
+        getMatchMoneyline(teamAId, teamBId, simId);
+
+        // Clean up the temporary override
+        delete _oddsOverrides[simId];
+      }
+
+      _simulationState.lastOddsUpdate[matchKey] = now;
+    });
+  });
+}
+
+// Generate market drift for longer-term sentiment changes
+function generateMarketDrift(matchKey, now) {
+  // Create pseudo-random drift that's consistent for each match
+  const seed = hashStringToNumber(matchKey + Math.floor(now / 60000)); // Changes every minute
+  const pseudoRandom = (Math.sin(seed) + 1) / 2; // 0-1
+
+  // Convert to drift: mostly small movements, occasionally larger
+  if (pseudoRandom < 0.7) return 0; // 70% no drift
+  if (pseudoRandom < 0.95) return (pseudoRandom - 0.85) * 0.02; // 25% small drift ±1%
+  return (pseudoRandom - 0.975) * 0.08; // 5% larger drift ±2%
+}
+
+// Simple hash function for consistent pseudo-randomness
+function hashStringToNumber(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
+}
+
+// Calculate true handicap-based odds without any simulation
+function calculateTrueHandicapOdds(teamAId, teamBId) {
+  const tA = _teams[teamAId];
+  const tB = _teams[teamBId];
+
+  if (!tA || !tB) return { probA: 0.5, probB: 0.5 };
+
+  const effA = tA.combined / 2;
+  const effB = tB.combined / 2;
+
+  let probA;
+  if (effA > 15 && effB > 15) {
+    const diff = effA - effB;
+    const absDiff = Math.abs(diff);
+    const clampedDiff = Math.min(absDiff, 15);
+
+    if (clampedDiff < 0.1) {
+      probA = 0.5;
+    } else {
+      const pFav = interpolateProb(0, clampedDiff);
+      probA = diff < 0 ? pFav : (1 - pFav);
+    }
+  } else {
+    probA = interpolateProb(
+      Math.max(0, Math.min(15, effA)),
+      Math.max(0, Math.min(15, effB))
+    );
+  }
+
+  return { probA, probB: 1 - probA };
+}
+
+// ---- match progression simulation ---------------------------
+
+// Simulate realistic hole-by-hole match progression
+function simulateMatchProgression(now) {
+  // Simulate active matches progressing through holes
+  // This would integrate with your actual match state management
+  Object.keys(_teams).forEach((teamAId, index) => {
+    Object.keys(_teams).forEach((teamBId, subIndex) => {
+      if (teamAId >= teamBId || subIndex <= index) return;
+
+      const matchKey = getMatchKey(teamAId, teamBId);
+      let holesData = _simulationState.holesSimulated[matchKey];
+
+      if (!holesData) {
+        // Initialize new match simulation
+        holesData = {
+          holesPlayed: 0,
+          totalHoles: 9, // Standard 9-hole match
+          scoreA: 0,     // Match play points for team A
+          scoreB: 0,     // Match play points for team B
+          lastHoleTime: now,
+          holeStartTime: now,
+          matchStartTime: now
+        };
+        _simulationState.holesSimulated[matchKey] = holesData;
+      }
+
+      // Don't advance completed matches
+      if (holesData.holesPlayed >= holesData.totalHoles) return;
+
+      // Realistic hole timing: 10-15 minutes per hole (scaled by simulation speed)
+      const holeBaseDuration = (10 + Math.random() * 5) * 60 * 1000; // 10-15 min in ms
+      const scaledDuration = holeBaseDuration / _simulationSpeed;
+
+      if (now - holesData.lastHoleTime < scaledDuration) return;
+
+      // Advance to next hole
+      holesData.holesPlayed++;
+      holesData.lastHoleTime = now;
+
+      // Simulate hole outcome based on team strength
+      const holeResult = simulateHoleResult(teamAId, teamBId, holesData.holesPlayed);
+      holesData.scoreA += holeResult.pointsA;
+      holesData.scoreB += holeResult.pointsB;
+
+      // Update live odds based on new match state
+      const liveState = {
+        holesPlayed: holesData.holesPlayed,
+        totalHoles: holesData.totalHoles,
+        scoreA: holesData.scoreA,
+        scoreB: holesData.scoreB
+      };
+
+      // This triggers the live odds calculation and delta tracking
+      getLiveMatchMoneyline(teamAId, teamBId, `live_${matchKey}`, liveState);
+
+      console.log(`[Simulation] ${teamAId} vs ${teamBId} - Hole ${holesData.holesPlayed}: ${holesData.scoreA}-${holesData.scoreB}`);
+    });
+  });
+}
+
+// Simulate realistic hole outcome in match play
+function simulateHoleResult(teamAId, teamBId, holeNumber) {
+  const teamA = _teams[teamAId];
+  const teamB = _teams[teamBId];
+
+  if (!teamA || !teamB) return { pointsA: 0, pointsB: 0 };
+
+  // Calculate win probability for this hole based on handicaps
+  const effA = teamA.combined / 2;
+  const effB = teamB.combined / 2;
+
+  // Base probability from handicap differential
+  let probA = interpolateProb(
+    Math.max(0, Math.min(15, effA)),
+    Math.max(0, Math.min(15, effB))
+  );
+
+  // Add hole-specific variance (some holes favor different players)
+  const holeVariance = (Math.sin(holeNumber * 1.7) * 0.05); // ±5% based on hole
+  probA = Math.max(0.1, Math.min(0.9, probA + holeVariance));
+
+  // Simulate the hole
+  const random = Math.random();
+
+  if (random < probA * 0.85) {
+    return { pointsA: 1, pointsB: 0 }; // Team A wins hole
+  } else if (random < probA * 0.85 + (1 - probA) * 0.85) {
+    return { pointsA: 0, pointsB: 1 }; // Team B wins hole
+  } else {
+    return { pointsA: 0.5, pointsB: 0.5 }; // Halved hole (15% chance)
+  }
+}
+
+// Get current match simulation state (for external access)
+export function getMatchSimulationState(teamAId, teamBId) {
+  if (!_demoMode) return null;
+
+  const matchKey = getMatchKey(teamAId, teamBId);
+  return _simulationState.holesSimulated[matchKey] || null;
+}
+
+// ---- virtual betting simulation -----------------------------
+
+// Simulate virtual players placing bets
+function simulateVirtualBetting(now) {
+  if (_virtualPlayers.length === 0) {
+    // Auto-generate virtual players if none configured
+    _virtualPlayers = generateVirtualPlayers(12);
+  }
+
+  // Each cycle, some players might place bets
+  _virtualPlayers.forEach(player => {
+    // Throttle betting - don't let players bet too frequently
+    if (now - player.lastBetTime < 30000 / _simulationSpeed) return; // Min 30s between bets
+
+    // Check if this player wants to bet this cycle
+    if (Math.random() > player.bettingFrequency / 10) return; // Scale frequency
+
+    // Find an interesting betting opportunity
+    const betOpportunity = findBettingOpportunity(player, now);
+    if (!betOpportunity) return;
+
+    // Generate the bet
+    const bet = createVirtualBet(player, betOpportunity, now);
+    if (!bet) return;
+
+    // Place the bet (simulate - store in activity log)
+    player.lastBetTime = now;
+    player.totalBets++;
+    player.bankroll -= bet.stake;
+
+    // Add to recent activity for display
+    _simulationState.betActivity.unshift({
+      ...bet,
+      playerName: player.name,
+      timestamp: now
+    });
+
+    // Keep only recent activity (last 20 bets)
+    if (_simulationState.betActivity.length > 20) {
+      _simulationState.betActivity.pop();
+    }
+
+    console.log(`[Virtual Bet] ${player.name} bet $${bet.stake} on ${bet.description}`);
+  });
+}
+
+// Find attractive betting opportunities for a virtual player
+function findBettingOpportunity(player, now) {
+  const opportunities = [];
+
+  // Check all possible team matchups for interesting bets
+  Object.keys(_teams).forEach((teamAId, index) => {
+    Object.keys(_teams).forEach((teamBId, subIndex) => {
+      if (teamAId >= teamBId || subIndex <= index) return;
+
+      const odds = getMatchMoneyline(teamAId, teamBId);
+      const matchKey = getMatchKey(teamAId, teamBId);
+      const matchState = _simulationState.holesSimulated[matchKey];
+
+      // Skip completed matches
+      if (matchState && matchState.holesPlayed >= matchState.totalHoles) return;
+
+      // Live odds if match is in progress
+      const liveOdds = matchState ?
+        getLiveMatchMoneyline(teamAId, teamBId, `live_${matchKey}`, {
+          holesPlayed: matchState.holesPlayed,
+          totalHoles: matchState.totalHoles,
+          scoreA: matchState.scoreA,
+          scoreB: matchState.scoreB
+        }) : odds;
+
+      // Evaluate betting attractiveness based on player preferences
+      const teamAName = _teams[teamAId].member.split(' ').pop();
+      const teamBName = _teams[teamBId].member.split(' ').pop();
+
+      // Team A bet opportunity
+      const attractivenessA = calculateBetAttractiveness(player, liveOdds.probA, liveOdds.mlA);
+      if (attractivenessA > 0.3) {
+        opportunities.push({
+          type: 'match_winner',
+          teamAId, teamBId,
+          selection: teamAId,
+          odds: liveOdds.mlA,
+          description: `${teamAName} to win`,
+          attractiveness: attractivenessA,
+          matchState
+        });
+      }
+
+      // Team B bet opportunity
+      const attractivenessB = calculateBetAttractiveness(player, liveOdds.probB, liveOdds.mlB);
+      if (attractivenessB > 0.3) {
+        opportunities.push({
+          type: 'match_winner',
+          teamAId, teamBId,
+          selection: teamBId,
+          odds: liveOdds.mlB,
+          description: `${teamBName} to win`,
+          attractiveness: attractivenessB,
+          matchState
+        });
+      }
+    });
+  });
+
+  if (opportunities.length === 0) return null;
+
+  // Pick the most attractive opportunity (weighted random)
+  opportunities.sort((a, b) => b.attractiveness - a.attractiveness);
+  const topOpportunities = opportunities.slice(0, Math.min(3, opportunities.length));
+
+  const weights = topOpportunities.map(o => o.attractiveness);
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  let random = Math.random() * totalWeight;
+
+  for (let i = 0; i < topOpportunities.length; i++) {
+    random -= weights[i];
+    if (random <= 0) return topOpportunities[i];
+  }
+
+  return topOpportunities[0];
+}
+
+// Calculate how attractive a bet is to a specific player
+function calculateBetAttractiveness(player, winProbability, moneyline) {
+  // Convert moneyline to implied probability
+  const impliedProb = mlToProb(moneyline);
+
+  // Base attractiveness on perceived edge
+  const perceivedEdge = winProbability - impliedProb;
+
+  // Adjust for player personality
+  let attractiveness = perceivedEdge * 2; // Base on edge
+
+  // Favorites bias
+  if (player.favoritesBias && impliedProb > 0.55) {
+    attractiveness += 0.2; // Favor betting favorites
+  } else if (!player.favoritesBias && impliedProb < 0.45) {
+    attractiveness += 0.2; // Favor betting underdogs
+  }
+
+  // Risk tolerance adjustments
+  if (player.personality === 'Conservative' && Math.abs(moneyline) > 200) {
+    attractiveness -= 0.3; // Avoid extreme odds
+  } else if (player.personality === 'Aggressive' && Math.abs(moneyline) < 150) {
+    attractiveness += 0.2; // Like close matches
+  }
+
+  // Bankroll considerations
+  if (player.bankroll < player.avgBetSize * 3) {
+    attractiveness -= 0.4; // More cautious when low on funds
+  }
+
+  return Math.max(0, attractiveness);
+}
+
+// Create a virtual bet from an opportunity
+function createVirtualBet(player, opportunity, now) {
+  const betSize = generateBetSize(player, { mlA: opportunity.odds, mlB: 0 });
+
+  if (betSize < 5 || betSize > player.bankroll) return null;
+
+  return {
+    id: `virtual_bet_${now}_${Math.random().toString(36).slice(2, 6)}`,
+    type: opportunity.type,
+    selection: opportunity.selection,
+    stake: betSize,
+    odds: mlToDecimal(opportunity.odds),
+    description: opportunity.description,
+    timestamp: now,
+    status: 'active',
+    payout: 0,
+    isVirtual: true
+  };
+}
+
+// Get recent virtual betting activity (for display)
+export function getVirtualBettingActivity() {
+  if (!_demoMode) return [];
+  return _simulationState.betActivity.slice(0, 10); // Return last 10 bets
+}
+
+// ---- app state integration ----------------------------------
+
+// Initialize simulation with existing app state
+export function initSimulation(appState) {
+  if (!_demoMode || !appState || !appState.matches) return;
+
+  console.log('[Betting] Initializing simulation with app state');
+
+  // Start simulating existing matches that aren't final
+  Object.values(appState.matches).forEach(match => {
+    if (match.status === 'final' || match.status === 'cancelled') return;
+
+    const matchKey = getMatchKey(match.teamA, match.teamB, match.id);
+
+    // Initialize simulation state for this match if not already done
+    if (!_simulationState.holesSimulated[matchKey]) {
+      _simulationState.holesSimulated[matchKey] = {
+        matchId: match.id,
+        holesPlayed: 0,
+        totalHoles: 9,
+        scoreA: match.scoreA || 0,
+        scoreB: match.scoreB || 0,
+        lastHoleTime: Date.now(),
+        holeStartTime: Date.now(),
+        matchStartTime: Date.now() - Math.random() * 60000 * 30 // Started up to 30min ago
+      };
+    }
+  });
+
+  // Generate virtual players if none configured
+  if (_virtualPlayers.length === 0) {
+    _virtualPlayers = generateVirtualPlayers(12);
+  }
+
+  console.log(`[Betting] Simulation ready - ${Object.keys(_simulationState.holesSimulated).length} matches, ${_virtualPlayers.length} virtual players`);
+}
+
+// Update app state with simulation data (call this from main app loop)
+export function updateAppStateWithSimulation(appState) {
+  if (!_demoMode || !appState || !appState.matches) return false;
+
+  let updated = false;
+
+  // Update match statuses and scores from simulation
+  Object.keys(_simulationState.holesSimulated).forEach(matchKey => {
+    const simState = _simulationState.holesSimulated[matchKey];
+    const match = appState.matches[simState.matchId];
+
+    if (!match) return;
+
+    // Update match scores if they've changed
+    const currentScoreA = match.scoreA || 0;
+    const currentScoreB = match.scoreB || 0;
+
+    if (simState.scoreA !== currentScoreA || simState.scoreB !== currentScoreB) {
+      match.scoreA = simState.scoreA;
+      match.scoreB = simState.scoreB;
+      updated = true;
+
+      // Mark as in progress if holes have been played
+      if (simState.holesPlayed > 0 && match.status === 'scheduled') {
+        match.status = 'in_progress';
+        updated = true;
+      }
+
+      // Mark as final if all holes completed
+      if (simState.holesPlayed >= simState.totalHoles && match.status !== 'final') {
+        match.status = 'final';
+        updated = true;
+      }
+    }
+  });
+
+  // Add virtual bets to app state if there's a bets array
+  if (appState.bets && _simulationState.betActivity.length > 0) {
+    _simulationState.betActivity.forEach(virtualBet => {
+      // Only add if not already in state
+      if (!appState.bets.find(b => b.id === virtualBet.id)) {
+        appState.bets.push({
+          ...virtualBet,
+          isVirtual: true
+        });
+        updated = true;
+      }
+    });
+  }
+
+  return updated;
+}
+
+// Get simulation statistics for display
+export function getSimulationStats() {
+  if (!_demoMode) return null;
+
+  const activeMatches = Object.values(_simulationState.holesSimulated).filter(
+    match => match.holesPlayed < match.totalHoles
+  ).length;
+
+  const completedMatches = Object.values(_simulationState.holesSimulated).filter(
+    match => match.holesPlayed >= match.totalHoles
+  ).length;
+
+  const activePlayers = _virtualPlayers.filter(p => p.bankroll > p.avgBetSize).length;
+
+  const totalVolume = _simulationState.betActivity.reduce((sum, bet) => sum + bet.stake, 0);
+
+  return {
+    isActive: _demoMode,
+    speed: _simulationSpeed,
+    activeMatches,
+    completedMatches,
+    activePlayers,
+    totalPlayers: _virtualPlayers.length,
+    recentBets: _simulationState.betActivity.length,
+    totalVolume,
+    lastActivity: _simulationState.betActivity[0]?.timestamp || null
+  };
+}
+
+// Force a simulation event (for testing/demonstration)
+export function triggerSimulationEvent(eventType) {
+  if (!_demoMode) return false;
+
+  const now = Date.now();
+
+  switch (eventType) {
+    case 'odds_fluctuation':
+      simulateOddsFluctuations(now);
+      return true;
+
+    case 'virtual_bet':
+      simulateVirtualBetting(now);
+      return true;
+
+    case 'match_progression':
+      simulateMatchProgression(now);
+      return true;
+
+    case 'full_cycle':
+      runSimulationCycle();
+      return true;
+
+    default:
+      return false;
+  }
 }
 
 // ============================================================
@@ -482,55 +1199,2677 @@ export function placeBet(state, bet) {
 }
 
 export function settleBets(state) {
+  // Use the enhanced zero-sum settlement function
+  return settleBetsWithZeroSumValidation(state);
+}
+
+/**
+ * Enhanced settlement function that enforces zero-sum compliance
+ * @param {Object} state - Current game state with bets
+ * @returns {Object} - Settlement result with audit info
+ */
+export function settleBetsWithZeroSumValidation(state) {
+  // First, determine which bets are ready to settle
+  const betsToSettle = [];
+
   state.bets.forEach(bet => {
     if (bet.status !== "active") return;
+
+    let proposedStatus = null;
+    let proposedPayout = 0;
 
     if (bet.type === "match_winner") {
       const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
+
       let winner = null;
       if (match.scoreA > match.scoreB) winner = match.teamA;
       else if (match.scoreB > match.scoreA) winner = match.teamB;
 
       if (bet.selection === "draw") {
         if (winner === null) {
-          bet.status = "won";
-          bet.payout = Math.round(bet.stake * bet.odds);
-          // payout tracked on bet object
-        } else { bet.status = "lost"; }
+          proposedStatus = "won";
+          const stakeCents = dollarsToCents(bet.stake);
+          const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+          proposedPayout = centsToDollars(payoutCents);
+        } else {
+          proposedStatus = "lost";
+        }
       } else if (winner === null) {
-        bet.status = "push";
-        bet.payout = bet.stake;
-        // push — stake returned
+        proposedStatus = "push";
+        proposedPayout = bet.stake; // Exact stake returned
       } else if (bet.selection == winner) {
-        bet.status = "won";
-        bet.payout = Math.round(bet.stake * bet.odds);
-        // payout tracked on bet object
-      } else { bet.status = "lost"; }
+        proposedStatus = "won";
+        const stakeCents = dollarsToCents(bet.stake);
+        const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+        proposedPayout = centsToDollars(payoutCents);
+      } else {
+        proposedStatus = "lost";
+      }
     }
 
     if (bet.type === "match_margin") {
       const match = state.matches[bet.matchId];
       if (!match || match.status !== "final") return;
+
       const outcome = `${match.scoreA}-${match.scoreB}`;
       if (bet.selection === outcome) {
-        bet.status = "won";
-        bet.payout = Math.round(bet.stake * bet.odds);
-        // payout tracked on bet object
-      } else { bet.status = "lost"; }
+        proposedStatus = "won";
+        const stakeCents = dollarsToCents(bet.stake);
+        const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+        proposedPayout = centsToDollars(payoutCents);
+      } else {
+        proposedStatus = "lost";
+      }
     }
 
     if (bet.type === "flight_winner") {
       const fm = Object.values(state.matches).filter(m => m.flight === bet.flightId);
       if (!fm.every(m => m.status === "final")) return;
+
       const standings = calcStandingsForBetting(bet.flightId, state.matches);
       if (standings[0].teamId == bet.selection) {
-        bet.status = "won";
-        bet.payout = Math.round(bet.stake * bet.odds);
-        // payout tracked on bet object
-      } else { bet.status = "lost"; }
+        proposedStatus = "won";
+        const stakeCents = dollarsToCents(bet.stake);
+        const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+        proposedPayout = centsToDollars(payoutCents);
+      } else {
+        proposedStatus = "lost";
+      }
+    }
+
+    if (bet.type === "nassau") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Nassau has three components: front 9, back 9, and overall
+      const settlement = settleNassauBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "skins") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Skins betting - each hole is worth a skin, with carryover or no-carryover variants
+      const settlement = settleSkinsBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "match_play") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Match Play - hole-by-hole competition, first to be up by more than holes remaining wins
+      const settlement = settleMatchPlayBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "best_ball" || bet.type === "scramble") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Best Ball/Scramble - team formats where team score is best among players or collective effort
+      const settlement = settleBestBallScrambleBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "wolf") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Wolf - rotating partnership game with dynamic teams and point-based scoring
+      const settlement = settleWolfBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (bet.type === "stableford") {
+      const match = state.matches[bet.matchId];
+      if (!match || match.status !== "final") return;
+
+      // Stableford - point-based scoring system based on score relative to par
+      const settlement = settleStablefordBet(bet, match);
+      if (settlement) {
+        proposedStatus = settlement.status;
+        proposedPayout = settlement.payout;
+      }
+    }
+
+    if (proposedStatus) {
+      betsToSettle.push({
+        ...bet,
+        proposedStatus,
+        proposedPayout
+      });
     }
   });
+
+  // Validate and correct zero-sum compliance before applying settlements
+  const isValid = validateZeroSum(betsToSettle);
+  let correctedBets = betsToSettle;
+
+  if (!isValid) {
+    console.warn("[Betting] Zero-sum violation detected - applying corrections");
+    correctedBets = correctZeroSumViolations(betsToSettle);
+
+    // Verify correction worked
+    const isCorrected = validateZeroSum(correctedBets);
+    if (!isCorrected) {
+      console.error("[Betting] CRITICAL: Unable to correct zero-sum violation");
+    }
+  }
+
+  // Apply the settlements using corrected bets
+  correctedBets.forEach(bet => {
+    const originalBet = state.bets.find(b => b.id === bet.id);
+    if (originalBet) {
+      originalBet.status = bet.proposedStatus;
+      originalBet.payout = bet.proposedPayout;
+    }
+  });
+
+  // Return settlement summary
+  return {
+    settledCount: betsToSettle.length,
+    isZeroSum: isValid,
+    audit: auditZeroSum(state)
+  };
+}
+
+// ---- Money Calculation Utilities (Integer Cents) -----------
+
+/**
+ * Convert dollars to integer cents to eliminate floating point errors
+ * @param {number} dollars - Dollar amount (e.g., 10.50)
+ * @returns {number} - Amount in cents (e.g., 1050)
+ */
+function dollarsToCents(dollars) {
+  return Math.round(dollars * 100);
+}
+
+/**
+ * Convert integer cents back to dollars for display
+ * @param {number} cents - Amount in cents (e.g., 1050)
+ * @returns {number} - Dollar amount (e.g., 10.50)
+ */
+function centsToDollars(cents) {
+  return cents / 100;
+}
+
+/**
+ * Calculate payout in cents using integer arithmetic
+ * @param {number} stakeCents - Stake amount in cents
+ * @param {number} odds - Decimal odds (e.g., 1.8)
+ * @returns {number} - Payout in cents
+ */
+function calculatePayoutCents(stakeCents, odds) {
+  // Convert odds to avoid floating point multiplication
+  const oddsInCents = Math.round(odds * 100);
+  return Math.round((stakeCents * oddsInCents) / 100);
+}
+
+/**
+ * Validate that a monetary amount is properly formatted in cents
+ * @param {number} cents - Amount to validate
+ * @returns {boolean} - True if valid integer cents amount
+ */
+function isValidCentsAmount(cents) {
+  return Number.isInteger(cents) && cents >= 0;
+}
+
+// ---- Zero-Sum Audit & Validation Functions -----------------
+
+/**
+ * Audits settlement results to verify zero-sum compliance
+ * @param {Object} state - Current game state with bets
+ * @returns {Object} - Audit report with violations and details
+ */
+export function auditZeroSum(state) {
+  const report = {
+    isZeroSum: true,
+    netFlow: 0,
+    totalStakes: 0,
+    totalPayouts: 0,
+    violations: [],
+    betTypeBreakdown: {}
+  };
+
+  let totalStakesCollected = 0;
+  let totalPayoutsIssued = 0;
+
+  // Group bets by type for detailed analysis
+  const betsByType = {};
+
+  state.bets.forEach(bet => {
+    if (bet.status === "active") return; // Skip unsettled bets
+
+    // Initialize bet type tracking
+    if (!betsByType[bet.type]) {
+      betsByType[bet.type] = {
+        stakes: 0,
+        payouts: 0,
+        netFlow: 0,
+        count: 0
+      };
+    }
+
+    const typeStats = betsByType[bet.type];
+    typeStats.count++;
+
+    if (bet.status === "won") {
+      totalPayoutsIssued += bet.payout;
+      typeStats.payouts += bet.payout;
+      typeStats.stakes += bet.stake; // This should also be collected
+      totalStakesCollected += bet.stake;
+    } else if (bet.status === "lost") {
+      totalStakesCollected += bet.stake;
+      typeStats.stakes += bet.stake;
+    } else if (bet.status === "push") {
+      // Push should be neutral (stake returned)
+      totalStakesCollected += bet.stake;
+      totalPayoutsIssued += bet.payout; // Should equal stake
+      typeStats.stakes += bet.stake;
+      typeStats.payouts += bet.payout;
+    }
+
+    typeStats.netFlow = typeStats.payouts - typeStats.stakes;
+  });
+
+  report.totalStakes = totalStakesCollected;
+  report.totalPayouts = totalPayoutsIssued;
+  report.netFlow = totalPayoutsIssued - totalStakesCollected;
+  report.betTypeBreakdown = betsByType;
+
+  // Check for violations using cents precision
+  const netFlowCents = dollarsToCents(report.netFlow);
+  if (Math.abs(netFlowCents) > 0) { // Zero tolerance for cents-level violations
+    report.isZeroSum = false;
+    report.violations.push({
+      type: "net_flow_violation",
+      severity: "critical",
+      amount: report.netFlow,
+      amountCents: netFlowCents,
+      description: `Total net flow is ${netFlowCents} cents ($${report.netFlow.toFixed(2)}), should be exactly $0.00`
+    });
+  }
+
+  // Check each bet type for violations
+  Object.entries(betsByType).forEach(([type, stats]) => {
+    const netFlowCents = dollarsToCents(stats.netFlow);
+    if (Math.abs(netFlowCents) > 0) {
+      report.violations.push({
+        type: "bet_type_violation",
+        severity: "high",
+        betType: type,
+        amount: stats.netFlow,
+        amountCents: netFlowCents,
+        description: `${type} bets have net flow of ${netFlowCents} cents ($${stats.netFlow.toFixed(2)})`
+      });
+    }
+  });
+
+  return report;
+}
+
+/**
+ * Validates zero-sum compliance before settlement using cents precision
+ * @param {Array} betsToSettle - Array of bets with proposed settlements
+ * @returns {Boolean} - True if settlement maintains zero-sum
+ */
+export function validateZeroSum(betsToSettle) {
+  let totalStakesCents = 0;
+  let totalPayoutsCents = 0;
+
+  betsToSettle.forEach(bet => {
+    const stakeCents = dollarsToCents(bet.stake);
+    totalStakesCents += stakeCents;
+
+    if (bet.proposedStatus === "won") {
+      const payoutCents = dollarsToCents(bet.proposedPayout || 0);
+      totalPayoutsCents += payoutCents;
+    } else if (bet.proposedStatus === "push") {
+      totalPayoutsCents += stakeCents; // Stake returned
+    }
+    // Lost bets contribute stake but no payout
+  });
+
+  // Zero tolerance for cents-level discrepancies
+  return totalPayoutsCents === totalStakesCents;
+}
+
+/**
+ * Corrects zero-sum violations by proportionally adjusting winning payouts
+ * Uses integer cents arithmetic to eliminate rounding errors
+ * @param {Array} betsToSettle - Array of bets with proposed settlements
+ * @returns {Array} - Corrected bets with adjusted payouts
+ */
+export function correctZeroSumViolations(betsToSettle) {
+  let totalStakesCents = 0;
+  let totalProposedPayoutsCents = 0;
+  const winningBets = [];
+
+  // Calculate totals in cents and identify winning bets
+  betsToSettle.forEach(bet => {
+    const stakeCents = dollarsToCents(bet.stake);
+    totalStakesCents += stakeCents;
+
+    if (bet.proposedStatus === "won") {
+      const payoutCents = dollarsToCents(bet.proposedPayout);
+      totalProposedPayoutsCents += payoutCents;
+      winningBets.push({
+        ...bet,
+        stakeCents,
+        payoutCents
+      });
+    } else if (bet.proposedStatus === "push") {
+      totalProposedPayoutsCents += stakeCents; // Stakes returned
+    }
+  });
+
+  const netViolationCents = totalProposedPayoutsCents - totalStakesCents;
+
+  // If violation is zero or minimal (< 1 cent), no correction needed
+  if (Math.abs(netViolationCents) < 1) {
+    return betsToSettle;
+  }
+
+  console.log(`[Betting] Correcting zero-sum violation of ${netViolationCents} cents ($${centsToDollars(netViolationCents).toFixed(2)})`);
+
+  // Proportionally adjust winning payouts to correct the violation
+  if (winningBets.length > 0) {
+    const totalWinningPayoutsCents = winningBets.reduce((sum, bet) => sum + bet.payoutCents, 0);
+    const adjustedTotalCents = totalWinningPayoutsCents - netViolationCents;
+
+    // Distribute the adjustment proportionally
+    let remainingAdjustmentCents = netViolationCents;
+
+    winningBets.forEach((bet, index) => {
+      const isLastBet = index === winningBets.length - 1;
+
+      if (isLastBet) {
+        // Give all remaining adjustment to the last bet to ensure exact zero-sum
+        bet.payoutCents -= remainingAdjustmentCents;
+      } else {
+        // Proportional adjustment for this bet
+        const proportion = bet.payoutCents / totalWinningPayoutsCents;
+        const adjustmentCents = Math.round(netViolationCents * proportion);
+        bet.payoutCents -= adjustmentCents;
+        remainingAdjustmentCents -= adjustmentCents;
+      }
+
+      // Update the original bet object with corrected payout in dollars
+      const originalBet = betsToSettle.find(b => b.id === bet.id);
+      if (originalBet) {
+        const originalPayoutCents = dollarsToCents(originalBet.proposedPayout);
+        originalBet.proposedPayout = centsToDollars(bet.payoutCents);
+        console.log(`[Betting] Adjusted ${bet.id} payout: ${originalPayoutCents} cents → ${bet.payoutCents} cents ($${originalBet.proposedPayout.toFixed(2)})`);
+      }
+    });
+  }
+
+  return betsToSettle;
+}
+
+/**
+ * Test function to demonstrate current settlement violations
+ * Creates a scenario with typical bets and shows zero-sum issues
+ */
+export function demonstrateSettlementViolations() {
+  // Create a test state with sample bets
+  const testState = {
+    matches: {
+      "match1": {
+        teamA: "team1",
+        teamB: "team2",
+        scoreA: 3,
+        scoreB: 2,
+        status: "final"
+      }
+    },
+    bets: [
+      // Two opposite bets with different stakes and odds
+      {
+        id: "bet1",
+        type: "match_winner",
+        matchId: "match1",
+        selection: "team1", // winner
+        stake: 100,
+        odds: 1.8,
+        status: "active",
+        payout: 0
+      },
+      {
+        id: "bet2",
+        type: "match_winner",
+        matchId: "match1",
+        selection: "team2", // loser
+        stake: 200,
+        odds: 2.1,
+        status: "active",
+        payout: 0
+      }
+    ]
+  };
+
+  console.log("\n=== SETTLEMENT VIOLATION DEMONSTRATION ===");
+  console.log("Before settlement:");
+  console.log(`Bet 1: $${testState.bets[0].stake} on team1 @ ${testState.bets[0].odds} odds`);
+  console.log(`Bet 2: $${testState.bets[1].stake} on team2 @ ${testState.bets[1].odds} odds`);
+  console.log(`Total stakes collected: $${testState.bets[0].stake + testState.bets[1].stake}`);
+
+  // Settle using current logic
+  settleBets(testState);
+
+  console.log("\nAfter settlement:");
+  testState.bets.forEach(bet => {
+    console.log(`${bet.id}: ${bet.status}, payout: $${bet.payout}`);
+  });
+
+  // Audit the results
+  const audit = auditZeroSum(testState);
+  console.log("\nZero-sum audit results:");
+  console.log(`Total stakes collected: $${audit.totalStakes}`);
+  console.log(`Total payouts issued: $${audit.totalPayouts}`);
+  console.log(`Net flow (should be $0): $${audit.netFlow.toFixed(2)}`);
+  console.log(`Zero-sum compliant: ${audit.isZeroSum}`);
+
+  if (audit.violations.length > 0) {
+    console.log("\nViolations found:");
+    audit.violations.forEach(v => console.log(`- ${v.description}`));
+  }
+
+  return audit;
+}
+
+// ---- Nassau Bet Type Implementation -------------------------
+
+/**
+ * Nassau bet settlement - handles front 9, back 9, and overall bets
+ * @param {Object} bet - Nassau bet object
+ * @param {Object} match - Match object with hole-by-hole scores
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleNassauBet(bet, match) {
+  // Nassau bet should have these fields:
+  // - component: "front9", "back9", "overall", "press_front", "press_back", "press_overall"
+  // - selection: teamA or teamB
+  // - pressTriggered: boolean indicating if this is a press bet
+
+  if (!match.holeScores || !bet.component) {
+    console.warn("[Nassau] Missing hole scores or component data");
+    return null;
+  }
+
+  const component = bet.component;
+  const selection = bet.selection;
+
+  let componentResult = null;
+
+  if (component === "front9" || component === "press_front") {
+    componentResult = calculateNassauComponent(match, "front9");
+  } else if (component === "back9" || component === "press_back") {
+    componentResult = calculateNassauComponent(match, "back9");
+  } else if (component === "overall" || component === "press_overall") {
+    componentResult = calculateNassauComponent(match, "overall");
+  } else {
+    console.warn(`[Nassau] Unknown component: ${component}`);
+    return null;
+  }
+
+  if (!componentResult) return null;
+
+  // Determine bet outcome
+  let status = "lost";
+  let payout = 0;
+
+  if (componentResult.winner === selection) {
+    status = "won";
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    payout = centsToDollars(payoutCents);
+  } else if (componentResult.winner === null) {
+    status = "push";
+    payout = bet.stake; // Return stake
+  }
+
+  return { status, payout };
+}
+
+/**
+ * Calculate Nassau component results (front9, back9, or overall)
+ * @param {Object} match - Match with hole-by-hole scores
+ * @param {string} component - "front9", "back9", or "overall"
+ * @returns {Object} - Component result with winner and margin
+ */
+function calculateNassauComponent(match, component) {
+  if (!match.holeScores) return null;
+
+  let holes = [];
+  if (component === "front9") {
+    holes = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  } else if (component === "back9") {
+    holes = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+  } else if (component === "overall") {
+    holes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  }
+
+  let teamATotal = 0;
+  let teamBTotal = 0;
+  let holesCompleted = 0;
+
+  holes.forEach(holeNumber => {
+    const holeData = match.holeScores[holeNumber];
+    if (holeData && holeData.scoreA !== null && holeData.scoreB !== null) {
+      teamATotal += holeData.scoreA;
+      teamBTotal += holeData.scoreB;
+      holesCompleted++;
+    }
+  });
+
+  // Need all holes completed for settlement
+  if (holesCompleted < holes.length) {
+    return null; // Not ready to settle
+  }
+
+  let winner = null;
+  if (teamATotal < teamBTotal) {
+    winner = match.teamA;
+  } else if (teamBTotal < teamATotal) {
+    winner = match.teamB;
+  }
+  // If scores are equal, winner remains null (tie/push)
+
+  return {
+    winner,
+    teamATotal,
+    teamBTotal,
+    margin: Math.abs(teamATotal - teamBTotal),
+    component
+  };
+}
+
+/**
+ * Check if auto-press should be triggered for Nassau bets
+ * @param {Object} match - Match with current hole scores
+ * @param {string} component - "front9", "back9", or "overall"
+ * @param {number} pressThreshold - Holes down to trigger press (default: 2)
+ * @returns {Object} - Press recommendation with trigger info
+ */
+export function checkNassauAutoPress(match, component, pressThreshold = 2) {
+  const componentResult = calculateNassauComponent(match, component);
+  if (!componentResult) return { shouldPress: false };
+
+  const margin = componentResult.margin;
+  const holesRemaining = getHolesRemaining(match, component);
+
+  // Auto-press triggers when down by pressThreshold and still possible to win
+  if (margin >= pressThreshold && holesRemaining >= margin) {
+    return {
+      shouldPress: true,
+      component,
+      margin,
+      holesRemaining,
+      leadingTeam: componentResult.winner,
+      trailingTeam: componentResult.winner === match.teamA ? match.teamB : match.teamA
+    };
+  }
+
+  return { shouldPress: false };
+}
+
+/**
+ * Get number of holes remaining for a Nassau component
+ * @param {Object} match - Match with hole scores
+ * @param {string} component - "front9", "back9", or "overall"
+ * @returns {number} - Holes remaining
+ */
+function getHolesRemaining(match, component) {
+  let totalHoles = 0;
+  let completedHoles = 0;
+
+  if (component === "front9") {
+    totalHoles = 9;
+    for (let hole = 1; hole <= 9; hole++) {
+      if (match.holeScores[hole] &&
+          match.holeScores[hole].scoreA !== null &&
+          match.holeScores[hole].scoreB !== null) {
+        completedHoles++;
+      }
+    }
+  } else if (component === "back9") {
+    totalHoles = 9;
+    for (let hole = 10; hole <= 18; hole++) {
+      if (match.holeScores[hole] &&
+          match.holeScores[hole].scoreA !== null &&
+          match.holeScores[hole].scoreB !== null) {
+        completedHoles++;
+      }
+    }
+  } else if (component === "overall") {
+    totalHoles = 18;
+    for (let hole = 1; hole <= 18; hole++) {
+      if (match.holeScores[hole] &&
+          match.holeScores[hole].scoreA !== null &&
+          match.holeScores[hole].scoreB !== null) {
+        completedHoles++;
+      }
+    }
+  }
+
+  return totalHoles - completedHoles;
+}
+
+// ---- Skins Bet Type Implementation ---------------------------
+
+/**
+ * Skins bet settlement - each hole is worth a skin, lowest score wins
+ * @param {Object} bet - Skins bet object
+ * @param {Object} match - Match object with hole-by-hole scores
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleSkinsBet(bet, match) {
+  // Skins bet should have these fields:
+  // - selection: teamA or teamB (who the bet is on)
+  // - carryover: boolean (true for carryover variant, false for no-carryover)
+  // - skinValue: value per skin (defaults to stake / 18)
+
+  if (!match.holeScores) {
+    console.warn("[Skins] Missing hole scores data");
+    return null;
+  }
+
+  const skinsResult = calculateSkinsResult(match, bet.carryover || false);
+  const selection = bet.selection;
+
+  // Determine payout based on skins won
+  const skinsWon = skinsResult.skinsWon[selection] || 0;
+  const totalSkins = skinsResult.totalSkinsAwarded;
+
+  let status = "lost";
+  let payout = 0;
+
+  if (skinsWon > 0) {
+    status = "won";
+
+    // Calculate payout: (skins won / total skins) * total pot
+    // In skins betting, total pot = stake * number of players * holes played
+    const skinValue = bet.skinValue || (bet.stake / 18); // Default skin value
+    const totalPayout = skinsWon * skinValue;
+
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = dollarsToCents(totalPayout);
+    payout = centsToDollars(payoutCents);
+  }
+  // If no skins won, status remains "lost" with payout = 0
+
+  return { status, payout };
+}
+
+/**
+ * Calculate skins results for a match
+ * @param {Object} match - Match with hole-by-hole scores
+ * @param {boolean} carryover - Whether ties carry over to next hole
+ * @returns {Object} - Skins calculation result
+ */
+function calculateSkinsResult(match, carryover = false) {
+  if (!match.holeScores) return null;
+
+  const skinsWon = {
+    [match.teamA]: 0,
+    [match.teamB]: 0
+  };
+
+  let carryoverValue = 1; // How many skins are at stake for current hole
+  let totalSkinsAwarded = 0;
+  const holeResults = [];
+
+  // Process each hole
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeData = match.holeScores[hole];
+
+    if (!holeData || holeData.scoreA === null || holeData.scoreB === null) {
+      // Hole not completed yet
+      continue;
+    }
+
+    const scoreA = holeData.scoreA;
+    const scoreB = holeData.scoreB;
+    let holeWinner = null;
+    let skinsAwarded = 0;
+
+    if (scoreA < scoreB) {
+      // Team A wins this hole
+      holeWinner = match.teamA;
+      skinsWon[match.teamA] += carryoverValue;
+      skinsAwarded = carryoverValue;
+      totalSkinsAwarded += carryoverValue;
+      carryoverValue = 1; // Reset carryover
+    } else if (scoreB < scoreA) {
+      // Team B wins this hole
+      holeWinner = match.teamB;
+      skinsWon[match.teamB] += carryoverValue;
+      skinsAwarded = carryoverValue;
+      totalSkinsAwarded += carryoverValue;
+      carryoverValue = 1; // Reset carryover
+    } else {
+      // Tie on this hole
+      if (carryover) {
+        carryoverValue++; // Skin carries over to next hole
+        skinsAwarded = 0;
+      } else {
+        // No carryover - skin is lost
+        skinsAwarded = 0;
+        carryoverValue = 1; // Reset for next hole
+      }
+    }
+
+    holeResults.push({
+      hole,
+      scoreA,
+      scoreB,
+      winner: holeWinner,
+      skinsAwarded,
+      carryoverValue: carryover ? carryoverValue : 1
+    });
+  }
+
+  return {
+    skinsWon,
+    totalSkinsAwarded,
+    holeResults,
+    carryoverUsed: carryover
+  };
+}
+
+/**
+ * Calculate skins odds based on player handicaps and hole difficulty
+ * @param {Object} teamA - Team A data with handicaps
+ * @param {Object} teamB - Team B data with handicaps
+ * @param {Array} holes - Array of hole data with difficulty
+ * @returns {Object} - Skins odds for each team
+ */
+export function calculateSkinsOdds(teamA, teamB, holes = null) {
+  // For skins, each hole is independent, so we need to calculate
+  // the probability of winning each hole and aggregate
+
+  const handicapA = teamA.totalHandicap || 0;
+  const handicapB = teamB.totalHandicap || 0;
+  const handicapDiff = handicapA - handicapB;
+
+  // Use simplified model: better player (lower handicap) has advantage
+  let probAWinsHole = 0.5; // Base probability
+
+  if (handicapDiff > 0) {
+    // Team A has higher handicap (worse), Team B favored
+    probAWinsHole = Math.max(0.1, 0.5 - (handicapDiff * 0.02));
+  } else if (handicapDiff < 0) {
+    // Team A has lower handicap (better), Team A favored
+    probAWinsHole = Math.min(0.9, 0.5 + (Math.abs(handicapDiff) * 0.02));
+  }
+
+  const probBWinsHole = 1 - probAWinsHole;
+
+  // Convert probabilities to odds
+  const oddsA = probAWinsHole > 0 ? (1 / probAWinsHole) : 10.0;
+  const oddsB = probBWinsHole > 0 ? (1 / probBWinsHole) : 10.0;
+
+  return {
+    [teamA.id]: oddsA,
+    [teamB.id]: oddsB,
+    probA: probAWinsHole,
+    probB: probBWinsHole
+  };
+}
+
+// ---- Match Play Bet Type Implementation ----------------------
+
+/**
+ * Match Play bet settlement - hole-by-hole competition format
+ * @param {Object} bet - Match Play bet object
+ * @param {Object} match - Match object with hole-by-hole scores
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleMatchPlayBet(bet, match) {
+  // Match Play bet should have these fields:
+  // - selection: teamA or teamB (who the bet is on)
+  // - format: "1v1" or "team" (individual or team match play)
+
+  if (!match.holeScores) {
+    console.warn("[Match Play] Missing hole scores data");
+    return null;
+  }
+
+  const matchPlayResult = calculateMatchPlayResult(match);
+  const selection = bet.selection;
+
+  let status = "lost";
+  let payout = 0;
+
+  if (matchPlayResult.winner === selection) {
+    status = "won";
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    payout = centsToDollars(payoutCents);
+  } else if (matchPlayResult.winner === null) {
+    status = "push";
+    payout = bet.stake; // Return stake for tied match
+  }
+
+  return { status, payout };
+}
+
+/**
+ * Calculate Match Play result - hole-by-hole scoring
+ * @param {Object} match - Match with hole-by-hole scores
+ * @returns {Object} - Match Play result with winner and hole-by-hole breakdown
+ */
+function calculateMatchPlayResult(match) {
+  if (!match.holeScores) return null;
+
+  let teamAHoles = 0; // Holes won by team A
+  let teamBHoles = 0; // Holes won by team B
+  let tiedHoles = 0;
+  const holeResults = [];
+
+  // Process each hole
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeData = match.holeScores[hole];
+
+    if (!holeData || holeData.scoreA === null || holeData.scoreB === null) {
+      // Hole not completed yet
+      continue;
+    }
+
+    const scoreA = holeData.scoreA;
+    const scoreB = holeData.scoreB;
+    let holeWinner = null;
+
+    if (scoreA < scoreB) {
+      teamAHoles++;
+      holeWinner = match.teamA;
+    } else if (scoreB < scoreA) {
+      teamBHoles++;
+      holeWinner = match.teamB;
+    } else {
+      tiedHoles++;
+      // Tied holes don't count toward either side in match play
+    }
+
+    holeResults.push({
+      hole,
+      scoreA,
+      scoreB,
+      winner: holeWinner
+    });
+
+    // Check for early finish (dormie situation)
+    const holesRemaining = 18 - hole;
+    const holesDifference = Math.abs(teamAHoles - teamBHoles);
+
+    if (holesDifference > holesRemaining) {
+      // Match is decided - one team cannot catch up
+      break;
+    }
+  }
+
+  // Determine overall winner
+  let matchWinner = null;
+  if (teamAHoles > teamBHoles) {
+    matchWinner = match.teamA;
+  } else if (teamBHoles > teamAHoles) {
+    matchWinner = match.teamB;
+  }
+  // If equal holes won, matchWinner remains null (all square/tied)
+
+  return {
+    winner: matchWinner,
+    teamAHoles,
+    teamBHoles,
+    tiedHoles,
+    margin: Math.abs(teamAHoles - teamBHoles),
+    format: `${teamAHoles} & ${teamBHoles}`,
+    holeResults
+  };
+}
+
+/**
+ * Calculate Match Play odds based on player handicaps and format
+ * @param {Object} teamA - Team A data with handicaps
+ * @param {Object} teamB - Team B data with handicaps
+ * @param {string} format - "1v1" or "team"
+ * @returns {Object} - Match Play odds for each team
+ */
+export function calculateMatchPlayOdds(teamA, teamB, format = "1v1") {
+  const handicapA = teamA.totalHandicap || 0;
+  const handicapB = teamB.totalHandicap || 0;
+  const handicapDiff = handicapA - handicapB;
+
+  // In match play, handicap strokes are given on specific holes
+  // This affects the probability of winning individual holes
+  let probAWins = 0.5; // Base probability
+
+  if (format === "1v1") {
+    // Individual match play - direct handicap comparison
+    if (handicapDiff > 0) {
+      // Team A gets strokes, improves their chances
+      probAWins = Math.min(0.85, 0.5 + (handicapDiff * 0.025));
+    } else if (handicapDiff < 0) {
+      // Team B gets strokes, Team A's chances decrease
+      probAWins = Math.max(0.15, 0.5 + (handicapDiff * 0.025));
+    }
+  } else if (format === "team") {
+    // Team match play - more complex, use average handicap effect
+    const avgHandicapDiff = handicapDiff / (teamA.players?.length || 1);
+    probAWins = Math.max(0.15, Math.min(0.85, 0.5 + (avgHandicapDiff * 0.02)));
+  }
+
+  const probBWins = 1 - probAWins;
+
+  // Convert to odds
+  const oddsA = probAWins > 0 ? (1 / probAWins) : 10.0;
+  const oddsB = probBWins > 0 ? (1 / probBWins) : 10.0;
+
+  return {
+    [teamA.id]: oddsA,
+    [teamB.id]: oddsB,
+    probA: probAWins,
+    probB: probBWins,
+    format
+  };
+}
+
+/**
+ * Check Match Play status during round (for live updates)
+ * @param {Object} match - Match with current hole scores
+ * @returns {Object} - Current match play status
+ */
+export function getMatchPlayStatus(match) {
+  const result = calculateMatchPlayResult(match);
+  if (!result) return { status: "in_progress", holesCompleted: 0 };
+
+  const holesCompleted = result.holeResults.length;
+  const holesRemaining = 18 - holesCompleted;
+  const margin = result.margin;
+
+  let status = "in_progress";
+  if (result.winner) {
+    status = holesRemaining === 0 ? "final" : "dormie"; // Dormie = decided early
+  } else if (holesRemaining === 0) {
+    status = "final"; // All square after 18
+  }
+
+  return {
+    status,
+    winner: result.winner,
+    teamAHoles: result.teamAHoles,
+    teamBHoles: result.teamBHoles,
+    margin,
+    holesCompleted,
+    holesRemaining,
+    canFinishEarly: margin > holesRemaining
+  };
+}
+
+// ---- Best Ball/Scramble Bet Type Implementation -------------
+
+/**
+ * Best Ball/Scramble bet settlement - team-based scoring formats
+ * @param {Object} bet - Best Ball or Scramble bet object
+ * @param {Object} match - Match object with team scores (best ball calculated)
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleBestBallScrambleBet(bet, match) {
+  // Best Ball/Scramble bets should have these fields:
+  // - selection: teamA or teamB (which team the bet is on)
+  // - format: "best_ball" or "scramble"
+
+  if (!match.teamScores && !match.holeScores) {
+    console.warn("[Best Ball/Scramble] Missing team scores or hole scores data");
+    return null;
+  }
+
+  const teamResult = calculateTeamFormatResult(match, bet.type);
+  const selection = bet.selection;
+
+  let status = "lost";
+  let payout = 0;
+
+  if (teamResult.winner === selection) {
+    status = "won";
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    payout = centsToDollars(payoutCents);
+  } else if (teamResult.winner === null) {
+    status = "push";
+    payout = bet.stake; // Return stake for tied match
+  }
+
+  return { status, payout };
+}
+
+/**
+ * Calculate team format results (Best Ball or Scramble)
+ * @param {Object} match - Match with team scores or individual hole scores
+ * @param {string} format - "best_ball" or "scramble"
+ * @returns {Object} - Team format result with winner and scores
+ */
+function calculateTeamFormatResult(match, format) {
+  let teamATotal = 0;
+  let teamBTotal = 0;
+
+  if (match.teamScores) {
+    // Use pre-calculated team scores
+    teamATotal = match.teamScores.teamA || 0;
+    teamBTotal = match.teamScores.teamB || 0;
+  } else if (match.holeScores) {
+    // Calculate team scores from hole-by-hole data
+    for (let hole = 1; hole <= 18; hole++) {
+      const holeData = match.holeScores[hole];
+      if (!holeData) continue;
+
+      if (format === "best_ball") {
+        // Best Ball: take the best (lowest) score from each team
+        const teamAHoleScore = calculateBestBallHoleScore(holeData.playersA || [holeData.scoreA]);
+        const teamBHoleScore = calculateBestBallHoleScore(holeData.playersB || [holeData.scoreB]);
+
+        if (teamAHoleScore !== null) teamATotal += teamAHoleScore;
+        if (teamBHoleScore !== null) teamBTotal += teamBHoleScore;
+      } else if (format === "scramble") {
+        // Scramble: team posts one collective score per hole
+        if (holeData.teamScoreA !== null) teamATotal += holeData.teamScoreA;
+        if (holeData.teamScoreB !== null) teamBTotal += holeData.teamScoreB;
+      }
+    }
+  } else {
+    console.warn(`[${format}] Insufficient scoring data`);
+    return null;
+  }
+
+  // Determine winner (lowest total score wins in golf)
+  let winner = null;
+  if (teamATotal < teamBTotal) {
+    winner = match.teamA;
+  } else if (teamBTotal < teamATotal) {
+    winner = match.teamB;
+  }
+  // If scores are equal, winner remains null (tie)
+
+  return {
+    winner,
+    teamATotal,
+    teamBTotal,
+    margin: Math.abs(teamATotal - teamBTotal),
+    format
+  };
+}
+
+/**
+ * Calculate best ball score for a hole (lowest among team members)
+ * @param {Array} playerScores - Array of individual player scores for the hole
+ * @returns {number|null} - Best (lowest) score, or null if no valid scores
+ */
+function calculateBestBallHoleScore(playerScores) {
+  if (!Array.isArray(playerScores) || playerScores.length === 0) {
+    return null;
+  }
+
+  const validScores = playerScores.filter(score => score !== null && score !== undefined && score > 0);
+
+  if (validScores.length === 0) {
+    return null;
+  }
+
+  return Math.min(...validScores);
+}
+
+/**
+ * Calculate Best Ball/Scramble odds based on team composition and handicaps
+ * @param {Object} teamA - Team A with player data
+ * @param {Object} teamB - Team B with player data
+ * @param {string} format - "best_ball" or "scramble"
+ * @returns {Object} - Odds for each team
+ */
+export function calculateTeamFormatOdds(teamA, teamB, format = "best_ball") {
+  const playersA = teamA.players || [teamA];
+  const playersB = teamB.players || [teamB];
+
+  let teamAAdvantage = 0;
+  let teamBAdvantage = 0;
+
+  if (format === "best_ball") {
+    // Best Ball: lower handicaps have bigger impact
+    const avgHandicapA = playersA.reduce((sum, p) => sum + (p.handicap || 0), 0) / playersA.length;
+    const avgHandicapB = playersB.reduce((sum, p) => sum + (p.handicap || 0), 0) / playersB.length;
+
+    // Team with more players and lower average handicap has advantage
+    const playerCountFactor = (playersA.length - playersB.length) * 0.5;
+    const handicapFactor = (avgHandicapB - avgHandicapA) * 0.03;
+
+    teamAAdvantage = playerCountFactor + handicapFactor;
+  } else if (format === "scramble") {
+    // Scramble: teamwork and player count matter more
+    const teamASkill = Math.max(...playersA.map(p => 20 - (p.handicap || 10)));
+    const teamBSkill = Math.max(...playersB.map(p => 20 - (p.handicap || 10)));
+
+    teamAAdvantage = (teamASkill - teamBSkill) * 0.02 + (playersA.length - playersB.length) * 0.3;
+  }
+
+  const probAWins = Math.max(0.15, Math.min(0.85, 0.5 + teamAAdvantage));
+  const probBWins = 1 - probAWins;
+
+  const oddsA = probAWins > 0 ? (1 / probAWins) : 10.0;
+  const oddsB = probBWins > 0 ? (1 / probBWins) : 10.0;
+
+  return {
+    [teamA.id]: oddsA,
+    [teamB.id]: oddsB,
+    probA: probAWins,
+    probB: probBWins,
+    format
+  };
+}
+
+// ---- Wolf Bet Type Implementation ----------------------------
+
+/**
+ * Wolf bet settlement - rotating partnership game with point-based scoring
+ * @param {Object} bet - Wolf bet object
+ * @param {Object} match - Match object with wolf-specific hole data
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleWolfBet(bet, match) {
+  // Wolf bet should have these fields:
+  // - selection: playerId (which player the bet is on)
+  // - pointValue: value per point (defaults to stake / expected total points)
+
+  if (!match.wolfHoles || !match.players || match.players.length !== 4) {
+    console.warn("[Wolf] Missing wolf hole data or incorrect player count (need 4 players)");
+    return null;
+  }
+
+  const wolfResult = calculateWolfResult(match);
+  const selection = bet.selection;
+
+  // Get points won by selected player
+  const pointsWon = wolfResult.playerPoints[selection] || 0;
+
+  let status = "lost";
+  let payout = 0;
+
+  if (pointsWon > 0) {
+    status = "won";
+
+    // Calculate payout based on points won
+    // Wolf betting can be complex - could be total points, could be position-based
+    const pointValue = bet.pointValue || (bet.stake / 18); // Default point value
+    const totalPayout = pointsWon * pointValue;
+
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = dollarsToCents(totalPayout);
+    payout = centsToDollars(payoutCents);
+  }
+
+  return { status, payout };
+}
+
+/**
+ * Calculate Wolf game result with point-based scoring
+ * @param {Object} match - Match with wolf hole data and 4 players
+ * @returns {Object} - Wolf result with points per player
+ */
+function calculateWolfResult(match) {
+  const players = match.players; // Should be array of 4 player objects
+  const playerPoints = {};
+  const holeResults = [];
+
+  // Initialize player points
+  players.forEach(player => {
+    playerPoints[player.id] = 0;
+  });
+
+  // Process each hole
+  for (let hole = 1; hole <= 18; hole++) {
+    const wolfHoleData = match.wolfHoles[hole];
+    if (!wolfHoleData || !wolfHoleData.wolfPlayerId) {
+      continue; // Skip if wolf data is incomplete
+    }
+
+    const holeResult = calculateWolfHoleResult(wolfHoleData, players);
+    if (holeResult) {
+      // Award points based on hole result
+      Object.entries(holeResult.pointsAwarded).forEach(([playerId, points]) => {
+        playerPoints[playerId] += points;
+      });
+
+      holeResults.push({
+        hole,
+        ...holeResult
+      });
+    }
+  }
+
+  return {
+    playerPoints,
+    holeResults,
+    totalPointsAwarded: Object.values(playerPoints).reduce((sum, points) => sum + points, 0)
+  };
+}
+
+/**
+ * Calculate Wolf points for a single hole
+ * @param {Object} wolfHoleData - Hole data with wolf, partnerships, and scores
+ * @param {Array} players - Array of 4 player objects
+ * @returns {Object} - Hole result with points awarded
+ */
+function calculateWolfHoleResult(wolfHoleData, players) {
+  const {
+    wolfPlayerId,
+    partnerPlayerId, // null if wolf goes solo
+    playerScores, // { playerId: score }
+    pointValues = { team: 1, solo: 2 } // Default point values
+  } = wolfHoleData;
+
+  const scores = Object.entries(playerScores).map(([playerId, score]) => ({
+    playerId,
+    score
+  })).sort((a, b) => a.score - b.score);
+
+  const pointsAwarded = {};
+  players.forEach(player => {
+    pointsAwarded[player.id] = 0;
+  });
+
+  if (partnerPlayerId === null || partnerPlayerId === undefined) {
+    // Wolf went solo (1 vs 3)
+    const wolfScore = playerScores[wolfPlayerId];
+    const wolfIsLowest = scores[0].playerId === wolfPlayerId;
+
+    if (wolfIsLowest) {
+      // Wolf wins solo - gets solo points
+      pointsAwarded[wolfPlayerId] = pointValues.solo || 2;
+    } else {
+      // Wolf loses solo - other three players each get team points
+      players.forEach(player => {
+        if (player.id !== wolfPlayerId) {
+          pointsAwarded[player.id] = pointValues.team || 1;
+        }
+      });
+    }
+  } else {
+    // Wolf has partner (2 vs 2)
+    const wolfScore = playerScores[wolfPlayerId];
+    const partnerScore = playerScores[partnerPlayerId];
+    const wolfTeamBestScore = Math.min(wolfScore, partnerScore);
+
+    // Find best score from the other two players
+    const otherPlayers = players.filter(p => p.id !== wolfPlayerId && p.id !== partnerPlayerId);
+    const otherTeamBestScore = Math.min(...otherPlayers.map(p => playerScores[p.id]));
+
+    if (wolfTeamBestScore < otherTeamBestScore) {
+      // Wolf team wins
+      pointsAwarded[wolfPlayerId] = pointValues.team || 1;
+      pointsAwarded[partnerPlayerId] = pointValues.team || 1;
+    } else if (otherTeamBestScore < wolfTeamBestScore) {
+      // Other team wins
+      otherPlayers.forEach(player => {
+        pointsAwarded[player.id] = pointValues.team || 1;
+      });
+    }
+    // Tie = no points awarded
+  }
+
+  return {
+    wolfPlayerId,
+    partnerPlayerId,
+    pointsAwarded,
+    scores,
+    format: partnerPlayerId ? "2v2" : "1v3"
+  };
+}
+
+/**
+ * Calculate Wolf odds for a player to accumulate points over 18 holes
+ * @param {Array} players - Array of 4 player objects with handicaps
+ * @param {number} holesAsWolf - Number of holes this player will be wolf (typically 4-5)
+ * @returns {Object} - Odds for each player
+ */
+export function calculateWolfOdds(players, holesAsWolf = 4.5) {
+  if (players.length !== 4) {
+    throw new Error("Wolf requires exactly 4 players");
+  }
+
+  const playerOdds = {};
+
+  players.forEach(player => {
+    const handicap = player.handicap || 10;
+
+    // Lower handicap players have better odds
+    // Factor in: skill level, holes as wolf (more opportunities)
+    const skillFactor = Math.max(0.1, (30 - handicap) / 30); // 0.1 to 1.0
+    const wolfOpportunityFactor = holesAsWolf / 18; // Proportion of holes as wolf
+
+    // Base probability of winning points
+    let baseProb = skillFactor * 0.6 + wolfOpportunityFactor * 0.4;
+    baseProb = Math.max(0.15, Math.min(0.85, baseProb));
+
+    const odds = 1 / baseProb;
+
+    playerOdds[player.id] = {
+      odds,
+      probability: baseProb,
+      skillFactor,
+      wolfOpportunityFactor
+    };
+  });
+
+  return playerOdds;
+}
+
+/**
+ * Generate Wolf rotation schedule for 18 holes with 4 players
+ * @param {Array} players - Array of 4 player objects
+ * @returns {Array} - Array of 18 hole objects with wolf assignments
+ */
+export function generateWolfRotation(players) {
+  if (players.length !== 4) {
+    throw new Error("Wolf requires exactly 4 players");
+  }
+
+  const rotation = [];
+
+  for (let hole = 1; hole <= 18; hole++) {
+    const wolfIndex = (hole - 1) % 4;
+    const wolfPlayer = players[wolfIndex];
+
+    rotation.push({
+      hole,
+      wolfPlayerId: wolfPlayer.id,
+      wolfPlayerName: wolfPlayer.name,
+      wolfOrder: Math.floor((hole - 1) / 4) + 1 // Which round of wolf rotation (1-5)
+    });
+  }
+
+  return rotation;
+}
+
+// ---- Stableford Bet Type Implementation ----------------------
+
+/**
+ * Stableford bet settlement - point-based scoring relative to par
+ * @param {Object} bet - Stableford bet object
+ * @param {Object} match - Match object with hole scores and par data
+ * @returns {Object} - Settlement result with status and payout
+ */
+function settleStablefordBet(bet, match) {
+  // Stableford bet should have these fields:
+  // - selection: teamA or teamB (which player/team the bet is on)
+  // - format: "individual" or "team" (individual stableford or team stableford)
+
+  if (!match.holeScores || !match.coursePar) {
+    console.warn("[Stableford] Missing hole scores or course par data");
+    return null;
+  }
+
+  const stablefordResult = calculateStablefordResult(match, bet.format || "individual");
+  const selection = bet.selection;
+
+  let status = "lost";
+  let payout = 0;
+
+  if (stablefordResult.winner === selection) {
+    status = "won";
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    payout = centsToDollars(payoutCents);
+  } else if (stablefordResult.winner === null) {
+    status = "push";
+    payout = bet.stake; // Return stake for tied score
+  }
+
+  return { status, payout };
+}
+
+/**
+ * Calculate Stableford points result
+ * @param {Object} match - Match with hole scores and course par
+ * @param {string} format - "individual" or "team"
+ * @returns {Object} - Stableford result with winner and point breakdown
+ */
+function calculateStablefordResult(match, format = "individual") {
+  let teamAPoints = 0;
+  let teamBPoints = 0;
+  const holeResults = [];
+
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeData = match.holeScores[hole];
+    const holePar = match.coursePar[hole] || 4; // Default to par 4 if missing
+
+    if (!holeData) continue;
+
+    if (format === "individual") {
+      // Individual Stableford
+      const pointsA = calculateStablefordPoints(holeData.scoreA, holePar);
+      const pointsB = calculateStablefordPoints(holeData.scoreB, holePar);
+
+      teamAPoints += pointsA;
+      teamBPoints += pointsB;
+
+      holeResults.push({
+        hole,
+        par: holePar,
+        scoreA: holeData.scoreA,
+        scoreB: holeData.scoreB,
+        pointsA,
+        pointsB
+      });
+
+    } else if (format === "team") {
+      // Team Stableford (best ball stableford or combined)
+      let teamAHolePoints = 0;
+      let teamBHolePoints = 0;
+
+      if (holeData.playersA && Array.isArray(holeData.playersA)) {
+        // Multiple players per team - use best stableford score
+        teamAHolePoints = Math.max(...holeData.playersA.map(score =>
+          calculateStablefordPoints(score, holePar)
+        ));
+      } else {
+        teamAHolePoints = calculateStablefordPoints(holeData.scoreA, holePar);
+      }
+
+      if (holeData.playersB && Array.isArray(holeData.playersB)) {
+        teamBHolePoints = Math.max(...holeData.playersB.map(score =>
+          calculateStablefordPoints(score, holePar)
+        ));
+      } else {
+        teamBHolePoints = calculateStablefordPoints(holeData.scoreB, holePar);
+      }
+
+      teamAPoints += teamAHolePoints;
+      teamBPoints += teamBHolePoints;
+
+      holeResults.push({
+        hole,
+        par: holePar,
+        teamAPoints: teamAHolePoints,
+        teamBPoints: teamBHolePoints
+      });
+    }
+  }
+
+  // Determine winner (highest points wins in Stableford)
+  let winner = null;
+  if (teamAPoints > teamBPoints) {
+    winner = match.teamA;
+  } else if (teamBPoints > teamAPoints) {
+    winner = match.teamB;
+  }
+  // If points are equal, winner remains null (tie)
+
+  return {
+    winner,
+    teamAPoints,
+    teamBPoints,
+    margin: Math.abs(teamAPoints - teamBPoints),
+    holeResults,
+    format
+  };
+}
+
+/**
+ * Calculate Stableford points for a single hole score
+ * @param {number} score - Player's score on the hole
+ * @param {number} par - Par for the hole
+ * @returns {number} - Stableford points earned
+ */
+function calculateStablefordPoints(score, par) {
+  if (score === null || score === undefined) {
+    return 0; // No score = no points
+  }
+
+  const scoreToPar = score - par;
+
+  if (scoreToPar <= -2) {
+    // Eagle or better
+    return 4;
+  } else if (scoreToPar === -1) {
+    // Birdie
+    return 3;
+  } else if (scoreToPar === 0) {
+    // Par
+    return 2;
+  } else if (scoreToPar === 1) {
+    // Bogey
+    return 1;
+  } else {
+    // Double bogey or worse
+    return 0;
+  }
+}
+
+/**
+ * Calculate Stableford odds based on player handicaps and course difficulty
+ * @param {Object} teamA - Player/team A data
+ * @param {Object} teamB - Player/team B data
+ * @param {Object} courseData - Course par and difficulty data
+ * @returns {Object} - Stableford odds for each team
+ */
+export function calculateStablefordOdds(teamA, teamB, courseData = null) {
+  const handicapA = teamA.handicap || teamA.totalHandicap || 10;
+  const handicapB = teamB.handicap || teamB.totalHandicap || 10;
+
+  // In Stableford, players get strokes based on handicap
+  // Better players (lower handicap) have natural advantage
+  // But handicap strokes help level the field more than in stroke play
+
+  const handicapDiff = handicapA - handicapB;
+
+  // Stableford tends to compress scoring differences
+  let probAWins = 0.5;
+
+  if (handicapDiff > 0) {
+    // Team A has higher handicap, gets more strokes
+    // In Stableford, this helps more than in stroke play
+    probAWins = Math.min(0.80, 0.5 + (handicapDiff * 0.035));
+  } else if (handicapDiff < 0) {
+    // Team B has higher handicap
+    probAWins = Math.max(0.20, 0.5 + (handicapDiff * 0.035));
+  }
+
+  const probBWins = 1 - probAWins;
+
+  const oddsA = probAWins > 0 ? (1 / probAWins) : 5.0;
+  const oddsB = probBWins > 0 ? (1 / probBWins) : 5.0;
+
+  return {
+    [teamA.id]: oddsA,
+    [teamB.id]: oddsB,
+    probA: probAWins,
+    probB: probBWins,
+    handicapDiff,
+    format: "stableford"
+  };
+}
+
+/**
+ * Calculate expected Stableford points for a player based on handicap
+ * @param {number} handicap - Player handicap
+ * @param {Array} coursePar - Array of par values for 18 holes
+ * @returns {number} - Expected total Stableford points
+ */
+export function calculateExpectedStablefordPoints(handicap, coursePar = null) {
+  // Default course if not provided (typical mix of par 3s, 4s, 5s)
+  const defaultPar = [4,4,3,4,5,4,3,4,4,4,4,3,5,4,4,3,4,5];
+  const par = coursePar || defaultPar;
+
+  let expectedPoints = 0;
+
+  par.forEach((holePar, index) => {
+    const hole = index + 1;
+    const strokesReceived = Math.floor(handicap / 18) + (handicap % 18 >= hole ? 1 : 0);
+
+    // Effective par after receiving strokes
+    const netPar = holePar - strokesReceived;
+
+    // Estimate probability of different scores based on skill level
+    // Higher handicap players are more likely to make bogey/par after strokes
+    const skillFactor = Math.max(0.3, Math.min(1.0, (36 - handicap) / 36));
+
+    // Expected points based on probability distribution
+    const probBirdie = skillFactor * 0.1;
+    const probPar = skillFactor * 0.4 + (1 - skillFactor) * 0.3;
+    const probBogey = skillFactor * 0.3 + (1 - skillFactor) * 0.4;
+    const probWorse = 1 - probBirdie - probPar - probBogey;
+
+    const holeExpectedPoints = probBirdie * 3 + probPar * 2 + probBogey * 1 + probWorse * 0;
+    expectedPoints += holeExpectedPoints;
+  });
+
+  return Math.round(expectedPoints * 10) / 10; // Round to 1 decimal place
+}
+
+// ---- Comprehensive Tie/Push Handling System -----------------
+
+/**
+ * Standardized tie/push handler for all bet types
+ * @param {Object} betResult - Result from bet-specific calculation
+ * @param {Object} bet - Original bet object
+ * @param {Object} tieRules - Tie-breaking rules for this bet type
+ * @returns {Object} - Final settlement with tie/push handling
+ */
+function handleTiesPushes(betResult, bet, tieRules = {}) {
+  const {
+    winner,
+    isTied = false,
+    tieType = "exact", // "exact", "insufficient_separation", "incomplete"
+    tieBreaker = null
+  } = betResult;
+
+  const defaultTieRules = {
+    allowPush: true,          // Whether ties result in push (stake returned)
+    requireSeparation: false,  // Whether minimum separation is required to avoid push
+    minSeparation: 1,         // Minimum difference to avoid tie
+    tieBreakMethod: "push",   // "push", "split", "house_edge", "carryover"
+    ...tieRules
+  };
+
+  let finalStatus = "lost";
+  let finalPayout = 0;
+
+  if (winner === bet.selection) {
+    // Normal win
+    finalStatus = "won";
+    const stakeCents = dollarsToCents(bet.stake);
+    const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    finalPayout = centsToDollars(payoutCents);
+
+  } else if (isTied || winner === null) {
+    // Handle ties/pushes based on bet type rules
+    finalStatus = handleTieByRules(betResult, bet, defaultTieRules);
+    finalPayout = calculateTiePayout(bet, finalStatus, defaultTieRules);
+
+  } else {
+    // Loss - already initialized above
+    finalStatus = "lost";
+    finalPayout = 0;
+  }
+
+  return {
+    status: finalStatus,
+    payout: finalPayout,
+    tieDetails: isTied ? {
+      tieType,
+      method: defaultTieRules.tieBreakMethod,
+      originalWinner: winner
+    } : null
+  };
+}
+
+/**
+ * Determine final status based on tie-breaking rules
+ * @param {Object} betResult - Bet calculation result
+ * @param {Object} bet - Original bet
+ * @param {Object} tieRules - Tie handling rules
+ * @returns {string} - Final bet status
+ */
+function handleTieByRules(betResult, bet, tieRules) {
+  const { tieBreakMethod, allowPush, requireSeparation, minSeparation } = tieRules;
+  const { margin = 0, winner } = betResult;
+
+  // Check if separation requirement is met
+  if (requireSeparation && margin < minSeparation) {
+    return "push"; // Insufficient separation
+  }
+
+  // Apply tie-breaking method
+  switch (tieBreakMethod) {
+    case "push":
+      return allowPush ? "push" : "lost";
+
+    case "split":
+      // Split payout among tied participants (rare in golf betting)
+      return "won"; // Modified payout calculated separately
+
+    case "house_edge":
+      // House wins on ties (casino-style)
+      return "lost";
+
+    case "carryover":
+      // Value carries over to next event (used in some skins variants)
+      return "carryover"; // Special status
+
+    case "sudden_death":
+      // Would require additional play to resolve
+      return "pending"; // Awaiting sudden death resolution
+
+    default:
+      return allowPush ? "push" : "lost";
+  }
+}
+
+/**
+ * Calculate payout for tied bets based on tie-breaking rules
+ * @param {Object} bet - Original bet
+ * @param {string} status - Determined status from tie handling
+ * @param {Object} tieRules - Tie rules
+ * @returns {number} - Payout amount
+ */
+function calculateTiePayout(bet, status, tieRules) {
+  switch (status) {
+    case "push":
+      return bet.stake; // Return original stake
+
+    case "won":
+      if (tieRules.tieBreakMethod === "split") {
+        // Split among tied participants (reduce payout)
+        const splitFactor = tieRules.splitFactor || 0.5;
+        const stakeCents = dollarsToCents(bet.stake);
+        const fullPayoutCents = calculatePayoutCents(stakeCents, bet.odds);
+        return centsToDollars(Math.round(fullPayoutCents * splitFactor));
+      } else {
+        // Full payout
+        const stakeCents = dollarsToCents(bet.stake);
+        const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
+        return centsToDollars(payoutCents);
+      }
+
+    case "carryover":
+      return 0; // No immediate payout, value carries over
+
+    case "pending":
+      return 0; // No payout until resolution
+
+    case "lost":
+    default:
+      return 0; // No payout
+  }
+}
+
+/**
+ * Bet-type-specific tie rules configuration
+ */
+const BET_TYPE_TIE_RULES = {
+  match_winner: {
+    allowPush: true,
+    tieBreakMethod: "push"
+  },
+
+  match_margin: {
+    allowPush: false,
+    tieBreakMethod: "house_edge" // Exact score required
+  },
+
+  flight_winner: {
+    allowPush: true,
+    requireSeparation: true,
+    minSeparation: 0.5,
+    tieBreakMethod: "push"
+  },
+
+  nassau: {
+    allowPush: true,
+    tieBreakMethod: "push"
+  },
+
+  skins: {
+    allowPush: false,
+    tieBreakMethod: "carryover" // Depends on carryover setting
+  },
+
+  match_play: {
+    allowPush: true,
+    tieBreakMethod: "push", // All square after 18
+    suddenDeath: true
+  },
+
+  best_ball: {
+    allowPush: true,
+    requireSeparation: true,
+    minSeparation: 1,
+    tieBreakMethod: "push"
+  },
+
+  scramble: {
+    allowPush: true,
+    requireSeparation: true,
+    minSeparation: 1,
+    tieBreakMethod: "push"
+  },
+
+  wolf: {
+    allowPush: true,
+    tieBreakMethod: "split" // Points can be tied
+  },
+
+  stableford: {
+    allowPush: true,
+    requireSeparation: false, // Points are discrete
+    tieBreakMethod: "push"
+  }
+};
+
+/**
+ * Get tie-breaking rules for a specific bet type
+ * @param {string} betType - Type of bet
+ * @returns {Object} - Tie rules for this bet type
+ */
+export function getTieRulesForBetType(betType) {
+  return BET_TYPE_TIE_RULES[betType] || {
+    allowPush: true,
+    tieBreakMethod: "push"
+  };
+}
+
+/**
+ * Enhanced settlement wrapper that applies comprehensive tie/push handling
+ * @param {Object} bet - Bet to settle
+ * @param {Object} betResult - Raw result from bet-specific calculation
+ * @returns {Object} - Final settlement with tie/push handling
+ */
+export function enhancedBetSettlement(bet, betResult) {
+  const tieRules = getTieRulesForBetType(bet.type);
+  return handleTiesPushes(betResult, bet, tieRules);
+}
+
+// ---- Partial Round Support System ----------------------------
+
+/**
+ * Handle partial round settlements for incomplete events
+ * @param {Object} match - Match object with completion data
+ * @param {Object} bet - Bet to settle
+ * @returns {Object} - Partial settlement result or null if cannot settle
+ */
+export function handlePartialRound(match, bet) {
+  const completionStatus = assessRoundCompletion(match);
+
+  if (completionStatus.isComplete) {
+    return null; // Use normal settlement
+  }
+
+  const partialRules = getPartialRulesForBetType(bet.type);
+
+  if (completionStatus.completionPercentage < partialRules.minimumCompletion) {
+    // Round too incomplete for settlement - return stakes
+    return {
+      status: "void",
+      payout: bet.stake,
+      reason: "insufficient_completion",
+      completionPercentage: completionStatus.completionPercentage
+    };
+  }
+
+  // Attempt partial settlement based on bet type
+  return processPartialSettlement(match, bet, completionStatus, partialRules);
+}
+
+/**
+ * Assess how complete a round is
+ * @param {Object} match - Match with hole scores
+ * @returns {Object} - Completion assessment
+ */
+function assessRoundCompletion(match) {
+  if (!match.holeScores) {
+    return {
+      isComplete: false,
+      holesCompleted: 0,
+      completionPercentage: 0,
+      reason: "no_scores"
+    };
+  }
+
+  let holesCompleted = 0;
+  let holesWithValidScores = 0;
+
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeData = match.holeScores[hole];
+
+    if (holeData) {
+      holesCompleted++;
+
+      if ((holeData.scoreA !== null && holeData.scoreB !== null) ||
+          (holeData.playersA && holeData.playersB) ||
+          (holeData.teamScoreA !== null && holeData.teamScoreB !== null)) {
+        holesWithValidScores++;
+      }
+    }
+  }
+
+  const completionPercentage = holesCompleted / 18;
+  const isComplete = holesCompleted === 18 && holesWithValidScores === 18;
+
+  return {
+    isComplete,
+    holesCompleted,
+    holesWithValidScores,
+    completionPercentage,
+    reason: isComplete ? "complete" : (holesCompleted === 0 ? "not_started" : "incomplete")
+  };
+}
+
+/**
+ * Get partial round rules for each bet type
+ * @param {string} betType - Type of bet
+ * @returns {Object} - Partial round rules
+ */
+function getPartialRulesForBetType(betType) {
+  const partialRules = {
+    match_winner: {
+      minimumCompletion: 0.5,        // Need at least 9 holes
+      allowPartialSettlement: true,
+      method: "prorated"
+    },
+
+    match_margin: {
+      minimumCompletion: 1.0,        // Need complete round for exact margin
+      allowPartialSettlement: false,
+      method: "void"
+    },
+
+    flight_winner: {
+      minimumCompletion: 0.67,       // Need at least 12 holes
+      allowPartialSettlement: true,
+      method: "extrapolated"
+    },
+
+    nassau: {
+      minimumCompletion: 0.5,        // Can settle front/back/overall separately
+      allowPartialSettlement: true,
+      method: "component_based"      // Settle completed components only
+    },
+
+    skins: {
+      minimumCompletion: 0.33,       // Need at least 6 holes
+      allowPartialSettlement: true,
+      method: "holes_completed"      // Only count completed holes
+    },
+
+    match_play: {
+      minimumCompletion: 0.33,       // Can end early anyway
+      allowPartialSettlement: true,
+      method: "holes_won"           // Based on holes won so far
+    },
+
+    best_ball: {
+      minimumCompletion: 0.5,
+      allowPartialSettlement: true,
+      method: "prorated"
+    },
+
+    scramble: {
+      minimumCompletion: 0.5,
+      allowPartialSettlement: true,
+      method: "prorated"
+    },
+
+    wolf: {
+      minimumCompletion: 0.33,       // Point-based, can settle on partial
+      allowPartialSettlement: true,
+      method: "points_earned"
+    },
+
+    stableford: {
+      minimumCompletion: 0.5,
+      allowPartialSettlement: true,
+      method: "points_earned"
+    }
+  };
+
+  return partialRules[betType] || {
+    minimumCompletion: 0.5,
+    allowPartialSettlement: true,
+    method: "prorated"
+  };
+}
+
+/**
+ * Process partial settlement based on bet type and completion
+ * @param {Object} match - Match data
+ * @param {Object} bet - Bet to settle
+ * @param {Object} completionStatus - Round completion assessment
+ * @param {Object} partialRules - Rules for partial settlement
+ * @returns {Object} - Settlement result
+ */
+function processPartialSettlement(match, bet, completionStatus, partialRules) {
+  if (!partialRules.allowPartialSettlement) {
+    return {
+      status: "void",
+      payout: bet.stake,
+      reason: "bet_type_requires_completion"
+    };
+  }
+
+  switch (partialRules.method) {
+    case "prorated":
+      return processProrated(match, bet, completionStatus);
+
+    case "component_based":
+      return processComponentBased(match, bet, completionStatus);
+
+    case "holes_completed":
+      return processHolesCompleted(match, bet, completionStatus);
+
+    case "holes_won":
+      return processHolesWon(match, bet, completionStatus);
+
+    case "points_earned":
+      return processPointsEarned(match, bet, completionStatus);
+
+    case "extrapolated":
+      return processExtrapolated(match, bet, completionStatus);
+
+    default:
+      return {
+        status: "void",
+        payout: bet.stake,
+        reason: "unknown_partial_method"
+      };
+  }
+}
+
+/**
+ * Prorated settlement - reduce payout based on completion percentage
+ * @param {Object} match - Match data
+ * @param {Object} bet - Bet object
+ * @param {Object} completionStatus - Completion info
+ * @returns {Object} - Settlement result
+ */
+function processProrated(match, bet, completionStatus) {
+  // Calculate normal settlement first
+  const normalResult = calculateBetResult(match, bet);
+
+  if (normalResult.winner === bet.selection) {
+    const prorationFactor = completionStatus.completionPercentage;
+    const stakeCents = dollarsToCents(bet.stake);
+    const fullPayoutCents = calculatePayoutCents(stakeCents, bet.odds);
+    const proratedPayoutCents = Math.round(fullPayoutCents * prorationFactor);
+
+    return {
+      status: "won",
+      payout: centsToDollars(proratedPayoutCents),
+      reason: "prorated_win",
+      prorationFactor
+    };
+  } else if (normalResult.winner === null) {
+    return {
+      status: "push",
+      payout: bet.stake,
+      reason: "prorated_push"
+    };
+  } else {
+    return {
+      status: "lost",
+      payout: 0,
+      reason: "prorated_loss"
+    };
+  }
+}
+
+/**
+ * Component-based settlement for Nassau - settle completed components
+ * @param {Object} match - Match data
+ * @param {Object} bet - Nassau bet
+ * @param {Object} completionStatus - Completion info
+ * @returns {Object} - Settlement result
+ */
+function processComponentBased(match, bet, completionStatus) {
+  if (bet.type !== "nassau") {
+    return processProrated(match, bet, completionStatus);
+  }
+
+  const component = bet.component;
+  let canSettle = false;
+
+  if (component === "front9" && completionStatus.holesCompleted >= 9) {
+    canSettle = true;
+  } else if (component === "back9" && completionStatus.holesCompleted >= 18) {
+    canSettle = true;
+  } else if (component === "overall" && completionStatus.completionPercentage >= 0.67) {
+    canSettle = true; // Can extrapolate if 2/3 complete
+  }
+
+  if (canSettle) {
+    const result = settleNassauBet(bet, match);
+    return result ? {
+      status: result.status,
+      payout: result.payout,
+      reason: "component_settlement"
+    } : {
+      status: "void",
+      payout: bet.stake,
+      reason: "component_settlement_failed"
+    };
+  } else {
+    return {
+      status: "void",
+      payout: bet.stake,
+      reason: "component_incomplete"
+    };
+  }
+}
+
+/**
+ * Helper function to calculate bet result (simplified)
+ * @param {Object} match - Match data
+ * @param {Object} bet - Bet object
+ * @returns {Object} - Basic result with winner
+ */
+function calculateBetResult(match, bet) {
+  // Simplified calculation - in practice, would delegate to bet-type-specific functions
+  // For partial rounds, we make basic stroke play comparison on completed holes
+
+  let teamAScore = 0;
+  let teamBScore = 0;
+  let holesScored = 0;
+
+  for (let hole = 1; hole <= 18; hole++) {
+    const holeData = match.holeScores?.[hole];
+    if (holeData && holeData.scoreA !== null && holeData.scoreB !== null) {
+      teamAScore += holeData.scoreA;
+      teamBScore += holeData.scoreB;
+      holesScored++;
+    }
+  }
+
+  if (holesScored === 0) {
+    return { winner: null };
+  }
+
+  let winner = null;
+  if (teamAScore < teamBScore) {
+    winner = match.teamA;
+  } else if (teamBScore < teamAScore) {
+    winner = match.teamB;
+  }
+
+  return { winner, teamAScore, teamBScore, holesScored };
+}
+
+/**
+ * Process holes completed settlement for skins
+ */
+function processHolesCompleted(match, bet, completionStatus) {
+  if (bet.type === "skins") {
+    const result = settleSkinsBet(bet, match);
+    return result ? {
+      status: result.status,
+      payout: result.payout,
+      reason: "holes_completed_settlement"
+    } : {
+      status: "void",
+      payout: bet.stake,
+      reason: "skins_settlement_failed"
+    };
+  }
+
+  return processProrated(match, bet, completionStatus);
+}
+
+/**
+ * Process holes won settlement for match play
+ */
+function processHolesWon(match, bet, completionStatus) {
+  if (bet.type === "match_play") {
+    const result = settleMatchPlayBet(bet, match);
+    return result ? {
+      status: result.status,
+      payout: result.payout,
+      reason: "holes_won_settlement"
+    } : {
+      status: "void",
+      payout: bet.stake,
+      reason: "match_play_settlement_failed"
+    };
+  }
+
+  return processProrated(match, bet, completionStatus);
+}
+
+/**
+ * Process points earned settlement for Wolf/Stableford
+ */
+function processPointsEarned(match, bet, completionStatus) {
+  if (bet.type === "wolf") {
+    const result = settleWolfBet(bet, match);
+    return result ? {
+      status: result.status,
+      payout: result.payout,
+      reason: "points_earned_settlement"
+    } : {
+      status: "void",
+      payout: bet.stake,
+      reason: "wolf_settlement_failed"
+    };
+  } else if (bet.type === "stableford") {
+    const result = settleStablefordBet(bet, match);
+    return result ? {
+      status: result.status,
+      payout: result.payout,
+      reason: "points_earned_settlement"
+    } : {
+      status: "void",
+      payout: bet.stake,
+      reason: "stableford_settlement_failed"
+    };
+  }
+
+  return processProrated(match, bet, completionStatus);
+}
+
+/**
+ * Process extrapolated settlement - estimate final result
+ */
+function processExtrapolated(match, bet, completionStatus) {
+  // For now, use prorated settlement
+  // In a more sophisticated implementation, could use statistical models
+  // to extrapolate likely final scores based on current performance
+  return processProrated(match, bet, completionStatus);
+}
+
+// ---- Comprehensive Settlement Testing System ----------------
+
+/**
+ * Run comprehensive settlement tests to verify zero-sum compliance
+ * @param {boolean} verbose - Whether to output detailed test results
+ * @returns {Object} - Test results summary
+ */
+export function runSettlementTests(verbose = false) {
+  console.log("\n=== COMPREHENSIVE SETTLEMENT TESTS ===");
+
+  const testResults = {
+    totalTests: 0,
+    passed: 0,
+    failed: 0,
+    violations: [],
+    testSuites: {}
+  };
+
+  // Test each bet type
+  const betTypes = ["match_winner", "nassau", "skins", "match_play", "best_ball", "wolf", "stableford"];
+
+  betTypes.forEach(betType => {
+    const suiteResults = runBetTypeTestSuite(betType, verbose);
+    testResults.testSuites[betType] = suiteResults;
+    testResults.totalTests += suiteResults.totalTests;
+    testResults.passed += suiteResults.passed;
+    testResults.failed += suiteResults.failed;
+    testResults.violations.push(...suiteResults.violations);
+  });
+
+  // Run combination tests
+  const comboResults = runCombinationTests(verbose);
+  testResults.testSuites.combinations = comboResults;
+  testResults.totalTests += comboResults.totalTests;
+  testResults.passed += comboResults.passed;
+  testResults.failed += comboResults.failed;
+  testResults.violations.push(...comboResults.violations);
+
+  // Run edge case tests
+  const edgeResults = runEdgeCaseTests(verbose);
+  testResults.testSuites.edge_cases = edgeResults;
+  testResults.totalTests += edgeResults.totalTests;
+  testResults.passed += edgeResults.passed;
+  testResults.failed += edgeResults.failed;
+  testResults.violations.push(...edgeResults.violations);
+
+  // Print summary
+  console.log(`\n=== TEST SUMMARY ===`);
+  console.log(`Total Tests: ${testResults.totalTests}`);
+  console.log(`Passed: ${testResults.passed}`);
+  console.log(`Failed: ${testResults.failed}`);
+  console.log(`Success Rate: ${(testResults.passed / testResults.totalTests * 100).toFixed(1)}%`);
+
+  if (testResults.violations.length > 0) {
+    console.log(`\n🚨 VIOLATIONS FOUND: ${testResults.violations.length}`);
+    testResults.violations.forEach(violation => {
+      console.log(`- ${violation.test}: ${violation.description} (${violation.amount})`);
+    });
+  } else {
+    console.log(`\n✅ ALL TESTS PASSED - ZERO-SUM COMPLIANCE VERIFIED`);
+  }
+
+  return testResults;
+}
+
+/**
+ * Test a specific bet type with various scenarios
+ * @param {string} betType - Type of bet to test
+ * @param {boolean} verbose - Detailed output
+ * @returns {Object} - Test results for this bet type
+ */
+function runBetTypeTestSuite(betType, verbose) {
+  const results = {
+    totalTests: 0,
+    passed: 0,
+    failed: 0,
+    violations: []
+  };
+
+  if (verbose) console.log(`\n--- Testing ${betType} ---`);
+
+  // Test scenarios for this bet type
+  const scenarios = generateTestScenariosForBetType(betType);
+
+  scenarios.forEach((scenario, index) => {
+    results.totalTests++;
+
+    try {
+      const testResult = runSingleBetTest(scenario, verbose);
+
+      if (testResult.passed) {
+        results.passed++;
+        if (verbose) console.log(`✓ ${betType} scenario ${index + 1}: PASS`);
+      } else {
+        results.failed++;
+        results.violations.push({
+          test: `${betType}_scenario_${index + 1}`,
+          description: testResult.violation,
+          amount: testResult.netFlow
+        });
+        if (verbose) console.log(`✗ ${betType} scenario ${index + 1}: FAIL - ${testResult.violation}`);
+      }
+    } catch (error) {
+      results.failed++;
+      results.violations.push({
+        test: `${betType}_scenario_${index + 1}`,
+        description: `Test error: ${error.message}`,
+        amount: "N/A"
+      });
+      if (verbose) console.log(`✗ ${betType} scenario ${index + 1}: ERROR - ${error.message}`);
+    }
+  });
+
+  return results;
+}
+
+/**
+ * Generate test scenarios for a specific bet type
+ * @param {string} betType - Bet type to generate scenarios for
+ * @returns {Array} - Array of test scenarios
+ */
+function generateTestScenariosForBetType(betType) {
+  const baseMatch = createTestMatch();
+  const scenarios = [];
+
+  // Basic scenarios: Team A wins, Team B wins, Tie
+  const outcomes = ["teamA_wins", "teamB_wins", "tie"];
+
+  outcomes.forEach(outcome => {
+    const match = { ...baseMatch };
+
+    // Modify match based on outcome
+    if (outcome === "teamA_wins") {
+      setMatchOutcome(match, "teamA");
+    } else if (outcome === "teamB_wins") {
+      setMatchOutcome(match, "teamB");
+    } else {
+      setMatchOutcome(match, "tie");
+    }
+
+    // Create opposing bets with different stakes and odds
+    scenarios.push({
+      betType,
+      match,
+      bets: [
+        createTestBet(betType, "teamA", 100, 1.8),
+        createTestBet(betType, "teamB", 150, 2.1)
+      ],
+      expectedOutcome: outcome
+    });
+
+    // Create scenario with multiple bets on same outcome
+    scenarios.push({
+      betType,
+      match,
+      bets: [
+        createTestBet(betType, "teamA", 50, 1.9),
+        createTestBet(betType, "teamA", 75, 1.85),
+        createTestBet(betType, "teamB", 200, 2.0)
+      ],
+      expectedOutcome: outcome
+    });
+  });
+
+  return scenarios;
+}
+
+/**
+ * Run a single bet test scenario
+ * @param {Object} scenario - Test scenario
+ * @param {boolean} verbose - Detailed output
+ * @returns {Object} - Test result
+ */
+function runSingleBetTest(scenario, verbose) {
+  const { match, bets } = scenario;
+
+  // Create test state
+  const testState = {
+    matches: { "test_match": match },
+    bets: bets.map((bet, index) => ({
+      ...bet,
+      id: `test_bet_${index}`,
+      matchId: "test_match",
+      status: "active"
+    }))
+  };
+
+  // Run settlement
+  const settlementResult = settleBetsWithZeroSumValidation(testState);
+
+  // Audit the result
+  const audit = auditZeroSum(testState);
+
+  // Check for violations
+  const passed = audit.isZeroSum && Math.abs(audit.netFlow) < 0.01;
+
+  return {
+    passed,
+    audit,
+    netFlow: audit.netFlow,
+    violation: passed ? null : `Net flow violation: $${audit.netFlow.toFixed(2)}`,
+    settlementResult
+  };
+}
+
+/**
+ * Run combination tests with multiple bet types simultaneously
+ */
+function runCombinationTests(verbose) {
+  const results = {
+    totalTests: 0,
+    passed: 0,
+    failed: 0,
+    violations: []
+  };
+
+  if (verbose) console.log(`\n--- Testing Combinations ---`);
+
+  // Test multiple bet types on same match
+  const testMatch = createTestMatch();
+  setMatchOutcome(testMatch, "teamA");
+
+  const combinationBets = [
+    createTestBet("match_winner", "teamA", 100, 1.5),
+    createTestBet("match_winner", "teamB", 200, 2.5),
+    createTestBet("nassau", "teamA", 50, 1.8, { component: "front9" }),
+    createTestBet("skins", "teamA", 75, 2.0),
+    createTestBet("stableford", "teamB", 125, 1.9)
+  ];
+
+  const testState = {
+    matches: { "combo_match": testMatch },
+    bets: combinationBets.map((bet, index) => ({
+      ...bet,
+      id: `combo_bet_${index}`,
+      matchId: "combo_match",
+      status: "active"
+    }))
+  };
+
+  results.totalTests++;
+
+  try {
+    settleBetsWithZeroSumValidation(testState);
+    const audit = auditZeroSum(testState);
+
+    if (audit.isZeroSum) {
+      results.passed++;
+      if (verbose) console.log(`✓ Combination test: PASS`);
+    } else {
+      results.failed++;
+      results.violations.push({
+        test: "combination_multi_bet_types",
+        description: `Multiple bet types net flow violation: $${audit.netFlow.toFixed(2)}`,
+        amount: audit.netFlow
+      });
+      if (verbose) console.log(`✗ Combination test: FAIL - ${audit.netFlow.toFixed(2)}`);
+    }
+  } catch (error) {
+    results.failed++;
+    results.violations.push({
+      test: "combination_multi_bet_types",
+      description: `Combination test error: ${error.message}`,
+      amount: "N/A"
+    });
+    if (verbose) console.log(`✗ Combination test: ERROR - ${error.message}`);
+  }
+
+  return results;
+}
+
+/**
+ * Run edge case tests (ties, partial rounds, etc.)
+ */
+function runEdgeCaseTests(verbose) {
+  const results = {
+    totalTests: 0,
+    passed: 0,
+    failed: 0,
+    violations: []
+  };
+
+  if (verbose) console.log(`\n--- Testing Edge Cases ---`);
+
+  // Test partial round scenario
+  const partialMatch = createTestMatch();
+  setMatchOutcome(partialMatch, "teamA");
+  // Remove last 6 holes to simulate partial round
+  for (let hole = 13; hole <= 18; hole++) {
+    delete partialMatch.holeScores[hole];
+  }
+
+  const partialBets = [
+    createTestBet("match_winner", "teamA", 100, 1.8),
+    createTestBet("match_winner", "teamB", 150, 2.1)
+  ];
+
+  results.totalTests++;
+
+  try {
+    const testState = {
+      matches: { "partial_match": partialMatch },
+      bets: partialBets.map((bet, index) => ({
+        ...bet,
+        id: `partial_bet_${index}`,
+        matchId: "partial_match",
+        status: "active"
+      }))
+    };
+
+    // Handle as partial round
+    testState.bets.forEach(bet => {
+      const partialResult = handlePartialRound(partialMatch, bet);
+      if (partialResult) {
+        bet.status = partialResult.status;
+        bet.payout = partialResult.payout;
+      }
+    });
+
+    const audit = auditZeroSum(testState);
+
+    if (audit.isZeroSum) {
+      results.passed++;
+      if (verbose) console.log(`✓ Partial round test: PASS`);
+    } else {
+      results.failed++;
+      results.violations.push({
+        test: "partial_round",
+        description: `Partial round net flow violation: $${audit.netFlow.toFixed(2)}`,
+        amount: audit.netFlow
+      });
+      if (verbose) console.log(`✗ Partial round test: FAIL - ${audit.netFlow.toFixed(2)}`);
+    }
+  } catch (error) {
+    results.failed++;
+    results.violations.push({
+      test: "partial_round",
+      description: `Partial round test error: ${error.message}`,
+      amount: "N/A"
+    });
+    if (verbose) console.log(`✗ Partial round test: ERROR - ${error.message}`);
+  }
+
+  return results;
+}
+
+/**
+ * Create a test match with sample data
+ */
+function createTestMatch() {
+  const match = {
+    teamA: "team_alpha",
+    teamB: "team_bravo",
+    status: "final",
+    holeScores: {},
+    coursePar: {}
+  };
+
+  // Create hole scores for 18 holes
+  for (let hole = 1; hole <= 18; hole++) {
+    const par = hole % 3 === 0 ? 3 : (hole % 5 === 0 ? 5 : 4); // Mix of par 3, 4, 5
+    match.coursePar[hole] = par;
+    match.holeScores[hole] = {
+      scoreA: par + Math.floor(Math.random() * 3) - 1, // Par, birdie, or bogey
+      scoreB: par + Math.floor(Math.random() * 3) - 1
+    };
+  }
+
+  return match;
+}
+
+/**
+ * Set specific match outcome for testing
+ */
+function setMatchOutcome(match, outcome) {
+  if (outcome === "teamA") {
+    // Ensure team A has lower total score
+    Object.values(match.holeScores).forEach(hole => {
+      hole.scoreA = Math.min(hole.scoreA, hole.scoreB - 1);
+    });
+  } else if (outcome === "teamB") {
+    // Ensure team B has lower total score
+    Object.values(match.holeScores).forEach(hole => {
+      hole.scoreB = Math.min(hole.scoreB, hole.scoreA - 1);
+    });
+  } else if (outcome === "tie") {
+    // Make total scores equal
+    const totalA = Object.values(match.holeScores).reduce((sum, hole) => sum + hole.scoreA, 0);
+    const totalB = Object.values(match.holeScores).reduce((sum, hole) => sum + hole.scoreB, 0);
+    const diff = totalA - totalB;
+
+    if (diff !== 0) {
+      // Adjust first hole to create tie
+      match.holeScores[1].scoreB += diff;
+    }
+  }
+}
+
+/**
+ * Create a test bet with specified parameters
+ */
+function createTestBet(betType, selection, stake, odds, extraParams = {}) {
+  return {
+    type: betType,
+    selection,
+    stake,
+    odds,
+    timestamp: Date.now(),
+    ...extraParams
+  };
 }
 
 function calcStandingsForBetting(flightId, matches) {

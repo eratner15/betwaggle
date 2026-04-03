@@ -83,15 +83,24 @@
 
     .cta-btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; padding: 14px 20px;
-      background: linear-gradient(135deg, #1A472A 0%, #0D2818 100%);
-      color: #fff; border: none; border-radius: 10px;
+      width: 100%;
+      min-height: 56px;
+      padding: 16px 20px;
+      background: #D4AF37;
+      color: #0D2818;
+      border: none;
+      border-radius: 8px;
       font-size: 15px; font-weight: 700; cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: all 0.2s ease;
       text-decoration: none;
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
     }
-    .cta-btn:hover { opacity: 0.92; }
-    .cta-btn:active { transform: scale(0.98); }
+    .cta-btn:hover {
+      background: #E8C65C;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+    }
+    .cta-btn:active { transform: translateY(-1px) scale(0.98); }
     .cta-btn svg { flex-shrink: 0; }
 
     .footer { text-align: center; margin-top: 32px; font-size: 13px; color: #6B7280; }

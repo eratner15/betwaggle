@@ -680,38 +680,251 @@ body {
 }
 
 .mg-odds-btn {
-  background: #FFFFFF;
-  border: 1.5px solid #E5E0D8;
-  border-radius: 6px;
+  background: #1A472A;
+  border: 1.5px solid #2D5A3D;
+  border-radius: 8px;
   cursor: pointer;
   text-align: center;
-  padding: 8px 10px;
-  min-height: 48px;
-  transition: all .1s;
+  padding: 10px 12px;
+  min-height: 56px;
+  transition: all .15s ease-out;
   -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
-.mg-odds-btn:active { transform: scale(0.97); }
+.mg-odds-btn:active {
+  transform: scale(0.96);
+  background: #225033;
+}
+.mg-odds-btn:hover {
+  border-color: #D4AF37;
+  background: #225033;
+}
 .mg-odds-btn.selected {
-  border-color: #B8962E;
-  background: rgba(184,150,46,0.06);
+  border-color: #D4AF37;
+  background: #D4AF37;
+}
+.mg-odds-btn.selected .odds-line {
+  color: #0D2818;
+}
+.mg-odds-btn.selected .odds-label {
+  color: #0D2818;
+}
+.mg-odds-btn.selected .odds-pays {
+  color: #0D2818;
 }
 .mg-odds-btn .odds-line {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #D4AF37;
   font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
   letter-spacing: 0.5px;
+  margin-bottom: 2px;
 }
 .mg-odds-btn .odds-label {
-  font-size: 10px;
-  color: #6B7280;
+  font-size: 12px;
+  color: #FFFFFF;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 .mg-odds-btn .odds-pays {
-  font-size: 8px;
-  color: #6B7280;
+  font-size: 10px;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+/* Enhanced tap feedback for DraftKings-style interaction */
+.mg-odds-btn:hover:not(:active) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.mg-odds-btn:active {
+  transform: scale(0.96) translateY(0px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Pulse animation for odds that have just updated */
+@keyframes odds-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.mg-odds-btn.odds-updated {
+  animation: odds-pulse 0.3s ease-out;
+}
+
+/* Heritage betting animations */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Heritage betting enhancements */
+.heritage-betting-header {
+  position: relative;
+}
+
+.heritage-betting-header::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #D4AF37, #1A472A, #D4AF37);
+  border-radius: 14px;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+.heritage-odds-chip:hover .odds-line {
+  text-shadow: 0 0 8px currentColor;
+}
+
+.heritage-odds-chip:active {
+  transform: scale(0.97) translateY(1px);
+}
+
+/* Enhanced haptic feedback styling */
+.heritage-odds-chip.bet-placed {
+  animation: bet-confirm 0.5s ease-out;
+}
+
+@keyframes bet-confirm {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+  25% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(212, 175, 55, 0.4); }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 16px rgba(212, 175, 55, 0.2); }
+  100% { transform: scale(1); box-shadow: 0 0 0 24px rgba(212, 175, 55, 0); }
+}
+
+/* Bet placed ceremony animations */
+.bet-placed {
+  animation: bet-ceremony 0.6s ease-out !important;
+}
+
+@keyframes bet-ceremony {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.8);
+    background: var(--gold-bright);
+  }
+  30% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 12px rgba(212, 175, 55, 0.5);
+  }
+  60% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 20px rgba(212, 175, 55, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 28px rgba(212, 175, 55, 0);
+    background: var(--gold-primary);
+  }
+}
+
+/* Ticket stamp animation */
+@keyframes ticket-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2) rotate(-5deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.ticket-stamp {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background: var(--gold-bright);
+  color: var(--green-primary);
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 3px solid var(--green-primary);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 1px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  animation: ticket-stamp 0.8s ease-out;
+  pointer-events: none;
+}
+
+.ticket-stamp::before {
+  content: "🎫";
+  display: block;
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+/* Bet tally counter */
+.bet-tally-counter {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--green-primary);
+  color: var(--gold-bright);
+  border: 2px solid var(--gold-primary);
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+
+.bet-tally-counter.animate {
+  animation: tally-increment 0.6s ease-out;
+}
+
+@keyframes tally-increment {
+  0% {
+    transform: scale(1);
+    background: var(--green-primary);
+  }
+  50% {
+    transform: scale(1.15);
+    background: var(--gold-bright);
+    color: var(--green-primary);
+  }
+  100% {
+    transform: scale(1);
+    background: var(--green-primary);
+    color: var(--gold-bright);
+  }
+}
+
+/* Enhanced selected state with glow effect */
+.mg-odds-btn.selected {
+  box-shadow: 0 0 0 2px #D4AF37, 0 4px 16px rgba(212, 175, 55, 0.3);
 }
 
 /* Kill casino pill backgrounds on fav/dog indicators */
@@ -2280,4 +2493,356 @@ body.tv-mode #app {
   .tv-row-leader .tv-team-name { font-size: 18px; }
   .tv-row { grid-template-columns: 40px 1fr 60px 60px 80px; padding: 8px 8px; }
   .tv-pos-badge { width: 28px; height: 28px; font-size: 13px; }
+}
+
+/* ============================================================
+   SETTLEMENT ANIMATIONS — Staggered Reveal & Confetti
+   ============================================================ */
+
+/* Settlement player card reveal animations */
+@keyframes settlementSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes settlementWinnerGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(212,175,55,0);
+    background: var(--bg-tertiary);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(212,175,55,0.4);
+    background: rgba(212,175,55,0.05);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(212,175,55,0.2);
+    background: rgba(212,175,55,0.03);
+  }
+}
+
+/* Settlement card animation classes */
+.settlement-card-reveal {
+  animation: settlementSlideUp 0.8s ease-out forwards;
+}
+
+.settlement-winner-card {
+  animation: settlementSlideUp 0.8s ease-out forwards,
+             settlementWinnerGlow 2s ease-out 0.6s forwards;
+}
+
+/* Initial hidden state for staggered reveal */
+.settlement-card-hidden {
+  opacity: 0;
+  transform: translateY(24px) scale(0.95);
+}
+
+/* Confetti Celebration System */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Confetti colors matching Waggle design system */
+.confetti-gold {
+  background: var(--gold-primary);
+  box-shadow: 0 0 6px rgba(212,175,55,0.8);
+}
+
+.confetti-green {
+  background: var(--green-primary);
+  box-shadow: 0 0 6px rgba(27,48,34,0.6);
+}
+
+.confetti-win {
+  background: var(--win);
+  box-shadow: 0 0 6px rgba(22,163,74,0.6);
+}
+
+.confetti-ivory {
+  background: var(--bg-tertiary);
+  box-shadow: 0 0 4px rgba(252,249,244,0.8);
+}
+
+/* Confetti animation keyframes */
+@keyframes confettiFall1 {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(720deg) rotateY(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall2 {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(900deg) rotateY(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall3 {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(540deg) rotateY(270deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall4 {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(810deg) rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall5 {
+  0% {
+    transform: translateY(-100vh) rotateZ(0deg) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotateZ(630deg) rotateY(450deg);
+    opacity: 0;
+  }
+}
+
+/* Confetti animation classes (assigned randomly) */
+.confetti-anim-1 { animation: confettiFall1 3s ease-in forwards; }
+.confetti-anim-2 { animation: confettiFall2 3.2s ease-in forwards; }
+.confetti-anim-3 { animation: confettiFall3 2.8s ease-in forwards; }
+.confetti-anim-4 { animation: confettiFall4 3.4s ease-in forwards; }
+.confetti-anim-5 { animation: confettiFall5 3.1s ease-in forwards; }
+
+/* ============================================================
+   ODDS MOVEMENT ANIMATIONS — DraftKings-Style Live Updates
+   ============================================================ */
+
+/* Odds number slide animations */
+@keyframes oddsSlideUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  51% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes oddsSlideDown {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  51% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Background flash animations for odds improvement/deterioration */
+@keyframes oddsFlashGreen {
+  0% {
+    background: #1A472A;
+    border-color: #2D5A3D;
+  }
+  30% {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22C55E;
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
+  }
+  100% {
+    background: #1A472A;
+    border-color: #2D5A3D;
+    box-shadow: none;
+  }
+}
+
+@keyframes oddsFlashRed {
+  0% {
+    background: #1A472A;
+    border-color: #2D5A3D;
+  }
+  30% {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #EF4444;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    background: #1A472A;
+    border-color: #2D5A3D;
+    box-shadow: none;
+  }
+}
+
+/* Arrow indicator animations */
+@keyframes arrowFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+
+/* Odds movement animation classes */
+.odds-slide-up .odds-line {
+  animation: oddsSlideUp 0.6s ease-out forwards;
+}
+
+.odds-slide-down .odds-line {
+  animation: oddsSlideDown 0.6s ease-out forwards;
+}
+
+.odds-flash-green {
+  animation: oddsFlashGreen 1s ease-out forwards;
+}
+
+.odds-flash-red {
+  animation: oddsFlashRed 1s ease-out forwards;
+}
+
+/* Arrow indicators */
+.odds-arrow {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.odds-arrow-up {
+  background: #22C55E;
+  color: white;
+  animation: arrowFadeIn 0.8s ease-out forwards;
+}
+
+.odds-arrow-down {
+  background: #EF4444;
+  color: white;
+  animation: arrowFadeIn 0.8s ease-out forwards;
+}
+
+/* Smooth transitions for odds buttons */
+.mg-odds-btn .odds-line {
+  transition: none; /* Override normal transitions during animation */
+}
+
+/* Arrow auto-hide after animation */
+.odds-arrow.fade-out {
+  animation: arrowFadeIn 0.8s ease-out forwards,
+             fadeOut 0.3s ease-in 2s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 0.8; }
+  to { opacity: 0; }
+}
+
+/* Score Entry UX Animations */
+@keyframes scoreFlashEagle {
+  0% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+  30% { background: #D4AF37; border-color: #D4AF37; color: #1C1C19; transform: scale(1.05); }
+  100% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+}
+
+@keyframes scoreFlashBirdie {
+  0% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+  30% { background: #16A34A; border-color: #16A34A; color: white; transform: scale(1.05); }
+  100% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+}
+
+@keyframes scoreFlashPar {
+  0% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+  30% { background: var(--mg-green); border-color: var(--mg-green); transform: scale(1.02); }
+  100% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+}
+
+@keyframes scoreFlashBogey {
+  0% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+  30% { background: #DC2626; border-color: #DC2626; color: white; transform: scale(1.05); }
+  100% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
+}
+
+.score-flash-eagle {
+  animation: scoreFlashEagle 0.6s ease-out;
+}
+
+.score-flash-birdie {
+  animation: scoreFlashBirdie 0.6s ease-out;
+}
+
+.score-flash-par {
+  animation: scoreFlashPar 0.6s ease-out;
+}
+
+.score-flash-bogey {
+  animation: scoreFlashBogey 0.6s ease-out;
 }

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!--
+    OUTREACH EMAIL 4 — Monthly Scramble Season Newsletter
+    From: Evan at Waggle <evan@betwaggle.com>
+    Subject: {{month}} scramble season update — tips, what's new, and a quick win
+    Target: All course pros in outreach pipeline (opened or clicked any previous email)
+    Send: Monthly, May through October (scramble season)
+  -->
+</head>
+<body style="margin:0;padding:0;background:#f5f0e8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:24px 16px">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden">
+
+      <!-- Header -->
+      <tr><td style="background:#0D2818;padding:28px 32px;text-align:center">
+        <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:#C9A84C;letter-spacing:.02em">Waggle</span>
+        <div style="font-size:11px;color:#8ca88c;letter-spacing:.08em;margin-top:4px">SCRAMBLE SEASON &bull; {{month_year}}</div>
+      </td></tr>
+
+      <!-- Body -->
+      <tr><td style="padding:32px 32px 24px">
+        <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;color:#0D2818;margin:0 0 20px;line-height:1.3">{{month}} scramble season update</h1>
+        <div style="font-size:15px;line-height:1.7;color:#3D3D3D">
+          <p style="margin:0 0 16px">Hey {{first_name}} &mdash; quick update from the Waggle side.</p>
+
+          <!-- Stats Block -->
+          <div style="background:#0D2818;border-radius:8px;padding:20px;margin:0 0 20px;text-align:center">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="text-align:center;padding:8px">
+                  <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#C9A84C">{{events_this_month}}</div>
+                  <div style="font-size:11px;color:#8ca88c;letter-spacing:.06em;margin-top:4px">EVENTS THIS MONTH</div>
+                </td>
+                <td style="text-align:center;padding:8px">
+                  <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#C9A84C">{{courses_active}}</div>
+                  <div style="font-size:11px;color:#8ca88c;letter-spacing:.06em;margin-top:4px">COURSES USING WAGGLE</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Tip of the Month -->
+          <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#0D2818;margin:0 0 12px">Tip: {{tip_title}}</h2>
+          <p style="margin:0 0 16px">{{tip_body}}</p>
+
+          <!-- Case Study -->
+          <div style="background:#f5f0e8;border-radius:8px;padding:20px;margin:0 0 20px;border-left:3px solid #C9A84C">
+            <p style="margin:0 0 8px;font-size:14px;font-style:italic;color:#3D3D3D">"{{testimonial_quote}}"</p>
+            <p style="margin:0;font-size:12px;color:#6B6B60;font-weight:600">&mdash; {{testimonial_attribution}}</p>
+          </div>
+
+          <!-- What's New -->
+          <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#0D2818;margin:0 0 12px">What&rsquo;s new</h2>
+          <ul style="margin:0 0 16px;padding-left:20px">
+            <li style="margin-bottom:8px">{{update_1}}</li>
+            <li style="margin-bottom:8px">{{update_2}}</li>
+            <li style="margin-bottom:8px">{{update_3}}</li>
+          </ul>
+
+          <p style="margin:0 0 16px">If you haven't set up your first event yet, it takes 5 minutes. Your course is already loaded.</p>
+        </div>
+
+        <!-- CTA -->
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr><td style="background:#C9A84C;border-radius:6px;text-align:center">
+          <a href="https://betwaggle.com/create/?format=scramble&ref=newsletter-{{month_slug}}" style="display:inline-block;padding:14px 32px;color:#0D2818;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.03em">Set Up Your Scramble &mdash; $149</a>
+        </td></tr></table>
+        <div style="margin-top:12px;text-align:center">
+          <a href="https://betwaggle.com/affiliates/" style="font-size:13px;color:#C9A84C;text-decoration:none;font-weight:600">Or earn $8&ndash;$12 per event as an affiliate &rarr;</a>
+        </div>
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="padding:20px 32px 28px;border-top:1px solid #eee;text-align:center">
+        <p style="font-size:12px;color:#7A7A7A;margin:0 0 4px">&mdash; Evan Ratner</p>
+        <p style="font-size:11px;color:#7A7A7A;margin:0 0 8px">Waggle &mdash; betwaggle.com</p>
+        <a href="https://betwaggle.com/api/unsubscribe?email={{email}}" style="font-size:11px;color:#7A7A7A;text-decoration:underline">Unsubscribe</a>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

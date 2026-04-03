@@ -142,31 +142,95 @@
     .admin-card .pin-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
     .admin-card .pin-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.5}
 
-    /* ── Quick Start ── */
-    .qs-overlay{position:fixed;inset:0;z-index:100;background:var(--ivory);overflow-y:auto;animation:fadeIn 0.25s ease}
-    .qs-inner{max-width:520px;margin:0 auto;padding:24px 20px 140px}
-    .qs-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;padding:0;margin-bottom:20px}
-    .qs-back:hover{color:var(--text)}
-    .qs-textarea{width:100%;min-height:140px;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:'SF Mono','Menlo',monospace;font-size:14px;line-height:1.7;background:var(--white);color:var(--text);resize:vertical}
-    .qs-textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(26,71,42,0.08)}
-    .qs-textarea::placeholder{color:#bbb}
-    .qs-games{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
-    .qs-game{padding:10px 16px;border:2px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:var(--white);transition:border 0.15s,background 0.15s;user-select:none}
-    .qs-game.on{border-color:var(--gold);background:rgba(212,175,55,0.08);color:var(--dark)}
-    .qs-game.on::after{content:' \2713';font-size:11px;color:var(--gold)}
-    .qs-go{width:100%;padding:18px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:background 0.2s,transform 0.15s;margin-top:24px}
-    .qs-go:hover{background:var(--green-light);transform:translateY(-1px)}
-    .qs-go:disabled{opacity:0.3;cursor:not-allowed;transform:none}
-    .qs-go .dot{display:inline-block;width:10px;height:10px;background:#4ade80;border-radius:50%;margin-right:8px;animation:pulse 1.5s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-    .qs-advanced{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;font-family:inherit}
-    .qs-advanced:hover{color:var(--green)}
-    .qs-error{color:var(--lose);font-size:13px;margin-top:8px;padding:8px 12px;background:#fef2f2;border-radius:8px}
-    .qs-preview{margin-top:12px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-    .qs-preview-row{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04)}
-    .qs-preview-row:last-child{border-bottom:none}
-    .qs-preview-row .nm{font-weight:600}
-    .qs-preview-row .hc{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
+    /* ── Quick Start (Dark Sportsbook Theme) ── */
+    .qs-overlay{position:fixed;inset:0;z-index:100;background:#1B3022;overflow-y:auto;animation:qsFadeIn 0.3s ease}
+    @keyframes qsFadeIn{from{opacity:0}to{opacity:1}}
+    .qs-inner{max-width:520px;margin:0 auto;padding:24px 20px 160px}
+    .qs-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:rgba(252,249,244,0.5);cursor:pointer;border:none;background:none;padding:0;margin-bottom:24px;min-height:56px}
+    .qs-back:hover{color:#FCF9F4}
+    .qs-section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:10px;display:block}
+
+    /* GHIN lookup */
+    .qs-ghin-row{display:flex;gap:8px;margin-bottom:12px}
+    .qs-ghin-input{flex:1;padding:14px 16px;border:1.5px solid rgba(252,249,244,0.12);border-radius:10px;font-size:14px;font-family:inherit;background:rgba(252,249,244,0.06);color:#FCF9F4;transition:border 0.2s}
+    .qs-ghin-input:focus{outline:none;border-color:#C5A059;box-shadow:0 0 0 3px rgba(197,160,89,0.15)}
+    .qs-ghin-input::placeholder{color:rgba(252,249,244,0.35)}
+    .qs-ghin-btn{padding:14px 20px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:56px;transition:background 0.15s}
+    .qs-ghin-btn:hover{background:#d4b068}
+    .qs-ghin-btn:disabled{opacity:0.4;cursor:not-allowed}
+    .qs-or-divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:rgba(252,249,244,0.3);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+    .qs-or-divider::before,.qs-or-divider::after{content:'';flex:1;height:1px;background:rgba(252,249,244,0.1)}
+
+    /* Textarea */
+    .qs-textarea{width:100%;min-height:120px;padding:14px 16px;border:1.5px solid rgba(252,249,244,0.12);border-radius:10px;font-family:'SF Mono','Menlo',monospace;font-size:14px;line-height:1.7;background:rgba(252,249,244,0.06);color:#FCF9F4;resize:vertical}
+    .qs-textarea:focus{outline:none;border-color:#C5A059;box-shadow:0 0 0 3px rgba(197,160,89,0.15)}
+    .qs-textarea::placeholder{color:rgba(252,249,244,0.3)}
+
+    /* Player cards */
+    .qs-players-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .qs-player-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(252,249,244,0.06);border:1.5px solid rgba(197,160,89,0.25);border-radius:10px;min-width:140px;flex:1 1 calc(50% - 4px)}
+    .qs-player-card .qs-pc-name{font-size:13px;font-weight:600;color:#FCF9F4;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .qs-player-card .qs-pc-hcp{font-family:'SF Mono',monospace;font-size:12px;font-weight:700;color:#1B3022;background:#C5A059;padding:3px 8px;border-radius:6px;flex-shrink:0}
+
+    /* Game format cards */
+    .qs-games-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+    .qs-game-card{padding:14px;border:2px solid rgba(252,249,244,0.1);border-radius:12px;cursor:pointer;background:rgba(252,249,244,0.03);transition:border 0.2s,background 0.2s,box-shadow 0.2s;user-select:none;min-height:56px;display:flex;align-items:flex-start;gap:10px}
+    .qs-game-card:hover{border-color:rgba(252,249,244,0.2);background:rgba(252,249,244,0.05)}
+    .qs-game-card.on{border-color:#C5A059;background:rgba(197,160,89,0.1);box-shadow:0 0 16px rgba(197,160,89,0.15)}
+    .qs-game-card .qs-gc-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+    .qs-game-card .qs-gc-name{font-size:13px;font-weight:700;color:#FCF9F4;line-height:1.2}
+    .qs-game-card .qs-gc-desc{font-size:11px;color:rgba(252,249,244,0.45);line-height:1.3;margin-top:2px}
+    .qs-game-card.on .qs-gc-name{color:#C5A059}
+
+    /* Quick combos */
+    .qs-combos{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+    .qs-combos::-webkit-scrollbar{display:none}
+    .qs-combo-chip{padding:8px 14px;border:1.5px solid rgba(197,160,89,0.3);border-radius:20px;font-size:11px;font-weight:600;color:#C5A059;cursor:pointer;white-space:nowrap;background:rgba(197,160,89,0.06);transition:background 0.15s,border 0.15s;min-height:40px;display:flex;align-items:center}
+    .qs-combo-chip:hover{background:rgba(197,160,89,0.15);border-color:#C5A059}
+
+    /* Course search */
+    .qs-course-search{position:relative;margin-bottom:8px}
+    .qs-course-input{width:100%;padding:14px 16px;border:1.5px solid rgba(252,249,244,0.12);border-radius:10px;font-size:14px;font-family:inherit;background:rgba(252,249,244,0.06);color:#FCF9F4;transition:border 0.2s}
+    .qs-course-input:focus{outline:none;border-color:#C5A059;box-shadow:0 0 0 3px rgba(197,160,89,0.15)}
+    .qs-course-input::placeholder{color:rgba(252,249,244,0.3)}
+    .qs-course-results{position:absolute;top:100%;left:0;right:0;background:#1B3022;border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;margin-top:4px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+    .qs-course-result{padding:12px 16px;cursor:pointer;border-bottom:1px solid rgba(252,249,244,0.06);transition:background 0.1s}
+    .qs-course-result:hover{background:rgba(197,160,89,0.1)}
+    .qs-course-result:last-child{border-bottom:none}
+    .qs-course-result .qs-cr-name{font-size:14px;font-weight:600;color:#FCF9F4}
+    .qs-course-result .qs-cr-meta{font-size:11px;color:rgba(252,249,244,0.45);margin-top:2px}
+    .qs-course-selected{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(197,160,89,0.08);border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;margin-bottom:8px}
+    .qs-course-selected .qs-cs-name{font-size:14px;font-weight:700;color:#C5A059;flex:1}
+    .qs-course-selected .qs-cs-meta{font-size:11px;color:rgba(252,249,244,0.5)}
+    .qs-course-selected .qs-cs-clear{padding:6px 10px;background:rgba(252,249,244,0.1);border:none;border-radius:6px;color:rgba(252,249,244,0.6);cursor:pointer;font-size:12px;font-weight:600}
+    .qs-course-skip{font-size:12px;color:rgba(252,249,244,0.4);cursor:pointer;border:none;background:none;padding:4px 0;font-family:inherit}
+    .qs-course-skip:hover{color:rgba(252,249,244,0.6)}
+
+    /* Live odds preview */
+    .qs-odds-preview{margin-top:16px;padding:16px;background:rgba(252,249,244,0.04);border:1px solid rgba(252,249,244,0.08);border-radius:12px}
+    .qs-odds-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.4);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .qs-odds-title::before{content:'';display:inline-block;width:6px;height:6px;background:#4ade80;border-radius:50%;animation:qsPulse 1.5s infinite}
+    @keyframes qsPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    .qs-odds-matchups{display:flex;flex-direction:column;gap:8px}
+    .qs-odds-row{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px}
+    .qs-odds-chip{padding:6px 12px;border-radius:8px;font-weight:700;font-family:'SF Mono',monospace;font-size:12px}
+    .qs-odds-fav{background:rgba(197,160,89,0.15);color:#C5A059;border:1px solid rgba(197,160,89,0.3)}
+    .qs-odds-dog{background:rgba(252,249,244,0.06);color:rgba(252,249,244,0.7);border:1px solid rgba(252,249,244,0.1)}
+    .qs-odds-vs{color:rgba(252,249,244,0.3);font-size:11px;font-weight:600}
+
+    /* GO button */
+    .qs-go{width:100%;padding:20px;background:#C5A059;color:#1B3022;border:none;border-radius:14px;font-family:'Playfair Display',serif;font-size:20px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:box-shadow 0.3s,transform 0.15s;margin-top:28px;animation:qsGoPulse 2.5s ease-in-out infinite;position:relative;overflow:hidden}
+    .qs-go::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.15) 0%,transparent 50%);pointer-events:none}
+    .qs-go:hover{box-shadow:0 0 32px rgba(197,160,89,0.4),0 4px 16px rgba(0,0,0,0.3);transform:translateY(-2px)}
+    .qs-go:active{transform:translateY(0);box-shadow:0 0 16px rgba(197,160,89,0.3)}
+    .qs-go:disabled{opacity:0.25;cursor:not-allowed;transform:none;animation:none;box-shadow:none}
+    @keyframes qsGoPulse{0%,100%{box-shadow:0 0 12px rgba(197,160,89,0.2)}50%{box-shadow:0 0 24px rgba(197,160,89,0.35)}}
+
+    .qs-advanced{display:block;text-align:center;margin-top:16px;font-size:13px;color:rgba(252,249,244,0.4);cursor:pointer;border:none;background:none;width:100%;font-family:inherit}
+    .qs-advanced:hover{color:#C5A059}
+    .qs-error{color:#f87171;font-size:13px;margin-top:8px;padding:8px 12px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px}
+    .qs-player-count{font-size:12px;color:#4ade80;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:6px}
+    .qs-player-count::before{content:'';display:inline-block;width:6px;height:6px;background:#4ade80;border-radius:50%}
 
     /* ── Bottom nav ── */
     .nav-bar{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:12px;z-index:10;max-width:560px;margin:0 auto}
@@ -482,6 +546,91 @@
       return players;
     }
 
+    // Quick Start state for GHIN lookup + course search
+    let _qsGhinNum = '';
+    let _qsGhinLast = '';
+    let _qsGhinSearching = false;
+    let _qsCourseQuery = '';
+    let _qsCourseResults = [];
+    let _qsCourseSearching = false;
+    let _qsSelectedCourse = null;
+
+    function qsGhinLookup() {
+      const ghinEl = document.getElementById('qs-ghin-num');
+      const lastEl = document.getElementById('qs-ghin-last');
+      if (!ghinEl || !lastEl) return;
+      const ghin = ghinEl.value.trim();
+      const last = lastEl.value.trim();
+      if (!ghin || !last) return;
+      _qsGhinSearching = true;
+      const btn = document.querySelector('.qs-ghin-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Looking up...'; }
+      fetch('/api/ghin-lookup?ghin=' + encodeURIComponent(ghin) + '&last_name=' + encodeURIComponent(last))
+        .then(r => r.json())
+        .then(data => {
+          _qsGhinSearching = false;
+          if (data && data.name) {
+            const ta = document.querySelector('.qs-textarea');
+            const cur = ta ? ta.value.trim() : '';
+            const line = data.name + ', ' + (data.handicap || 0).toFixed(1);
+            ta.value = cur ? cur + '\n' + line : line;
+            ghinEl.value = '';
+            lastEl.value = '';
+            updateQsPreview();
+          }
+          if (btn) { btn.disabled = false; btn.textContent = 'Look Up'; }
+        })
+        .catch(() => {
+          _qsGhinSearching = false;
+          if (btn) { btn.disabled = false; btn.textContent = 'Look Up'; }
+        });
+    }
+
+    let _qsCourseTimeout = null;
+    function qsCourseSearch(q) {
+      _qsCourseQuery = q;
+      if (_qsCourseTimeout) clearTimeout(_qsCourseTimeout);
+      if (q.length < 2) { _qsCourseResults = []; renderQsCourseResults(); return; }
+      _qsCourseTimeout = setTimeout(() => {
+        _qsCourseSearching = true;
+        fetch('/api/courses/search?q=' + encodeURIComponent(q))
+          .then(r => r.json())
+          .then(data => {
+            _qsCourseSearching = false;
+            _qsCourseResults = (data.courses || data.results || data || []).slice(0, 5);
+            renderQsCourseResults();
+          })
+          .catch(() => { _qsCourseSearching = false; _qsCourseResults = []; renderQsCourseResults(); });
+      }, 300);
+    }
+    function renderQsCourseResults() {
+      const wrap = document.getElementById('qs-course-dropdown');
+      if (!wrap) return;
+      if (_qsCourseResults.length === 0) { wrap.innerHTML = ''; return; }
+      wrap.innerHTML = `<div class="qs-course-results">${_qsCourseResults.map((c, i) => `
+        <div class="qs-course-result" onclick="qsPickCourse(${i})">
+          <div class="qs-cr-name">${esc(c.name || c.facility_name || '')}</div>
+          <div class="qs-cr-meta">${c.slope ? 'Slope ' + c.slope + ' / Rating ' + c.rating : c.city || ''}</div>
+        </div>`).join('')}</div>`;
+    }
+    function qsPickCourse(idx) {
+      _qsSelectedCourse = _qsCourseResults[idx];
+      _qsCourseResults = [];
+      renderQuickStartOverlay();
+    }
+    function qsClearCourse() {
+      _qsSelectedCourse = null;
+      _qsCourseQuery = '';
+      renderQuickStartOverlay();
+    }
+
+    function qsSetCombo(combo) {
+      // Reset all games
+      Object.keys(_qsGames).forEach(k => _qsGames[k] = false);
+      combo.forEach(g => _qsGames[g] = true);
+      renderQuickStartOverlay();
+    }
+
     function renderQuickStartOverlay() {
       let el = document.getElementById('qs-overlay');
       if (!el) {
@@ -491,18 +640,61 @@
         document.body.appendChild(el);
       }
       const allGames = [
-        {id:'skins', name:'Skins'}, {id:'nassau', name:'Nassau'}, {id:'match_play', name:'Match Play'},
-        {id:'wolf', name:'Wolf'}, {id:'vegas', name:'Vegas'}, {id:'stroke_play', name:'Stroke Play'},
-        {id:'stableford', name:'Stableford'}, {id:'banker', name:'Banker'}, {id:'bingo', name:'Bingo Bango Bongo'},
+        {id:'skins', name:'Skins', icon:'\uD83D\uDCB0', desc:'Win the hole, win the pot'},
+        {id:'nassau', name:'Nassau', icon:'\uD83C\uDFC6', desc:'Front 9, back 9, overall'},
+        {id:'match_play', name:'Match Play', icon:'\u2694\uFE0F', desc:'Hole-by-hole battle'},
+        {id:'wolf', name:'Wolf', icon:'\uD83D\uDC3A', desc:'Pick your partner each hole'},
+        {id:'vegas', name:'Vegas', icon:'\uD83C\uDFB0', desc:'Team scores get wild'},
+        {id:'stroke_play', name:'Stroke Play', icon:'\uD83D\uDCCB', desc:'Total strokes, classic'},
+        {id:'stableford', name:'Stableford', icon:'\u2B50', desc:'Points for pars and better'},
+        {id:'banker', name:'Banker', icon:'\uD83C\uDFE6', desc:'Rotating banker each hole'},
+        {id:'bingo', name:'Bingo Bango Bongo', icon:'\uD83E\uDD41', desc:'First on, closest, first in'},
       ];
       const ta = el.querySelector('.qs-textarea');
       const curText = ta ? ta.value : '';
       const players = parseQuickStartRoster(curText);
       const anyGame = Object.values(_qsGames).some(Boolean);
       const canGo = players.length >= 2 && anyGame;
-      const today = new Date();
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const dateStr = months[today.getMonth()] + ' ' + today.getDate();
+
+      // Build live odds preview
+      let oddsHtml = '';
+      if (players.length >= 2 && players.some(p => p.handicap > 0)) {
+        const sorted = [...players].sort((a, b) => a.handicap - b.handicap);
+        const fav = sorted[0];
+        const matchups = sorted.slice(1, 4).map(p => {
+          const spread = (p.handicap - fav.handicap).toFixed(1);
+          return `<div class="qs-odds-row">
+            <span class="qs-odds-chip qs-odds-fav">${esc(fav.name.split(' ')[0])} (${fav.handicap > 0 ? '-' + fav.handicap.toFixed(1) : 'SCR'})</span>
+            <span class="qs-odds-vs">vs</span>
+            <span class="qs-odds-chip qs-odds-dog">${esc(p.name.split(' ')[0])} (+${spread})</span>
+          </div>`;
+        });
+        oddsHtml = `
+          <div class="qs-odds-preview">
+            <div class="qs-odds-title">Opening Lines</div>
+            <div class="qs-odds-matchups">${matchups.join('')}</div>
+          </div>`;
+      }
+
+      // Course section
+      let courseHtml = '';
+      if (_qsSelectedCourse) {
+        courseHtml = `
+          <div class="qs-course-selected">
+            <div style="flex:1">
+              <div class="qs-cs-name">\u26F3 ${esc(_qsSelectedCourse.name || _qsSelectedCourse.facility_name || '')}</div>
+              <div class="qs-cs-meta">${_qsSelectedCourse.slope ? 'Slope ' + _qsSelectedCourse.slope + ' / Rating ' + _qsSelectedCourse.rating : ''}</div>
+            </div>
+            <button class="qs-cs-clear" onclick="qsClearCourse()">\u2715</button>
+          </div>`;
+      } else {
+        courseHtml = `
+          <div class="qs-course-search">
+            <input class="qs-course-input" type="text" placeholder="Search courses..." value="${esc(_qsCourseQuery)}" oninput="qsCourseSearch(this.value)">
+            <div id="qs-course-dropdown"></div>
+          </div>
+          <button class="qs-course-skip" onclick="this.style.display='none'">Or skip \u2014 pick at the course</button>`;
+      }
 
       el.innerHTML = `
         <div class="qs-inner">
@@ -510,31 +702,47 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             Back
           </button>
-          <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--dark);margin-bottom:4px">Quick Start</h2>
-          <p style="color:var(--muted);font-size:14px;margin-bottom:20px">One screen. 30 seconds. Go play golf.</p>
+          <h2 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#FCF9F4;margin-bottom:4px">Open the Book</h2>
+          <p style="color:rgba(252,249,244,0.5);font-size:14px;margin-bottom:28px">One screen. 30 seconds. Let\u2019s play.</p>
 
-          <label style="font-size:12px;font-weight:600;letter-spacing:0.3px;margin-bottom:6px;display:block">Who's playing?</label>
-          <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8&#10;&#10;(one per line: Name, Handicap)" oninput="updateQsPreview()">${esc(curText)}</textarea>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">One player per line. Handicap is optional.</div>
+          <span class="qs-section-label">Players</span>
+          <div class="qs-ghin-row">
+            <input class="qs-ghin-input" id="qs-ghin-num" type="text" placeholder="GHIN #" style="flex:0.6" value="${esc(_qsGhinNum)}">
+            <input class="qs-ghin-input" id="qs-ghin-last" type="text" placeholder="Last name" style="flex:1" value="${esc(_qsGhinLast)}">
+            <button class="qs-ghin-btn" onclick="qsGhinLookup()" ${_qsGhinSearching ? 'disabled' : ''}>${_qsGhinSearching ? '...' : 'Look Up'}</button>
+          </div>
+          <div class="qs-or-divider">or type names below</div>
+          <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8" oninput="updateQsPreview()">${esc(curText)}</textarea>
+          <div style="font-size:11px;color:rgba(252,249,244,0.3);margin-top:4px">One per line \u2014 Name, Handicap (handicap optional)</div>
 
           <div id="qs-preview-area">
           ${players.length > 0 ? `
-          <div class="qs-preview">
-            ${players.map((p,i) => `<div class="qs-preview-row"><span class="nm">${esc(p.name)}</span><span class="hc">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}
-          </div>
-          <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>
+            <div class="qs-players-grid">
+              ${players.map(p => `<div class="qs-player-card"><span class="qs-pc-name">${esc(p.name)}</span><span class="qs-pc-hcp">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}
+            </div>
+            <div class="qs-player-count">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>
           ` : ''}
+          ${oddsHtml}
           </div>
 
-          <label style="font-size:12px;font-weight:600;letter-spacing:0.3px;margin-top:20px;margin-bottom:4px;display:block">Games</label>
-          <div class="qs-games">
-            ${allGames.map(g => `<div class="qs-game ${_qsGames[g.id] ? 'on' : ''}" onclick="qsToggleGame('${g.id}')">${g.name}</div>`).join('')}
+          <span class="qs-section-label" style="margin-top:24px">Pick Your Games</span>
+          <div class="qs-combos">
+            <div class="qs-combo-chip" onclick="qsSetCombo(['skins','nassau','match_play'])">Classic Trio</div>
+            <div class="qs-combo-chip" onclick="qsSetCombo(['skins','nassau'])">Skins + Nassau</div>
+            <div class="qs-combo-chip" onclick="qsSetCombo(['wolf'])">Wolf Only</div>
+            <div class="qs-combo-chip" onclick="qsSetCombo(['vegas','skins'])">Vegas + Skins</div>
           </div>
+          <div class="qs-games-grid">
+            ${allGames.map(g => `<div class="qs-game-card ${_qsGames[g.id] ? 'on' : ''}" onclick="qsToggleGame('${g.id}')"><span class="qs-gc-icon">${g.icon}</span><div><div class="qs-gc-name">${g.name}</div><div class="qs-gc-desc">${g.desc}</div></div></div>`).join('')}
+          </div>
+
+          <span class="qs-section-label" style="margin-top:24px">Course</span>
+          ${courseHtml}
 
           ${_qsError ? `<div class="qs-error">${_qsError}</div>` : ''}
 
           <button class="qs-go" onclick="launchQuickStart()" ${canGo && !_qsLaunching ? '' : 'disabled'}>
-            ${_qsLaunching ? 'Creating...' : '<span class="dot"></span>GO — Start the Game'}
+            ${_qsLaunching ? 'Creating...' : 'OPEN THE BOOK'}
           </button>
 
           <button class="qs-advanced" onclick="advancedFromQuickStart()">Advanced setup &rarr;</button>
@@ -550,15 +758,22 @@
       // Update preview area only
       const preview = document.getElementById('qs-preview-area');
       if (preview) {
+        let html = '';
         if (players.length > 0) {
-          preview.innerHTML = `
-            <div class="qs-preview">
-              ${players.map(p => `<div class="qs-preview-row"><span class="nm">${esc(p.name)}</span><span class="hc">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}
-            </div>
-            <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>`;
-        } else {
-          preview.innerHTML = '';
+          html += `<div class="qs-players-grid">${players.map(p => `<div class="qs-player-card"><span class="qs-pc-name">${esc(p.name)}</span><span class="qs-pc-hcp">${p.handicap > 0 ? p.handicap.toFixed(1) : 'SCR'}</span></div>`).join('')}</div>`;
+          html += `<div class="qs-player-count">${players.length} player${players.length !== 1 ? 's' : ''} ready</div>`;
         }
+        // Live odds preview
+        if (players.length >= 2 && players.some(p => p.handicap > 0)) {
+          const sorted = [...players].sort((a, b) => a.handicap - b.handicap);
+          const fav = sorted[0];
+          const matchups = sorted.slice(1, 4).map(p => {
+            const spread = (p.handicap - fav.handicap).toFixed(1);
+            return `<div class="qs-odds-row"><span class="qs-odds-chip qs-odds-fav">${esc(fav.name.split(' ')[0])} (${fav.handicap > 0 ? '-' + fav.handicap.toFixed(1) : 'SCR'})</span><span class="qs-odds-vs">vs</span><span class="qs-odds-chip qs-odds-dog">${esc(p.name.split(' ')[0])} (+${spread})</span></div>`;
+          });
+          html += `<div class="qs-odds-preview"><div class="qs-odds-title">Opening Lines</div><div class="qs-odds-matchups">${matchups.join('')}</div></div>`;
+        }
+        preview.innerHTML = html;
       }
       // Update GO button
       const goBtn = document.querySelector('.qs-go');
@@ -572,6 +787,10 @@
       W.type = _qsType;
       W.roster = players;
       Object.keys(_qsGames).forEach(g => { W.games[g] = !!_qsGames[g]; });
+      if (_qsSelectedCourse) {
+        W.venue = _qsSelectedCourse.name || _qsSelectedCourse.facility_name || '';
+        W.course = _qsSelectedCourse;
+      }
       if (!W.date1) W.date1 = new Date().toISOString().slice(0, 10);
       if (!W.adminPin) W.adminPin = String(1000 + Math.floor(Math.random() * 9000));
       W.step = 1;
@@ -612,8 +831,9 @@
       const curParams = new URLSearchParams(window.location.search);
       ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(k => { if (curParams.get(k) && !metaSource[k]) metaSource[k] = curParams.get(k); });
 
+      const venueName = _qsSelectedCourse ? (_qsSelectedCourse.name || _qsSelectedCourse.facility_name || 'On the course') : 'On the course';
       const config = {
-        event: { name: autoName, shortName: autoName.slice(0, 20), venue: 'On the course', url: '', dates: { day1: today }, format: firstGame, adminPin: pin, adminContact: '', eventType },
+        event: { name: autoName, shortName: autoName.slice(0, 20), venue: venueName, url: '', dates: { day1: today }, format: firstGame, adminPin: pin, adminContact: '', eventType },
         scoring: { totalPointsPerMatch: 10, capMax: 7, capMin: 3, holesPerMatch: 9, handicapAllowance: 0.85 },
         structure: { nassauBet: 10, skinsBet: 5, roundsTotal: 1, teamsPerFlight: players.length },
         flightOrder: ['all'], flights, teams, pairings: {},

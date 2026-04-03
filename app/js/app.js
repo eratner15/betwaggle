@@ -2038,11 +2038,29 @@ window.MG = {
       description,
     };
 
+    // Bet confirmation ceremony
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
     const result = await Sync.submitBet(betData);
     if (result) {
       state.bets.push(result);
+
+      // Gold pulse animation on place bet button
+      const betButton = document.querySelector('[onclick="window.MG.tbPlaceBet()"]');
+      if (betButton) {
+        betButton.classList.add('bet-placed');
+        setTimeout(() => betButton.classList.remove('bet-placed'), 600);
+      }
+
+      // Ticket stamp animation
+      showTicketStampAnimation(tb.stake);
+
+      // Update running bet tally
+      incrementBetTally(tb.stake);
+
       persist();
       toast(`$${tb.stake} on ${tb.teamName} for ${tb.name} — placed!`);
+
       // Reset match+stake but keep name
       state._takeBet = { name: tb.name, nameConfirmed: true };
       await syncFromServer();
@@ -2369,13 +2387,88 @@ window.MG = {
     if (!state._scoreModal) return;
     const n = parseInt(val);
     if (!isNaN(n) && n >= 1 && n <= 15) {
+      // Track previous score for undo functionality
+      if (!state._scoreModal.undoStack) state._scoreModal.undoStack = [];
+      const previousScore = state._scoreModal.scores[player];
+      if (previousScore !== n) {
+        state._scoreModal.undoStack.push({ player, score: previousScore });
+        // Keep only last 10 undos to prevent memory issues
+        if (state._scoreModal.undoStack.length > 10) {
+          state._scoreModal.undoStack.shift();
+        }
+      }
+
       state._scoreModal.scores[player] = n;
+
+      // Haptic feedback on score tap
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+
+      // Animate score change based on par performance
+      const config = state._config;
+      const pars = config?.coursePars || [];
+      const par = pars[state._scoreModal.hole - 1] || 4;
+      const diff = n - par;
+
+      // Trigger visual animation
+      this.animateScoreChange(player, n, diff);
+
     } else if (val === '' || val === null) {
       delete state._scoreModal.scores[player];
     }
+
     // Defer refresh so input doesn't lose focus mid-typing
     clearTimeout(window._scoreRefreshTimer);
     window._scoreRefreshTimer = setTimeout(() => refresh(), 400);
+  },
+
+  animateScoreChange(player, score, diff) {
+    // Find the button that was just clicked and animate it
+    setTimeout(() => {
+      const buttons = document.querySelectorAll(`button[onclick*="setScoreModalScore('${player}',${score})"]`);
+      buttons.forEach(btn => {
+        if (btn) {
+          // Remove any existing animation classes
+          btn.classList.remove('score-flash-eagle', 'score-flash-birdie', 'score-flash-par', 'score-flash-bogey');
+
+          // Add appropriate animation class based on score
+          let flashClass = 'score-flash-par';
+          if (diff <= -2) flashClass = 'score-flash-eagle';      // Eagle or better
+          else if (diff === -1) flashClass = 'score-flash-birdie'; // Birdie
+          else if (diff >= 2) flashClass = 'score-flash-bogey';    // Double bogey or worse
+
+          btn.classList.add(flashClass);
+
+          // Remove animation class after animation completes
+          setTimeout(() => {
+            btn.classList.remove(flashClass);
+          }, 600);
+        }
+      });
+    }, 50);
+  },
+
+  undoLastScore() {
+    if (!state._scoreModal || !state._scoreModal.undoStack || state._scoreModal.undoStack.length === 0) {
+      toast('Nothing to undo');
+      return;
+    }
+
+    const lastAction = state._scoreModal.undoStack.pop();
+    if (lastAction.score !== undefined) {
+      state._scoreModal.scores[lastAction.player] = lastAction.score;
+    } else {
+      delete state._scoreModal.scores[lastAction.player];
+    }
+
+    // Haptic feedback for undo
+    if (navigator.vibrate) {
+      navigator.vibrate([30, 30, 30]);
+    }
+
+    toast('Score undone');
+    refresh();
   },
   async submitScoreModal() {
     if (!state._scoreModal) return;
@@ -2389,6 +2482,21 @@ window.MG = {
         state._scoreModal = null;
         await syncFromServer();
         refresh();
+
+        // Auto-advance to next hole after 1.5 seconds
+        const config = state._config;
+        const holesPerRound = config?.holesPerRound || 18;
+        const nextHole = hole + 1;
+
+        if (nextHole <= holesPerRound) {
+          setTimeout(() => {
+            // Check if user hasn't manually opened another modal
+            if (!state._scoreModal) {
+              this.setScoreModalHole(nextHole);
+              toast(`Auto-advanced to Hole ${nextHole}`);
+            }
+          }, 1500);
+        }
       } else {
         throw new Error('submit returned null');
       }
@@ -2436,6 +2544,14 @@ window.MG = {
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     refresh();
   },
+
+  // Hole progress strip navigation - jump to any hole
+  jumpToHole(holeNum) {
+    this.inlineScoreSetHole(holeNum);
+    // Add haptic feedback for hole navigation
+    if (navigator.vibrate) navigator.vibrate(30);
+    toast(`Jumped to Hole ${holeNum}`);
+  },
   inlineScoreSet(player, val) {
     if (!state._inlineScore) return;
     const n = parseInt(val);
@@ -2455,6 +2571,241 @@ window.MG = {
     clearTimeout(window._inlineScoreRefreshTimer);
     window._inlineScoreRefreshTimer = setTimeout(() => refresh(), 150);
   },
+
+  // Premium score entry with haptic feedback and auto-advance
+  premiumScoreSet(player, score, scoreToPar) {
+    // Set the score using existing logic
+    this.inlineScoreSet(player, score);
+
+    // Haptic feedback based on performance
+    if (navigator.vibrate) {
+      if (scoreToPar <= -2) {
+        navigator.vibrate([30, 50, 30]); // Eagle celebration
+      } else if (scoreToPar === -1) {
+        navigator.vibrate([50, 30]); // Birdie success
+      } else if (scoreToPar === 0) {
+        navigator.vibrate(30); // Par confirmation
+      } else {
+        navigator.vibrate(15); // Bogey+ light tap
+      }
+    }
+
+    // Visual feedback toast
+    const scoreNames = {
+      [-3]: 'Albatross! 🦅',
+      [-2]: 'Eagle! 🦅',
+      [-1]: 'Birdie! 🐦',
+      [0]: 'Par',
+      [1]: 'Bogey',
+      [2]: 'Double Bogey',
+      [3]: 'Triple Bogey'
+    };
+    const scoreName = scoreNames[scoreToPar] || `+${scoreToPar}`;
+    toast(`${player.split(' ')[0]}: ${scoreName}`, 1000);
+
+    // Clear any existing auto-advance timer
+    if (window._autoAdvanceTimer) {
+      clearTimeout(window._autoAdvanceTimer);
+      window._autoAdvanceTimer = null;
+    }
+
+    // Auto-advance after 1.5 seconds (with visual countdown)
+    this.startAutoAdvanceCountdown();
+  },
+
+  startAutoAdvanceCountdown() {
+    const countdownDuration = 1500; // 1.5 seconds
+    const startTime = Date.now();
+
+    // Create countdown ring overlay if not exists
+    let countdownEl = document.getElementById('auto-advance-countdown');
+    if (!countdownEl) {
+      countdownEl = document.createElement('div');
+      countdownEl.id = 'auto-advance-countdown';
+      countdownEl.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 1000;
+          pointer-events: none;
+        ">
+          <svg width="80" height="80" style="transform: rotate(-90deg)">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#374151" stroke-width="8" opacity="0.2"/>
+            <circle
+              id="countdown-progress"
+              cx="40" cy="40" r="30"
+              fill="none"
+              stroke="#D4AF37"
+              stroke-width="8"
+              stroke-linecap="round"
+              stroke-dasharray="188.5"
+              stroke-dashoffset="0"
+              style="animation: countdown-ring ${countdownDuration}ms linear forwards;"
+            />
+          </svg>
+          <div style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #D4AF37;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1;
+          ">
+            <div>AUTO</div>
+            <div>ADVANCE</div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(countdownEl);
+    }
+
+    // Auto-advance timer
+    window._autoAdvanceTimer = setTimeout(() => {
+      const holesPerRound = state._config?.holesPerRound || 18;
+      const currentHole = state._inlineScore?.hole || 1;
+
+      if (currentHole < holesPerRound) {
+        // Check if all players have scores for current hole
+        const currentScores = state._inlineScore?.scores || {};
+        const players = state._config?.players || [];
+        const allScored = players.every(p => currentScores[p.name] != null);
+
+        if (allScored) {
+          this.jumpToHole(currentHole + 1);
+          toast(`Auto-advanced to Hole ${currentHole + 1}`);
+        }
+      }
+
+      // Remove countdown
+      if (countdownEl) {
+        countdownEl.remove();
+      }
+    }, countdownDuration);
+
+    // Allow canceling by tapping countdown
+    countdownEl.style.pointerEvents = 'auto';
+    countdownEl.onclick = () => {
+      if (window._autoAdvanceTimer) {
+        clearTimeout(window._autoAdvanceTimer);
+        window._autoAdvanceTimer = null;
+      }
+      countdownEl.remove();
+      toast('Auto-advance canceled');
+    };
+  },
+
+  // Undo score history with swipe gesture
+  handleUndoSwipe(player, event) {
+    if (!window._undoState) {
+      window._undoState = {};
+    }
+
+    const playerId = player.replace(/[^a-zA-Z0-9]/g, '');
+    const strip = document.getElementById(`undo-strip-${player}`);
+    const indicator = document.getElementById(`undo-indicator-${player}`);
+
+    if (!strip || !indicator) return;
+
+    const rect = strip.getBoundingClientRect();
+    const isTouch = event.type.startsWith('touch');
+    const clientX = isTouch ? event.touches?.[0]?.clientX || event.changedTouches?.[0]?.clientX : event.clientX;
+
+    if (event.type === 'touchstart' || event.type === 'mousedown') {
+      window._undoState[playerId] = {
+        startX: clientX,
+        startTime: Date.now(),
+        swiping: true
+      };
+      strip.style.cursor = 'grabbing';
+      event.preventDefault();
+    }
+
+    else if ((event.type === 'touchmove' || event.type === 'mousemove') && window._undoState[playerId]?.swiping) {
+      const deltaX = clientX - window._undoState[playerId].startX;
+      const progress = Math.max(0, Math.min(1, deltaX / (rect.width * 0.7)));
+
+      // Visual feedback
+      indicator.style.left = `${-100 + (progress * 120)}%`;
+      indicator.style.width = `${progress * 100}%`;
+      strip.style.transform = `translateX(${Math.min(deltaX * 0.1, 20)}px)`;
+      strip.style.background = `rgba(220,38,38,${0.08 + progress * 0.15})`;
+
+      event.preventDefault();
+    }
+
+    else if ((event.type === 'touchend' || event.type === 'mouseup') && window._undoState[playerId]?.swiping) {
+      const deltaX = clientX - window._undoState[playerId].startX;
+      const swipeDistance = Math.abs(deltaX);
+      const swipeTime = Date.now() - window._undoState[playerId].startTime;
+      const swipeVelocity = swipeDistance / swipeTime;
+
+      // Reset visual state
+      strip.style.cursor = 'grab';
+      strip.style.transform = '';
+      strip.style.background = 'rgba(220,38,38,0.08)';
+      indicator.style.left = '-100%';
+      indicator.style.width = '0';
+
+      // Trigger undo if swipe was significant
+      if (deltaX > rect.width * 0.5 || (swipeDistance > 50 && swipeVelocity > 0.3)) {
+        this.undoLastScores(player);
+      }
+
+      window._undoState[playerId].swiping = false;
+      event.preventDefault();
+    }
+  },
+
+  undoLastScores(player) {
+    if (!state._holes || !state._config) return;
+
+    const holes = state._holes;
+    const currentHole = state._inlineScore?.hole || 1;
+    let undoCount = 0;
+    const maxUndo = 3;
+
+    // Undo scores from current hole backwards
+    for (let h = currentHole; h >= 1 && undoCount < maxUndo; h--) {
+      if (holes[h]?.scores?.[player] != null) {
+        delete holes[h].scores[player];
+
+        // Also clear stats for this hole
+        if (holes[h]?.stats?.[player]) {
+          delete holes[h].stats[player];
+        }
+
+        undoCount++;
+      }
+    }
+
+    if (undoCount > 0) {
+      // Haptic feedback for undo
+      if (navigator.vibrate) navigator.vibrate([20, 20, 20]);
+
+      // Toast notification
+      const playerName = player.split(' ')[0];
+      toast(`${playerName}: Undid ${undoCount} score${undoCount > 1 ? 's' : ''}`, 1500);
+
+      // Update inline score state if current hole was affected
+      if (state._inlineScore && holes[state._inlineScore.hole]) {
+        state._inlineScore.scores = { ...holes[state._inlineScore.hole].scores };
+        const existingStats = holes[state._inlineScore.hole]?.stats || {};
+        state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+      }
+
+      // Sync changes to server
+      this.saveInlineScore();
+      refresh();
+    } else {
+      toast(`${player.split(' ')[0]}: No recent scores to undo`);
+    }
+  },
+
   inlineScoreType(player, value) {
     const n = parseInt(value);
     if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
@@ -2809,8 +3160,24 @@ window.MG = {
     persist();
     refresh();
 
-    // #11: Haptic feedback
-    if (placed > 0 && navigator.vibrate) navigator.vibrate(30);
+    // Enhanced bet confirmation ceremony
+    if (placed > 0) {
+      // Stronger haptic feedback - triple pulse
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+
+      // Gold pulse animation on bet slip button
+      const betButton = document.querySelector('[onclick="window.MG.placeBets()"]');
+      if (betButton) {
+        betButton.classList.add('bet-placed');
+        setTimeout(() => betButton.classList.remove('bet-placed'), 600);
+      }
+
+      // Ticket stamp animation for each bet
+      showTicketStampAnimation(totalStake);
+
+      // Update running bet tally
+      incrementBetTally(totalStake);
+    }
 
     if (placed > 0 && queued === 0) toast(`${placed} bet${placed > 1 ? "s" : ""} placed!`);
     else if (queued > 0 && placed === 0) toast(`${queued} bet${queued > 1 ? "s" : ""} saved — will submit when online`);
@@ -3674,12 +4041,193 @@ window.MG = {
     const result = await Sync.apiFetch('calcutta/reset', 'POST');
     if (result?.ok) { toast('Auction reset'); await syncFromServer(); route(); }
     else toast(result?.error || 'Failed');
+  },
+
+  // ─── ODDS BET SLIP FUNCTIONS ───
+
+  // Open odds bet slip for tappable odds
+  openOddsBetSlip(player, betType, odds) {
+    state._oddsBetSlip = {
+      player: player,
+      betType: betType,
+      odds: odds
+    };
+    state._oddsBetSlipAmount = 10; // Default bet amount
+
+    // Haptic feedback for opening bet slip
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    refresh();
+
+    // Scroll to make bet slip visible
+    setTimeout(() => {
+      const slip = document.querySelector('[data-odds-bet-slip]');
+      if (slip && window.innerHeight < document.body.scrollHeight) {
+        slip.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 100);
+  },
+
+  setOddsBetAmount(amount) {
+    state._oddsBetSlipAmount = parseInt(amount) || 0;
+    refresh();
+  },
+
+  closeOddsBetSlip() {
+    delete state._oddsBetSlip;
+    delete state._oddsBetSlipAmount;
+    refresh();
+  },
+
+  async placeOddsBet() {
+    const slip = state._oddsBetSlip;
+    const amount = state._oddsBetSlipAmount;
+
+    if (!slip || !amount || amount <= 0) return;
+
+    // Bet confirmation ceremony - enhanced haptic feedback
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+    const betData = {
+      type: slip.betType === 'to_win' ? 'player_winner' : 'head_to_head',
+      selection: slip.player,
+      stake: amount,
+      odds: parseFloat(slip.odds.replace('+', '')) / 100,
+      americanOdds: slip.odds,
+      description: slip.betType === 'to_win'
+        ? `${slip.player} to win`
+        : `${slip.player} head-to-head`,
+      bettor: state.bettorName
+    };
+
+    // Visual ceremony - add gold pulse animation to button
+    const button = document.querySelector('[onclick="window.MG.placeOddsBet()"]');
+    if (button) {
+      button.classList.add('bet-placed');
+      button.style.transform = 'scale(1.02)';
+      button.style.boxShadow = '0 0 20px rgba(212,175,55,0.4)';
+    }
+
+    // Ticket stamp animation
+    showTicketStampAnimation(amount);
+
+    // Update bet tally counter
+    incrementBetTally(amount);
+
+    try {
+      const result = await Sync.submitBet(betData);
+      if (result) {
+        placeBet(state, betData);
+        toast(`$${amount} bet placed on ${slip.player}!`);
+
+        // Clean up visual effects
+        if (button) {
+          setTimeout(() => {
+            button.classList.remove('bet-placed');
+            button.style.transform = '';
+            button.style.boxShadow = '';
+          }, 500);
+        }
+      } else {
+        // Queue for offline
+        const pending = JSON.parse(sessionStorage.getItem('mg_pending_bets') || '[]');
+        pending.push(betData);
+        sessionStorage.setItem('mg_pending_bets', JSON.stringify(pending));
+        toast("Bet saved — will submit when online");
+      }
+    } catch (error) {
+      toast("Bet failed — try again");
+      console.error('Bet placement error:', error);
+    }
+
+    // Close the slip
+    this.closeOddsBetSlip();
+    persist();
+    refresh();
   }
 };
 
 // #4: Persist bet slip to sessionStorage
 function saveBetSlip() {
   sessionStorage.setItem('mg_betslip', JSON.stringify(state._betSlip || []));
+}
+
+// ─── BET CONFIRMATION CEREMONY HELPERS ───
+
+// Ticket stamp animation for bet placement
+function showTicketStampAnimation(amount) {
+  const stamp = document.createElement('div');
+  stamp.className = 'ticket-stamp';
+  stamp.innerHTML = `BET PLACED<br>$${amount}`;
+
+  document.body.appendChild(stamp);
+
+  // Remove after animation completes
+  setTimeout(() => {
+    if (stamp.parentNode) {
+      stamp.parentNode.removeChild(stamp);
+    }
+  }, 1000);
+}
+
+// Running bet tally counter
+let betTallyTotal = 0;
+let betTallyElement = null;
+
+function initializeBetTally() {
+  if (!betTallyElement) {
+    betTallyElement = document.createElement('div');
+    betTallyElement.className = 'bet-tally-counter';
+    betTallyElement.innerHTML = '🎰 $0 staked';
+    document.body.appendChild(betTallyElement);
+  }
+
+  // Load saved tally from session
+  const saved = sessionStorage.getItem('mg_bet_tally');
+  if (saved) {
+    betTallyTotal = parseInt(saved) || 0;
+    updateBetTallyDisplay();
+  }
+}
+
+function incrementBetTally(amount) {
+  betTallyTotal += amount;
+
+  // Save to session
+  sessionStorage.setItem('mg_bet_tally', betTallyTotal.toString());
+
+  // Initialize if needed
+  if (!betTallyElement) {
+    initializeBetTally();
+  }
+
+  // Animate update
+  betTallyElement.classList.add('animate');
+  updateBetTallyDisplay();
+
+  setTimeout(() => {
+    betTallyElement.classList.remove('animate');
+  }, 600);
+}
+
+function updateBetTallyDisplay() {
+  if (betTallyElement) {
+    betTallyElement.innerHTML = `🎰 $${betTallyTotal.toLocaleString()} staked`;
+
+    // Hide if zero
+    if (betTallyTotal === 0) {
+      betTallyElement.style.display = 'none';
+    } else {
+      betTallyElement.style.display = 'block';
+    }
+  }
+}
+
+// Initialize bet tally on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBetTally);
+} else {
+  initializeBetTally();
 }
 
 // Demo auto-simulation for live sportsbook feel
@@ -3703,6 +4251,9 @@ function startDemoAutoSimulation(slug) {
     generateDemoActivity(slug);
   }, 8000);
 
+  // Initialize feed with sample content immediately
+  initializeDemoFeed(slug);
+
   // Generate initial activity after 3 seconds
   setTimeout(() => generateDemoActivity(slug), 3000);
 }
@@ -3713,12 +4264,18 @@ function generateDemoActivity(slug) {
   const players = state._config.players;
   const eventType = Math.random();
 
-  if (eventType < 0.4) {
-    // Generate fake bet placement (40% chance)
+  if (eventType < 0.25) {
+    // Generate fake bet placement (25% chance)
     generateFakeBet(players, slug);
-  } else if (eventType < 0.8) {
-    // Generate score update (40% chance)
+  } else if (eventType < 0.45) {
+    // Generate score update (20% chance)
     generateScoreUpdate(players, slug);
+  } else if (eventType < 0.65) {
+    // Generate odds movement (20% chance)
+    generateOddsMovement(players, slug);
+  } else if (eventType < 0.8) {
+    // Generate press event (15% chance)
+    generatePressEvent(players, slug);
   } else {
     // Generate trash talk/chirp (20% chance)
     generateFakeChirp(players, slug);
@@ -3727,9 +4284,15 @@ function generateDemoActivity(slug) {
 
 function generateFakeBet(players, slug) {
   const player = players[Math.floor(Math.random() * players.length)];
-  const betTypes = ['Nassau', 'Skins', 'Wolf', 'Press'];
+  const betTypes = [
+    'Nassau Front 9', 'Nassau Back 9', 'Nassau Overall',
+    'Skins', 'Wolf', 'Vegas', 'Bingo Bango Bongo',
+    'Closest to Pin', 'Long Drive', 'Greenies',
+    'Match Play', 'Low Ball', 'High Ball',
+    'Best Ball', 'Scramble', 'Stableford'
+  ];
   const betType = betTypes[Math.floor(Math.random() * betTypes.length)];
-  const amounts = [10, 15, 20, 25, 30, 50];
+  const amounts = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
   const amount = amounts[Math.floor(Math.random() * amounts.length)];
 
   const feedItem = {
@@ -3766,7 +4329,27 @@ function generateScoreUpdate(players, slug) {
     'made an impossible recovery shot',
     'sank the birdie putt',
     'rolled in a 15-footer for par',
-    'made birdie from the rough'
+    'made birdie from the rough',
+    'stuck it to 3 feet on a par 3',
+    'bombed a 320-yard drive',
+    'made bogey after a terrible tee shot',
+    'saved par with a 40-foot putt',
+    'aced the par 3 7th hole!',
+    'skulled it over the green',
+    'found the water on 18',
+    'made double bogey',
+    'recovered with a chip-in birdie',
+    'birdied three holes in a row',
+    'made par after hitting it in the trees',
+    'stuck the approach to 2 feet',
+    'drained a slider for par',
+    'hit it OB and took a penalty',
+    'made a miracle up and down',
+    'lipped out for eagle',
+    'made the turn at -2',
+    'carded a 76 on the front 9',
+    'shot 39 on the back nine',
+    'finished with a birdie'
   ];
 
   const scoreEvent = scoreEvents[Math.floor(Math.random() * scoreEvents.length)];
@@ -3804,7 +4387,35 @@ function generateFakeChirp(players, slug) {
     'Lucky bounce!',
     'Time to press',
     'Momentum shift',
-    'Getting hot out here'
+    'Getting hot out here',
+    'Dialed in today',
+    'Putting like a machine',
+    'Course knowledge pays off',
+    'That pin was made for me',
+    'Nerves of steel',
+    'Lucky horseshoe today',
+    'Should have stayed in the cart',
+    'Swing looking smooth',
+    'Pin hunting mode activated',
+    'Feeling dangerous today',
+    'Cart path bounce for the win',
+    'Reading the wind like a pro',
+    'Channeling Tiger right now',
+    'GPS says 147, hitting 9 iron',
+    'Greens are rolling true today',
+    'Playing the percentages',
+    'Risk vs reward paying off',
+    'Short game is money today',
+    'Driver is finding fairways',
+    'Irons are dialed in',
+    'Putting stroke is pure',
+    'Playing within myself',
+    'Course management 101',
+    'Weather is perfect for golf',
+    'Pin positions are fair today',
+    'Rough isn\'t too penal',
+    'Greens have good pace',
+    'Wind is helping on this hole'
   ];
 
   const chirp = chirps[Math.floor(Math.random() * chirps.length)];
@@ -3828,6 +4439,149 @@ function generateFakeChirp(players, slug) {
   }
 
   route();
+}
+
+function generateOddsMovement(players, slug) {
+  const player = players[Math.floor(Math.random() * players.length)];
+  const betTypes = ['Nassau Front 9', 'Nassau Back 9', 'Nassau Overall', 'Skins', 'Wolf', 'Match Play', 'Low Ball', 'Closest to Pin'];
+  const betType = betTypes[Math.floor(Math.random() * betTypes.length)];
+
+  // Simulate odds movement - more realistic ranges
+  const movements = [
+    { direction: 'up', text: 'odds lengthened', emoji: '📈', color: 'red' },
+    { direction: 'down', text: 'odds shortened', emoji: '📉', color: 'green' },
+    { direction: 'hot', text: 'odds moving fast', emoji: '🔥', color: 'gold' }
+  ];
+  const movement = movements[Math.floor(Math.random() * movements.length)];
+
+  const oldOdds = ['+150', '+200', '+250', '+300', '+350', '+400', '-110', '-120', '-150', '-200'];
+  const newOdds = ['+120', '+180', '+220', '+280', '+320', '+450', '-105', '-115', '-140', '-180'];
+  const oldOdd = oldOdds[Math.floor(Math.random() * oldOdds.length)];
+  const newOdd = newOdds[Math.floor(Math.random() * newOdds.length)];
+
+  const feedItem = {
+    id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    type: 'odds',
+    player: 'System',
+    text: `${betType} for ${player.name}: ${oldOdd} → ${newOdd}`,
+    emoji: movement.emoji,
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString(),
+    oddsMovement: movement.direction,
+    betType: betType,
+    targetPlayer: player.name
+  };
+
+  state._feed.unshift(feedItem);
+
+  if (state._feed.length > 50) {
+    state._feed = state._feed.slice(0, 50);
+  }
+
+  // Trigger visual feedback for odds movement
+  triggerOddsMovementAnimation(movement.direction, betType);
+
+  route();
+}
+
+function generatePressEvent(players, slug) {
+  const player = players[Math.floor(Math.random() * players.length)];
+  const pressTypes = [
+    'Nassau press on back 9',
+    'Automatic press activated',
+    'Side bet press',
+    'Match play press',
+    'Wolf press',
+    'Skins press'
+  ];
+  const pressType = pressTypes[Math.floor(Math.random() * pressTypes.length)];
+
+  const pressAmounts = [20, 25, 30, 40, 50, 75, 100];
+  const amount = pressAmounts[Math.floor(Math.random() * pressAmounts.length)];
+
+  const feedItem = {
+    id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    type: 'press',
+    player: player.name,
+    text: `initiated ${pressType} for $${amount}`,
+    emoji: '⚡',
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString(),
+    amount: amount,
+    pressType: pressType
+  };
+
+  state._feed.unshift(feedItem);
+
+  if (state._feed.length > 50) {
+    state._feed = state._feed.slice(0, 50);
+  }
+
+  // Add haptic feedback if available
+  if (navigator.vibrate) {
+    navigator.vibrate([50, 100, 50]);
+  }
+
+  route();
+}
+
+function initializeDemoFeed(slug) {
+  if (!state?._config?.players || state._feed.length > 0) return;
+
+  const players = state._config.players;
+  const initialContent = [
+    {
+      type: 'score',
+      player: players[0]?.name || 'Player 1',
+      text: 'made birdie on hole 3',
+      emoji: '🏌️',
+      timestamp: Date.now() - 180000 // 3 minutes ago
+    },
+    {
+      type: 'odds',
+      player: 'System',
+      text: `Nassau Overall for ${players[1]?.name || 'Player 2'}: +200 → +175`,
+      emoji: '📉',
+      timestamp: Date.now() - 120000 // 2 minutes ago
+    },
+    {
+      type: 'bet',
+      player: players[2]?.name || 'Player 3',
+      text: 'placed a $25 Skins bet',
+      emoji: '💰',
+      timestamp: Date.now() - 60000 // 1 minute ago
+    }
+  ];
+
+  initialContent.forEach((content, index) => {
+    const feedItem = {
+      id: 'demo-init-' + Date.now() + '-' + index,
+      type: content.type,
+      player: content.player,
+      text: content.text,
+      emoji: content.emoji,
+      timestamp: content.timestamp,
+      createdAt: new Date(content.timestamp).toISOString()
+    };
+    state._feed.push(feedItem);
+  });
+
+  route(); // Re-render to show initial content
+}
+
+function triggerOddsMovementAnimation(direction, betType) {
+  // Find odds buttons and add flash animation based on movement direction
+  setTimeout(() => {
+    const oddsButtons = document.querySelectorAll('.odds-btn, .bet-odd, [class*="odd"]');
+    oddsButtons.forEach(btn => {
+      if (Math.random() < 0.3) { // Only animate some odds for realism
+        btn.classList.add(direction === 'down' ? 'odds-flash-green' : 'odds-flash-red');
+        setTimeout(() => {
+          btn.classList.remove('odds-flash-green', 'odds-flash-red');
+        }, 1500);
+      }
+    });
+  }, 100);
 }
 
 // Boot

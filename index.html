@@ -926,6 +926,319 @@
     .reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
+    /* Auto-playing demo styles */
+    .auto-demo-section {
+      background: linear-gradient(135deg, #0D2818 0%, #1A472A 100%);
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .auto-demo-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4AF37' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    .auto-demo-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .auto-demo-copy h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: #F5F0E8;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .auto-demo-copy p {
+      font-size: 18px;
+      color: rgba(245,240,232,0.8);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    .auto-demo-board {
+      background: #1A472A;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      border: 2px solid rgba(212,175,55,0.1);
+      position: relative;
+    }
+
+    .auto-demo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(245,240,232,0.1);
+    }
+
+    .auto-demo-title {
+      font-weight: 700;
+      color: #F5F0E8;
+      font-size: 18px;
+    }
+
+    .auto-demo-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: rgba(245,240,232,0.7);
+    }
+
+    .live-indicator {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .auto-demo-leaderboard {
+      margin-bottom: 20px;
+    }
+
+    .auto-leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(245,240,232,0.05);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .auto-leaderboard-item.highlighted {
+      background: rgba(212,175,55,0.15);
+      border: 1px solid rgba(212,175,55,0.3);
+      transform: translateX(4px);
+    }
+
+    .auto-player-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auto-player-pos {
+      font-weight: 700;
+      color: #D4AF37;
+      min-width: 20px;
+    }
+
+    .auto-player-name {
+      font-weight: 600;
+      color: #F5F0E8;
+    }
+
+    .auto-player-score {
+      font-weight: 700;
+      color: #22c55e;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .auto-demo-betting {
+      margin-bottom: 20px;
+    }
+
+    .auto-match-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(245,240,232,0.7);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auto-match-options {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .auto-bet-option {
+      flex: 1;
+      background: rgba(245,240,232,0.05);
+      border: 2px solid rgba(245,240,232,0.1);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .auto-bet-option:hover {
+      background: rgba(245,240,232,0.1);
+      border-color: rgba(212,175,55,0.3);
+    }
+
+    .auto-bet-option.selected {
+      background: rgba(212,175,55,0.15);
+      border-color: #D4AF37;
+      transform: scale(1.02);
+    }
+
+    .auto-bet-team {
+      font-weight: 600;
+      color: #F5F0E8;
+      margin-bottom: 4px;
+    }
+
+    .auto-bet-odds {
+      font-weight: 700;
+      color: #D4AF37;
+      font-size: 18px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .auto-bet-odds.flash-green {
+      animation: oddsFlashGreen 0.6s ease-out;
+    }
+
+    .auto-bet-odds.flash-red {
+      animation: oddsFlashRed 0.6s ease-out;
+    }
+
+    .auto-bet-slip {
+      background: rgba(212,175,55,0.1);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+    }
+
+    .auto-bet-slip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .auto-slip-header {
+      font-weight: 700;
+      color: #D4AF37;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 12px;
+    }
+
+    .auto-slip-detail {
+      color: #F5F0E8;
+      font-weight: 600;
+    }
+
+    .auto-demo-settlement {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+      transition: all 0.5s ease;
+    }
+
+    .auto-demo-settlement.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .auto-settlement-banner {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auto-settlement-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .auto-settlement-title {
+      font-weight: 700;
+      color: white;
+      font-size: 16px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auto-settlement-result {
+      font-weight: 600;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .auto-settlement-payout {
+      font-weight: 700;
+      color: white;
+      font-size: 18px;
+      animation: winnerGlow 1.5s infinite;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .auto-demo-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .auto-demo-copy h2 {
+        font-size: 32px;
+      }
+
+      .auto-demo-board {
+        padding: 20px;
+      }
+
+      .auto-match-options {
+        flex-direction: column;
+      }
+
+      .auto-bet-option {
+        min-height: 56px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .auto-bet-team, .auto-bet-odds {
+        margin-bottom: 0;
+      }
+    }
+
     .settlement-item {
       animation: settlementReveal 0.6s ease-out;
       animation-delay: var(--delay, 0s);
@@ -1673,6 +1986,262 @@
 
     </div>
   </section>
+
+  <!-- AUTO-PLAYING DEMO SECTION -->
+  <section class="auto-demo-section" id="auto-demo">
+    <div class="auto-demo-inner">
+      <div class="auto-demo-copy">
+        <div class="section-label">See It In Action</div>
+        <h2>Live Odds, Real Stakes,<br>Auto Settlement</h2>
+        <p>Watch how scores update live, odds shift with each hole, and payouts calculate automatically. No math, no arguments, no hassle.</p>
+      </div>
+
+      <div class="auto-demo-board">
+        <div class="auto-demo-header">
+          <div class="auto-demo-title">Scramble Championship</div>
+          <div class="auto-demo-status">
+            <span class="live-indicator"></span>
+            <span>Round 2 • Hole <span id="auto-hole">14</span></span>
+          </div>
+        </div>
+
+        <div class="auto-demo-leaderboard" id="auto-leaderboard">
+          <!-- Leaderboard entries will be populated by JS -->
+        </div>
+
+        <div class="auto-demo-betting" id="auto-betting">
+          <div class="auto-demo-match">
+            <div class="auto-match-header">Next Hole Winner</div>
+            <div class="auto-match-options">
+              <div class="auto-bet-option" id="auto-bet-a">
+                <div class="auto-bet-team">Eagles</div>
+                <div class="auto-bet-odds" id="odds-eagles">+120</div>
+              </div>
+              <div class="auto-bet-option" id="auto-bet-b">
+                <div class="auto-bet-team">Birdies</div>
+                <div class="auto-bet-odds" id="odds-birdies">-140</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="auto-bet-slip" id="auto-slip">
+            <div class="auto-slip-header">Bet Placed!</div>
+            <div class="auto-slip-detail">Eagles +120 • $25 to win $30</div>
+          </div>
+        </div>
+
+        <div class="auto-demo-settlement" id="auto-settlement">
+          <div class="auto-settlement-banner">
+            <div class="auto-settlement-title">Hole Complete!</div>
+            <div class="auto-settlement-result">Eagles Win the Hole</div>
+            <div class="auto-settlement-payout">You Won $30!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  // Auto-playing demo that triggers on scroll
+  (function() {
+    var autoDemoState = {
+      players: [
+        { name: 'Eagles', score: -12, pos: 1 },
+        { name: 'Birdies', score: -10, pos: 2 },
+        { name: 'Pars', score: -8, pos: 3 },
+        { name: 'Bogeys', score: -5, pos: 4 }
+      ],
+      currentHole: 14,
+      eaglesOdds: 120,
+      birdiesOdds: -140,
+      isActive: false,
+      hasPlayed: false,
+      timeouts: []
+    };
+
+    var autoDemoSection = document.getElementById('auto-demo');
+    var autoLeaderboard = document.getElementById('auto-leaderboard');
+    var autoBetting = document.getElementById('auto-betting');
+    var autoSettlement = document.getElementById('auto-settlement');
+    var autoSlip = document.getElementById('auto-slip');
+    var autoHole = document.getElementById('auto-hole');
+    var eaglesOddsEl = document.getElementById('odds-eagles');
+    var birdiesOddsEl = document.getElementById('odds-birdies');
+    var betEagles = document.getElementById('auto-bet-a');
+    var betBirdies = document.getElementById('auto-bet-b');
+
+    // Render initial leaderboard
+    function renderLeaderboard() {
+      if (!autoLeaderboard) return;
+
+      autoLeaderboard.innerHTML = autoDemoState.players.map(function(player, index) {
+        return '<div class="auto-leaderboard-item" data-pos="' + player.pos + '">' +
+          '<div class="auto-player-info">' +
+            '<div class="auto-player-pos">' + player.pos + '</div>' +
+            '<div class="auto-player-name">' + player.name + '</div>' +
+          '</div>' +
+          '<div class="auto-player-score">' + (player.score > 0 ? '+' : '') + player.score + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Flash odds changes
+    function flashOdds(element, isImproving) {
+      if (!element) return;
+      element.classList.remove('flash-green', 'flash-red');
+      setTimeout(function() {
+        element.classList.add(isImproving ? 'flash-green' : 'flash-red');
+      }, 50);
+    }
+
+    // Update odds with animation
+    function updateOdds() {
+      // Eagles odds improve (lower positive = better for bettor)
+      autoDemoState.eaglesOdds = 110;
+      // Birdies odds worsen (higher negative = worse for bettor)
+      autoDemoState.birdiesOdds = -155;
+
+      if (eaglesOddsEl) {
+        eaglesOddsEl.textContent = '+' + autoDemoState.eaglesOdds;
+        flashOdds(eaglesOddsEl, true);
+      }
+      if (birdiesOddsEl) {
+        birdiesOddsEl.textContent = autoDemoState.birdiesOdds;
+        flashOdds(birdiesOddsEl, false);
+      }
+    }
+
+    // Show bet placement
+    function placeBet() {
+      if (betEagles) {
+        betEagles.classList.add('selected');
+      }
+      if (autoSlip) {
+        autoSlip.classList.add('visible');
+      }
+    }
+
+    // Show settlement
+    function showSettlement() {
+      // Update scores - Eagles win the hole
+      autoDemoState.players[0].score = -13; // Eagles improve
+      autoDemoState.currentHole = 15;
+
+      if (autoHole) {
+        autoHole.textContent = autoDemoState.currentHole;
+      }
+
+      // Highlight winner in leaderboard
+      var eaglesRow = document.querySelector('[data-pos="1"]');
+      if (eaglesRow) {
+        eaglesRow.classList.add('highlighted');
+        var scoreEl = eaglesRow.querySelector('.auto-player-score');
+        if (scoreEl) {
+          setTimeout(function() {
+            scoreEl.style.animation = 'countUp 0.5s ease-out';
+            scoreEl.textContent = '-13';
+          }, 200);
+        }
+      }
+
+      // Show settlement banner
+      if (autoSettlement) {
+        autoSettlement.classList.add('visible');
+      }
+
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
+    }
+
+    // Reset demo for replay
+    function resetDemo() {
+      autoDemoState.hasPlayed = false;
+      autoDemoState.isActive = false;
+      autoDemoState.players[0].score = -12;
+      autoDemoState.currentHole = 14;
+      autoDemoState.eaglesOdds = 120;
+      autoDemoState.birdiesOdds = -140;
+
+      // Clear all timeouts
+      autoDemoState.timeouts.forEach(clearTimeout);
+      autoDemoState.timeouts = [];
+
+      // Reset UI
+      if (autoHole) autoHole.textContent = '14';
+      if (eaglesOddsEl) eaglesOddsEl.textContent = '+120';
+      if (birdiesOddsEl) birdiesOddsEl.textContent = '-140';
+
+      if (betEagles) betEagles.classList.remove('selected');
+      if (autoSlip) autoSlip.classList.remove('visible');
+      if (autoSettlement) autoSettlement.classList.remove('visible');
+
+      // Reset leaderboard
+      var highlightedRows = document.querySelectorAll('.auto-leaderboard-item.highlighted');
+      highlightedRows.forEach(function(row) {
+        row.classList.remove('highlighted');
+      });
+
+      renderLeaderboard();
+    }
+
+    // Main demo sequence
+    function startAutoDemo() {
+      if (autoDemoState.isActive || autoDemoState.hasPlayed) return;
+
+      autoDemoState.isActive = true;
+      autoDemoState.hasPlayed = true;
+
+      renderLeaderboard();
+
+      // Sequence: 1s -> odds change, 2s -> bet placement, 4s -> settlement
+      autoDemoState.timeouts.push(setTimeout(updateOdds, 1000));
+      autoDemoState.timeouts.push(setTimeout(placeBet, 2000));
+      autoDemoState.timeouts.push(setTimeout(showSettlement, 4000));
+
+      // Reset after 8 seconds for potential replay
+      autoDemoState.timeouts.push(setTimeout(function() {
+        autoDemoState.isActive = false;
+      }, 8000));
+    }
+
+    // Scroll detection with Intersection Observer
+    if (window.IntersectionObserver && autoDemoSection) {
+      var demoObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            startAutoDemo();
+          }
+        });
+      }, {
+        threshold: [0.3],
+        rootMargin: '0px 0px -100px 0px'
+      });
+
+      demoObserver.observe(autoDemoSection);
+    }
+
+    // Reset demo when scrolling back up (for replay)
+    var resetObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting && autoDemoState.hasPlayed) {
+          setTimeout(resetDemo, 1000);
+        }
+      });
+    }, {
+      threshold: [0],
+      rootMargin: '200px 0px 200px 0px'
+    });
+
+    if (autoDemoSection) {
+      resetObserver.observe(autoDemoSection);
+    }
+
+    // Initial render
+    renderLeaderboard();
+  })();
+  </script>
 
   <!-- PROOF STRIP -->
   <div class="proof-strip">

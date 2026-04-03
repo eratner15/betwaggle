@@ -285,14 +285,38 @@
 
     .btn-invite {
       background: #fff;
-      color: var(--sage);
-      border: 1.5px solid var(--sage);
+      color: #D4AF37;
+      border: 1.5px solid #D4AF37;
+      border-radius: 8px;
       cursor: pointer;
+      min-height: 56px;
+      padding: 16px 20px !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      text-decoration: none !important;
+    }
+
+    .btn-invite:hover {
+      background: #D4AF37;
+      color: #fff;
+      transform: translateY(-1px);
     }
 
     .btn-invite.copied {
-      background: var(--sage);
+      background: #D4AF37;
       color: #fff;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+      animation: pulse-success 0.6s ease-out;
+    }
+
+    @keyframes pulse-success {
+      0% { transform: scale(1); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
+      50% { transform: scale(1.05); box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5); }
+      100% { transform: scale(1); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
     }
 
     /* EMPTY / LOADING */
@@ -492,8 +516,8 @@
             '<a href="/' + e.slug + '/#admin" class="btn-admin">Admin</a>' +
             '<a href="/' + e.slug + '/#settle" class="btn-settle">Settlement</a>' +
             '<a href="#" onclick="cloneEvent(\'' + e.slug + '\');return false" style="padding:10px 16px;background:#fff;color:var(--gold-dk);border:1.5px solid var(--gold);border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Clone</a>' +
-            '<a href="#" onclick="copyInviteLink(\'' + e.slug + '\',this);return false" class="btn-invite" style="padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Copy Invite Link</a>' +
-            '<a href="#" onclick="copyInviteText(\'' + e.slug + '\',\'' + escapeHtml(e.name) + '\',this);return false" class="btn-invite" style="padding:10px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none">Copy Invite Text</a>' +
+            '<a href="#" onclick="copyInviteLink(\'' + e.slug + '\',this);return false" class="btn-invite">Copy Invite Link</a>' +
+            '<a href="#" onclick="copyInviteText(\'' + e.slug + '\',\'' + escapeHtml(e.name) + '\',this);return false" class="btn-invite">Copy Invite Text</a>' +
           '</div>' +
         '</div>';
       }).join('');

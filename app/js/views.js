@@ -306,10 +306,17 @@ export function renderActivityFeed(state) {
     .wg-feed-dot { width:8px; height:8px; border-radius:50%; background:var(--win); animation:wg-pulse 2s infinite; }
     @keyframes wg-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
     .wg-feed-list { max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding:0 2px; }
-    .wg-feed-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:10px; background:var(--bg-secondary); }
+    .wg-feed-item { display:flex; align-items:flex-start; gap:10px; padding:8px 12px; border-radius:10px; background:var(--bg-secondary); transition:all 0.3s ease; }
     .wg-feed-item.score { background:rgba(212,160,23,0.06); border-left:3px solid var(--gold-muted); }
-    .wg-feed-item.press { background:rgba(255,100,0,0.08); border-left:3px solid var(--gold-bright); }
+    .wg-feed-item.press { background:rgba(255,100,0,0.08); border-left:3px solid var(--gold-bright); animation:wg-press-pulse 0.6s ease-out; }
+    .wg-feed-item.odds { background:rgba(52,152,219,0.08); border-left:3px solid #3498db; animation:wg-odds-flash 0.8s ease-out; }
     .wg-feed-item.chirp { position:relative; }
+    .odds-flash-green { animation:odds-green-flash 1.5s ease-out !important; }
+    .odds-flash-red { animation:odds-red-flash 1.5s ease-out !important; }
+    @keyframes wg-press-pulse { 0%{transform:scale(1);background:rgba(255,100,0,0.08)} 50%{transform:scale(1.02);background:rgba(255,100,0,0.15)} 100%{transform:scale(1);background:rgba(255,100,0,0.08)} }
+    @keyframes wg-odds-flash { 0%{transform:scale(1);background:rgba(52,152,219,0.08)} 30%{transform:scale(1.01);background:rgba(52,152,219,0.2)} 100%{transform:scale(1);background:rgba(52,152,219,0.08)} }
+    @keyframes odds-green-flash { 0%{background:transparent;box-shadow:none} 20%{background:rgba(46,204,113,0.25);box-shadow:0 0 15px rgba(46,204,113,0.4)} 100%{background:transparent;box-shadow:none} }
+    @keyframes odds-red-flash { 0%{background:transparent;box-shadow:none} 20%{background:rgba(231,76,60,0.25);box-shadow:0 0 15px rgba(231,76,60,0.4)} 100%{background:transparent;box-shadow:none} }
     .wg-feed-avatar { width:32px; height:32px; min-width:32px; border-radius:50%; background:var(--mg-green); color:var(--text-primary); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; text-transform:uppercase; }
     .wg-feed-body { flex:1; min-width:0; }
     .wg-feed-player { font-size:12px; font-weight:700; color:var(--mg-green); }
@@ -333,9 +340,24 @@ export function renderActivityFeed(state) {
     html += `<div class="wg-feed-empty">No activity yet. Be the first to talk trash!</div>`;
   } else {
     feed.slice(0, 50).forEach(item => {
-      const typeClass = item.type === 'score' ? 'score' : item.type === 'press' ? 'press' : 'chirp';
+      let typeClass = 'chirp';
+      let avatarBg = 'var(--mg-green)';
+
+      if (item.type === 'score') {
+        typeClass = 'score';
+        avatarBg = 'var(--gold-muted)';
+      } else if (item.type === 'press') {
+        typeClass = 'press';
+        avatarBg = 'var(--gold-bright)';
+      } else if (item.type === 'odds') {
+        typeClass = 'odds';
+        avatarBg = '#3498db';
+      } else if (item.type === 'bet') {
+        typeClass = 'score'; // Style bet placements like scores
+        avatarBg = 'var(--gold-muted)';
+      }
+
       const initial = (item.player || '?')[0].toUpperCase();
-      const avatarBg = item.type === 'score' ? 'var(--gold-muted)' : item.type === 'press' ? 'var(--gold-bright)' : 'var(--mg-green)';
       html += `<div class="wg-feed-item ${typeClass}">
         <div class="wg-feed-avatar" style="background:${avatarBg}">${escHtml(initial)}</div>
         <div class="wg-feed-body">
@@ -1689,6 +1711,7 @@ export function renderRoundFeed(state) {
   // ── Odds movement tracking ──
   // Compute current odds for each player, compare with previous, generate movement events
   const oddsMovements = [];
+  const oddsAnimations = []; // New: store animation triggers
   if (standingsData.length > 0 && scoredHoles.length > 0) {
     const currentOdds = {};
     standingsData.forEach((p, i) => {
@@ -1705,13 +1728,39 @@ export function renderRoundFeed(state) {
         const prevNum = parseOdds(prev);
         const firstName = name.split(' ')[0];
         const lastHole = scoredHoles[scoredHoles.length - 1];
-        if (Math.abs(currNum - prevNum) > 20) {  // only show meaningful moves
-          const direction = currNum < prevNum ? 'shortened' : 'drifted';
+
+        // Store animation data for any odds change (even small ones)
+        const direction = currNum < prevNum ? 'shortened' : 'drifted';
+        const animationType = currNum < prevNum ? 'up' : 'down';
+        const flashType = currNum < prevNum ? 'green' : 'red';
+
+        oddsAnimations.push({
+          playerName: name,
+          firstName,
+          oldOdds: prev,
+          newOdds: curr,
+          direction,
+          animationType,
+          flashType,
+          oddsChange: Math.abs(currNum - prevNum)
+        });
+
+        if (Math.abs(currNum - prevNum) > 20) {  // only show meaningful moves in ticker
           oddsMovements.push(`${firstName}'s odds moved from ${prev} to ${curr} after #${lastHole}`);
         }
       }
     });
     state._prevOdds = currentOdds;
+
+    // Trigger odds animations if any changes detected
+    if (oddsAnimations.length > 0) {
+      // Add script to trigger animations after DOM render
+      setTimeout(() => {
+        if (window.MG && window.MG.triggerOddsAnimations) {
+          window.MG.triggerOddsAnimations(oddsAnimations);
+        }
+      }, 100);
+    }
   }
 
   // ── Derived values for unified view ──
@@ -1828,6 +1877,122 @@ export function renderRoundFeed(state) {
   }
 
   // ================================================================
+  // HOLE PROGRESS STRIP — Persistent 18-circle navigation strip
+  // ================================================================
+  function renderHoleProgressStrip(holes, holesPerRound, currentHole, pars) {
+    const getHoleScoreColor = (holeNum) => {
+      const holeData = holes[holeNum];
+      if (!holeData?.scores) return '#374151'; // Unplayed holes - grey
+
+      const scores = Object.values(holeData.scores).filter(s => s != null);
+      if (scores.length === 0) return '#374151';
+
+      const par = pars[holeNum] || 4;
+      const bestScore = Math.min(...scores);
+      const diff = bestScore - par;
+
+      if (diff <= -2) return '#D4AF37'; // Eagle - gold
+      if (diff === -1) return '#16A34A'; // Birdie - green
+      if (diff === 0) return '#6B7280'; // Par - grey
+      return '#DC2626'; // Bogey+ - red
+    };
+
+    let stripHtml = `
+      <div style="
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #0D2818;
+        border-bottom: 1px solid #2D5A3D;
+        padding: 8px 12px;
+        margin: 0 -16px 12px -16px;
+      ">
+        <div style="
+          display: flex;
+          justify-content: center;
+          gap: 4px;
+          align-items: center;
+        ">`;
+
+    for (let h = 1; h <= holesPerRound; h++) {
+      const color = getHoleScoreColor(h);
+      const isCurrent = h === currentHole;
+      const isPlayed = holes[h]?.scores && Object.keys(holes[h].scores).length > 0;
+
+      stripHtml += `
+        <button onclick="window.MG.jumpToHole(${h})" style="
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 2px solid ${isCurrent ? '#D4AF37' : '#2D5A3D'};
+          background: ${isPlayed ? color : 'transparent'};
+          color: ${isPlayed ? '#FFFFFF' : '#9CA3AF'};
+          font-size: 10px;
+          font-weight: 700;
+          font-family: var(--font-mono);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          ${isCurrent ? 'animation: holeProgress-pulse 2s infinite;' : ''}
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 56px;
+          min-height: 56px;
+          touch-action: manipulation;
+        " onmouseover="if(${!isCurrent}){this.style.borderColor='#D4AF37';this.style.transform='scale(1.1)'}" onmouseout="if(${!isCurrent}){this.style.borderColor='#2D5A3D';this.style.transform='scale(1)'}">
+          ${h}
+        </button>`;
+    }
+
+    stripHtml += `
+        </div>
+      </div>
+
+      <style>
+        @keyframes holeProgress-pulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(212, 175, 55, 0);
+            transform: scale(1.05);
+          }
+        }
+
+        @keyframes premium-sparkle {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 20px rgba(212,175,55,0.4);
+          }
+          50% {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 30px rgba(212,175,55,0.6), inset 0 0 15px rgba(255,255,255,0.2);
+          }
+        }
+
+        @keyframes premium-glow {
+          from {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 16px rgba(22,163,74,0.3);
+          }
+          to {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 0 24px rgba(22,163,74,0.5);
+          }
+        }
+
+        @keyframes countdown-ring {
+          from {
+            stroke-dashoffset: 0;
+          }
+          to {
+            stroke-dashoffset: 188.5; /* 2π * 30 */
+          }
+        }
+      </style>`;
+
+    return stripHtml;
+  }
+
+  // ================================================================
   // SUB-TAB BAR — now rendered in the sticky header (mg-header-tabs)
   // These variables are still needed for conditional rendering below
   // ================================================================
@@ -1838,6 +2003,9 @@ export function renderRoundFeed(state) {
   // SECTION 2: SCORE ENTRY (inline scorecard grid)
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && players.length > 0) {
+    // Add hole progress strip at the top
+    const currentHole = state._inlineScore?.hole || (latestHole < holesPerRound ? latestHole + 1 : holesPerRound);
+    html += renderHoleProgressStrip(holes, holesPerRound, currentHole, pars);
     const yardage = getCourseYardage(config);
     const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
     const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
@@ -2054,32 +2222,123 @@ export function renderRoundFeed(state) {
           ${currentScore !== null ? `<span style="font-size:13px;font-weight:600;color:var(--page-text-muted,#9CA3AF);font-family:var(--font-mono,'SF Mono',monospace)">${currentScore}</span>` : ''}
         </div>`;
 
-        // Score keypad — large thumb-friendly buttons (52px min, 20px font)
-        html += `<div style="display:flex;gap:6px;margin-bottom:8px">`;
+        // Premium circular score buttons with effects
+        html += `<div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">`;
         for (let s = Math.max(1, kpPar - 2); s <= kpPar + 3; s++) {
           const isSelected = currentScore === s;
           const diff = s - kpPar;
-          let btnColor = 'var(--page-text,#1A1A1A)';
-          let btnBg = 'var(--bg-secondary,#F5F5F5)';
-          let btnBorder = 'var(--mg-border,#D1D5DB)';
-          if (isSelected) {
-            if (diff < 0) { btnBg = 'var(--win,#16A34A)'; btnColor = 'white'; btnBorder = 'var(--win,#16A34A)'; }
-            else if (diff === 0) { btnBg = 'var(--mg-green,#0D2818)'; btnColor = 'white'; btnBorder = 'var(--mg-green,#0D2818)'; }
-            else { btnBg = 'var(--loss,#DC2626)'; btnColor = 'white'; btnBorder = 'var(--loss,#DC2626)'; }
+
+          // Premium color scheme based on golf performance
+          let btnColor = '#1A1A1A';
+          let btnBg = '#F8F8F6'; // neutral ivory
+          let btnBorder = '#E5E7EB';
+          let glowEffect = '';
+          let sparkleEffect = '';
+
+          if (isSelected || diff <= -2) { // Eagle
+            btnBg = '#D4AF37';
+            btnColor = '#0D2818';
+            btnBorder = '#D4AF37';
+            sparkleEffect = ', 0 0 20px rgba(212,175,55,0.4)';
+          } else if (diff === -1) { // Birdie
+            btnBg = '#16A34A';
+            btnColor = '#FFFFFF';
+            btnBorder = '#16A34A';
+            glowEffect = ', 0 0 16px rgba(22,163,74,0.3)';
+          } else if (diff === 0) { // Par
+            btnBg = '#F8F8F6';
+            btnColor = '#1A1A1A';
+            btnBorder = '#D1D5DB';
+          } else { // Bogey+
+            btnBg = 'rgba(220,38,38,0.08)';
+            btnColor = '#DC2626';
+            btnBorder = 'rgba(220,38,38,0.2)';
           }
+
           const label = diff <= -2 ? 'Eagle' : diff === -1 ? 'Birdie' : diff === 0 ? 'Par' : diff === 1 ? 'Bogey' : diff === 2 ? 'Dbl' : '+' + diff;
 
-          html += `<button onclick="window.MG.inlineScoreSet('${escHtml(name)}',${s})"
-            style="flex:1;padding:6px 2px;border-radius:10px;border:2.5px solid ${btnBorder};background:${btnBg};color:${btnColor};font-size:20px;font-weight:800;cursor:pointer;text-align:center;min-height:52px;font-family:var(--font-mono,'SF Mono','Menlo',monospace);-webkit-tap-highlight-color:transparent;transition:transform .08s,background .1s"
-            onpointerdown="this.style.transform='scale(0.93)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
-            ${s}
-            <div style="font-size:9px;font-weight:600;opacity:0.7;margin-top:2px;letter-spacing:0.3px">${label}</div>
+          html += `<button
+            onclick="window.MG.premiumScoreSet('${escHtml(name)}',${s},${diff})"
+            style="
+              width: 64px;
+              height: 64px;
+              min-width: 56px;
+              min-height: 56px;
+              border-radius: 50%;
+              border: 3px solid ${btnBorder};
+              background: ${btnBg};
+              color: ${btnColor};
+              font-size: 18px;
+              font-weight: 800;
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-family: var(--font-mono,'SF Mono','Menlo',monospace);
+              -webkit-tap-highlight-color: transparent;
+              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1)${sparkleEffect}${glowEffect};
+              position: relative;
+              overflow: hidden;
+              ${diff <= -2 && isSelected ? 'animation: premium-sparkle 2s infinite;' : ''}
+              ${diff === -1 && isSelected ? 'animation: premium-glow 2s infinite alternate;' : ''}
+            "
+            onpointerdown="
+              this.style.transform='scale(0.9)';
+              this.style.boxShadow='0 1px 4px rgba(0,0,0,0.2)';
+            "
+            onpointerup="
+              this.style.transform='scale(1.05)';
+              setTimeout(() => this.style.transform = '', 150);
+            "
+            onpointerleave="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)${sparkleEffect}${glowEffect}'">
+            <div style="font-size: 20px; font-weight: 900; line-height: 1;">${s}</div>
+            <div style="font-size: 8px; font-weight: 600; opacity: 0.8; margin-top: 1px; letter-spacing: 0.2px; text-transform: uppercase;">${label}</div>
           </button>`;
         }
         // "Other" button for scores outside the range
         html += `<button onclick="window.MG.inlineScoreType('${escHtml(name)}',prompt('Score for ${escHtml(firstName)}:'))"
           style="width:52px;padding:6px 2px;border-radius:10px;border:2.5px solid var(--mg-border,#D1D5DB);background:var(--bg-secondary,#F5F5F5);color:var(--page-text-muted,#6B7280);font-size:14px;font-weight:700;cursor:pointer;min-height:52px;-webkit-tap-highlight-color:transparent">+</button>`;
         html += `</div>`;
+
+        // Undo score strip with swipe gesture
+        html += `
+        <div id="undo-strip-${escHtml(name)}" style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 8px 0;
+          padding: 8px 12px;
+          background: rgba(220,38,38,0.08);
+          border: 1px solid rgba(220,38,38,0.2);
+          border-radius: 8px;
+          touch-action: pan-x;
+          cursor: grab;
+          user-select: none;
+          transition: all 0.2s ease;
+          overflow: hidden;
+        "
+        ontouchstart="window.MG.handleUndoSwipe('${escHtml(name)}', event)"
+        ontouchmove="window.MG.handleUndoSwipe('${escHtml(name)}', event)"
+        ontouchend="window.MG.handleUndoSwipe('${escHtml(name)}', event)"
+        onmousedown="window.MG.handleUndoSwipe('${escHtml(name)}', event)"
+        onmousemove="window.MG.handleUndoSwipe('${escHtml(name)}', event)"
+        onmouseup="window.MG.handleUndoSwipe('${escHtml(name)}', event)">
+          <span style="font-size: 11px; color: #DC2626; font-weight: 600;">
+            Swipe right to undo last 3 scores →
+          </span>
+          <div style="
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(220,38,38,0.3), transparent);
+            position: absolute;
+            top: 0;
+            left: -100%;
+            transition: left 0.1s ease-out;
+            pointer-events: none;
+          " id="undo-indicator-${escHtml(name)}"></div>
+        </div>`;
 
         // Stats row: FIR, GIR, Putts, Penalty (collapsed by default for fast scoring)
         html += `<details style="margin-top:2px"><summary style="font-size:11px;font-weight:600;color:var(--page-text-muted,#9CA3AF);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent;padding:2px 0"><span style="font-size:8px;transition:transform .2s">&#9654;</span> Stats</summary>`;
@@ -2344,7 +2603,7 @@ export function renderRoundFeed(state) {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-left:18px">
           <div style="display:flex;align-items:baseline;gap:10px;flex:1">
             <div style="font-family:'SF Mono',monospace;font-size:22px;font-weight:800;color:${toParColor}">${toParStr}</div>
-            <div style="font-family:'SF Mono',monospace;font-size:13px;color:#8A8A85">${odds}</div>
+            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:4px 8px;border-radius:6px;border:1.5px solid #D1D5DB;background:#F9FAFB;color:#6B7280;font-family:'SF Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;min-width:50px;text-align:center;-webkit-tap-highlight-color:transparent;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,0.1)" onpointerdown="this.style.transform='scale(0.95)'; this.style.boxShadow='0 0 0 rgba(0,0,0,0)'" onpointerup="this.style.transform='scale(1.02)'; this.style.boxShadow='0 2px 6px rgba(212,175,55,0.3)'; setTimeout(() => {this.style.transform=''; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'}, 150)" onpointerleave="this.style.transform=''; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'" onmouseenter="this.style.borderColor='#D4AF37'; this.style.background='rgba(212,175,55,0.05)'" onmouseleave="this.style.borderColor='#D1D5DB'; this.style.background='#F9FAFB'">${odds}</button>
           </div>
           <div style="font-size:11px;color:#8A8A85;margin-right:16px">Skins Won</div>
           <div style="font-size:11px;color:#8A8A85;min-width:24px;text-align:right">${p.skins} skin${p.skins !== 1 ? 's' : ''}</div>
@@ -3394,7 +3653,7 @@ function renderScoreModal(state, players) {
       else if (!isActive && diff === -1) { col = 'var(--win)'; }
       else if (!isActive && diff >= 2) { col = 'var(--loss)'; }
       return `<button onclick="window.MG.setScoreModalScore('${escHtml(p.name)}',${s})"
-        style="min-width:38px;height:40px;border-radius:8px;border:2px solid ${border};background:${bg};color:${col};font-size:16px;font-weight:700;cursor:pointer;flex:1">${s}</button>`;
+        style="min-width:52px;height:52px;border-radius:8px;border:2px solid ${border};background:${bg};color:${col};font-size:16px;font-weight:700;cursor:pointer;flex:1;-webkit-tap-highlight-color:transparent">${s}</button>`;
     }).join('');
     return `<div style="padding:10px 0;border-bottom:1px solid var(--mg-border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -3421,10 +3680,16 @@ function renderScoreModal(state, players) {
       </div>
       ${holePicker}
       <div>${playerRows}</div>
-      <button onclick="window.MG.submitScoreModal()" ${allFilled ? '' : 'disabled'}
-        style="width:100%;margin-top:16px;padding:16px;background:${allFilled ? 'var(--mg-green)' : 'var(--mg-border)'};color:${allFilled ? 'var(--text-primary)' : 'var(--mg-text-muted)'};border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'}">
-        ${allFilled ? `Save Hole ${hole}` : 'Fill in all scores'}
-      </button>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button onclick="window.MG.undoLastScore()"
+          style="flex:0 0 auto;padding:16px 20px;background:var(--mg-border);color:var(--mg-text);border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer">
+          ↶ Undo
+        </button>
+        <button onclick="window.MG.submitScoreModal()" ${allFilled ? '' : 'disabled'}
+          style="flex:1;padding:16px;background:${allFilled ? 'var(--mg-green)' : 'var(--mg-border)'};color:${allFilled ? 'var(--text-primary)' : 'var(--mg-text-muted)'};border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'}">
+          ${allFilled ? `Save Hole ${hole}` : 'Fill in all scores'}
+        </button>
+      </div>
     </div>
   </div>`;
 }
@@ -3729,11 +3994,11 @@ function renderAdminTakeBet(state) {
         const nameB = TN(tB);
 
         html += `<div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="mg-odds-btn" onclick="window.MG.tbPickMatch('${m.id}',${m.teamA},'${fmtMlA}',${decA},'${escHtml(nameA)}')" style="flex:1;min-height:52px">
+          <button class="mg-odds-btn" onclick="window.MG.tbPickMatch('${m.id}',${m.teamA},'${fmtMlA}',${decA},'${escHtml(nameA)}')" style="flex:1">
             <div class="odds-label">${nameA}</div>
             <div class="odds-line">${fmtMlA}</div>
           </button>
-          <button class="mg-odds-btn" onclick="window.MG.tbPickMatch('${m.id}',${m.teamB},'${fmtMlB}',${decB},'${escHtml(nameB)}')" style="flex:1;min-height:52px">
+          <button class="mg-odds-btn" onclick="window.MG.tbPickMatch('${m.id}',${m.teamB},'${fmtMlB}',${decB},'${escHtml(nameB)}')" style="flex:1">
             <div class="odds-label">${nameB}</div>
             <div class="odds-line">${fmtMlB}</div>
           </button>
@@ -5169,26 +5434,126 @@ export function renderBetting(state) {
     return html;
   }
 
-  // Player info bar with credits + refresh button (#6)
+  // Enhanced heritage-style betting header
   const credits = state._playerCredits;
   const creditsDisplay = credits !== null && credits !== undefined ? `$${credits}` : '';
-  html += `<div class="mg-card" style="padding:10px 14px">
+  html += `<div class="heritage-betting-header" style="
+    background: #1A472A;
+    border: 2px solid #D4AF37;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  ">
+    <!-- Gold accent stripe -->
+    <div style="
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%);
+    "></div>
+
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--mg-green)">${escHtml(state.bettorName)}</div>
-        ${creditsDisplay ? `<div class="text-xs" style="color:var(--mg-gold-dim);font-weight:700">Credits: ${creditsDisplay}</div>` : ''}
+      <div style="display:flex;flex-direction:column;">
+        <div style="font-size:16px;font-weight:700;color:#D4AF37;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">The Bar</div>
+        <div style="font-size:14px;font-weight:600;color:#FFFFFF">${escHtml(state.bettorName)}</div>
+        ${creditsDisplay ? `<div style="color:#D4AF37;font-weight:700;font-size:12px;margin-top:2px;">Bank: ${creditsDisplay}</div>` : ''}
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="mg-btn mg-btn-outline" style="width:auto;padding:4px 10px;font-size:11px" onclick="window.MG.syncNow()">&#x21bb; Refresh</button>
-        <button class="mg-btn mg-btn-outline" style="width:auto;padding:4px 10px;font-size:11px" onclick="window.MG.editBettorName()">Change</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="width:8px;height:8px;background:#16A34A;border-radius:50%;box-shadow:0 0 8px #16A34A;animation:pulse 2s infinite"></div>
+        <span style="font-size:11px;color:#16A34A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Live</span>
+        <button class="heritage-btn" style="
+          background:#0D2818;
+          border:1px solid #D4AF37;
+          border-radius:6px;
+          color:#D4AF37;
+          font-size:11px;
+          font-weight:600;
+          padding:6px 12px;
+          cursor:pointer;
+          text-transform:uppercase;
+          letter-spacing:0.5px;
+          transition:all 0.2s ease;
+        " onclick="window.MG.syncNow()" onmouseover="this.style.background='#D4AF37';this.style.color='#0D2818'" onmouseout="this.style.background='#0D2818';this.style.color='#D4AF37'">
+          ↻ Refresh
+        </button>
       </div>
     </div>
   </div>`;
 
-  html += `<div class="mg-tabs">
-      <button class="mg-tab ${tab === 'matches' ? 'active' : ''}" onclick="window.MG.setBetTab('matches')">Matches</button>
-      <button class="mg-tab ${tab === 'futures' ? 'active' : ''}" onclick="window.MG.setBetTab('futures')">Futures</button>
-      <button class="mg-tab ${tab === 'props' ? 'active' : ''}" onclick="window.MG.setBetTab('props')">Props</button>
+  // Enhanced heritage-style tabs
+  html += `<div class="heritage-tabs" style="
+    background: #1A472A;
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 16px;
+    border: 1px solid #2D5A3D;
+    display: flex;
+    gap: 4px;
+  ">
+      <button class="heritage-tab ${tab === 'matches' ? 'active' : ''}" style="
+        flex: 1;
+        background: ${tab === 'matches' ? '#D4AF37' : 'transparent'};
+        color: ${tab === 'matches' ? '#0D2818' : '#D4AF37'};
+        border: 1px solid ${tab === 'matches' ? '#D4AF37' : 'transparent'};
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onclick="window.MG.setBetTab('matches')" onmouseover="if(!this.classList.contains('active')){this.style.background='rgba(212,175,55,0.1)';this.style.borderColor='#D4AF37'}" onmouseout="if(!this.classList.contains('active')){this.style.background='transparent';this.style.borderColor='transparent'}">
+        Match Lines
+      </button>
+      <button class="heritage-tab ${tab === 'futures' ? 'active' : ''}" style="
+        flex: 1;
+        background: ${tab === 'futures' ? '#D4AF37' : 'transparent'};
+        color: ${tab === 'futures' ? '#0D2818' : '#D4AF37'};
+        border: 1px solid ${tab === 'futures' ? '#D4AF37' : 'transparent'};
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onclick="window.MG.setBetTab('futures')" onmouseover="if(!this.classList.contains('active')){this.style.background='rgba(212,175,55,0.1)';this.style.borderColor='#D4AF37'}" onmouseout="if(!this.classList.contains('active')){this.style.background='transparent';this.style.borderColor='transparent'}">
+        Futures
+      </button>
+      <button class="heritage-tab ${tab === 'props' ? 'active' : ''}" style="
+        flex: 1;
+        background: ${tab === 'props' ? '#D4AF37' : 'transparent'};
+        color: ${tab === 'props' ? '#0D2818' : '#D4AF37'};
+        border: 1px solid ${tab === 'props' ? '#D4AF37' : 'transparent'};
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onclick="window.MG.setBetTab('props')" onmouseover="if(!this.classList.contains('active')){this.style.background='rgba(212,175,55,0.1)';this.style.borderColor='#D4AF37'}" onmouseout="if(!this.classList.contains('active')){this.style.background='transparent';this.style.borderColor='transparent'}">
+        Props
+      </button>
     </div>`;
 
   if (tab === "matches") {
@@ -5199,7 +5564,7 @@ export function renderBetting(state) {
     html += renderPropBets(state);
   }
 
-  // Bet slip
+  // Premium bet slip drawer
   if (state._betSlip && state._betSlip.length > 0) {
     html += renderBetSlip(state);
   }
@@ -5213,25 +5578,92 @@ function renderMatchBets(state) {
   const bettable = Object.values(state.matches).filter(m => m.status !== "final");
 
   if (bettable.length === 0) {
-    return `<div class="mg-card text-center"><p class="text-muted">No open matches to bet on</p></div>`;
+    return `<div style="
+      background: #1A472A;
+      border: 1px solid #2D5A3D;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 16px;
+    ">
+      <div style="font-size: 24px; margin-bottom: 8px;">🏌️</div>
+      <p style="color: #9CA3AF; font-size: 14px; margin: 0;">No open matches available for betting</p>
+    </div>`;
   }
 
-  // Group by flight
+  // Group by flight with enhanced heritage styling
   flightOrder().forEach(fId => {
     const fMatches = bettable.filter(m => m.flight === fId);
     if (fMatches.length === 0) return;
 
-    html += `<div class="mg-card-header">${F(fId).name}</div>`;
-    fMatches.forEach(m => {
-      // Skip locked matches
+    // Heritage flight header
+    html += `<div style="
+      background: linear-gradient(135deg, #1A472A 0%, #2D5A3D 100%);
+      border: 2px solid #D4AF37;
+      border-radius: 12px 12px 0 0;
+      padding: 12px 16px;
+      margin-bottom: 0;
+      position: relative;
+      overflow: hidden;
+    ">
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #D4AF37;
+        opacity: 0.6;
+      "></div>
+      <div style="
+        font-size: 14px;
+        font-weight: 700;
+        color: #D4AF37;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      ">
+        <div style="width: 4px; height: 16px; background: #D4AF37; border-radius: 2px;"></div>
+        ${F(fId).name}
+        <div style="flex: 1; height: 1px; background: rgba(212,175,55,0.3); margin-left: 12px;"></div>
+      </div>
+    </div>`;
+
+    // Enhanced match container
+    html += `<div style="
+      background: #1A472A;
+      border: 2px solid #D4AF37;
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    ">`;
+
+    fMatches.forEach((m, index) => {
+      // Skip locked matches with enhanced styling
       if (isMatchLocked(m.id)) {
         const tA = T(m.teamA), tB = T(m.teamB);
-        html += `<div class="mg-match" style="margin-bottom:10px;opacity:0.5">
-          <div class="mg-match-round">R${m.round} &bull; ${RT(m.round)} &bull; BETTING LOCKED</div>
-          <div style="text-align:center;padding:12px;color:var(--mg-text-muted);font-size:12px">${TN(tA)} vs ${TN(tB)} &mdash; Locked</div>
+        html += `<div style="
+          background: rgba(156,163,175,0.1);
+          border: 1px dashed #6B7280;
+          border-radius: 8px;
+          padding: 16px;
+          text-align: center;
+          margin-bottom: ${index < fMatches.length - 1 ? '12px' : '0'};
+          opacity: 0.6;
+        ">
+          <div style="color: #6B7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+            R${m.round} • ${RT(m.round)} • Betting Closed
+          </div>
+          <div style="color: #9CA3AF; font-size: 13px;">
+            ${TN(tA)} vs ${TN(tB)}
+          </div>
         </div>`;
         return;
       }
+
       const tA = T(m.teamA), tB = T(m.teamB);
       const nA = TN(tA), nB = TN(tB);
       const odds = matchOdds(m);
@@ -5247,28 +5679,196 @@ function renderMatchBets(state) {
       const decDraw = mlToDecimal(typeof oddsDraw === 'string' ? parseInt(oddsDraw.replace('+','')) : oddsDraw);
 
       const isLive = m.status === "live";
-      html += `<div class="mg-match ${m.status}" style="margin-bottom:10px">
-        ${isLive ? '<div class="mg-match-live-badge mb-2">LIVE</div>' : ''}
-        <div class="mg-match-round">R${m.round} &bull; ${RT(m.round)} &bull; HI: ${tA.combined} vs ${tB.combined}</div>
-        <div style="display:flex;gap:6px;margin-top:8px">
-          <button class="mg-odds-btn ${isSlipSelected(state, m.id, m.teamA) ? 'selected' : ''}" onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamA},'${nA} ML',${decA},'${fmtMlA}')">
-            <div class="odds-label">${nA}</div>
-            <div class="odds-line">${fmtMlA}</div>
-            <div class="odds-pays">Pays ${decA}x</div>
+
+      // Enhanced match styling
+      html += `<div style="
+        background: ${isLive ? 'rgba(22,163,74,0.05)' : 'rgba(0,0,0,0.2)'};
+        border: 1px solid ${isLive ? '#16A34A' : '#2D5A3D'};
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: ${index < fMatches.length - 1 ? '12px' : '0'};
+        position: relative;
+        overflow: hidden;
+      ">
+        ${isLive ? `
+          <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #16A34A 50%, transparent 100%);
+            animation: shimmer 2s infinite;
+          "></div>
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+          ">
+            <div style="
+              width: 8px;
+              height: 8px;
+              background: #16A34A;
+              border-radius: 50%;
+              box-shadow: 0 0 8px #16A34A;
+              animation: pulse 1.5s infinite;
+            "></div>
+            <span style="
+              font-size: 11px;
+              color: #16A34A;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            ">Live Match</span>
+          </div>
+        ` : ''}
+
+        <div style="
+          color: #D4AF37;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+        ">
+          Round ${m.round} • ${RT(m.round)} • HI: ${tA.combined} vs ${tB.combined}
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between;">
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, m.teamA) ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamA},'${nA} ML',${decA},'${fmtMlA}'); if(navigator.vibrate) navigator.vibrate(25);"
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, m.teamA) ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <div class="odds-label" style="
+              font-size: 11px;
+              color: ${isSlipSelected(state, m.id, m.teamA) ? '#0D2818' : '#FFFFFF'};
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            ">${nA}</div>
+            <div class="odds-line" style="
+              font-size: 18px;
+              font-weight: 700;
+              color: ${isSlipSelected(state, m.id, m.teamA) ? '#0D2818' : '#D4AF37'};
+              font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+              letter-spacing: 0.5px;
+              margin-bottom: 2px;
+            ">${fmtMlA}</div>
+            <div class="odds-pays" style="
+              font-size: 9px;
+              color: ${isSlipSelected(state, m.id, m.teamA) ? '#0D2818' : '#9CA3AF'};
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            ">Pays ${decA}x</div>
           </button>
-          <button class="mg-odds-btn ${isSlipSelected(state, m.id, 'draw') ? 'selected' : ''}" onclick="window.MG.addToSlip('match_winner','${m.id}','draw','${F(m.flight).name.replace(" Flight","")} R${m.round} Draw',${decDraw},'${oddsDraw}')">
-            <div class="odds-label">Draw</div>
-            <div class="odds-line">${oddsDraw}</div>
-            <div class="odds-pays">Pays ${decDraw}x</div>
+
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, 'draw') ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onclick="window.MG.addToSlip('match_winner','${m.id}','draw','${F(m.flight).name.replace(" Flight","")} R${m.round} Draw',${decDraw},'${oddsDraw}'); if(navigator.vibrate) navigator.vibrate(25);"
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, 'draw') ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <div class="odds-label" style="
+              font-size: 11px;
+              color: ${isSlipSelected(state, m.id, 'draw') ? '#0D2818' : '#FFFFFF'};
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+            ">Draw</div>
+            <div class="odds-line" style="
+              font-size: 18px;
+              font-weight: 700;
+              color: ${isSlipSelected(state, m.id, 'draw') ? '#0D2818' : '#D4AF37'};
+              font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+              letter-spacing: 0.5px;
+              margin-bottom: 2px;
+            ">${oddsDraw}</div>
+            <div class="odds-pays" style="
+              font-size: 9px;
+              color: ${isSlipSelected(state, m.id, 'draw') ? '#0D2818' : '#9CA3AF'};
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            ">Pays ${decDraw}x</div>
           </button>
-          <button class="mg-odds-btn ${isSlipSelected(state, m.id, m.teamB) ? 'selected' : ''}" onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamB},'${nB} ML',${decB},'${fmtMlB}')">
-            <div class="odds-label">${nB}</div>
-            <div class="odds-line">${fmtMlB}</div>
-            <div class="odds-pays">Pays ${decB}x</div>
+
+          <button class="heritage-odds-chip mg-odds-btn ${isSlipSelected(state, m.id, m.teamB) ? 'selected' : ''}"
+            style="
+              flex: 1;
+              background: ${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#1A472A'};
+              border: 2px solid ${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#2D5A3D'};
+              border-radius: 8px;
+              padding: 12px 8px;
+              min-height: 64px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onclick="window.MG.addToSlip('match_winner','${m.id}',${m.teamB},'${nB} ML',${decB},'${fmtMlB}'); if(navigator.vibrate) navigator.vibrate(25);"
+            onmouseover="this.style.borderColor='#D4AF37'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(212,175,55,0.3)';"
+            onmouseout="this.style.borderColor='${isSlipSelected(state, m.id, m.teamB) ? '#D4AF37' : '#2D5A3D'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <div class="odds-label" style="
+              font-size: 11px;
+              color: ${isSlipSelected(state, m.id, m.teamB) ? '#0D2818' : '#FFFFFF'};
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            ">${nB}</div>
+            <div class="odds-line" style="
+              font-size: 18px;
+              font-weight: 700;
+              color: ${isSlipSelected(state, m.id, m.teamB) ? '#0D2818' : '#D4AF37'};
+              font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+              letter-spacing: 0.5px;
+              margin-bottom: 2px;
+            ">${fmtMlB}</div>
+            <div class="odds-pays" style="
+              font-size: 9px;
+              color: ${isSlipSelected(state, m.id, m.teamB) ? '#0D2818' : '#9CA3AF'};
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            ">Pays ${decB}x</div>
           </button>
         </div>
       </div>`;
     });
+
+    html += `</div>`; // Close flight container
   });
 
   return html;
@@ -6167,22 +6767,182 @@ export function renderSettlement(state) {
     <div style="font-size:12px;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed !== 1 ? 's' : ''} played</div>
   </div>`;
 
-  // ── Who pays who (top-level summary) ──
+  // ── Premium Settlement Reveal Experience ──
   if (settleHasPnL) {
-    // P&L summary row per player
-    html += `<div class="mg-card" style="padding:12px">
-      <div class="mg-card-header" style="margin-bottom:10px">FINAL STANDINGS</div>`;
     const sortedPlayers = [...settlePlayers].sort((a, b) => (settlePnL[b.name] || 0) - (settlePnL[a.name] || 0));
+
+    // Dark overlay with dramatic "FINAL RESULTS" header
+    html += `<!-- Settlement Dark Overlay -->
+    <div id="settlement-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(13,40,24,0.95);z-index:9999;opacity:0;transition:opacity 1s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+      <div id="final-results-header" style="font-family:'Playfair Display',Georgia,serif;font-size:48px;font-weight:700;color:var(--gold-bright);margin-bottom:40px;opacity:0;transform:translateY(20px);transition:all 1.2s ease;text-align:center;text-shadow:0 4px 20px rgba(212,175,55,0.4)">
+        FINAL RESULTS
+      </div>
+      <div id="settlement-results-container" style="background:var(--bg-primary);border:2px solid var(--gold-bright);border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
+        <div id="settlement-cards-container"></div>
+      </div>
+      <div id="settlement-close-btn" style="position:absolute;top:20px;right:20px;background:rgba(212,175,55,0.2);border:2px solid var(--gold-bright);color:var(--gold-bright);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;opacity:0;transition:opacity 0.5s ease 5s;pointer-events:auto" onclick="window.MG.closeSettlementOverlay()">
+        ×
+      </div>
+    </div>`;
+
+    // Build player cards with enhanced styling and narratives
+    let playerCardsHTML = '';
+    const keyMoments = [
+      "Clutch putt saves the day!", "Nerves of steel under pressure", "Spectacular recovery shot",
+      "Heroic front nine performance", "Back nine charge pays off", "Steady play throughout",
+      "Impressive debut showing", "Veteran experience shines", "Consistent throughout the round"
+    ];
+
     sortedPlayers.forEach((p, i) => {
       const money = settlePnL[p.name] || 0;
-      const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+      const moneyStr = money === 0 ? 'EVEN' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
       const moneyColor = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i < sortedPlayers.length - 1 ? 'border-bottom:1px solid var(--mg-border)' : ''}">
-        <div style="font-size:15px;font-weight:600">${escHtml(p.name)}</div>
-        <div style="font-size:22px;font-weight:800;color:${moneyColor}">${moneyStr}</div>
+      const isWinner = i === 0 && money > 0;
+      const playerId = `settlement-player-${i}`;
+      const narrative = keyMoments[i % keyMoments.length];
+      const position = sortedPlayers.length - i; // Show from last to first
+
+      playerCardsHTML += `<div id="${playerId}" class="settlement-card-hidden" style="margin-bottom:16px;padding:16px;border:2px solid ${isWinner ? 'var(--gold-bright)' : 'var(--border)'};border-radius:12px;background:${isWinner ? 'linear-gradient(135deg,rgba(212,175,55,0.1),rgba(212,175,55,0.05))' : 'var(--bg-secondary)'};transition:all 0.8s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:32px;height:32px;background:${isWinner ? 'var(--gold-bright)' : 'var(--text-muted)'};border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bg-primary);font-weight:700;font-size:14px">
+              ${isWinner ? '👑' : position}
+            </div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:var(--text-primary)">${escHtml(p.name)}</div>
+              <div style="font-size:12px;color:var(--text-muted);font-style:italic">${narrative}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:28px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 12px rgba(212,175,55,0.6)' : ''}">${moneyStr}</div>
+            ${money > 0 ? '<div style="font-size:10px;color:var(--win);font-weight:600;text-transform:uppercase">WINNER</div>' : ''}
+          </div>
+        </div>
       </div>`;
     });
-    html += `</div>`;
+
+    // Premium settlement reveal script with 1.5s delays and enhanced effects
+    html += `<script>
+      if (window.settlementRevealed !== true) {
+        window.settlementRevealed = true;
+        window.MG = window.MG || {};
+
+        // Enhanced confetti burst system
+        window.MG.createWinnerConfetti = function() {
+          const container = document.createElement('div');
+          container.className = 'confetti-container';
+          document.body.appendChild(container);
+
+          const colors = ['confetti-gold', 'confetti-green', 'confetti-win', 'confetti-ivory'];
+
+          // Create 120 confetti pieces for winner celebration
+          for (let i = 0; i < 120; i++) {
+            const piece = document.createElement('div');
+            const colorClass = colors[Math.floor(Math.random() * colors.length)];
+            piece.className = 'confetti-piece ' + colorClass;
+
+            // Random starting position across top
+            piece.style.left = Math.random() * 100 + 'vw';
+            piece.style.top = '-20px';
+
+            // Varied animation timing
+            piece.style.animationName = 'confettiFall' + (Math.floor(Math.random() * 5) + 1);
+            piece.style.animationDelay = Math.random() * 1.5 + 's';
+            piece.style.animationDuration = (3.5 + Math.random() * 1.5) + 's';
+            piece.style.animationTimingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            piece.style.animationFillMode = 'forwards';
+
+            container.appendChild(piece);
+          }
+
+          // Clean up after animation
+          setTimeout(() => {
+            if (container.parentNode) {
+              container.parentNode.removeChild(container);
+            }
+          }, 6000);
+        };
+
+        window.MG.closeSettlementOverlay = function() {
+          const overlay = document.getElementById('settlement-overlay');
+          if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() => {
+              if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+              }
+            }, 1000);
+          }
+        };
+
+        // Premium staggered reveal with 1.5s delays
+        window.MG.revealSettlement = function() {
+          const overlay = document.getElementById('settlement-overlay');
+          const header = document.getElementById('final-results-header');
+          const container = document.getElementById('settlement-cards-container');
+          const closeBtn = document.getElementById('settlement-close-btn');
+
+          // Populate cards container
+          container.innerHTML = \`${playerCardsHTML}\`;
+
+          // Step 1: Show dark overlay (1s fade)
+          overlay.style.opacity = '1';
+          overlay.style.pointerEvents = 'auto';
+
+          // Step 2: Show "FINAL RESULTS" header (1.2s after overlay)
+          setTimeout(() => {
+            header.style.opacity = '1';
+            header.style.transform = 'translateY(0)';
+          }, 1200);
+
+          // Step 3: Reveal players one by one (1.5s delays, from last to first)
+          const players = ${JSON.stringify(sortedPlayers.map((p, i) => ({
+            id: `settlement-player-${i}`,
+            isWinner: i === 0 && (settlePnL[p.name] || 0) > 0,
+            name: p.name,
+            index: i
+          })))};
+
+          // Sort to reveal from last place to first (reverse order)
+          const revealOrder = [...players].reverse();
+
+          revealOrder.forEach((player, revealIndex) => {
+            setTimeout(() => {
+              const element = document.getElementById(player.id);
+              if (element) {
+                element.classList.remove('settlement-card-hidden');
+
+                if (player.isWinner) {
+                  element.classList.add('settlement-winner-card');
+
+                  // Winner celebration sequence
+                  setTimeout(() => {
+                    window.MG.createWinnerConfetti();
+
+                    // Triple haptic burst for winner
+                    if (navigator.vibrate) {
+                      navigator.vibrate([150, 100, 150, 100, 250]);
+                    }
+
+                    // Show close button after winner celebration
+                    setTimeout(() => {
+                      closeBtn.style.opacity = '1';
+                    }, 2000);
+                  }, 800);
+
+                } else {
+                  element.classList.add('settlement-card-reveal');
+                }
+              }
+            }, 2500 + (revealIndex * 1500)); // 1.5 second delays after header appears
+          });
+        };
+
+        // Start the dramatic reveal sequence
+        setTimeout(() => window.MG.revealSettlement(), 500);
+      }
+    </script>`;
 
     if (payPairs.length > 0) {
       html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
@@ -7408,17 +8168,35 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         <div style="font-size:14px;color:var(--text-primary);margin-top:6px">Place your bets before first tee</div>`;
     }
 
-    html += `<div style="background:linear-gradient(135deg,var(--bg-secondary) 0%,var(--green-muted) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 0 20px rgba(212,160,23,0.1)">
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(212,160,23,0.02) 20px,rgba(212,160,23,0.02) 40px);pointer-events:none"></div>
-      <div style="position:relative;z-index:1">
-        <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:12px">You Are Invited</div>
-        <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${escHtml(eventName)}</div>
+    html += `<div style="background:linear-gradient(135deg,var(--bg-secondary) 0%,var(--green-muted) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;overflow:hidden;box-shadow:0 0 20px rgba(212,160,23,0.1)">
+      <div>
+        <div style="font-size:12px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:14px">You Are Invited</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-bottom:6px;line-height:1.2">${escHtml(eventName)}</div>
         ${courseName ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${escHtml(courseName)}${eventDate ? ' &middot; ' + escHtml(eventDate) : ''}</div>` : ''}
         ${state.bettorName ? `<div style="margin-bottom:12px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:11px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
         ${countdownHtml}
         ${totalPot > 0 ? `<div style="margin-top:16px;font-size:12px;color:rgba(212,160,23,0.6)">Estimated pot: <span style="font-family:'SF Mono',monospace;font-weight:800;color:var(--gold-bright);font-size:16px">$${totalPot}</span></div>` : ''}
       </div>
     </div>`;
+  }
+
+  // ── a2) Start Round CTA ──
+  if (state.adminAuthed || state._isAdmin) {
+    html += `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      <button onclick="location.hash='#scorecard'"
+        style="width:100%;padding:16px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:10px;font-size:17px;font-weight:800;cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 12px rgba(212,160,23,0.3);-webkit-tap-highlight-color:transparent;transition:transform .1s"
+        onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
+        Start Scoring &#9971;
+      </button>`;
+    if (!eventDate) {
+      html += `<button onclick="window._tripScheduleTeeTime()"
+        style="width:100%;padding:12px;background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));border-radius:10px;font-size:14px;font-weight:600;color:var(--gold-bright);cursor:pointer;min-height:48px;-webkit-tap-highlight-color:transparent">
+        Schedule Tee Time
+      </button>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div style="text-align:center;padding:12px;margin-bottom:10px;font-size:13px;color:var(--text-tertiary);font-style:italic">Waiting for first tee...</div>`;
   }
 
   // ── b) Course Preview ──
@@ -7432,6 +8210,14 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         </div>
         <div style="font-size:28px">&#9971;</div>
       </div>
+      ${(state.adminAuthed || state._isAdmin) ? `<details style="cursor:pointer;margin-bottom:8px">
+        <summary style="font-size:12px;font-weight:600;color:var(--gold-bright);padding:6px 0">Change Course</summary>
+        <div style="margin-top:8px;position:relative">
+          <input type="text" id="trip-course-search" placeholder="Search courses..." oninput="window._tripCourseSearch(this.value)"
+            style="width:100%;padding:10px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary);box-sizing:border-box">
+          <div id="trip-course-results" style="margin-top:4px"></div>
+        </div>
+      </details>` : ''}
       <details style="cursor:pointer">
         <summary style="font-size:12px;font-weight:600;color:var(--mg-gold-dim);padding:6px 0">Hole-by-Hole</summary>
         <div style="overflow-x:auto;margin-top:8px">
@@ -7455,6 +8241,16 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
           </table>
         </div>
       </details>
+    </div>`;
+  } else if (state.adminAuthed || state._isAdmin) {
+    // No course set — show course search for admin
+    html += `<div style="background:var(--mg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:8px">Set Course</div>
+      <div style="position:relative">
+        <input type="text" id="trip-course-search" placeholder="Search for a golf course..." oninput="window._tripCourseSearch(this.value)"
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary);box-sizing:border-box">
+        <div id="trip-course-results" style="margin-top:4px"></div>
+      </div>
     </div>`;
   }
 
@@ -7616,16 +8412,158 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     </div>`;
   }
 
-  // Add Player (admin only)
+  // Add Player (admin only) — with GHIN lookup
   if (state.adminAuthed) {
     html += `<div style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-bottom:10px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:8px">Add Player</div>
-      <div style="display:flex;gap:6px">
-        <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:8px 10px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;background:transparent;color:var(--text-primary)">
-        <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:60px;padding:8px;border:1.5px solid var(--border-strong);border-radius:6px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
-        <button onclick="window.MG.addPlayerInline()" style="padding:8px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Add</button>
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);margin-bottom:10px">Add Player</div>
+      <div id="ghin-lookup-section">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <input type="text" id="trip-ghin-num" inputmode="numeric" placeholder="GHIN # (e.g. 1234567)"
+            style="padding:10px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary)"
+            onkeydown="if(event.key==='Enter')window._tripGhinLookup()">
+          <input type="text" id="trip-ghin-last" placeholder="Last name"
+            style="padding:10px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary)"
+            onkeydown="if(event.key==='Enter')window._tripGhinLookup()">
+        </div>
+        <button onclick="window._tripGhinLookup()"
+          style="width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px;-webkit-tap-highlight-color:transparent">
+          Look Up Handicap
+        </button>
+        <div id="trip-ghin-result" style="margin-top:8px;font-size:13px"></div>
+      </div>
+      <div style="text-align:center;margin:10px 0 6px">
+        <button onclick="(function(){var m=document.getElementById('trip-manual-section');m.style.display=m.style.display==='none'?'block':'none'})()"
+          style="font-size:12px;color:var(--text-secondary);background:none;border:none;cursor:pointer;text-decoration:underline">
+          Or add manually
+        </button>
+      </div>
+      <div id="trip-manual-section" style="display:none">
+        <div style="display:flex;gap:6px">
+          <input type="text" id="add-player-name" placeholder="Name" style="flex:2;padding:10px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:transparent;color:var(--text-primary)">
+          <input type="number" id="add-player-hcp" placeholder="HCP" step="0.1" style="width:70px;padding:10px 8px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;text-align:center;background:transparent;color:var(--text-primary)">
+          <button onclick="window.MG.addPlayerInline()" style="padding:10px 14px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:48px">Add</button>
+        </div>
       </div>
     </div>`;
+  }
+
+  // ── g) Register inline script helpers for course search + GHIN lookup ──
+  // Defined on window so inline onclick/oninput handlers can call them.
+  // These run in module scope when renderTripPage is called (before innerHTML is set),
+  // so they're ready when the DOM elements appear.
+  {
+    let _csTimer = null;
+    window._tripCourseSearch = function(q) {
+      clearTimeout(_csTimer);
+      if (q.length < 2) { const c = document.getElementById('trip-course-results'); if (c) c.innerHTML = ''; return; }
+      _csTimer = setTimeout(() => {
+        fetch('/api/courses/search?q=' + encodeURIComponent(q))
+          .then(r => r.json())
+          .then(courses => {
+            const container = document.getElementById('trip-course-results');
+            if (!container) return;
+            container.innerHTML = courses.slice(0, 5).map(c => {
+              const loc = c.location || ((c.city || '') + (c.state ? ', ' + c.state : ''));
+              let info = c.course_name ? c.course_name : '';
+              if (c.slope_rating || c.rating) info += (info ? ' | ' : '') + (c.rating ? 'Rating ' + c.rating : '') + (c.slope_rating ? ' / Slope ' + c.slope_rating : '');
+              const safeName = (c.club_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+              const safeId = (c.id || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+              return `<button onclick="window._tripSelectCourse('${safeName}','${safeId}')"
+                style="display:block;width:100%;text-align:left;padding:12px;margin-top:4px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-primary);min-height:48px">
+                <div style="font-weight:700">${c.club_name || 'Unknown'}</div>
+                ${info ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${info}</div>` : ''}
+                ${loc ? `<div style="font-size:11px;color:var(--text-tertiary);margin-top:1px">${loc}</div>` : ''}
+              </button>`;
+            }).join('');
+          })
+          .catch(() => {});
+      }, 300);
+    };
+
+    window._tripSelectCourse = function(name, id) {
+      const input = document.getElementById('trip-course-search');
+      if (input) input.value = name;
+      const results = document.getElementById('trip-course-results');
+      if (results) results.innerHTML = '<div style="padding:8px;color:var(--gold-bright);font-size:13px">Saving...</div>';
+      const pin = localStorage.getItem('mg_admin_pin_' + slug) || '';
+      fetch('/' + slug + '/api/event/update-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Pin': pin },
+        body: JSON.stringify({ venue: name })
+      }).then(r => r.json()).then(r => {
+        if (r && r.ok) { location.reload(); }
+        else { if (results) results.innerHTML = '<div style="color:var(--loss);padding:8px;font-size:13px">' + (r.error || 'Failed to save') + '</div>'; }
+      }).catch(e => { if (results) results.innerHTML = '<div style="color:var(--loss);padding:8px;font-size:13px">Error: ' + e.message + '</div>'; });
+    };
+
+    // ── Schedule Tee Time ──
+    window._tripScheduleTeeTime = async function() {
+      const d = prompt('Set tee time date (YYYY-MM-DD):');
+      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      try {
+        const pin = localStorage.getItem('mg_admin_pin_' + slug) || '';
+        const r = await fetch('/' + slug + '/api/event/update-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Pin': pin },
+          body: JSON.stringify({ dates: { day1: d } })
+        }).then(x => x.json());
+        if (r && r.ok) { alert('Tee time set for ' + d); location.reload(); }
+        else { alert(r.error || 'Failed'); }
+      } catch (e) { alert('Error: ' + e.message); }
+    };
+
+    // ── GHIN Lookup ──
+    window._tripGhinLookup = async function() {
+      const numEl = document.getElementById('trip-ghin-num');
+      const lastEl = document.getElementById('trip-ghin-last');
+      const resultEl = document.getElementById('trip-ghin-result');
+      if (!numEl || !lastEl || !resultEl) return;
+      const ghinVal = numEl.value.trim();
+      const lastVal = lastEl.value.trim();
+      if (!ghinVal) { resultEl.innerHTML = '<div style="color:var(--loss)">Enter a GHIN number</div>'; return; }
+      if (!lastVal) { resultEl.innerHTML = '<div style="color:var(--loss)">Enter last name</div>'; return; }
+      resultEl.innerHTML = '<div style="color:var(--text-secondary)">Looking up...</div>';
+      try {
+        const res = await fetch('/api/ghin-lookup?ghin=' + encodeURIComponent(ghinVal) + '&last_name=' + encodeURIComponent(lastVal));
+        const data = await res.json();
+        if (data.error) {
+          resultEl.innerHTML = '<div style="color:var(--loss)">' + data.error + '</div>' +
+            '<div style="margin-top:6px"><button onclick="document.getElementById(\'trip-manual-section\').style.display=\'block\'" style="font-size:12px;color:var(--text-secondary);background:none;border:none;cursor:pointer;text-decoration:underline">Add manually instead</button></div>';
+          return;
+        }
+        const firstName = (data.name || 'Player').split(' ')[0];
+        resultEl.innerHTML = '<div style="background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);border-radius:8px;padding:12px;margin-top:4px">' +
+          '<div style="font-size:15px;font-weight:700;color:var(--text-primary)">' + (data.name || '') + '</div>' +
+          '<div style="font-size:13px;color:var(--text-secondary);margin-top:2px">HI: ' + (data.handicapIndex || 0) + (data.club ? ' | ' + data.club : '') + '</div>' +
+          '<button onclick="window._tripAddGhinPlayer()" style="margin-top:8px;width:100%;padding:12px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px">Add ' + firstName + ' to Group</button>' +
+          '</div>';
+        window._tripGhinData = data;
+      } catch (e) {
+        resultEl.innerHTML = '<div style="color:var(--loss)">Lookup failed: ' + e.message + '</div>';
+      }
+    };
+
+    window._tripAddGhinPlayer = function() {
+      const data = window._tripGhinData;
+      if (!data || !data.name) return;
+      const nameEl = document.getElementById('add-player-name');
+      const hcpEl = document.getElementById('add-player-hcp');
+      const manualSection = document.getElementById('trip-manual-section');
+      if (manualSection) manualSection.style.display = 'block';
+      if (nameEl) nameEl.value = data.name;
+      if (hcpEl) hcpEl.value = data.handicapIndex || 0;
+      if (window.MG && window.MG.addPlayerInline) {
+        window.MG.addPlayerInline();
+        // Reset GHIN inputs after add
+        const numEl = document.getElementById('trip-ghin-num');
+        const lastEl = document.getElementById('trip-ghin-last');
+        const resultEl = document.getElementById('trip-ghin-result');
+        if (numEl) numEl.value = '';
+        if (lastEl) lastEl.value = '';
+        if (resultEl) resultEl.innerHTML = '';
+        window._tripGhinData = null;
+      }
+    };
   }
 
   return html;
@@ -8089,4 +9027,100 @@ export function renderOddsBetSlip(state) {
       ${amount ? 'Lock It In \u2014 \$' + amount + ' to win \$' + payout : 'Enter amount'}
     </button>
   </div>`;
+}
+
+// ============================================================
+// ODDS MOVEMENT ANIMATION SYSTEM
+// ============================================================
+
+// Initialize global MG namespace if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.MG = window.MG || {};
+
+  /**
+   * Trigger odds animations when odds change
+   * @param {Array} oddsAnimations - Array of odds change data
+   */
+  window.MG.triggerOddsAnimations = function(oddsAnimations) {
+    oddsAnimations.forEach(change => {
+      // Find odds buttons that contain this player's odds
+      const playerButtons = document.querySelectorAll('.mg-odds-btn');
+
+      playerButtons.forEach(button => {
+        const oddsLine = button.querySelector('.odds-line');
+        const oddsLabel = button.querySelector('.odds-label');
+
+        if (oddsLine && oddsLabel) {
+          // Check if this button is for the current player
+          const buttonText = oddsLabel.textContent.toLowerCase();
+          const playerName = change.playerName.toLowerCase();
+          const firstName = change.firstName.toLowerCase();
+
+          // Match by full name or first name
+          if (buttonText.includes(firstName) || buttonText.includes(playerName)) {
+            // Update the odds value
+            oddsLine.textContent = change.newOdds;
+
+            // Apply animations
+            window.MG.animateOddsButton(button, change);
+          }
+        }
+      });
+    });
+  };
+
+  /**
+   * Apply animations to a specific odds button
+   * @param {Element} button - The odds button element
+   * @param {Object} change - The odds change data
+   */
+  window.MG.animateOddsButton = function(button, change) {
+    // Clean up any existing animations
+    button.classList.remove('odds-slide-up', 'odds-slide-down', 'odds-flash-green', 'odds-flash-red');
+
+    // Remove any existing arrows
+    const existingArrow = button.querySelector('.odds-arrow');
+    if (existingArrow) {
+      existingArrow.remove();
+    }
+
+    // Apply slide animation based on direction
+    if (change.animationType === 'up') {
+      button.classList.add('odds-slide-up');
+    } else {
+      button.classList.add('odds-slide-down');
+    }
+
+    // Apply background flash based on improvement/deterioration
+    setTimeout(() => {
+      if (change.flashType === 'green') {
+        button.classList.add('odds-flash-green');
+      } else {
+        button.classList.add('odds-flash-red');
+      }
+    }, 200);
+
+    // Add arrow indicator
+    const arrow = document.createElement('div');
+    arrow.className = `odds-arrow odds-arrow-${change.animationType} fade-out`;
+    arrow.innerHTML = change.animationType === 'up' ? '↑' : '↓';
+    button.appendChild(arrow);
+
+    // Clean up animations after they complete
+    setTimeout(() => {
+      button.classList.remove('odds-slide-up', 'odds-slide-down', 'odds-flash-green', 'odds-flash-red');
+    }, 1200);
+
+    // Remove arrow after fade out
+    setTimeout(() => {
+      if (arrow.parentNode) {
+        arrow.parentNode.removeChild(arrow);
+      }
+    }, 3000);
+
+    // Add haptic feedback if supported
+    if (navigator.vibrate && change.oddsChange > 50) {
+      navigator.vibrate([50]); // Short vibration for significant odds changes
+    }
+  };
 }
