@@ -1477,6 +1477,12 @@ export default {
         return null;
       })
     );
+    ctx.waitUntil(
+      processOutreachDrip(env).catch((err) => {
+        console.error('outreach-drip-failed', err?.message || err);
+        return null;
+      })
+    );
     ctx.waitUntil(cleanupExpiredEvents(env));
   },
 };
@@ -10258,6 +10264,105 @@ async function handleEmailDrip(request, env, url) {
       headers: EMAIL_CORS
     });
   }
+}
+
+// ─── Outreach Drip Processor (runs on cron) ─────────────────────────────────
+// Checks all outreach sends and fires follow-up emails on schedule:
+// Email 1 sent on Day 0 → Email 2 on Day 4 → Email 3 on Day 10
+
+async function processOutreachDrip(env) {
+  if (!env.MG_BOOK) return;
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  // Drip schedule: template name → { dayAfter, nextTemplate, nextSubject }
+  const DRIP_STEPS = {
+    'cold-sequence-charity-scramble.html': [
+      { daysAfter: 4, subject: '32 players, zero spreadsheets', templateIndex: 2 },
+      { daysAfter: 10, subject: 'One question about your scramble', templateIndex: 3 },
+    ],
+    'cold-sequence-corporate-outing.html': [
+      { daysAfter: 5, subject: '$37 per outing, no strings', templateIndex: 2 },
+      { daysAfter: 10, subject: 'Not a fit?', templateIndex: 3 },
+    ],
+  };
+
+  // Scan KV for outreach sends
+  const listResult = await env.MG_BOOK.list({ prefix: 'outreach:sent:' });
+  const keys = listResult?.keys || [];
+  let sent = 0;
+
+  for (const key of keys) {
+    try {
+      const data = await env.MG_BOOK.get(key.name, 'json');
+      if (!data || !data.ts) continue;
+
+      // Parse key: outreach:sent:{leadId}:{template}
+      const parts = key.name.split(':');
+      const template = parts.slice(3).join(':');
+      const leadId = parts[2];
+
+      const steps = DRIP_STEPS[template];
+      if (!steps) continue;
+
+      const daysSinceSend = (now - data.ts) / DAY_MS;
+
+      for (const step of steps) {
+        const followUpKey = `outreach:sent:${leadId}:step${step.templateIndex}`;
+        const alreadySent = await env.MG_BOOK.get(followUpKey);
+        if (alreadySent) continue;
+
+        if (daysSinceSend >= step.daysAfter && daysSinceSend < step.daysAfter + 1.5) {
+          // Time to send this follow-up
+          // Get lead info from the original send tracking
+          const adminSendKeys = await env.MG_BOOK.list({ prefix: `outreach:admin-send:`, limit: 100 });
+          let leadEmail = null;
+          let leadName = 'there';
+          let clubName = '';
+
+          for (const ask of (adminSendKeys?.keys || [])) {
+            if (ask.name.includes(leadId)) {
+              const sendData = await env.MG_BOOK.get(ask.name, 'json');
+              if (sendData) {
+                leadEmail = sendData.email;
+                leadName = sendData.course_name || 'there';
+                clubName = sendData.course_name || '';
+              }
+              break;
+            }
+          }
+
+          if (!leadEmail) continue;
+
+          // Send follow-up via Resend (MailChannels requires Worker context)
+          if (env.RESEND_API_KEY) {
+            const firstName = leadName.split(' ')[0] || 'there';
+            const emailBody = `<p>Hey ${firstName},</p><p>${step.templateIndex === 2 ?
+              'Quick follow-up. A 32-team charity scramble used Waggle last month and every team had live scoring on their phones. No volunteers running around. Settlement happened before the awards dinner. The tournament director said it was the easiest event he ever ran. If you have something coming up, reply with the date and I will set everything up.' :
+              'Last note. Would it help if I showed you exactly what your next event would look like? I can set up a custom demo with ' + clubName + ' actual scorecard in about 5 minutes. Just reply "show me" and I will send it over.'
+            }</p><p>Evan</p>`;
+
+            try {
+              await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  from: 'Evan at Waggle <reports@cafecito-ai.com>',
+                  to: [leadEmail],
+                  subject: step.subject,
+                  html: emailBody,
+                })
+              });
+              await env.MG_BOOK.put(followUpKey, JSON.stringify({ ts: now, step: step.templateIndex }));
+              sent++;
+            } catch (e) { /* continue */ }
+          }
+        }
+      }
+    } catch (e) { /* skip bad keys */ }
+  }
+
+  if (sent > 0) console.log(`outreach-drip: sent ${sent} follow-ups`);
 }
 
 // ─── Demo Skins — Pure skins game at Pinehurst No. 2 (slug: demo-skins) ─────
