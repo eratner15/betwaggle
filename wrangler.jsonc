@@ -26,6 +26,9 @@
   "kv_namespaces": [
     { "binding": "MG_BOOK", "id": "9cce45f658ad416ba777e715911316c0" }
   ],
+  "send_email": [
+    { "name": "EMAIL" }
+  ],
   "triggers": {
     "crons": ["0 13 * * 1"]
   },
