@@ -2650,6 +2650,18 @@ body.tv-mode #app {
 .confetti-anim-4 { animation: confettiFall4 3.4s ease-in forwards; }
 .confetti-anim-5 { animation: confettiFall5 3.1s ease-in forwards; }
 
+/* Share card screenshot-friendly layout */
+#settlement-share-card {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Payment pair "sent" visual state */
+.pay-pair-sent .pay-amount {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
 /* ============================================================
    ODDS MOVEMENT ANIMATIONS — DraftKings-Style Live Updates
    ============================================================ */

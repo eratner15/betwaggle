@@ -6770,217 +6770,369 @@ export function renderSettlement(state) {
   // ── Premium Settlement Reveal Experience ──
   if (settleHasPnL) {
     const sortedPlayers = [...settlePlayers].sort((a, b) => (settlePnL[b.name] || 0) - (settlePnL[a.name] || 0));
+    const courseName = config?.course?.name || config?.event?.course || '';
+    const structure = config?.structure || {};
 
-    // Dark overlay with dramatic "FINAL RESULTS" header
-    html += `<!-- Settlement Dark Overlay -->
-    <div id="settlement-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(13,40,24,0.95);z-index:9999;opacity:0;transition:opacity 1s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-      <div id="final-results-header" style="font-family:'Playfair Display',Georgia,serif;font-size:48px;font-weight:700;color:var(--gold-bright);margin-bottom:40px;opacity:0;transform:translateY(20px);transition:all 1.2s ease;text-align:center;text-shadow:0 4px 20px rgba(212,175,55,0.4)">
-        FINAL RESULTS
-      </div>
-      <div id="settlement-results-container" style="background:var(--bg-primary);border:2px solid var(--gold-bright);border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
-        <div id="settlement-cards-container"></div>
-      </div>
-      <div id="settlement-close-btn" style="position:absolute;top:20px;right:20px;background:rgba(212,175,55,0.2);border:2px solid var(--gold-bright);color:var(--gold-bright);border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;opacity:0;transition:opacity 0.5s ease 5s;pointer-events:auto" onclick="window.MG.closeSettlementOverlay()">
-        ×
-      </div>
-    </div>`;
+    // Build game format badges
+    const formatBadges = [];
+    if (games.nassau) formatBadges.push({ name: 'Nassau', detail: `$${structure.nassauBet || 10}/side` });
+    if (games.skins) formatBadges.push({ name: 'Skins', detail: `$${structure.skinsBet || 5}/hole` });
+    if (games.wolf) formatBadges.push({ name: 'Wolf', detail: '' });
+    if (games.vegas) formatBadges.push({ name: 'Vegas', detail: '' });
+    if (games.nines) formatBadges.push({ name: '9s', detail: '' });
+    if (games.scramble) formatBadges.push({ name: 'Scramble', detail: '' });
+    if (games.stroke_play) formatBadges.push({ name: 'Stroke', detail: '' });
 
-    // Build player cards with enhanced styling and narratives
-    let playerCardsHTML = '';
-    const keyMoments = [
-      "Clutch putt saves the day!", "Nerves of steel under pressure", "Spectacular recovery shot",
-      "Heroic front nine performance", "Back nine charge pays off", "Steady play throughout",
-      "Impressive debut showing", "Veteran experience shines", "Consistent throughout the round"
-    ];
+    // Total pot
+    const totalPot = Object.values(settlePnL).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
+
+    // Winner info
+    const winner = sortedPlayers[0];
+    const winnerMoney = settlePnL[winner.name] || 0;
+
+    // Build venmo handle lookup from config players
+    const venmoHandles = {};
+    const zelleInfo = {};
+    (config?.players || config?.roster || []).forEach(p => {
+      const pName = p.name || p.member;
+      if (p.venmo) venmoHandles[pName] = p.venmo.replace(/^@/, '');
+      if (p.zelle) zelleInfo[pName] = p.zelle;
+    });
+
+    // Check ceremony played flag
+    const ceremonyKey = `waggle_ceremony_${state._slug || 'event'}`;
+    const ceremonyPlayed = state._settlementCeremonyPlayed || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(ceremonyKey));
+
+    if (!ceremonyPlayed) {
+      // Mark ceremony as played
+      state._settlementCeremonyPlayed = true;
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(ceremonyKey, '1');
+
+      // Dark overlay with dramatic "FINAL RESULTS" header — Playfair Display
+      html += `<!-- Settlement Ceremony Overlay -->
+      <div id="settlement-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1B3022;z-index:9999;opacity:0;transition:opacity 1s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;overflow-y:auto">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.03) 0px,rgba(197,160,89,0.03) 1px,transparent 1px,transparent 10px);pointer-events:none"></div>
+        <div id="final-results-header" style="font-family:var(--font-display);font-size:42px;font-weight:700;color:#C5A059;margin-bottom:8px;opacity:0;transform:translateY(20px);transition:all 1.2s ease;text-align:center;text-shadow:0 4px 20px rgba(197,160,89,0.4);letter-spacing:2px">
+          FINAL RESULTS
+        </div>
+        <div id="ceremony-event-subtitle" style="font-family:var(--font-display);font-size:16px;color:rgba(252,249,244,0.6);opacity:0;transition:opacity 0.8s ease;margin-bottom:32px;text-align:center">
+          ${escHtml(eventName)}${courseName ? ' &middot; ' + escHtml(courseName) : ''}
+        </div>
+        <div id="settlement-results-container" style="background:#FCF9F4;border:2px solid #C5A059;border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
+          <div id="settlement-cards-container"></div>
+        </div>
+        <div id="ceremony-tap-dismiss" style="opacity:0;transition:opacity 0.5s ease;margin-top:24px;font-size:12px;color:rgba(252,249,244,0.4);letter-spacing:2px;text-transform:uppercase;font-weight:600">Tap to continue</div>
+        <div id="settlement-close-btn" style="position:absolute;top:20px;right:20px;background:rgba(197,160,89,0.2);border:2px solid #C5A059;color:#C5A059;border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;font-weight:700;opacity:0;transition:opacity 0.5s ease;pointer-events:auto" onclick="window.MG.closeSettlementOverlay()">
+          &times;
+        </div>
+      </div>`;
+
+      // Build player cards with enhanced styling
+      let playerCardsHTML = '';
+      const keyMoments = [
+        "Clutch putt saves the day!", "Nerves of steel under pressure", "Spectacular recovery shot",
+        "Heroic front nine performance", "Back nine charge pays off", "Steady play throughout",
+        "Impressive debut showing", "Veteran experience shines", "Consistent throughout the round"
+      ];
+
+      sortedPlayers.forEach((p, i) => {
+        const money = settlePnL[p.name] || 0;
+        const moneyStr = money === 0 ? 'EVEN' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+        const moneyColor = money > 0 ? '#16A34A' : money < 0 ? '#DC2626' : '#8A8A85';
+        const isWinner = i === 0 && money > 0;
+        const playerId = `settlement-player-${i}`;
+        const narrative = keyMoments[i % keyMoments.length];
+        const position = sortedPlayers.length - i;
+
+        playerCardsHTML += `<div id="${playerId}" class="settlement-card-hidden" style="margin-bottom:12px;padding:14px 16px;border:2px solid ${isWinner ? '#C5A059' : 'rgba(197,160,89,0.15)'};border-radius:12px;background:${isWinner ? 'linear-gradient(135deg,rgba(197,160,89,0.12),rgba(197,160,89,0.04))' : '#F5F1EA'};transition:all 0.8s ease">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:32px;height:32px;background:${isWinner ? '#C5A059' : '#8A8A85'};border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FCF9F4;font-weight:700;font-size:14px">
+                ${isWinner ? '\u{1F451}' : position}
+              </div>
+              <div>
+                <div style="font-size:18px;font-weight:700;color:#1C1C19;font-family:var(--font-display)">${escHtml(p.name)}</div>
+                <div style="font-size:11px;color:#8A8A85;font-style:italic">${narrative}</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:26px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 12px rgba(197,160,89,0.5)' : ''}">${moneyStr}</div>
+              ${isWinner ? '<div style="font-size:9px;color:#C5A059;font-weight:800;text-transform:uppercase;letter-spacing:2px">CHAMPION</div>' : ''}
+            </div>
+          </div>
+        </div>`;
+      });
+
+      // Ceremony reveal script with 1.5s delays
+      html += `<script>
+        if (window.settlementRevealed !== true) {
+          window.settlementRevealed = true;
+          window.MG = window.MG || {};
+
+          window.MG.createWinnerConfetti = function() {
+            const container = document.createElement('div');
+            container.className = 'confetti-container';
+            document.body.appendChild(container);
+            const colors = ['confetti-gold', 'confetti-green', 'confetti-win', 'confetti-ivory'];
+            for (let i = 0; i < 120; i++) {
+              const piece = document.createElement('div');
+              piece.className = 'confetti-piece ' + colors[Math.floor(Math.random() * colors.length)];
+              piece.style.left = Math.random() * 100 + 'vw';
+              piece.style.top = '-20px';
+              piece.style.animationName = 'confettiFall' + (Math.floor(Math.random() * 5) + 1);
+              piece.style.animationDelay = Math.random() * 1.5 + 's';
+              piece.style.animationDuration = (3.5 + Math.random() * 1.5) + 's';
+              piece.style.animationTimingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+              piece.style.animationFillMode = 'forwards';
+              container.appendChild(piece);
+            }
+            setTimeout(() => { if (container.parentNode) container.parentNode.removeChild(container); }, 6000);
+          };
+
+          window.MG.closeSettlementOverlay = function() {
+            const overlay = document.getElementById('settlement-overlay');
+            if (overlay) {
+              overlay.style.opacity = '0';
+              overlay.style.pointerEvents = 'none';
+              setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 1000);
+            }
+          };
+
+          window.MG.revealSettlement = function() {
+            const overlay = document.getElementById('settlement-overlay');
+            const header = document.getElementById('final-results-header');
+            const subtitle = document.getElementById('ceremony-event-subtitle');
+            const container = document.getElementById('settlement-cards-container');
+            const closeBtn = document.getElementById('settlement-close-btn');
+            const tapDismiss = document.getElementById('ceremony-tap-dismiss');
+
+            container.innerHTML = \`${playerCardsHTML}\`;
+
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+
+            setTimeout(() => {
+              header.style.opacity = '1';
+              header.style.transform = 'translateY(0)';
+            }, 1200);
+
+            setTimeout(() => { subtitle.style.opacity = '1'; }, 1800);
+
+            const players = ${JSON.stringify(sortedPlayers.map((p, i) => ({
+              id: `settlement-player-${i}`,
+              isWinner: i === 0 && (settlePnL[p.name] || 0) > 0,
+              name: p.name,
+              index: i
+            })))};
+
+            const revealOrder = [...players].reverse();
+
+            revealOrder.forEach((player, revealIndex) => {
+              setTimeout(() => {
+                const element = document.getElementById(player.id);
+                if (element) {
+                  element.classList.remove('settlement-card-hidden');
+                  if (player.isWinner) {
+                    element.classList.add('settlement-winner-card');
+                    setTimeout(() => {
+                      window.MG.createWinnerConfetti();
+                      if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 250]);
+                      setTimeout(() => {
+                        closeBtn.style.opacity = '1';
+                        tapDismiss.style.opacity = '1';
+                      }, 2000);
+                    }, 800);
+                  } else {
+                    element.classList.add('settlement-card-reveal');
+                  }
+                }
+              }, 2500 + (revealIndex * 1500));
+            });
+
+            // Tap anywhere to dismiss after ceremony completes
+            const totalDelay = 2500 + (revealOrder.length * 1500) + 3000;
+            setTimeout(() => {
+              overlay.addEventListener('click', function handler(e) {
+                if (e.target.id === 'settlement-close-btn') return;
+                window.MG.closeSettlementOverlay();
+                overlay.removeEventListener('click', handler);
+              });
+            }, totalDelay);
+          };
+
+          setTimeout(() => window.MG.revealSettlement(), 500);
+        }
+      </script>`;
+    }
+
+    // ── Static Settlement Standings (always shown below ceremony) ──
+    html += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong)">
+      <div class="mg-card-header" style="margin-bottom:12px;font-family:var(--font-display);font-size:14px;letter-spacing:2px">FINAL STANDINGS</div>`;
 
     sortedPlayers.forEach((p, i) => {
       const money = settlePnL[p.name] || 0;
-      const moneyStr = money === 0 ? 'EVEN' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
+      const moneyStr = money === 0 ? 'Even' : money > 0 ? `+$${money}` : `-$${Math.abs(money)}`;
       const moneyColor = money > 0 ? 'var(--win)' : money < 0 ? 'var(--loss)' : 'var(--mg-text-muted)';
       const isWinner = i === 0 && money > 0;
-      const playerId = `settlement-player-${i}`;
-      const narrative = keyMoments[i % keyMoments.length];
-      const position = sortedPlayers.length - i; // Show from last to first
+      const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
+      const medal = i < 3 ? medals[i] : '';
 
-      playerCardsHTML += `<div id="${playerId}" class="settlement-card-hidden" style="margin-bottom:16px;padding:16px;border:2px solid ${isWinner ? 'var(--gold-bright)' : 'var(--border)'};border-radius:12px;background:${isWinner ? 'linear-gradient(135deg,rgba(212,175,55,0.1),rgba(212,175,55,0.05))' : 'var(--bg-secondary)'};transition:all 0.8s ease">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:32px;height:32px;background:${isWinner ? 'var(--gold-bright)' : 'var(--text-muted)'};border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bg-primary);font-weight:700;font-size:14px">
-              ${isWinner ? '👑' : position}
-            </div>
-            <div>
-              <div style="font-size:18px;font-weight:700;color:var(--text-primary)">${escHtml(p.name)}</div>
-              <div style="font-size:12px;color:var(--text-muted);font-style:italic">${narrative}</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:28px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 12px rgba(212,175,55,0.6)' : ''}">${moneyStr}</div>
-            ${money > 0 ? '<div style="font-size:10px;color:var(--win);font-weight:600;text-transform:uppercase">WINNER</div>' : ''}
-          </div>
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;${i < sortedPlayers.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}${isWinner ? 'background:rgba(197,160,89,0.06);margin:0 -16px;padding:10px 16px;border-radius:8px;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;width:24px;text-align:center">${medal || `<span style="font-size:12px;color:var(--mg-text-muted)">${i + 1}</span>`}</span>
+          <span style="font-size:15px;font-weight:${isWinner ? '700' : '500'};color:var(--text-primary);${isWinner ? 'font-family:var(--font-display);' : ''}">${escHtml(p.name)}</span>
         </div>
+        <span style="font-size:${isWinner ? '22' : '18'}px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 8px rgba(197,160,89,0.3);' : ''}">${moneyStr}</span>
       </div>`;
     });
+    html += `</div>`;
 
-    // Premium settlement reveal script with 1.5s delays and enhanced effects
-    html += `<script>
-      if (window.settlementRevealed !== true) {
-        window.settlementRevealed = true;
-        window.MG = window.MG || {};
-
-        // Enhanced confetti burst system
-        window.MG.createWinnerConfetti = function() {
-          const container = document.createElement('div');
-          container.className = 'confetti-container';
-          document.body.appendChild(container);
-
-          const colors = ['confetti-gold', 'confetti-green', 'confetti-win', 'confetti-ivory'];
-
-          // Create 120 confetti pieces for winner celebration
-          for (let i = 0; i < 120; i++) {
-            const piece = document.createElement('div');
-            const colorClass = colors[Math.floor(Math.random() * colors.length)];
-            piece.className = 'confetti-piece ' + colorClass;
-
-            // Random starting position across top
-            piece.style.left = Math.random() * 100 + 'vw';
-            piece.style.top = '-20px';
-
-            // Varied animation timing
-            piece.style.animationName = 'confettiFall' + (Math.floor(Math.random() * 5) + 1);
-            piece.style.animationDelay = Math.random() * 1.5 + 's';
-            piece.style.animationDuration = (3.5 + Math.random() * 1.5) + 's';
-            piece.style.animationTimingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            piece.style.animationFillMode = 'forwards';
-
-            container.appendChild(piece);
-          }
-
-          // Clean up after animation
-          setTimeout(() => {
-            if (container.parentNode) {
-              container.parentNode.removeChild(container);
-            }
-          }, 6000);
-        };
-
-        window.MG.closeSettlementOverlay = function() {
-          const overlay = document.getElementById('settlement-overlay');
-          if (overlay) {
-            overlay.style.opacity = '0';
-            overlay.style.pointerEvents = 'none';
-            setTimeout(() => {
-              if (overlay.parentNode) {
-                overlay.parentNode.removeChild(overlay);
-              }
-            }, 1000);
-          }
-        };
-
-        // Premium staggered reveal with 1.5s delays
-        window.MG.revealSettlement = function() {
-          const overlay = document.getElementById('settlement-overlay');
-          const header = document.getElementById('final-results-header');
-          const container = document.getElementById('settlement-cards-container');
-          const closeBtn = document.getElementById('settlement-close-btn');
-
-          // Populate cards container
-          container.innerHTML = \`${playerCardsHTML}\`;
-
-          // Step 1: Show dark overlay (1s fade)
-          overlay.style.opacity = '1';
-          overlay.style.pointerEvents = 'auto';
-
-          // Step 2: Show "FINAL RESULTS" header (1.2s after overlay)
-          setTimeout(() => {
-            header.style.opacity = '1';
-            header.style.transform = 'translateY(0)';
-          }, 1200);
-
-          // Step 3: Reveal players one by one (1.5s delays, from last to first)
-          const players = ${JSON.stringify(sortedPlayers.map((p, i) => ({
-            id: `settlement-player-${i}`,
-            isWinner: i === 0 && (settlePnL[p.name] || 0) > 0,
-            name: p.name,
-            index: i
-          })))};
-
-          // Sort to reveal from last place to first (reverse order)
-          const revealOrder = [...players].reverse();
-
-          revealOrder.forEach((player, revealIndex) => {
-            setTimeout(() => {
-              const element = document.getElementById(player.id);
-              if (element) {
-                element.classList.remove('settlement-card-hidden');
-
-                if (player.isWinner) {
-                  element.classList.add('settlement-winner-card');
-
-                  // Winner celebration sequence
-                  setTimeout(() => {
-                    window.MG.createWinnerConfetti();
-
-                    // Triple haptic burst for winner
-                    if (navigator.vibrate) {
-                      navigator.vibrate([150, 100, 150, 100, 250]);
-                    }
-
-                    // Show close button after winner celebration
-                    setTimeout(() => {
-                      closeBtn.style.opacity = '1';
-                    }, 2000);
-                  }, 800);
-
-                } else {
-                  element.classList.add('settlement-card-reveal');
-                }
-              }
-            }, 2500 + (revealIndex * 1500)); // 1.5 second delays after header appears
-          });
-        };
-
-        // Start the dramatic reveal sequence
-        setTimeout(() => window.MG.revealSettlement(), 500);
-      }
-    </script>`;
-
+    // ── WHO PAYS WHO — Enhanced with Venmo deep links, Zelle, and payment tracking ──
     if (payPairs.length > 0) {
       html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
-        <div class="mg-card-header" style="margin-bottom:12px">WHO PAYS WHO</div>
-        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:12px">Tap a name to open payment app with amount pre-filled</div>`;
-      // Build venmo handle lookup from config players
-      const venmoHandles = {};
-      (config?.players || config?.roster || []).forEach(p => {
-        if (p.venmo) venmoHandles[p.name || p.member] = p.venmo.replace(/^@/, '');
-      });
-      payPairs.forEach(({ from, to, amount }) => {
+        <div class="mg-card-header" style="margin-bottom:4px">WHO PAYS WHO</div>
+        <div style="font-size:11px;color:var(--mg-text-muted);margin-bottom:14px">Tap to open payment app with amount pre-filled</div>`;
+
+      payPairs.forEach(({ from, to, amount }, pairIdx) => {
         const noteText = encodeURIComponent(`${eventName} \u00b7 Waggle Settlement`);
-        // Use Venmo handle if available, otherwise fall back to name
         const toVenmo = venmoHandles[to] || to;
         const venmoUrl = `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
         const venmoWeb = `https://venmo.com/?txn=pay&recipients=${encodeURIComponent(toVenmo)}&amount=${amount}&note=${noteText}`;
         const cashappUrl = `https://cash.app/$${encodeURIComponent(toVenmo.split(' ')[0].toLowerCase())}/${amount}`;
-        html += `<div style="padding:14px 0;border-bottom:1px solid var(--mg-border)">
+        const payKey = `waggle_paid_${state._slug || 'event'}_${from}_${to}`;
+        const isPaid = typeof localStorage !== 'undefined' && localStorage.getItem(payKey);
+
+        html += `<div id="pay-pair-${pairIdx}" style="padding:14px 0;${pairIdx < payPairs.length - 1 ? 'border-bottom:1px solid var(--mg-border);' : ''}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div>
-              <div style="font-size:15px;font-weight:700"><span style="color:var(--loss)">${escHtml(from)}</span> <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)">pays</span> <span style="color:var(--win)">${escHtml(to)}</span></div>
+              <div style="font-size:15px;font-weight:700">
+                <span style="color:var(--loss)">${escHtml(from)}</span>
+                <span style="font-size:13px;font-weight:500;color:var(--mg-text-muted)"> pays </span>
+                <span style="color:var(--win)">${escHtml(to)}</span>
+              </div>
             </div>
-            <div style="font-size:28px;font-weight:900;color:var(--mg-text)">$${amount}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${isPaid ? '<span style="font-size:10px;font-weight:800;color:var(--win);background:rgba(22,163,74,0.1);padding:3px 8px;border-radius:4px;letter-spacing:1px">SENT</span>' : ''}
+              <div style="font-size:28px;font-weight:900;color:var(--mg-text);${isPaid ? 'opacity:0.4;text-decoration:line-through;' : ''}">\$${amount}</div>
+            </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <a href="${venmoUrl}" onclick="if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary,#FFFFFF);color:var(--gold-primary,#C5A059);border:1.5px solid var(--border-strong,rgba(197,160,89,0.3));padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
-              Venmo $${amount}</a>
-            <a href="${cashappUrl}" target="_blank" rel="noopener"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--win);color:var(--text-primary);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:48px">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm3.5 14.3c-.7.9-1.8 1.4-3.2 1.4-1.6 0-2.8-.6-3.6-1.6l1.5-1.5c.5.6 1.2 1 2.1 1 .7 0 1.2-.3 1.2-.8s-.4-.7-1.4-1l-.8-.2c-1.8-.5-2.6-1.3-2.6-2.8 0-2 1.5-3.1 3.3-3.1 1.3 0 2.4.5 3.1 1.3l-1.4 1.4c-.4-.5-1-.8-1.7-.8-.6 0-1 .3-1 .7 0 .4.3.6 1.1.8l.9.3c2 .6 2.8 1.4 2.8 2.9 0 .8-.3 1.5-.8 2z"/></svg>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="${venmoUrl}" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx});if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary);color:#3D95CE;border:1.5px solid rgba(61,149,206,0.3);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:56px;min-width:130px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
+              Venmo \$${amount}</a>
+            <a href="${cashappUrl}" target="_blank" rel="noopener" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx})"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#00D632;color:#FFFFFF;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:56px;min-width:130px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.59 3.47A5.1 5.1 0 0020.55.49C19.37.04 18-.08 16.6.02a7.36 7.36 0 00-4.87 2.65 7.36 7.36 0 00-4.87-2.65C5.48-.08 4.1.04 2.92.49A5.1 5.1 0 00-.12 3.47a8.55 8.55 0 00.37 5.21c1.2 2.86 3.86 5.68 7.9 8.37a3.78 3.78 0 004.23 0c4.04-2.69 6.7-5.51 7.9-8.37a8.55 8.55 0 00.37-5.21z"/></svg>
               Cash App</a>
           </div>
+          ${zelleInfo[to] ? `<div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--mg-text-muted)">Zelle:</span>
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(zelleInfo[to])}</span>
+            <button onclick="navigator.clipboard.writeText('${zelleInfo[to].replace(/'/g, "\\'")}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)"
+              style="padding:4px 10px;background:rgba(197,160,89,0.1);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;color:var(--gold-primary);cursor:pointer;min-height:28px">Copy</button>
+          </div>` : ''}
         </div>`;
       });
       html += `</div>`;
+
+      // Payment tracking script
+      html += `<script>
+        window.MG = window.MG || {};
+        window.MG.markPaymentSent = function(key, pairIdx) {
+          try { localStorage.setItem(key, '1'); } catch(e) {}
+          var el = document.getElementById('pay-pair-' + pairIdx);
+          if (el) {
+            var amountEl = el.querySelector('[style*="font-size:28px"]');
+            if (amountEl && !amountEl.style.textDecoration) {
+              amountEl.style.opacity = '0.4';
+              amountEl.style.textDecoration = 'line-through';
+              var badge = document.createElement('span');
+              badge.style.cssText = 'font-size:10px;font-weight:800;color:var(--win);background:rgba(22,163,74,0.1);padding:3px 8px;border-radius:4px;letter-spacing:1px;margin-right:8px';
+              badge.textContent = 'SENT';
+              amountEl.parentNode.insertBefore(badge, amountEl);
+            }
+          }
+        };
+      </script>`;
     }
+
+    // ── Shareable Settlement Card (screenshot-friendly, fixed dimensions) ──
+    html += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
+      <!-- Top Banner -->
+      <div style="background:#1B3022;padding:20px 24px;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.05) 0px,rgba(197,160,89,0.05) 1px,transparent 1px,transparent 10px)"></div>
+        <div style="position:relative;text-align:center">
+          <div style="font-family:var(--font-display);font-style:italic;font-size:24px;color:#C5A059;letter-spacing:1px">WAGGLE</div>
+          <div style="font-size:9px;font-weight:800;letter-spacing:3px;color:rgba(252,249,244,0.8);margin-top:2px">SETTLEMENT CARD</div>
+        </div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(197,160,89,0.2)"></div>
+      </div>
+      <!-- Event Info -->
+      <div style="padding:16px 24px;text-align:center;border-bottom:1px solid rgba(197,160,89,0.1)">
+        <div style="font-family:var(--font-display);font-style:italic;font-size:18px;color:#1B3022;line-height:1.3">${escHtml(eventName)}</div>
+        <div style="font-size:11px;color:rgba(27,48,34,0.5);margin-top:4px">${escHtml(eventDate)}${courseName ? ' &middot; ' + escHtml(courseName) : ''}${holesPlayed ? ' &middot; ' + holesPlayed + ' holes' : ''}</div>
+        ${formatBadges.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">
+          ${formatBadges.map(f => `<span style="font-size:9px;font-weight:800;color:#C5A059;padding:3px 8px;background:rgba(197,160,89,0.06);border-radius:2px;letter-spacing:1px">${escHtml(f.name).toUpperCase()}${f.detail ? ' ' + escHtml(f.detail) : ''}</span>`).join('')}
+          <span style="font-size:9px;font-weight:800;color:#C5A059;padding:3px 8px;background:rgba(197,160,89,0.06);border-radius:2px;letter-spacing:1px">${sortedPlayers.length} PLAYERS</span>
+          ${totalPot > 0 ? `<span style="font-size:9px;font-weight:800;color:#C5A059;padding:3px 8px;background:rgba(197,160,89,0.06);border-radius:2px;letter-spacing:1px">\$${totalPot} POT</span>` : ''}
+        </div>` : ''}
+      </div>
+      <!-- Champion Spotlight -->
+      ${winnerMoney > 0 ? `<div style="padding:24px;text-align:center;position:relative">
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px">
+          <div style="height:1px;width:20px;background:rgba(197,160,89,0.4)"></div>
+          <span style="font-size:10px;font-weight:800;letter-spacing:2px;color:#C5A059">CHAMPION</span>
+          <div style="height:1px;width:20px;background:rgba(197,160,89,0.4)"></div>
+        </div>
+        <div style="font-family:var(--font-display);font-style:italic;font-size:40px;color:#1B3022;line-height:1.1">${escHtml(winner.name)}</div>
+        <div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:#39FF14;margin-top:4px">+\$${winnerMoney}</div>
+      </div>` : ''}
+      <!-- Leaderboard Strip -->
+      <div style="background:rgba(27,48,34,0.02)">
+        <div style="padding:8px 24px;background:rgba(27,48,34,0.04);display:flex;justify-content:space-between">
+          <span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(27,48,34,0.35);text-transform:uppercase">Leaderboard</span>
+          <span style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(27,48,34,0.35);text-transform:uppercase">Settlement</span>
+        </div>
+        ${sortedPlayers.map((p, i) => {
+          const money = settlePnL[p.name] || 0;
+          const moneyStr = money === 0 ? 'Even' : money > 0 ? `+\$${money}` : `-\$${Math.abs(money)}`;
+          const moneyColor = money > 0 ? '#39FF14' : money < 0 ? '#FF4444' : 'rgba(27,48,34,0.4)';
+          const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
+          const isWinner = i === 0 && money > 0;
+          return `<div style="padding:10px 24px;display:flex;justify-content:space-between;align-items:center;${i % 2 === 0 ? 'background:rgba(197,160,89,0.04);' : ''}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:14px;width:20px;text-align:center">${i < 3 ? medals[i] : ''}</span>
+              <span style="font-size:14px;font-weight:${isWinner ? '700' : '500'};color:#1B3022">${escHtml(p.name)}</span>
+            </div>
+            <span style="font-family:var(--font-display);font-weight:700;color:${moneyColor};font-size:${isWinner ? '16' : '14'}px">${moneyStr}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <!-- Footer -->
+      <div style="background:#1B3022;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.03) 0px,rgba(197,160,89,0.03) 1px,transparent 1px,transparent 10px)"></div>
+        <div style="position:relative">
+          <div style="font-family:var(--font-display);font-style:italic;font-size:15px;color:#C5A059">betwaggle.com</div>
+          <div style="font-size:9px;color:rgba(252,249,244,0.5);margin-top:2px;max-width:160px;line-height:1.3">Run Your Golf Trip Like a Vegas Sportsbook</div>
+        </div>
+        <div style="position:relative;width:48px;height:48px;background:rgba(255,255,255,0.08);border-radius:6px;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center">
+          <div style="font-size:9px;color:rgba(252,249,244,0.4);text-align:center;line-height:1.2;font-weight:600">QR<br>CODE</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--mg-text-muted)">Screenshot this card for your group chat</div>`;
+
+    // ── Share + Create CTA row ──
+    html += `<div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px;letter-spacing:0.5px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share Card</button>
+      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Share Text</button>
+    </div>
+    <a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}" style="display:block;text-align:center;margin-top:10px;padding:14px;background:rgba(27,48,34,0.06);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--green-primary);text-decoration:none">Create Your Own Outing &rarr;</a>`;
   }
 
   // ── Skins ──
