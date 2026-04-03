@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Waggle for Course Pros — Turn Every Scramble Into a Sportsbook</title>
+  <meta name="description" content="Your members already bet on every round. Give them a sportsbook. Live team scoring, skins overlay, CTP & long drive, automatic settlement. Zero setup cost.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Waggle for Course Pros — Your Members Already Bet. Give Them a Sportsbook.">
+  <meta property="og:description" content="Live scramble scoring, skins overlay, CTP & long drive, automatic settlement. Zero setup cost — earn affiliate commission.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/pro/">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Waggle">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Waggle for Course Pros — Your Members Already Bet. Give Them a Sportsbook.">
+  <meta name="twitter:description" content="Live scramble scoring, skins overlay, CTP & long drive, automatic settlement. Zero setup cost.">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card.jpg">
+
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#0D2818">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/bet_waggle_logo_no_background.png">
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #0D2818;
+      --green:    #1B4332;
+      --green-mid:#2D6A4F;
+      --sage:     #52B788;
+      --ivory:    #F5F0E8;
+      --ivory-dk: #EDE8DF;
+      --gold:     #C9A84C;
+      --gold-dk:  #9A7A2E;
+      --text:     #1A1A1A;
+      --text-2:   #2D3748;
+      --muted:    #6B7280;
+      --rule:     #D4CFC7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 32px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo span {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+    .nav-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--forest);
+      background: var(--gold);
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-left: 4px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 12px 4px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .15s;
+    }
+    .nav-link:hover { color: var(--gold); }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--forest);
+      position: relative;
+      overflow: hidden;
+      padding: 120px 20px 80px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(82,183,136,.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(201,168,76,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero-kicker {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(30px, 6vw, 52px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,.3);
+    }
+    .hero-sub {
+      font-size: 17px;
+      font-weight: 400;
+      color: rgba(255,255,255,.7);
+      line-height: 1.75;
+      max-width: 520px;
+      margin: 0 auto 36px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--forest);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 18px 40px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background .15s, transform .15s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(201,168,76,.35);
+      min-height: 56px;
+    }
+    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
+    .btn-secondary {
+      display: inline-block;
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.8);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      padding: 14px 32px;
+      border-radius: 6px;
+      text-decoration: none;
+      border: 1.5px solid rgba(255,255,255,.3);
+      transition: all .15s;
+      min-height: 56px;
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,.6); color: #fff; }
+    .hero-fine {
+      font-size: 13px;
+      color: rgba(255,255,255,.45);
+      letter-spacing: .04em;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    /* ── PROOF STRIP ── */
+    .proof-strip {
+      background: var(--green);
+      border-top: 1px solid rgba(201,168,76,.3);
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-item {
+      padding: 24px 28px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,.1);
+      flex: 1;
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+    .proof-item:last-child { border-right: none; }
+    .proof-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      color: var(--gold);
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+      text-shadow: 0 0 20px rgba(201,168,76,.2), 0 2px 4px rgba(0,0,0,.15);
+    }
+    .proof-label {
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      font-weight: 500;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      padding: 72px 24px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold-dk);
+      margin-bottom: 18px;
+      display: block;
+    }
+    .section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1.15;
+      margin-bottom: 28px;
+    }
+    .section-rule {
+      width: 48px;
+      height: 3px;
+      background: var(--gold);
+      margin-bottom: 24px;
+    }
+    .section p {
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--text-2);
+      line-height: 1.8;
+      margin-bottom: 16px;
+      max-width: 560px;
+    }
+
+    /* ── FEATURE GRID ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      margin-top: 40px;
+    }
+    @media (min-width: 600px) {
+      .features-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .feature {
+      padding: 28px 0;
+      border-top: 1px solid var(--rule);
+      padding-right: 28px;
+    }
+    @media (min-width: 600px) {
+      .feature:nth-child(odd) { padding-right: 40px; border-right: 1px solid var(--rule); }
+      .feature:nth-child(even) { padding-left: 40px; padding-right: 0; }
+    }
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+    .feature p {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0;
+      max-width: none;
+    }
+
+    /* ── COURSE SEARCH ── */
+    .search-section {
+      background: var(--ivory-dk);
+      padding: 64px 20px;
+      border-top: 1px solid rgba(201,168,76,.3);
+    }
+    .search-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .search-inner .section-label { color: var(--gold-dk); }
+    .search-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(24px, 4vw, 34px);
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    .search-inner p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0 auto 28px;
+      max-width: 440px;
+    }
+    .search-box {
+      position: relative;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .search-input {
+      width: 100%;
+      padding: 18px 20px 18px 48px;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      border: 2px solid var(--rule);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      min-height: 56px;
+    }
+    .search-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,.15);
+    }
+    .search-input::placeholder { color: var(--muted); }
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 18px;
+    }
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 2px solid var(--gold);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      z-index: 10;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .search-results.active { display: block; }
+    .search-result-item {
+      padding: 14px 20px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      border-bottom: 1px solid var(--rule);
+      transition: background .1s;
+      text-align: left;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: rgba(201,168,76,.08); }
+    .search-result-item .course-city {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+    .search-status {
+      font-size: 13px;
+      color: var(--sage);
+      font-weight: 600;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+
+    /* ── HOW IT WORKS (for pros) ── */
+    .how-section {
+      background: var(--forest);
+      padding: 64px 20px;
+      border-top: 1px solid rgba(201,168,76,.3);
+    }
+    .how-inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .how-inner .section-label { color: var(--gold); }
+    .how-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 40px;
+    }
+    .how-steps {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      counter-reset: howstep;
+    }
+    @media (min-width: 600px) { .how-steps { grid-template-columns: 1fr 1fr 1fr; } }
+    .how-step {
+      counter-increment: howstep;
+    }
+    .how-step::before {
+      content: counter(howstep);
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 12px;
+      opacity: .6;
+    }
+    .how-step h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .how-step p {
+      font-size: 14px;
+      color: rgba(255,255,255,.55);
+      line-height: 1.7;
+    }
+
+    /* ── AFFILIATE / REVENUE ── */
+    .revenue-section {
+      background: var(--ivory);
+      padding: 64px 20px;
+      border-top: 1px solid rgba(201,168,76,.3);
+    }
+    .revenue-inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .revenue-inner .section-label { color: var(--gold-dk); }
+    .revenue-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .revenue-inner > p {
+      font-size: 17px;
+      color: var(--text-2);
+      line-height: 1.8;
+      max-width: 520px;
+      margin-bottom: 36px;
+    }
+    .revenue-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 600px) { .revenue-cards { grid-template-columns: 1fr 1fr 1fr; } }
+    .rev-card {
+      background: #fff;
+      border: 2px solid var(--rule);
+      border-radius: 8px;
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: transform .12s, box-shadow .2s;
+    }
+    .rev-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,.1); }
+    .rev-card-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--gold-dk);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .rev-card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+    .rev-card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── FINAL CTA ── */
+    .final-cta {
+      background: var(--forest);
+      padding: 64px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .final-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(82,183,136,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .final-cta-inner { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; }
+    .final-cta h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 38px);
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .final-cta p {
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(255,255,255,.5);
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+    .final-cta .btn-primary { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+    .final-links {
+      margin-top: 24px;
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+    }
+    .final-links a {
+      font-size: 13px;
+      color: rgba(255,255,255,.4);
+      text-decoration: none;
+      letter-spacing: .04em;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+      padding: 12px 4px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .12s;
+    }
+    .final-links a:hover { color: rgba(255,255,255,.7); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #070F09;
+      padding: 56px 24px 36px;
+      text-align: center;
+    }
+    footer p { font-size: 12px; color: rgba(255,255,255,.25); letter-spacing: .04em; }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+    footer a:hover { color: rgba(255,255,255,.6); }
+
+    /* ── COMMISSION CALCULATOR ── */
+    .calc-section {
+      background: var(--ivory-dk);
+      padding: 64px 20px;
+      border-top: 1px solid rgba(201,168,76,.3);
+    }
+    .calc-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .calc-inner .section-label { color: var(--gold-dk); }
+    .calc-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    .calc-inner > p {
+      font-size: 16px;
+      color: var(--text-2);
+      line-height: 1.8;
+      max-width: 520px;
+      margin-bottom: 32px;
+    }
+    .calc-widget {
+      background: #fff;
+      border: 2px solid var(--rule);
+      border-radius: 12px;
+      padding: 32px;
+    }
+    .calc-row { margin-bottom: 24px; }
+    .calc-row label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--forest);
+      margin-bottom: 10px;
+    }
+    .calc-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .calc-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: var(--rule);
+      border-radius: 3px;
+      outline: none;
+    }
+    .calc-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(201,168,76,.4);
+    }
+    .calc-slider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gold);
+      cursor: pointer;
+      border: none;
+    }
+    .calc-slider-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--forest);
+      min-width: 48px;
+      text-align: right;
+    }
+    .calc-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .calc-result-item { text-align: center; }
+    .calc-result-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--gold-dk);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .calc-result-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .calc-formula {
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+    }
+    .calc-formula strong { color: var(--forest); }
+    @media (max-width: 480px) {
+      .calc-results { grid-template-columns: 1fr; gap: 12px; }
+      .calc-result-num { font-size: 28px; }
+    }
+
+    /* ── TESTIMONIALS ── */
+    .testimonials-section {
+      background: var(--ivory);
+      padding: 64px 20px;
+      border-top: 1px solid var(--rule);
+    }
+    .testimonials-inner {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .testimonials-inner .section-label { color: var(--gold-dk); }
+    .testimonials-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1.15;
+      margin-bottom: 32px;
+    }
+    .testimonial-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .testimonial-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 28px 28px 24px;
+      position: relative;
+    }
+    .testimonial-card::before {
+      content: '\201C';
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      color: var(--gold);
+      opacity: .4;
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      line-height: 1;
+    }
+    .testimonial-quote {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.7;
+      font-style: italic;
+      margin-bottom: 16px;
+      padding-left: 8px;
+    }
+    .testimonial-author { padding-left: 8px; }
+    .testimonial-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--forest);
+    }
+    .testimonial-course {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── INLINE SIGNUP FORM ── */
+    .signup-section {
+      background: var(--forest);
+      padding: 64px 20px;
+      border-top: 1px solid rgba(201,168,76,.3);
+    }
+    .signup-inner {
+      max-width: 640px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .signup-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .signup-sub {
+      font-size: 15px;
+      color: rgba(255,255,255,.55);
+      margin-bottom: 36px;
+    }
+    .pro-form { text-align: left; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 540px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,.65);
+      margin-bottom: 6px;
+      letter-spacing: .02em;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 8px;
+      color: #fff;
+      outline: none;
+      transition: border-color .2s;
+      min-height: 48px;
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,.3); }
+    .form-group select option { background: var(--forest); color: #fff; }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--gold); }
+    .form-submit {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      color: var(--forest);
+      background: var(--gold);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: .02em;
+      transition: background .15s, transform .1s;
+      margin-top: 8px;
+      min-height: 56px;
+    }
+    .form-submit:hover { background: #d9b85c; }
+    .form-submit:active { transform: scale(.98); }
+    .form-submit:disabled { opacity: .6; cursor: not-allowed; }
+    .form-result {
+      margin-top: 20px;
+      padding: 20px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      text-align: left;
+    }
+    .form-result.success {
+      display: block;
+      background: rgba(82,183,136,.12);
+      color: var(--sage);
+      border: 1px solid rgba(82,183,136,.25);
+    }
+    .form-result.error {
+      display: block;
+      background: rgba(220,53,69,.12);
+      color: #e57373;
+      border: 1px solid rgba(220,53,69,.25);
+    }
+    .affiliate-link-box {
+      display: block;
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      color: var(--gold);
+      word-break: break-all;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .affiliate-link-box:hover { background: rgba(255,255,255,.1); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+    /* ── MOBILE ── */
+    @media (max-width: 600px) {
+      nav { padding: 16px 16px; }
+      .nav-links { gap: 10px; }
+      .nav-link { font-size: 11px; }
+      .hero { padding: 96px 16px 56px; }
+      .hero-sub { font-size: 15px; }
+      .btn-primary { display: block; text-align: center; width: 100%; padding: 16px 24px; }
+      .btn-secondary { display: block; text-align: center; width: 100%; }
+      .section { padding: 48px 16px; }
+      .section h2 { font-size: 26px; }
+      .section p { font-size: 15px; }
+    }
+    @media (max-width: 480px) {
+      .proof-strip {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+      }
+      .proof-item {
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+        padding: 18px 14px;
+      }
+      .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
+      .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
+      .proof-num { font-size: 28px; }
+      .proof-label { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">
+      <img src="/bet_waggle_logo_no_background.png" alt="Waggle" width="28" height="28" style="border-radius:4px">
+      <span>Waggle</span>
+      <span class="nav-badge">Pro</span>
+    </a>
+    <div class="nav-links">
+      <a href="#search" class="nav-link">Find Your Course</a>
+      <a href="#pro-signup" class="nav-link">Become an Affiliate</a>
+      <a href="/create/" class="nav-link">Set Up Demo</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="hero-kicker">For Golf Course Professionals</span>
+      <h1>Your members already bet on every round. <em>Give them a sportsbook.</em></h1>
+      <p class="hero-sub">Waggle turns your scrambles and member events into a live betting experience. Team scoring, skins overlay, CTP & long drive, automatic settlement &mdash; on every phone. No app to download.</p>
+      <div class="hero-actions">
+        <a href="#pro-signup" class="btn-primary">Get Your Affiliate Link</a>
+        <a href="/create/" class="btn-secondary">See a Scramble Demo</a>
+        <span class="hero-fine">Zero setup cost &middot; Your course is already loaded &middot; 25% commission</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF STRIP -->
+  <div class="proof-strip">
+    <div class="proof-item">
+      <div class="proof-num">30K+</div>
+      <div class="proof-label">Courses Loaded</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">$0</div>
+      <div class="proof-label">Setup Cost</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">5 min</div>
+      <div class="proof-label">Event Creation</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">Auto</div>
+      <div class="proof-label">Settlement</div>
+    </div>
+  </div>
+
+  <!-- SCRAMBLE FEATURES -->
+  <div class="section reveal">
+    <span class="section-label">Built for Scrambles</span>
+    <h2>Everything your tournament needs. Nothing your pro shop doesn't.</h2>
+    <div class="section-rule"></div>
+    <p>Waggle was built for the formats your members actually play. No bloated tournament software. No scorecards to collect. Just live scoring and automatic payouts.</p>
+
+    <div class="features-grid">
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#9971;</span>
+        <h3>Live Team Scoring</h3>
+        <p>Every team enters scores hole-by-hole on their own phone. Leaderboard updates in real time for the whole field.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#9733;</span>
+        <h3>Skins Overlay</h3>
+        <p>Layer skins on top of any scramble. Each hole is its own contest. Ties carry over automatically.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#127919;</span>
+        <h3>CTP & Long Drive</h3>
+        <p>Designate contest holes. Players claim in-app. Results auto-populate on the leaderboard.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#128176;</span>
+        <h3>Automatic Settlement</h3>
+        <p>When the last putt drops, every player sees exactly what they owe or are owed. No spreadsheets. No arguments.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#128241;</span>
+        <h3>No App Download</h3>
+        <p>Works in any mobile browser. Text a link, they tap and play. Zero friction for members who "don't do apps."</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">&#127942;</span>
+        <h3>12 Game Formats</h3>
+        <p>Nassau, skins, wolf, Vegas, banker, bloodsome, stableford, stroke play, and more. Run the games your members love.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSE SEARCH -->
+  <div class="search-section reveal" id="search">
+    <div class="search-inner">
+      <span class="section-label">30,000+ Courses Preloaded</span>
+      <h2>Your course is already in the system.</h2>
+      <p>Every rated course in the US is loaded with hole-by-hole yardage and par data. Search below to confirm yours.</p>
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">&#128269;</span>
+        <input type="text" class="search-input" id="course-search" placeholder="Search by course name or city..." autocomplete="off">
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="search-status" id="search-status"></div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section reveal">
+    <div class="how-inner">
+      <span class="section-label">For the Pro Shop</span>
+      <h2>Three steps to your first scramble.</h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <h3>Create the Event</h3>
+          <p>Pick your course, choose scramble + any overlays (skins, CTP, long drive), set the buy-in. Takes 5 minutes.</p>
+        </div>
+        <div class="how-step">
+          <h3>Share the Link</h3>
+          <p>Text or email the event link to your field. Players join on their phone &mdash; no app, no account required.</p>
+        </div>
+        <div class="how-step">
+          <h3>Watch It Run</h3>
+          <p>Live leaderboard on the clubhouse TV. Scores update hole-by-hole. Settlement is automatic when the round ends.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFFILIATE / REVENUE -->
+  <div class="revenue-section reveal" id="affiliate">
+    <div class="revenue-inner">
+      <span class="section-label">Affiliate Program</span>
+      <h2>Earn on every event your members play.</h2>
+      <p>Waggle charges $32 per event. As an affiliate partner, you earn a commission on every paid event booked through your course. No cost to you, ever.</p>
+      <div class="revenue-cards">
+        <div class="rev-card">
+          <div class="rev-card-num">$0</div>
+          <div class="rev-card-label">Cost to Your Course</div>
+          <div class="rev-card-desc">No licensing fees, no hardware, no contracts.</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-card-num">20%</div>
+          <div class="rev-card-label">Commission per Event</div>
+          <div class="rev-card-desc">$6.40 for every $32 event your members book.</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-card-num">&#8734;</div>
+          <div class="rev-card-label">Recurring Revenue</div>
+          <div class="rev-card-desc">Members who play weekly keep earning you commission.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMISSION CALCULATOR -->
+  <div class="calc-section reveal" id="calculator">
+    <div class="calc-inner">
+      <span class="section-label">Affiliate Calculator</span>
+      <h2>See what your course could earn.</h2>
+      <p>Waggle charges $149 per scramble event. As an affiliate, you earn 25% on every event booked through your link. Drag the slider to estimate your annual revenue.</p>
+      <div class="calc-widget">
+        <div class="calc-row">
+          <label for="scramble-slider">Scrambles per year</label>
+          <div class="calc-slider-wrap">
+            <input type="range" id="scramble-slider" min="1" max="100" value="20" class="calc-slider">
+            <span class="calc-slider-val" id="scramble-count">20</span>
+          </div>
+        </div>
+        <div class="calc-results">
+          <div class="calc-result-item">
+            <div class="calc-result-num" id="calc-revenue">$745</div>
+            <div class="calc-result-label">Your Annual Earnings</div>
+          </div>
+          <div class="calc-result-item">
+            <div class="calc-result-num" id="calc-per-event">$37.25</div>
+            <div class="calc-result-label">Per Event Commission</div>
+          </div>
+          <div class="calc-result-item">
+            <div class="calc-result-num" id="calc-member-value">$0</div>
+            <div class="calc-result-label">Cost to You</div>
+          </div>
+        </div>
+        <div class="calc-formula" id="calc-formula">20 scrambles/year x $149 x 25% = <strong>$745/year</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOCIAL PROOF / TESTIMONIALS -->
+  <div class="testimonials-section reveal">
+    <div class="testimonials-inner">
+      <span class="section-label">What Course Pros Are Saying</span>
+      <h2>Hear from courses already using Waggle.</h2>
+      <div class="testimonial-cards">
+        <div class="testimonial-card">
+          <div class="testimonial-quote">"We ran our charity scramble through Waggle last month. Live leaderboard on the TV, skins running automatically, settlement done before the awards dinner. Our members are asking when the next one is."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Head Professional</div>
+            <div class="testimonial-course">Private Club, Westchester County, NY</div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-quote">"I used to spend 2 hours after every event settling bets with a spreadsheet. Now it just happens. The affiliate commission is a bonus -- I would use Waggle even without it."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Tournament Director</div>
+            <div class="testimonial-course">Public Course, Palm Beach County, FL</div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-quote">"No app download was the key for us. Half our members are 60+. They just tap a link and they are in. The QR code on the first tee works perfectly."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Golf Director</div>
+            <div class="testimonial-course">Semi-Private Club, Scottsdale, AZ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLINE AFFILIATE SIGNUP FORM -->
+  <div class="signup-section" id="pro-signup">
+    <div class="signup-inner">
+      <span class="section-label" style="color:var(--gold)">Get Started</span>
+      <h2>Join the Waggle Affiliate Program</h2>
+      <p class="signup-sub">Free to join. Get your affiliate link in under a minute. Start earning on every event.</p>
+
+      <form id="proSignupForm" class="pro-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pro-name">Your Name</label>
+            <input type="text" id="pro-name" placeholder="John Smith" required>
+          </div>
+          <div class="form-group">
+            <label for="pro-email">Email</label>
+            <input type="email" id="pro-email" placeholder="john@golfclub.com" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pro-course">Course / Club Name</label>
+            <input type="text" id="pro-course" placeholder="Oakmont Country Club">
+          </div>
+          <div class="form-group">
+            <label for="pro-role">Your Role</label>
+            <select id="pro-role">
+              <option value="" disabled selected>Select role</option>
+              <option value="head_pro">Head Professional</option>
+              <option value="asst_pro">Assistant Professional</option>
+              <option value="tournament_dir">Tournament Director</option>
+              <option value="golf_dir">Director of Golf</option>
+              <option value="gm">General Manager</option>
+              <option value="events">Events Coordinator</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="form-submit" id="proSubmitBtn">Get My Affiliate Link</button>
+      </form>
+
+      <div class="form-result" id="proFormResult"></div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta">
+    <div class="final-cta-inner">
+      <h2>Ready to upgrade your scramble?</h2>
+      <p>Set up a free demo event for your next outing. See the live scoring, the skins overlay, the automatic settlement. Your members will never go back to paper.</p>
+      <a href="/create/" class="btn-primary">Set Up a Free Scramble Demo</a>
+      <div class="final-links">
+        <a href="/">Waggle Home</a>
+        <a href="/overview/">How It Works</a>
+        <a href="/courses/">Browse Courses</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div style="max-width:640px;margin:0 auto">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf course.</div>
+      <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+        <a href="/create/" style="color:rgba(255,255,255,.35);text-decoration:none;font-size:13px;font-weight:600">Set Up Event</a>
+        <a href="/courses/" style="color:rgba(255,255,255,.35);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
+        <a href="/" style="color:rgba(255,255,255,.35);text-decoration:none;font-size:13px;font-weight:600">Waggle Home</a>
+      </div>
+      <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
+      <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>
+    </div>
+  </footer>
+
+  <!-- COURSE SEARCH SCRIPT -->
+  <script>
+    (function() {
+      var input = document.getElementById('course-search');
+      var resultsEl = document.getElementById('search-results');
+      var statusEl = document.getElementById('search-status');
+      var debounceTimer;
+
+      input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        var q = input.value.trim();
+        if (q.length < 2) {
+          resultsEl.classList.remove('active');
+          resultsEl.innerHTML = '';
+          statusEl.textContent = '';
+          return;
+        }
+        debounceTimer = setTimeout(function() { searchCourses(q); }, 300);
+      });
+
+      function searchCourses(q) {
+        statusEl.textContent = 'Searching...';
+        fetch('/api/courses/search?q=' + encodeURIComponent(q) + '&limit=8')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var courses = data.courses || data.results || [];
+            if (!courses.length) {
+              resultsEl.classList.remove('active');
+              resultsEl.innerHTML = '';
+              statusEl.textContent = 'No courses found. Try a different search.';
+              return;
+            }
+            statusEl.textContent = '';
+            resultsEl.innerHTML = courses.map(function(c) {
+              var name = c.name || c.course_name || '';
+              var city = c.city || '';
+              var state = c.state || '';
+              var loc = [city, state].filter(Boolean).join(', ');
+              return '<div class="search-result-item" data-name="' + name.replace(/"/g, '&quot;') + '">'
+                + '<span>' + name + '</span>'
+                + (loc ? '<span class="course-city">' + loc + '</span>' : '')
+                + '</div>';
+            }).join('');
+            resultsEl.classList.add('active');
+          })
+          .catch(function() {
+            statusEl.textContent = 'Search unavailable. Your course is likely already loaded.';
+            resultsEl.classList.remove('active');
+          });
+      }
+
+      resultsEl.addEventListener('click', function(e) {
+        var item = e.target.closest('.search-result-item');
+        if (!item) return;
+        var name = item.getAttribute('data-name');
+        input.value = name;
+        resultsEl.classList.remove('active');
+        statusEl.innerHTML = '<strong>' + name + '</strong> is ready to go! <a href="/create/" style="color:var(--gold-dk);text-decoration:underline;font-weight:700">Set up your first event &rarr;</a>';
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-box')) {
+          resultsEl.classList.remove('active');
+        }
+      });
+    })();
+  </script>
+
+  <!-- UTM CAPTURE -->
+  <script>
+    (function() {
+      var p = new URLSearchParams(window.location.search);
+      var src = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(function(k) {
+        if (p.get(k)) src[k] = p.get(k);
+      });
+      if (Object.keys(src).length) {
+        try { sessionStorage.setItem('waggle_source', JSON.stringify(src)); } catch(e) {}
+      }
+    })();
+  </script>
+
+  <!-- COMMISSION CALCULATOR -->
+  <script>
+    (function() {
+      var slider = document.getElementById('scramble-slider');
+      var countEl = document.getElementById('scramble-count');
+      var revenueEl = document.getElementById('calc-revenue');
+      var perEventEl = document.getElementById('calc-per-event');
+      var formulaEl = document.getElementById('calc-formula');
+
+      function update() {
+        var n = parseInt(slider.value);
+        var perEvent = 149 * 0.25;
+        var annual = n * perEvent;
+        countEl.textContent = n;
+        revenueEl.textContent = '$' + annual.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        perEventEl.textContent = '$' + perEvent.toFixed(2);
+        formulaEl.innerHTML = n + ' scrambles/year &times; $149 &times; 25% = <strong>$' + annual.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '/year</strong>';
+      }
+
+      slider.addEventListener('input', update);
+      update();
+    })();
+  </script>
+
+  <!-- PRO SIGNUP FORM -->
+  <script>
+    (function() {
+      var form = document.getElementById('proSignupForm');
+      var btn = document.getElementById('proSubmitBtn');
+      var result = document.getElementById('proFormResult');
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Creating your link...';
+        result.className = 'form-result';
+        result.style.display = 'none';
+
+        var body = {
+          name: document.getElementById('pro-name').value.trim(),
+          email: document.getElementById('pro-email').value.trim(),
+          course_name: document.getElementById('pro-course').value.trim() || '',
+          role: document.getElementById('pro-role').value || '',
+          promotion_method: 'course_pro'
+        };
+
+        fetch('/api/affiliate-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            result.className = 'form-result success';
+            result.innerHTML = '<strong>You are in.</strong> Your affiliate link is ready. Share it with your members or use it when creating events.'
+              + '<span class="affiliate-link-box" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent);this.style.borderColor=\'var(--sage)\';var el=this;setTimeout(function(){el.style.borderColor=\'\'},1500)" title="Click to copy">' + data.link + '</span>'
+              + '<span style="font-size:12px;color:rgba(255,255,255,.35);display:block;margin-top:8px">Click the link to copy. <a href="' + (data.dashboard || '/affiliate/?code=' + data.affiliate_id) + '" style="color:var(--gold);text-decoration:underline">View your dashboard &rarr;</a></span>';
+            form.style.display = 'none';
+          } else {
+            result.className = 'form-result error';
+            result.textContent = data.error || 'Something went wrong. Please try again.';
+          }
+          btn.disabled = false;
+          btn.textContent = 'Get My Affiliate Link';
+        })
+        .catch(function() {
+          result.className = 'form-result error';
+          result.textContent = 'Network error. Please try again.';
+          btn.disabled = false;
+          btn.textContent = 'Get My Affiliate Link';
+        });
+      });
+    })();
+  </script>
+
+  <!-- SCROLL ANIMATIONS -->
+  <script>
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+    } else {
+      document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+    }
+  </script>
+
+</body>
+</html>

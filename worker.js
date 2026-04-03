@@ -344,7 +344,7 @@ export default {
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner', 'share', 'inventory'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'my-events', 'register', 'partner', 'share', 'inventory', 'admin', 'pro'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -366,7 +366,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -704,17 +704,53 @@ export default {
     if (url.pathname === '/api/outreach/send' && request.method === 'POST') {
       return handleOutreachSend(request, env);
     }
+    if (url.pathname === '/api/outreach/bulk-send' && request.method === 'POST') {
+      return handleOutreachBulkSend(request, env);
+    }
+    if (url.pathname === '/api/outreach/history' && request.method === 'GET') {
+      return handleOutreachHistory(url, env);
+    }
     if (url.pathname === '/api/outreach/dashboard' && request.method === 'GET') {
-      return handleOutreachDashboard(env);
+      return handleOutreachDashboard(url, env);
     }
     if (url.pathname.startsWith('/api/outreach/') && request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
+    // /api/admin/course-leads — KV-based course lead database
+    if (url.pathname === '/api/admin/course-leads/import' && request.method === 'POST') {
+      return handleCourseLeadsImport(request, env);
+    }
+    if (url.pathname === '/api/admin/course-leads' && request.method === 'GET') {
+      return handleCourseLeadsQuery(url, env);
+    }
+    if (url.pathname === '/api/admin/course-leads/stats' && request.method === 'GET') {
+      return handleCourseLeadsStats(url, env);
+    }
+    if (url.pathname.startsWith('/api/admin/course-leads') && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
+    // /api/affiliates/leaderboard — top affiliates by referrals
+    if (url.pathname === '/api/affiliates/leaderboard' && request.method === 'GET') {
+      return handleAffiliateLeaderboard(url, env);
+    }
+
+    // /api/affiliates/lookup-ref — look up affiliate by ref code
+    if (url.pathname === '/api/affiliates/lookup-ref' && request.method === 'GET') {
+      return handleAffiliateLookupRef(url, env);
     }
 
     // /go/ — PPC landing page (redirects to main page, preserves UTM params)
     if (url.pathname === '/go' || url.pathname === '/go/') {
       const dest = '/' + (url.search || '');
       return Response.redirect('https://betwaggle.com' + dest, 302);
+    }
+
+    // /admin/outreach — outreach campaign admin dashboard
+    if (url.pathname === '/admin/outreach' || url.pathname === '/admin/outreach/') {
+      const req = new Request(new URL('/admin/outreach/index.html', request.url), request);
+      return env.ASSETS.fetch(req);
     }
 
     // /affiliate/dashboard — affiliate dashboard page (static)
@@ -3559,7 +3595,8 @@ async function handleOutreachSend(request, env) {
   }
 }
 
-async function handleOutreachDashboard(env) {
+async function handleOutreachDashboard(url, env) {
+  if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
   if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: ADS_JSON });
 
   try {
@@ -3618,6 +3655,292 @@ async function handleOutreachDashboard(env) {
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: ADS_JSON });
   }
+}
+
+// ─── Course Lead Database (KV-based) ────────────────────────────────────
+
+function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+async function handleCourseLeadsImport(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: ADS_JSON }); }
+  if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'KV not configured' }), { status: 500, headers: ADS_JSON });
+
+  const leads = Array.isArray(body.leads) ? body.leads : [body];
+  const results = [];
+  const stateIndexUpdates = {};
+
+  for (const lead of leads) {
+    const state = (lead.state || 'XX').toUpperCase().trim();
+    const nameSlug = slugify(lead.name || lead.club || 'unknown');
+    const citySlug = slugify(lead.city || '');
+    const slug = `${citySlug}-${nameSlug}`.replace(/^-/, '');
+    const key = `course-leads:${state}:${slug}`;
+    const record = {
+      slug,
+      name: lead.name || '',
+      club: lead.club || '',
+      city: lead.city || '',
+      state,
+      email: lead.email || '',
+      website: lead.website || '',
+      segment: lead.segment || 'public',
+      importedAt: new Date().toISOString()
+    };
+
+    try {
+      await env.MG_BOOK.put(key, JSON.stringify(record));
+      if (!stateIndexUpdates[state]) stateIndexUpdates[state] = [];
+      stateIndexUpdates[state].push(slug);
+      results.push({ slug, state, success: true });
+    } catch (e) {
+      results.push({ slug, state, success: false, error: e.message });
+    }
+  }
+
+  // Update state indexes
+  for (const [state, newSlugs] of Object.entries(stateIndexUpdates)) {
+    const indexKey = `course-leads-index:${state}`;
+    const existing = (await env.MG_BOOK.get(indexKey, 'json')) || [];
+    const merged = [...new Set([...existing, ...newSlugs])];
+    await env.MG_BOOK.put(indexKey, JSON.stringify(merged));
+  }
+
+  return new Response(JSON.stringify({ ok: true, imported: results.length, results }), { headers: ADS_JSON });
+}
+
+async function handleCourseLeadsQuery(url, env) {
+  if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'KV not configured' }), { status: 500, headers: ADS_JSON });
+
+  const state = (url.searchParams.get('state') || '').toUpperCase();
+  const segment = url.searchParams.get('segment') || '';
+  const limit = parseInt(url.searchParams.get('limit')) || 100;
+
+  if (!state) {
+    return new Response(JSON.stringify({ error: 'state parameter required' }), { status: 400, headers: ADS_JSON });
+  }
+
+  const indexKey = `course-leads-index:${state}`;
+  const slugs = (await env.MG_BOOK.get(indexKey, 'json')) || [];
+  const leads = [];
+
+  for (const slug of slugs.slice(0, limit)) {
+    const lead = await env.MG_BOOK.get(`course-leads:${state}:${slug}`, 'json');
+    if (lead) {
+      if (segment && lead.segment !== segment) continue;
+      leads.push(lead);
+    }
+  }
+
+  return new Response(JSON.stringify({ state, count: leads.length, leads }), { headers: ADS_JSON });
+}
+
+async function handleCourseLeadsStats(url, env) {
+  if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'KV not configured' }), { status: 500, headers: ADS_JSON });
+
+  // List all state indexes via KV list prefix
+  const stateList = await env.MG_BOOK.list({ prefix: 'course-leads-index:' });
+  const byState = {};
+  const bySegment = {};
+  let total = 0;
+
+  for (const key of stateList.keys) {
+    const state = key.name.replace('course-leads-index:', '');
+    const slugs = (await env.MG_BOOK.get(key.name, 'json')) || [];
+    byState[state] = slugs.length;
+    total += slugs.length;
+
+    // Sample first 50 to get segment breakdown
+    for (const slug of slugs.slice(0, 50)) {
+      const lead = await env.MG_BOOK.get(`course-leads:${state}:${slug}`, 'json');
+      if (lead) {
+        const seg = lead.segment || 'unknown';
+        bySegment[seg] = (bySegment[seg] || 0) + 1;
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ total, by_state: byState, by_segment: bySegment }), { headers: ADS_JSON });
+}
+
+// ─── Outreach Campaign — Bulk Send + History ────────────────────────────
+
+async function handleOutreachBulkSend(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: ADS_JSON }); }
+  if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.WAGGLE_DB || !env.RESEND_API_KEY) return new Response(JSON.stringify({ error: 'missing config' }), { status: 500, headers: ADS_JSON });
+
+  const { template, state, segment, fromName, subject: customSubject } = body;
+  if (!template) return new Response(JSON.stringify({ error: 'template required' }), { status: 400, headers: ADS_JSON });
+
+  // Default subjects by template
+  const defaultSubjects = {
+    'scramble-pitch.html': 'Your next scramble — live leaderboard, betting, and settlement in one link',
+    'affiliate-invite.html': 'Earn $8-$12 every time a group at your course bets on golf',
+    'follow-up.html': 'Following up — Waggle for your next outing',
+    'scramble-season-newsletter.html': 'Scramble season is here — are you ready?'
+  };
+  const emailSubject = customSubject || defaultSubjects[template] || 'Waggle for your course';
+  const senderName = fromName || 'Evan at Waggle';
+
+  // Build query for leads
+  let query = 'SELECT * FROM courses_leads WHERE pro_email IS NOT NULL AND pro_email != ""';
+  const bindings = [];
+  if (state) { query += ' AND state = ?'; bindings.push(state.toUpperCase()); }
+  if (segment) { query += ' AND segment = ?'; bindings.push(segment); }
+  query += ' AND (status = "new" OR status IS NULL) LIMIT 50';
+
+  const leadsResult = await env.WAGGLE_DB.prepare(query).bind(...bindings).all();
+  const leads = leadsResult.results || [];
+
+  if (!leads.length) {
+    return new Response(JSON.stringify({ ok: true, sent: 0, message: 'No eligible leads found' }), { headers: ADS_JSON });
+  }
+
+  // Load template
+  const templateUrl = new URL(`/emails/outreach/${template}`, 'https://betwaggle.com');
+  const templateResponse = await env.ASSETS.fetch(templateUrl);
+  if (!templateResponse.ok) return new Response(JSON.stringify({ error: 'template not found' }), { status: 404, headers: ADS_JSON });
+  const templateHtml = await templateResponse.text();
+
+  const sent = [];
+  const failed = [];
+
+  for (const lead of leads) {
+    // Skip if already sent this template
+    const sentKey = `outreach:sent:${lead.id}:${template}`;
+    const alreadySent = await env.MG_BOOK.get(sentKey);
+    if (alreadySent) { continue; }
+
+    // Personalize template
+    const firstName = (lead.pro_name || '').split(' ')[0] || 'there';
+    let html = templateHtml
+      .replace(/\{\{recipient_name\}\}/g, lead.pro_name || 'there')
+      .replace(/\{\{first_name\}\}/g, firstName)
+      .replace(/\{\{course_name\}\}/g, lead.course_name || 'your course')
+      .replace(/\{\{club_name\}\}/g, lead.club_name || 'your club')
+      .replace(/\{\{email\}\}/g, lead.pro_email)
+      .replace(/\{\{city\}\}/g, lead.city || '')
+      .replace(/\{\{state\}\}/g, lead.state || '');
+
+    try {
+      const emailResp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: `${senderName} <evan@betwaggle.com>`,
+          to: [lead.pro_email],
+          subject: emailSubject.replace(/\{\{course_name\}\}/g, lead.course_name || 'your course'),
+          html
+        })
+      });
+      const emailResult = await emailResp.json();
+
+      if (emailResp.ok) {
+        // Track send in KV
+        await env.MG_BOOK.put(sentKey, JSON.stringify({ ts: Date.now(), emailId: emailResult.id }));
+        // Log outreach event in D1
+        const eventId = crypto.randomUUID().slice(0, 8);
+        await env.WAGGLE_DB.prepare(`
+          INSERT INTO outreach_events (id, course_lead_id, type, template_used, notes)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(eventId, lead.id, 'email_sent', template, `Bulk: ${emailSubject}`).run();
+        // Update lead status
+        await env.WAGGLE_DB.prepare(`
+          UPDATE courses_leads SET status = 'contacted', last_contacted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?
+        `).bind(lead.id).run();
+        sent.push({ id: lead.id, email: lead.pro_email, course: lead.course_name });
+      } else {
+        failed.push({ id: lead.id, email: lead.pro_email, error: emailResult.message || 'send failed' });
+      }
+    } catch (e) {
+      failed.push({ id: lead.id, email: lead.pro_email, error: e.message });
+    }
+  }
+
+  return new Response(JSON.stringify({ ok: true, sent: sent.length, failed: failed.length, details: { sent, failed } }), { headers: ADS_JSON });
+}
+
+async function handleOutreachHistory(url, env) {
+  if (!mktgAuth(url.searchParams.get('pin'), env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: ADS_JSON });
+
+  const leadId = url.searchParams.get('lead');
+  if (!leadId) return new Response(JSON.stringify({ error: 'lead parameter required' }), { status: 400, headers: ADS_JSON });
+
+  const lead = await env.WAGGLE_DB.prepare('SELECT * FROM courses_leads WHERE id = ?').bind(leadId).first();
+  if (!lead) return new Response(JSON.stringify({ error: 'lead not found' }), { status: 404, headers: ADS_JSON });
+
+  const events = await env.WAGGLE_DB.prepare(
+    'SELECT * FROM outreach_events WHERE course_lead_id = ? ORDER BY sent_at DESC'
+  ).bind(leadId).all();
+
+  // Also check KV for send tracking
+  const templates = ['scramble-pitch.html', 'affiliate-invite.html', 'follow-up.html', 'scramble-season-newsletter.html'];
+  const kvSends = {};
+  for (const t of templates) {
+    const sentData = await env.MG_BOOK.get(`outreach:sent:${leadId}:${t}`, 'json');
+    if (sentData) kvSends[t] = sentData;
+  }
+
+  return new Response(JSON.stringify({ lead, events: events.results || [], kv_sends: kvSends }), { headers: ADS_JSON });
+}
+
+// ─── Affiliate Tracking Enhancement ─────────────────────────────────────
+
+async function handleAffiliateLeaderboard(url, env) {
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: ADS_JSON });
+
+  const limit = parseInt(url.searchParams.get('limit')) || 20;
+
+  const affiliates = await env.WAGGLE_DB.prepare(`
+    SELECT code, name, email, total_referrals, total_payout_cents, paid_out_cents, created_at
+    FROM affiliates
+    ORDER BY total_referrals DESC, total_payout_cents DESC
+    LIMIT ?
+  `).bind(limit).all();
+
+  const leaderboard = (affiliates.results || []).map((a, i) => ({
+    rank: i + 1,
+    code: a.code,
+    name: a.name,
+    referrals: a.total_referrals || 0,
+    earned_cents: a.total_payout_cents || 0,
+    earned_display: '$' + ((a.total_payout_cents || 0) / 100).toFixed(2)
+  }));
+
+  return new Response(JSON.stringify({ ok: true, leaderboard }), { headers: ADS_JSON });
+}
+
+async function handleAffiliateLookupRef(url, env) {
+  const code = url.searchParams.get('ref') || url.searchParams.get('code') || '';
+  if (!code) return new Response(JSON.stringify({ error: 'ref parameter required' }), { status: 400, headers: ADS_JSON });
+
+  // Check KV first (from /api/affiliate-signup registrations)
+  const kvData = await env.MG_BOOK.get(`affiliate:${code}`, 'json');
+  if (kvData) {
+    return new Response(JSON.stringify({ ok: true, source: 'kv', affiliate: kvData }), { headers: ADS_JSON });
+  }
+
+  // Check D1
+  if (env.WAGGLE_DB) {
+    const dbAffiliate = await env.WAGGLE_DB.prepare('SELECT * FROM affiliates WHERE code = ?').bind(code).first();
+    if (dbAffiliate) {
+      return new Response(JSON.stringify({ ok: true, source: 'd1', affiliate: { code: dbAffiliate.code, name: dbAffiliate.name, email: dbAffiliate.email } }), { headers: ADS_JSON });
+    }
+  }
+
+  // Check KV ref tracking
+  const refData = await env.MG_BOOK.get(`affiliate-ref:${code}`, 'json');
+  if (refData) {
+    return new Response(JSON.stringify({ ok: true, source: 'ref', affiliate: refData }), { headers: ADS_JSON });
+  }
+
+  return new Response(JSON.stringify({ error: 'affiliate not found' }), { status: 404, headers: ADS_JSON });
 }
 
 // ─── Affiliate link generator ──────────────────────────────────────────
@@ -3842,28 +4165,48 @@ async function handleAffiliateSignup(request, env) {
   const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: h }); }
-  const { name, email, promotion_method, website_url } = body || {};
+  const { name, email, promotion_method, website_url, course_name, role } = body || {};
   if (!name || !name.trim()) return new Response(JSON.stringify({ error: 'Name is required' }), { status: 400, headers: h });
   if (!email || !email.trim()) return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: h });
 
-  // Generate 8-char alphanumeric affiliate_id
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  // Generate 6-char uppercase alphanumeric ref code (e.g., ABC123)
+  const uc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let affiliate_id = '';
-  for (let i = 0; i < 8; i++) affiliate_id += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 6; i++) affiliate_id += uc[Math.floor(Math.random() * uc.length)];
 
+  const now = new Date().toISOString();
   const record = {
     affiliate_id,
     name: name.trim(),
-    email: email.trim(),
+    email: email.trim().toLowerCase(),
     promotion_method: promotion_method || '',
     website_url: website_url || '',
-    created_at: new Date().toISOString(),
-    status: 'pending',
+    course_name: course_name || '',
+    role: role || '',
+    created_at: now,
+    status: 'active',
     referrals: 0
   };
 
   try {
+    // Store in KV under both keys for flexible lookup
     await env.MG_BOOK.put(`affiliate:${affiliate_id}`, JSON.stringify(record));
+    await env.MG_BOOK.put(`affiliate-ref:${affiliate_id}`, JSON.stringify({
+      email: record.email,
+      name: record.name,
+      course: course_name || '',
+      registeredAt: now
+    }));
+
+    // Also register in D1 affiliates table if available
+    if (env.WAGGLE_DB) {
+      try {
+        await env.WAGGLE_DB.prepare(
+          `INSERT OR IGNORE INTO affiliates (code, name, email, paypal_email, total_referrals, total_payout_cents, paid_out_cents, created_at)
+           VALUES (?, ?, ?, '', 0, 0, 0, ?)`
+        ).bind(affiliate_id, record.name, record.email, now).run();
+      } catch (dbErr) { console.error('AFFILIATE_D1_INSERT', dbErr.message); }
+    }
   } catch (e) {
     return new Response(JSON.stringify({ error: 'Failed to save. Please try again.' }), { status: 500, headers: h });
   }
@@ -3871,7 +4214,9 @@ async function handleAffiliateSignup(request, env) {
   return new Response(JSON.stringify({
     ok: true,
     affiliate_id,
-    link: `https://betwaggle.com/create/?ref=${affiliate_id}`
+    ref_code: affiliate_id,
+    link: `https://betwaggle.com/create/?ref=${affiliate_id}`,
+    dashboard: `https://betwaggle.com/affiliate/?code=${affiliate_id}`
   }), { headers: h });
 }
 

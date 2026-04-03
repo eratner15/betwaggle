@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Outreach Campaign Admin | Waggle</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/png" href="/bet_waggle_logo_no_background.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0D2818;
+      --bg-light: #133521;
+      --surface: #1A472A;
+      --surface-light: #245835;
+      --gold: #C9A84C;
+      --gold-dim: #A68B3A;
+      --cream: #F5F0E8;
+      --text: #F5F0E8;
+      --text-dim: #A8B5A0;
+      --border: rgba(201,168,76,0.2);
+      --success: #52B788;
+      --danger: #E57373;
+      --radius: 10px;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* AUTH GATE */
+    #auth-gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+    }
+    .auth-box h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .auth-box p { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; }
+    .auth-input {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      outline: none;
+      text-align: center;
+      letter-spacing: .15em;
+      margin-bottom: 16px;
+    }
+    .auth-input:focus { border-color: var(--gold); }
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .auth-btn:hover { background: #d9b85c; }
+    .auth-error { color: var(--danger); font-size: 13px; margin-top: 12px; display: none; }
+
+    /* MAIN DASHBOARD */
+    #dashboard { display: none; }
+    .dash-header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dash-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--gold);
+    }
+    .dash-header .logout {
+      font-size: 13px;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .dash-body { padding: 24px; max-width: 1000px; margin: 0 auto; }
+
+    /* STAT CARDS */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* TABLES */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .data-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* BADGES */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge-new { background: rgba(82,183,136,.15); color: var(--success); }
+    .badge-contacted { background: rgba(201,168,76,.15); color: var(--gold); }
+    .badge-converted { background: rgba(82,183,136,.3); color: #fff; }
+    .badge-affiliate { background: rgba(201,168,76,.3); color: #fff; }
+
+    /* FORMS */
+    .panel-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .panel-section h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      outline: none;
+    }
+    .field textarea { min-height: 200px; resize: vertical; font-family: monospace; font-size: 12px; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+    .field select option { background: var(--surface); }
+    .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-gold { background: var(--gold); color: var(--bg); }
+    .btn-gold:hover { background: #d9b85c; }
+    .btn-gold:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .msg {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+    .msg.success { display: block; background: rgba(82,183,136,.12); color: var(--success); }
+    .msg.error { display: block; background: rgba(220,53,69,.12); color: var(--danger); }
+
+    /* STATE LIST */
+    .state-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .state-chip {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.06);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .state-chip:hover { background: rgba(201,168,76,.15); color: var(--gold); }
+    .state-chip .chip-count {
+      font-size: 10px;
+      color: var(--gold);
+      margin-left: 4px;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH GATE -->
+  <div id="auth-gate">
+    <div class="auth-box">
+      <h1>Waggle Outreach</h1>
+      <p>Enter admin PIN to access the outreach dashboard.</p>
+      <input type="password" class="auth-input" id="pin-input" placeholder="PIN" autofocus>
+      <button class="auth-btn" onclick="authenticate()">Enter</button>
+      <div class="auth-error" id="auth-error">Invalid PIN. Try again.</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <h1>Outreach Campaign Admin</h1>
+      <span class="logout" onclick="logout()">Logout</span>
+    </div>
+
+    <div class="dash-body">
+      <!-- STATS -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-num" id="stat-total">--</div><div class="stat-label">Total Leads</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-new">--</div><div class="stat-label">New</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-contacted">--</div><div class="stat-label">Contacted</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-converted">--</div><div class="stat-label">Converted</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-affiliate">--</div><div class="stat-label">Affiliates</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-emails">--</div><div class="stat-label">Emails Sent</div></div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <div class="tab active" data-tab="leads">Leads by State</div>
+        <div class="tab" data-tab="import">Import Leads</div>
+        <div class="tab" data-tab="campaign">Send Campaign</div>
+        <div class="tab" data-tab="history">Outreach History</div>
+        <div class="tab" data-tab="affiliates">Affiliate Funnel</div>
+      </div>
+
+      <!-- TAB: LEADS BY STATE -->
+      <div class="tab-panel active" id="panel-leads">
+        <div class="panel-section">
+          <h3>Course Leads by State</h3>
+          <div class="state-list" id="state-list">Loading...</div>
+        </div>
+        <div id="leads-table-wrap" style="display:none">
+          <h3 style="font-size:15px;color:var(--gold);margin-bottom:12px" id="leads-table-title">Leads</h3>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="leads-table">
+              <thead>
+                <tr>
+                  <th>Course</th>
+                  <th>Pro</th>
+                  <th>Email</th>
+                  <th>City</th>
+                  <th>Segment</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="leads-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: IMPORT -->
+      <div class="tab-panel" id="panel-import">
+        <div class="panel-section">
+          <h3>Import Course Leads</h3>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Paste a JSON array of leads. Each lead should have: course_name, club_name, city, state, pro_name, pro_email, website, segment (public/private/resort/semi-private).</p>
+          <div class="field">
+            <label>JSON Data</label>
+            <textarea id="import-json" placeholder='[{"course_name":"Pine Valley","club_name":"Pine Valley GC","city":"Clementon","state":"NJ","pro_name":"John Smith","pro_email":"john@pinevalley.com","segment":"private"}]'></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-gold" onclick="importLeads()">Import Leads</button>
+            <button class="btn btn-outline" onclick="importToKV()">Import to KV (Lightweight)</button>
+          </div>
+          <div class="msg" id="import-msg"></div>
+        </div>
+      </div>
+
+      <!-- TAB: SEND CAMPAIGN -->
+      <div class="tab-panel" id="panel-campaign">
+        <div class="panel-section">
+          <h3>Send Outreach Campaign</h3>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Send a templated email to leads by state and segment. Max 50 emails per batch. Only sends to leads with status "new" that have not already received this template.</p>
+          <div class="field">
+            <label>Email Template</label>
+            <select id="campaign-template">
+              <option value="scramble-pitch.html">Scramble Pitch (cold outreach)</option>
+              <option value="affiliate-invite.html">Affiliate Invite</option>
+              <option value="follow-up.html">Follow Up</option>
+              <option value="scramble-season-newsletter.html">Scramble Season Newsletter</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="field">
+              <label>State (optional)</label>
+              <input type="text" id="campaign-state" placeholder="FL, NY, CA..." maxlength="2">
+            </div>
+            <div class="field">
+              <label>Segment (optional)</label>
+              <select id="campaign-segment">
+                <option value="">All segments</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+                <option value="resort">Resort</option>
+                <option value="semi-private">Semi-Private</option>
+                <option value="municipal">Municipal</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Subject (optional override)</label>
+            <input type="text" id="campaign-subject" placeholder="Leave blank for template default">
+          </div>
+          <div class="field">
+            <label>From Name</label>
+            <input type="text" id="campaign-from" value="Evan at Waggle">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-gold" id="send-campaign-btn" onclick="sendCampaign()">Send Campaign (Max 50)</button>
+          </div>
+          <div class="msg" id="campaign-msg"></div>
+        </div>
+      </div>
+
+      <!-- TAB: HISTORY -->
+      <div class="tab-panel" id="panel-history">
+        <div class="panel-section">
+          <h3>Recent Outreach Activity</h3>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="history-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Course</th>
+                  <th>Type</th>
+                  <th>Template</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: AFFILIATES -->
+      <div class="tab-panel" id="panel-affiliates">
+        <div class="panel-section">
+          <h3>Affiliate Signup Funnel</h3>
+          <div class="stats-row" id="funnel-stats" style="margin-bottom:0">
+            <div class="stat-card"><div class="stat-num" id="funnel-leads">--</div><div class="stat-label">Total Leads</div></div>
+            <div class="stat-card"><div class="stat-num" id="funnel-emailed">--</div><div class="stat-label">Emails Sent</div></div>
+            <div class="stat-card"><div class="stat-num" id="funnel-registered">--</div><div class="stat-label">Registered</div></div>
+            <div class="stat-card"><div class="stat-num" id="funnel-rate">--</div><div class="stat-label">Conversion %</div></div>
+          </div>
+        </div>
+        <div class="panel-section">
+          <h3>Affiliate Leaderboard</h3>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Code</th>
+                  <th>Referrals</th>
+                  <th>Earned</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var PIN = '';
+
+    // Auth
+    document.getElementById('pin-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') authenticate();
+    });
+
+    function authenticate() {
+      PIN = document.getElementById('pin-input').value.trim();
+      if (!PIN) return;
+      // Verify by hitting the dashboard endpoint
+      fetch('/api/outreach/dashboard?pin=' + encodeURIComponent(PIN))
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+          if (res.ok && !res.data.error) {
+            document.getElementById('auth-gate').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            sessionStorage.setItem('outreach_pin', PIN);
+            loadDashboard(res.data);
+          } else {
+            document.getElementById('auth-error').style.display = 'block';
+          }
+        })
+        .catch(function() { document.getElementById('auth-error').style.display = 'block'; });
+    }
+
+    function logout() {
+      sessionStorage.removeItem('outreach_pin');
+      location.reload();
+    }
+
+    // Auto-login from session
+    (function() {
+      var saved = sessionStorage.getItem('outreach_pin');
+      if (saved) {
+        document.getElementById('pin-input').value = saved;
+        authenticate();
+      }
+    })();
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    function api(path, opts) {
+      var sep = path.includes('?') ? '&' : '?';
+      var url = path + sep + 'pin=' + encodeURIComponent(PIN);
+      return fetch(url, opts).then(function(r) { return r.json(); });
+    }
+
+    function apiPost(path, body) {
+      body.pin = PIN;
+      return fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function(r) { return r.json(); });
+    }
+
+    function loadDashboard(data) {
+      // Stats
+      if (data.summary) {
+        document.getElementById('stat-total').textContent = data.summary.total_leads || 0;
+        document.getElementById('stat-new').textContent = data.summary.new_leads || 0;
+        document.getElementById('stat-contacted').textContent = data.summary.contacted_leads || 0;
+        document.getElementById('stat-converted').textContent = data.summary.converted_leads || 0;
+        document.getElementById('stat-affiliate').textContent = data.summary.affiliate_leads || 0;
+        document.getElementById('stat-emails').textContent = data.monthly_stats?.emails_sent || 0;
+      }
+
+      // State chips
+      var stateListEl = document.getElementById('state-list');
+      if (data.leads_by_state && data.leads_by_state.length) {
+        stateListEl.innerHTML = data.leads_by_state.map(function(s) {
+          return '<span class="state-chip" onclick="loadStateLeads(\'' + s.state + '\')">' + s.state + '<span class="chip-count">' + s.count + '</span></span>';
+        }).join('');
+      } else {
+        stateListEl.innerHTML = '<span style="color:var(--text-dim);font-size:13px">No leads imported yet. Use the Import tab to add course leads.</span>';
+      }
+
+      // History
+      if (data.recent_events && data.recent_events.length) {
+        var html = data.recent_events.map(function(e) {
+          return '<tr><td>' + (e.sent_at || '').slice(0, 10) + '</td><td>' + (e.course_name || e.club_name || '--') + '</td><td>' + (e.type || '--') + '</td><td>' + (e.template_used || '--') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.notes || '') + '</td></tr>';
+        }).join('');
+        document.getElementById('history-tbody').innerHTML = html;
+      }
+
+      // Funnel
+      document.getElementById('funnel-leads').textContent = data.summary?.total_leads || 0;
+      document.getElementById('funnel-emailed').textContent = data.summary?.contacted_leads || 0;
+      document.getElementById('funnel-registered').textContent = data.summary?.affiliate_leads || 0;
+      var total = data.summary?.total_leads || 0;
+      var affiliates = data.summary?.affiliate_leads || 0;
+      document.getElementById('funnel-rate').textContent = total > 0 ? (affiliates / total * 100).toFixed(1) + '%' : '0%';
+
+      // Leaderboard
+      loadLeaderboard();
+    }
+
+    function loadStateLeads(state) {
+      document.getElementById('leads-table-wrap').style.display = 'block';
+      document.getElementById('leads-table-title').textContent = 'Leads in ' + state;
+      document.getElementById('leads-tbody').innerHTML = '<tr><td colspan="6" style="color:var(--text-dim)">Loading...</td></tr>';
+
+      api('/api/outreach/leads?state=' + encodeURIComponent(state) + '&limit=100')
+        .then(function(leads) {
+          if (!Array.isArray(leads)) leads = [];
+          if (!leads.length) {
+            document.getElementById('leads-tbody').innerHTML = '<tr><td colspan="6" style="color:var(--text-dim)">No leads for this state.</td></tr>';
+            return;
+          }
+          document.getElementById('leads-tbody').innerHTML = leads.map(function(l) {
+            var statusClass = 'badge-' + (l.status || 'new');
+            return '<tr>'
+              + '<td>' + (l.course_name || '--') + '</td>'
+              + '<td>' + (l.pro_name || '--') + '</td>'
+              + '<td>' + (l.pro_email || '--') + '</td>'
+              + '<td>' + (l.city || '') + '</td>'
+              + '<td>' + (l.segment || '--') + '</td>'
+              + '<td><span class="badge ' + statusClass + '">' + (l.status || 'new') + '</span></td>'
+              + '</tr>';
+          }).join('');
+        });
+    }
+
+    function importLeads() {
+      var raw = document.getElementById('import-json').value.trim();
+      var msgEl = document.getElementById('import-msg');
+      msgEl.className = 'msg';
+      msgEl.style.display = 'none';
+
+      var leads;
+      try { leads = JSON.parse(raw); } catch (e) {
+        msgEl.className = 'msg error';
+        msgEl.textContent = 'Invalid JSON: ' + e.message;
+        return;
+      }
+      if (!Array.isArray(leads)) leads = [leads];
+
+      apiPost('/api/outreach/leads', { leads: leads })
+        .then(function(data) {
+          if (data.imported) {
+            var success = data.imported.filter(function(r) { return r.success; }).length;
+            msgEl.className = 'msg success';
+            msgEl.textContent = 'Imported ' + success + ' of ' + data.imported.length + ' leads to D1.';
+          } else {
+            msgEl.className = 'msg error';
+            msgEl.textContent = data.error || 'Import failed.';
+          }
+        });
+    }
+
+    function importToKV() {
+      var raw = document.getElementById('import-json').value.trim();
+      var msgEl = document.getElementById('import-msg');
+      msgEl.className = 'msg';
+      msgEl.style.display = 'none';
+
+      var leads;
+      try { leads = JSON.parse(raw); } catch (e) {
+        msgEl.className = 'msg error';
+        msgEl.textContent = 'Invalid JSON: ' + e.message;
+        return;
+      }
+      if (!Array.isArray(leads)) leads = [leads];
+
+      apiPost('/api/admin/course-leads/import', { leads: leads })
+        .then(function(data) {
+          if (data.ok) {
+            msgEl.className = 'msg success';
+            msgEl.textContent = 'Imported ' + data.imported + ' leads to KV.';
+          } else {
+            msgEl.className = 'msg error';
+            msgEl.textContent = data.error || 'KV import failed.';
+          }
+        });
+    }
+
+    function sendCampaign() {
+      var btn = document.getElementById('send-campaign-btn');
+      var msgEl = document.getElementById('campaign-msg');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      msgEl.className = 'msg';
+      msgEl.style.display = 'none';
+
+      var body = {
+        template: document.getElementById('campaign-template').value,
+        state: document.getElementById('campaign-state').value.trim().toUpperCase() || undefined,
+        segment: document.getElementById('campaign-segment').value || undefined,
+        subject: document.getElementById('campaign-subject').value.trim() || undefined,
+        fromName: document.getElementById('campaign-from').value.trim() || undefined
+      };
+
+      apiPost('/api/outreach/bulk-send', body)
+        .then(function(data) {
+          btn.disabled = false;
+          btn.textContent = 'Send Campaign (Max 50)';
+          if (data.ok) {
+            msgEl.className = 'msg success';
+            msgEl.textContent = 'Sent ' + data.sent + ' emails. Failed: ' + data.failed + '.';
+            if (data.details && data.details.sent && data.details.sent.length) {
+              msgEl.textContent += ' Courses: ' + data.details.sent.map(function(s) { return s.course; }).join(', ');
+            }
+          } else {
+            msgEl.className = 'msg error';
+            msgEl.textContent = data.error || 'Send failed.';
+          }
+        })
+        .catch(function(e) {
+          btn.disabled = false;
+          btn.textContent = 'Send Campaign (Max 50)';
+          msgEl.className = 'msg error';
+          msgEl.textContent = 'Network error: ' + e.message;
+        });
+    }
+
+    function loadLeaderboard() {
+      fetch('/api/affiliates/leaderboard?limit=20')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.leaderboard && data.leaderboard.length) {
+            document.getElementById('leaderboard-tbody').innerHTML = data.leaderboard.map(function(a) {
+              return '<tr><td>' + a.rank + '</td><td>' + a.name + '</td><td style="font-family:monospace;color:var(--gold)">' + a.code + '</td><td>' + a.referrals + '</td><td>' + a.earned_display + '</td></tr>';
+            }).join('');
+          } else {
+            document.getElementById('leaderboard-tbody').innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">No affiliates yet.</td></tr>';
+          }
+        });
+    }
+  </script>
+</body>
+</html>
