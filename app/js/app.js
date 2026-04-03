@@ -316,9 +316,12 @@ async function syncFromServer() {
     const propsData = await Sync.fetchProps();
     if (propsData) state._props = propsData;
 
-    // Sync Calcutta auction state
-    const calcuttaData = await Sync.apiFetch('calcutta');
-    if (calcuttaData) state._calcutta = calcuttaData;
+    // Sync Calcutta auction state (only for member-guest events that use calcutta)
+    const _et = state._config?.event?.eventType || state._config?.eventType || '';
+    if (_et === 'member_guest') {
+      const calcuttaData = await Sync.apiFetch('calcutta');
+      if (calcuttaData) state._calcutta = calcuttaData;
+    }
 
     // Sync season data if this event is part of a season
     const seasonId = state._config?.seasonId;
@@ -353,6 +356,7 @@ async function flushMutationQueue() {
   try {
     const pending = await getPendingMutations();
     if (pending.length === 0) return;
+    state._inlineSyncState = 'syncing';
 
     let flushed = 0;
     for (const mutation of pending) {
@@ -389,6 +393,13 @@ async function flushMutationQueue() {
 
     if (flushed > 0) {
       toast(`${flushed} offline change${flushed > 1 ? 's' : ''} synced!`);
+      state._inlineSyncState = 'synced';
+      setTimeout(() => {
+        if (state._inlineSyncState === 'synced') {
+          state._inlineSyncState = '';
+          refresh();
+        }
+      }, 2000);
       persist();
     }
   } catch (e) {
@@ -424,6 +435,27 @@ async function updateConnectivityIndicator() {
     dot.style.boxShadow = '0 0 6px #22c55e';
     dot.style.animation = 'waggle-pulse 2s ease-in-out infinite';
     dot.title = 'Connected';
+  }
+}
+
+function detectDeviceType() {
+  const width = window.innerWidth || 1024;
+  if (width <= 767) return 'mobile';
+  if (width <= 1024) return 'tablet';
+  return 'desktop';
+}
+
+function emitUxEvent(eventName, props = {}) {
+  try {
+    window._mgAnalytics = window._mgAnalytics || [];
+    window._mgAnalytics.push({
+      event: eventName,
+      event_slug: state?._slug || '',
+      ...props,
+      timestamp: Date.now()
+    });
+  } catch (_) {
+    // Analytics should never block UX
   }
 }
 
@@ -501,6 +533,34 @@ function route() {
       break;
     default:
       html = renderDashboard(state);
+  }
+
+  if (view === 'dashboard' && isRoundMode && !state._spectatorMode && !state._trophyMode) {
+    const hole = state._inlineScore?.hole || 1;
+    const openKey = `${state?._slug || 'event'}:${hole}:inline`;
+    if (state._scoreEntryOpenedKey !== openKey) {
+      emitUxEvent('score_entry_opened', {
+        hole,
+        entry_surface: 'inline',
+        device_type: detectDeviceType()
+      });
+      state._scoreEntryOpenedKey = openKey;
+    }
+  }
+
+  if (view === 'settle') {
+    const holesPlayed = Object.keys(state?._holes || {}).length;
+    const telemetryKey = `${state?._slug || 'event'}:${holesPlayed}`;
+    if (state._settlementViewedTelemetryKey !== telemetryKey) {
+      const players = getPlayersFromConfig(state._config || {});
+      const pnl = computeRoundPnL(state._gameState, players, state._config?.games || {}, state._config?.structure);
+      const hasPayouts = Object.values(pnl || {}).some(v => v !== 0);
+      emitUxEvent('settlement_viewed', {
+        holes_played: holesPlayed,
+        has_payouts: hasPayouts
+      });
+      state._settlementViewedTelemetryKey = telemetryKey;
+    }
   }
 
   // Overlay name picker for round mode — only shows once, never again after dismissed
@@ -1170,6 +1230,13 @@ window.MG = {
   },
 
   // ─── Settlement Card ───
+  trackSettlementPaymentCta(provider, amount) {
+    emitUxEvent('settlement_payment_cta_clicked', {
+      provider,
+      amount: Number(amount) || 0
+    });
+  },
+
   async shareSettlement() {
     if (navigator.vibrate) navigator.vibrate(30);
     const eventName = state._config?.event?.name || 'Golf Event';
@@ -1373,14 +1440,19 @@ window.MG = {
     const text = lines.join('\n');
 
     if (navigator.share) {
-      navigator.share({
-        title: `${eventName} \u2014 Settlement`,
-        text: text,
-        url: 'https://betwaggle.com'
-      }).catch(() => {
+      try {
+        await navigator.share({
+          title: `${eventName} \u2014 Settlement`,
+          text: text,
+          url: 'https://betwaggle.com'
+        });
+        emitUxEvent('settlement_shared', { method: 'native_share' });
+      } catch (_) {
+        emitUxEvent('settlement_shared', { method: 'copy_link' });
         navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
-      });
+      }
     } else {
+      emitUxEvent('settlement_shared', { method: 'copy_link' });
       navigator.clipboard?.writeText(text).then(() => toast('Results copied to clipboard!')).catch(() => {});
     }
   },
@@ -1817,6 +1889,7 @@ window.MG = {
             text: eventName + ' \u2014 Final standings and settlement. Powered by Waggle.',
             url: shareUrl
           });
+          emitUxEvent('settlement_shared', { method: 'native_share' });
           return;
         } catch (e) {
           // User cancelled or share failed, fall through to download
@@ -1834,6 +1907,7 @@ window.MG = {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast('Settlement card saved!');
+      emitUxEvent('settlement_shared', { method: 'image_export' });
     }, 'image/png');
   },
 
@@ -2357,6 +2431,20 @@ window.MG = {
   },
 
   // ── Player Score Entry (round mode — no PIN required) ──
+  openScoreComposer(surface = 'inline') {
+    const scoreSection = document.getElementById('board-card-score-entry');
+    if (scoreSection) {
+      scoreSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      emitUxEvent('score_entry_opened', {
+        hole: state._inlineScore?.hole || 1,
+        entry_surface: surface,
+        device_type: detectDeviceType()
+      });
+      return;
+    }
+    this.openScoreModal();
+  },
+
   openScoreModal() {
     // Determine next unscored hole
     const holes = state._holes || {};
@@ -2370,6 +2458,11 @@ window.MG = {
     }
     const existing = holes[nextHole]?.scores || {};
     state._scoreModal = { hole: nextHole, scores: { ...existing } };
+    emitUxEvent('score_entry_opened', {
+      hole: nextHole,
+      entry_surface: 'modal',
+      device_type: detectDeviceType()
+    });
     refresh();
   },
   closeScoreModal() {
@@ -2531,6 +2624,7 @@ window.MG = {
     // Load existing stats for this hole or clear
     const existingStats = (state._holes || {})[newHole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+    state._inlineScoreInvalid = {};
     refresh();
   },
   inlineScoreSetHole(h) {
@@ -2542,6 +2636,7 @@ window.MG = {
     // Load existing stats for this hole or clear
     const existingStats = (state._holes || {})[holeNum]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+    state._inlineScoreInvalid = {};
     refresh();
   },
 
@@ -2552,11 +2647,43 @@ window.MG = {
     if (navigator.vibrate) navigator.vibrate(30);
     toast(`Jumped to Hole ${holeNum}`);
   },
+  inlineScoreInput(player, rawValue) {
+    if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
+    if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
+
+    const raw = String(rawValue ?? '').trim();
+    const n = parseInt(raw, 10);
+    const isInteger = /^\d+$/.test(raw);
+    const isValid = isInteger && n >= 1 && n <= 15;
+
+    if (raw === '') {
+      delete state._inlineScore.scores[player];
+      delete state._inlineScoreInvalid[player];
+    } else if (isValid) {
+      state._inlineScore.scores[player] = n;
+      delete state._inlineScoreInvalid[player];
+    } else {
+      delete state._inlineScore.scores[player];
+      state._inlineScoreInvalid[player] = true;
+    }
+
+    const requiredInputs = document.querySelectorAll('[data-inline-score-input="1"]');
+    emitUxEvent('score_input_changed', {
+      hole: state._inlineScore.hole || 1,
+      player_count_filled: Object.keys(state._inlineScore.scores || {}).length,
+      player_count_total: requiredInputs.length || 0
+    });
+
+    clearTimeout(window._inlineTypeTimer);
+    window._inlineTypeTimer = setTimeout(() => refresh(), 250);
+  },
   inlineScoreSet(player, val) {
     if (!state._inlineScore) return;
     const n = parseInt(val);
+    if (!state._inlineScoreInvalid) state._inlineScoreInvalid = {};
     if (!isNaN(n) && n >= 1 && n <= 15) {
       state._inlineScore.scores[player] = n;
+      delete state._inlineScoreInvalid[player];
       // Warn on outlier scores (triple bogey or worse)
       const hole = state._inlineScore.hole;
       const pars = state._config?.coursePars || state._config?.course?.pars || [];
@@ -2566,10 +2693,46 @@ window.MG = {
       }
     } else {
       delete state._inlineScore.scores[player];
+      state._inlineScoreInvalid[player] = true;
     }
+    const requiredInputs = document.querySelectorAll('[data-inline-score-input="1"]');
+    emitUxEvent('score_input_changed', {
+      hole: state._inlineScore.hole || 1,
+      player_count_filled: Object.keys(state._inlineScore.scores || {}).length,
+      player_count_total: requiredInputs.length || 0
+    });
     // Defer refresh so rapid taps don't lag
     clearTimeout(window._inlineScoreRefreshTimer);
     window._inlineScoreRefreshTimer = setTimeout(() => refresh(), 150);
+  },
+
+  inlineScoreSaveAttempt() {
+    const inputs = Array.from(document.querySelectorAll('[data-inline-score-input="1"]'));
+    if (inputs.length === 0) {
+      this.inlineScoreSave();
+      return;
+    }
+
+    const invalidInputs = [];
+    inputs.forEach(input => {
+      const raw = String(input.value || '').trim();
+      const n = parseInt(raw, 10);
+      const valid = /^\d+$/.test(raw) && n >= 1 && n <= 15;
+      if (!valid) invalidInputs.push(input);
+    });
+
+    if (invalidInputs.length > 0) {
+      emitUxEvent('score_save_attempted', {
+        hole: state._inlineScore?.hole || 1,
+        is_valid: false,
+        is_offline: !Sync.isOnline()
+      });
+      invalidInputs[0].focus();
+      invalidInputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast('Enter 1-15');
+      return;
+    }
+    this.inlineScoreSave();
   },
 
   // Premium score entry with haptic feedback and auto-advance
@@ -2807,16 +2970,7 @@ window.MG = {
   },
 
   inlineScoreType(player, value) {
-    const n = parseInt(value);
-    if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
-    if (isNaN(n) || n < 1 || n > 15) {
-      delete state._inlineScore.scores[player];
-    } else {
-      state._inlineScore.scores[player] = n;
-    }
-    // Defer re-render to avoid losing focus during typing
-    clearTimeout(window._inlineTypeTimer);
-    window._inlineTypeTimer = setTimeout(() => refresh(), 400);
+    this.inlineScoreInput(player, value);
   },
   inlineScoreToggle9(side) {
     if (!state._inlineScore) return;
@@ -2831,12 +2985,19 @@ window.MG = {
     // Load existing stats for the new hole
     const existingStats = (state._holes || {})[state._inlineScore.hole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+    state._inlineScoreInvalid = {};
     refresh();
   },
   async inlineScoreSave() {
     if (!state._inlineScore) return;
     const { hole, scores } = state._inlineScore;
     if (Object.keys(scores).length === 0) { toast('Enter at least one score'); return; }
+    emitUxEvent('score_save_attempted', {
+      hole,
+      is_valid: true,
+      is_offline: !Sync.isOnline()
+    });
+    const saveStart = Date.now();
 
     // Capture stats for this hole before clearing
     const holeStats = state._inlineScoreStats && Object.keys(state._inlineScoreStats).length > 0
@@ -2867,6 +3028,8 @@ window.MG = {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
+        state._inlineSyncState = 'synced';
+        if (!state._roundStartedAt) state._roundStartedAt = Date.now();
 
         // Store undo data before advancing
         state._lastScoredHole = { hole, scores: { ...scores }, stats: holeStats ? JSON.parse(JSON.stringify(holeStats)) : null };
@@ -2896,25 +3059,42 @@ window.MG = {
             break;
           }
         }
+        emitUxEvent('score_save_succeeded', {
+          hole,
+          latency_ms: Date.now() - saveStart,
+          auto_advanced: !!nextHole
+        });
         if (nextHole) {
           const existingNext = holes[nextHole]?.scores || {};
           state._inlineScore = { hole: nextHole, scores: { ...existingNext } };
           // Load existing stats for next hole or clear
           const nextStats = holes[nextHole]?.stats || {};
           state._inlineScoreStats = Object.keys(nextStats).length > 0 ? JSON.parse(JSON.stringify(nextStats)) : {};
+          state._inlineScoreInvalid = {};
         } else {
           state._inlineScore = null; // round complete
           state._inlineScoreStats = {};
+          state._inlineScoreInvalid = {};
+          emitUxEvent('round_completed', {
+            holes_per_round: holesPerRound,
+            duration_sec_from_first_save: state._roundStartedAt ? Math.round((Date.now() - state._roundStartedAt) / 1000) : 0
+          });
         }
         refresh();
       } else {
         throw new Error('submit returned null');
       }
     } catch (e) {
+      emitUxEvent('score_save_failed', {
+        hole,
+        error_code: e?.message || 'save_failed',
+        is_retry: false
+      });
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
       if (!state._holes) state._holes = {};
       state._holes[hole] = { ...scores };
+      state._inlineSyncState = 'queued';
       // Store stats locally even when offline
       if (holeStats) {
         if (!state._holes[hole] || typeof state._holes[hole] !== 'object') {
@@ -2923,7 +3103,7 @@ window.MG = {
         state._holes[hole].stats = holeStats;
       }
       if (navigator.vibrate) navigator.vibrate(30);
-      toast('Saved offline — will sync when connected');
+      toast('Offline — score queued');
       // Auto-advance
       const holesPerRound = state._config?.holesPerRound || 18;
       let nextHole = null;
@@ -2936,9 +3116,11 @@ window.MG = {
       if (nextHole) {
         state._inlineScore = { hole: nextHole, scores: {} };
         state._inlineScoreStats = {};
+        state._inlineScoreInvalid = {};
       } else {
         state._inlineScore = null;
         state._inlineScoreStats = {};
+        state._inlineScoreInvalid = {};
       }
       persist();
       updateConnectivityIndicator();
@@ -2947,6 +3129,16 @@ window.MG = {
   },
 
   // ── Undo Last Hole ──
+  editLastScoredHole() {
+    if (!state._lastScoredHole) return;
+    const last = state._lastScoredHole;
+    state._inlineScore = { hole: last.hole, scores: { ...(last.scores || {}) } };
+    state._inlineScoreStats = last.stats ? JSON.parse(JSON.stringify(last.stats)) : {};
+    state._inlineScoreInvalid = {};
+    location.hash = '#dashboard';
+    refresh();
+  },
+
   async undoLastHole() {
     const last = state._lastScoredHole;
     if (!last) { toast('Nothing to undo'); return; }
