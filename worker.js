@@ -15,6 +15,55 @@ function stripHtml(str) {
   return String(str || '').replace(/<[^>]*>/g, '').trim();
 }
 
+const PRIVATE_ROUTE_PREFIXES = [
+  '/marketing-private/',
+  '/gtm-private/',
+  '/ads-private/',
+  '/admin/outreach/',
+];
+
+const BLOCKED_PUBLIC_ROUTE_PREFIXES = [
+  '/marketing/',
+  '/gtm/',
+  '/ads/',
+];
+
+function isPrivateRoutePath(pathname) {
+  const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  return PRIVATE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function isBlockedPublicRoutePath(pathname) {
+  const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  return BLOCKED_PUBLIC_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function hasPrivateRouteAccess(request, url, env) {
+  const privateToken = String(env.WAGGLE_PRIVATE_ROUTE_TOKEN || '').trim();
+  const marketingPin = String(env.WAGGLE_MARKETING_PIN || '').trim();
+  const queryPin = String(url.searchParams.get('pin') || '').trim();
+
+  // Allow explicit private token via header/query for internal QA and sharing.
+  if (privateToken) {
+    const headerToken = String(
+      request.headers.get('x-waggle-private-token') ||
+      request.headers.get('x-private-token') ||
+      ''
+    ).trim();
+    const authHeader = String(request.headers.get('authorization') || '').trim();
+    const bearer = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+    if (headerToken === privateToken || bearer === privateToken || queryPin === privateToken) return true;
+  }
+
+  // Backward-compatible access using existing marketing pin.
+  if (marketingPin && queryPin === marketingPin) return true;
+  return false;
+}
+
+function privateRouteNotFound() {
+  return new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+}
+
 // Generate random 4-digit admin PIN (1000-9999)
 function randomPin() { return String(1000 + Math.floor(Math.random() * 9000)); }
 
@@ -69,6 +118,16 @@ export default {
       return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // Route guard for internal/private pages: hide via 404 unless explicitly authenticated.
+    if (isPrivateRoutePath(url.pathname) && !hasPrivateRouteAccess(request, url, env)) {
+      return privateRouteNotFound();
+    }
+
+    // Explicitly block legacy/public aliases for internal pages.
+    if (isBlockedPublicRoutePath(url.pathname)) {
+      return privateRouteNotFound();
     }
 
     // ===== COURSE SEARCH (Golf Course API proxy) =====
@@ -654,10 +713,6 @@ export default {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
-    if (url.pathname === '/affiliate/' || url.pathname === '/affiliate') {
-      return handleAffiliatePage(url, env);
-    }
-
     // /api/affiliate-signup — public affiliate signup from /affiliates/ page
     if (url.pathname === '/api/affiliate-signup' && request.method === 'POST') {
       return handleAffiliateSignup(request, env);
@@ -701,7 +756,7 @@ export default {
     if (url.pathname === '/api/outreach/leads' && request.method === 'GET') {
       return handleOutreachLeadsQuery(url, env);
     }
-    if (url.pathname === '/api/outreach/send' && request.method === 'POST') {
+    if ((url.pathname === '/api/outreach/send' || url.pathname === '/api/admin/outreach/send') && request.method === 'POST') {
       return handleOutreachSend(request, env);
     }
     if (url.pathname === '/api/outreach/bulk-send' && request.method === 'POST') {
@@ -714,6 +769,9 @@ export default {
       return handleOutreachDashboard(url, env);
     }
     if (url.pathname.startsWith('/api/outreach/') && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+    if (url.pathname.startsWith('/api/admin/outreach/') && request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
@@ -759,10 +817,10 @@ export default {
       return env.ASSETS.fetch(req);
     }
 
-    // /affiliate/ — affiliate link generator page (static)
+    // /affiliate/ — legacy alias, permanently redirect to canonical /affiliates/
     if (url.pathname === '/affiliate' || url.pathname === '/affiliate/') {
-      const req = new Request(new URL('/affiliates/index.html', request.url), request);
-      return env.ASSETS.fetch(req);
+      const canonicalAffiliateUrl = `${url.origin}/affiliates/${url.search}`;
+      return Response.redirect(canonicalAffiliateUrl, 301);
     }
 
     // /affiliate/generate — generate a referral link
@@ -919,6 +977,33 @@ export default {
       try {
         const result = await seedDemoEvent(env);
         return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Force reseed any demo — deletes existing data first
+    if (url.pathname === '/api/force-reseed' && request.method === 'GET') {
+      const slug = url.searchParams.get('slug');
+      const seedMap = {
+        'cabot-citrus-invitational': () => seedDemoEvent(env),
+        'demo-buddies': () => seedDemoBuddies(env),
+        'demo-scramble': () => seedDemoScramble(env),
+        'demo-skins': () => seedDemoSkins(env),
+        'demo-nassau': () => seedDemoNassau(env),
+        'demo-wolf': () => seedDemoWolf(env),
+        'demo-match-play': () => seedDemoMatchPlay(env),
+      };
+      if (!slug || !seedMap[slug]) {
+        return new Response(JSON.stringify({ error: 'Pass ?slug=demo-buddies (or other demo slug)', available: Object.keys(seedMap) }), { headers: { 'Content-Type': 'application/json' } });
+      }
+      try {
+        // Delete all existing keys for this slug
+        const keys = [`config:${slug}`, `${slug}:holes`, `${slug}:game-state`, `${slug}:bets`, `${slug}:feed`, `${slug}:settings`, `${slug}:scores`];
+        await Promise.all(keys.map(k => env.MG_BOOK.delete(k).catch(() => {})));
+        // Reseed
+        const result = await seedMap[slug]();
+        return new Response(JSON.stringify({ reseeded: true, slug, result }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
       }
@@ -1912,11 +1997,103 @@ async function handleBillingPortal(request, env) {
 
 // ─── One-Time Checkout ────────────────────────────────────────────────────
 
+function normalizeAffiliateRefCode(rawRef) {
+  return String(rawRef || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
+}
+
+async function applyAffiliateRefToConfig(config, env, rawRef) {
+  if (!config || !env?.MG_BOOK) return null;
+  const code = normalizeAffiliateRefCode(rawRef);
+  if (!code) return null;
+  try {
+    const affiliate = await env.MG_BOOK.get(`affiliate-ref:${code}`, 'json');
+    if (!affiliate) return null;
+    config.meta = config.meta || {};
+    config.meta.ref_code = code;
+    const source = (config.meta.source && typeof config.meta.source === 'object') ? config.meta.source : {};
+    config.meta.source = { ...source, ref: code };
+    return { code, affiliate };
+  } catch (_) {
+    return null;
+  }
+}
+
+async function creditAffiliateForPaidEvent(config, env, activatedSlug, sessionId, amountCentsOverride) {
+  const refCode = config?.meta?.source?.ref || config?.meta?.ref_code || '';
+  if (!refCode) return;
+
+  if (env.WAGGLE_DB) {
+    try {
+      const eventType = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : 'trip';
+      const fallbackAmountCents = WAGGLE_PRICES[eventType] ?? 3200;
+      const purchaseAmountCents = Number.isFinite(Number(amountCentsOverride)) && Number(amountCentsOverride) > 0
+        ? Number(amountCentsOverride)
+        : fallbackAmountCents;
+      const commissionCents = 2000;
+
+      let alreadyCredited = false;
+      if (sessionId) {
+        const existing = await env.WAGGLE_DB.prepare(
+          `SELECT id FROM referrals WHERE affiliate_code = ? AND stripe_session_id = ? LIMIT 1`
+        ).bind(refCode, sessionId).first();
+        alreadyCredited = !!existing;
+      } else if (activatedSlug) {
+        const existing = await env.WAGGLE_DB.prepare(
+          `SELECT id FROM referrals WHERE affiliate_code = ? AND event_slug = ? LIMIT 1`
+        ).bind(refCode, activatedSlug).first();
+        alreadyCredited = !!existing;
+      }
+
+      if (!alreadyCredited) {
+        const referralIdBase = sessionId || `${refCode}-${activatedSlug}-${Date.now()}`;
+        const referralId = `ref_${String(referralIdBase).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60)}`;
+        const insertResult = await env.WAGGLE_DB.prepare(
+          `INSERT OR IGNORE INTO referrals (id, affiliate_code, event_slug, event_type, amount_cents, commission_cents, stripe_session_id, status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))`
+        ).bind(referralId, refCode, activatedSlug || '', eventType, purchaseAmountCents, commissionCents, sessionId || '').run();
+
+        if ((insertResult?.meta?.changes || 0) > 0) {
+          await env.WAGGLE_DB.prepare(
+            `UPDATE affiliates SET total_referrals = total_referrals + 1, total_payout_cents = total_payout_cents + ? WHERE code = ?`
+          ).bind(commissionCents, refCode).run();
+        }
+      }
+    } catch (err) {
+      console.error('WAGGLE_REFERRAL_ERROR', { error: String(err) });
+    }
+  }
+
+  if (env.MG_BOOK) {
+    try {
+      const dedupeKey = `referral-credit-applied:${sessionId || activatedSlug || ''}:${refCode}`;
+      const alreadyApplied = await env.MG_BOOK.get(dedupeKey, 'text');
+      if (alreadyApplied) return;
+
+      const refConfig = await env.MG_BOOK.get(`config:${refCode}`, 'json');
+      if (refConfig?.event?.adminContact) {
+        const referrerEmail = refConfig.event.adminContact.trim().toLowerCase();
+        const credKey = `referral-credits:${referrerEmail}`;
+        const existing = (await env.MG_BOOK.get(credKey, 'json')) || { credits: 0, referrals: [] };
+        existing.credits = Number(existing.credits || 0) + 800;
+        if (!Array.isArray(existing.referrals)) existing.referrals = [];
+        existing.referrals.push({ slug: activatedSlug || '', ts: Date.now() });
+        await env.MG_BOOK.put(credKey, JSON.stringify(existing));
+      }
+      await env.MG_BOOK.put(dedupeKey, '1', { expirationTtl: 365 * 24 * 60 * 60 });
+    } catch (_) {}
+  }
+}
+
 async function handleCreateCheckout(request, env) {
   if (!env.MG_BOOK) return new Response(JSON.stringify({ error: 'Storage not configured' }), { status: 500, headers: EVENT_CORS });
 
   let config;
   try { config = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+  const requestUrl = new URL(request.url);
+  const refCandidate = requestUrl.searchParams.get('ref') || config?.meta?.source?.ref || config?.meta?.ref_code || '';
+  if (refCandidate) {
+    await applyAffiliateRefToConfig(config, env, refCandidate);
+  }
   await trackFunnelEvent(env, 'signup_start', {
     eventType: config?.event?.eventType || '',
     format: config?.event?.format || '',
@@ -2146,36 +2323,7 @@ async function handleCheckoutSuccess(url, env) {
     await env.MG_BOOK.delete(`pending-checkout:${pendingEmail2}`).catch(() => {});
   }
 
-  const refCode = config.meta?.source?.ref || config.meta?.ref_code || '';
-  if (refCode && env.WAGGLE_DB) {
-    try {
-      const eventType2 = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : 'trip';
-      const purchaseAmountCents = WAGGLE_PRICES[eventType2] ?? 3200;
-      const commissionCents = 2000;
-      await env.WAGGLE_DB.prepare(
-        `INSERT OR IGNORE INTO referrals (id, affiliate_code, event_slug, event_type, amount_cents, commission_cents, stripe_session_id, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))`
-      ).bind(crypto.randomUUID(), refCode, result.slug, eventType2, purchaseAmountCents, commissionCents, sessionId).run();
-      await env.WAGGLE_DB.prepare(
-        `UPDATE affiliates SET total_referrals = total_referrals + 1, total_payout_cents = total_payout_cents + ? WHERE code = ?`
-      ).bind(commissionCents, refCode).run();
-    } catch (err) { console.error('WAGGLE_REFERRAL_ERROR', { error: String(err) }); }
-  }
-
-  // Credit referring commissioner via KV referral credits
-  if (refCode && env.MG_BOOK) {
-    try {
-      const refConfig = await env.MG_BOOK.get(`config:${refCode}`, 'json');
-      if (refConfig?.event?.adminContact) {
-        const referrerEmail = refConfig.event.adminContact.trim().toLowerCase();
-        const credKey = `referral-credits:${referrerEmail}`;
-        const existing = (await env.MG_BOOK.get(credKey, 'json')) || { credits: 0, referrals: [] };
-        existing.credits += 800;
-        existing.referrals.push({ slug: result.slug, ts: Date.now() });
-        await env.MG_BOOK.put(credKey, JSON.stringify(existing));
-      }
-    } catch {}
-  }
+  await creditAffiliateForPaidEvent(config, env, result.slug, sessionId, config?.meta?.actualAmountCents || config?.meta?.originalAmountCents);
 
   if (env.RESEND_API_KEY) {
     const eventName = config.event?.name || 'Your Event';
@@ -2772,6 +2920,7 @@ async function handleStripeWebhook(request, env) {
       const configRaw = await env.MG_BOOK.get(`pending:${tempId}`, 'text');
       if (configRaw) {
         const cfg = JSON.parse(configRaw);
+        cfg.meta = { ...(cfg.meta || {}), stripe_session_id: session?.id || '' };
         const activated = await activateEvent(cfg, env);
         await trackFunnelEvent(env, 'signup_complete', {
           slug: activated.slug,
@@ -2785,6 +2934,7 @@ async function handleStripeWebhook(request, env) {
           eventType: cfg?.event?.eventType || '',
           format: cfg?.event?.format || '',
         });
+        await creditAffiliateForPaidEvent(cfg, env, activated.slug, session?.id || '', session?.amount_total || cfg?.meta?.actualAmountCents);
         await env.MG_BOOK.delete(`pending:${tempId}`);
       }
     }
@@ -2920,6 +3070,11 @@ async function handleCreateEventFromConfig(config, env) {
 async function handleCreateEvent(request, env) {
   let config;
   try { config = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS }); }
+  const url = new URL(request.url);
+  const refCandidate = url.searchParams.get('ref') || config?.meta?.source?.ref || config?.meta?.ref_code || '';
+  if (refCandidate) {
+    await applyAffiliateRefToConfig(config, env, refCandidate);
+  }
   return handleCreateEventFromConfig(config, env);
 }
 
@@ -3544,11 +3699,18 @@ async function handleOutreachSend(request, env) {
     }
 
     let html = await templateResponse.text();
+    const firstName = (recipient_name || lead.pro_name || '').split(' ')[0] || 'there';
+    const refCode = body.ref_code || lead.ref_code || lead.affiliate_code || 'waggle';
+    const unsubscribeUrl = `https://betwaggle.com/unsubscribe?email=${encodeURIComponent(recipient_email)}`;
+
     // Replace template variables
     html = html.replace(/\{\{recipient_name\}\}/g, recipient_name || lead.pro_name || 'there')
+              .replace(/\{\{first_name\}\}/g, firstName)
               .replace(/\{\{course_name\}\}/g, lead.course_name || 'your course')
               .replace(/\{\{club_name\}\}/g, lead.club_name || 'your club')
-              .replace(/\{\{email\}\}/g, recipient_email);
+              .replace(/\{\{email\}\}/g, recipient_email)
+              .replace(/\{\{ref_code\}\}/g, refCode)
+              .replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl);
 
     // Send email via Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -3568,6 +3730,11 @@ async function handleOutreachSend(request, env) {
     const emailResult = await emailResponse.json();
     if (!emailResponse.ok) {
       return new Response(JSON.stringify({ error: 'email send failed', details: emailResult }), { status: 500, headers: ADS_JSON });
+    }
+
+    if (env.MG_BOOK) {
+      const sentKey = `outreach:sent:${course_lead_id}:${template}`;
+      await env.MG_BOOK.put(sentKey, JSON.stringify({ ts: Date.now(), emailId: emailResult.id }));
     }
 
     // Log the outreach event
@@ -7550,7 +7717,7 @@ function unsubscribeHtml(success) {
 const DRIP_SEQUENCE = [
   { // Step 0: Welcome (sent immediately on capture)
     dayOffset: 0,
-    subject: 'Your group is gonna love this',
+    subject: 'Your group\'s gonna love this',
     templateFile: '/emails/drip-01-welcome.html'
   },
   { // Step 1: Day 2
@@ -7560,7 +7727,7 @@ const DRIP_SEQUENCE = [
   },
   { // Step 2: Day 4
     dayOffset: 4,
-    subject: 'Nassau, skins, wolf — and 9 more games your group doesn\'t know yet',
+    subject: 'Nassau, skins, and automated settlement (your group will feel this immediately)',
     templateFile: '/emails/drip-03-feature-spotlight.html'
   },
   { // Step 3: Day 7
@@ -7570,7 +7737,7 @@ const DRIP_SEQUENCE = [
   },
   { // Step 4: Day 14
     dayOffset: 14,
-    subject: 'Still using a spreadsheet?',
+    subject: 'Last chance: set up your next event for $32',
     templateFile: '/emails/drip-05-last-chance.html'
   }
 ];
