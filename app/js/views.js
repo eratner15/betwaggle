@@ -419,6 +419,11 @@ export function renderDashboard(state) {
       -webkit-tap-highlight-color: transparent;
     }
     .wg-dash-odds-chip:active { transform: scale(.97); }
+    .wg-dash-odds-chip.odds-pressed {
+      transform: scale(.97);
+      background: #123723;
+      box-shadow: 0 8px 14px rgba(0,0,0,0.32);
+    }
     .wg-dash-odds-chip:hover {
       border-color: #D4AF37;
       background: #123723;
@@ -892,7 +897,7 @@ function getCourseHcpIndex(config) {
 // ─── PREMIUM SCORECARD RENDERER ───
 // Renders a trifold-style country club scorecard with yardage, HCP, par, player scores,
 // golf-standard color coding (circles under par, squares over par), and running totals.
-function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly, inlineInvalid = {}, syncState = '' }) {
+function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly, inlineInvalid = {}, syncState = '', showQuickModalAction = false, lastSavedHole = null }) {
   const isBack9 = currentHole > 9;
   const startHole = isBack9 ? 10 : 1;
   const endHole = isBack9 ? Math.min(18, holesPerRound) : Math.min(9, holesPerRound);
@@ -922,7 +927,8 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   });
   const hasInlineInvalid = Object.keys(inlineInvalid || {}).some(k => inlineInvalid[k]);
   const hasEdits = Object.keys(inlScores || {}).length > 0;
-  const scoreEntryState = syncState === 'syncing'
+  const isSaving = syncState === 'syncing';
+  const scoreEntryState = isSaving
     ? 'saving'
     : syncState === 'queued'
       ? 'queued_offline'
@@ -959,7 +965,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   let html = '';
 
   // Outer card
-  html += `<div data-score-entry-state="${scoreEntryState}" style="background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB">`;
+  html += `<div data-score-entry-state="${scoreEntryState}" style="display:flex;flex-direction:column;background:#FAFAF7;border-radius:12px;padding:0;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB">`;
 
   // Header with course name and hole detail
   html += `<div style="padding:14px 16px 10px;border-bottom:1px solid #E8E5DE">`;
@@ -968,6 +974,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   html += `<div style="font-size:15px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:#0D2818">${escHtml(courseName || 'Course')}</div>`;
   html += `<div style="font-size:12px;color:#6B7280;margin-top:3px">Hole ${currentHole} &middot; Par ${inlPar}${inlYds ? ' &middot; ' + inlYds + ' yds' : ''}${inlHcpRank !== null ? ' &middot; HCP ' + inlHcpRank : ''}</div>`;
   html += `</div>`;
+  html += `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">`;
   // Front/Back toggle
   if (holesPerRound > 9) {
     html += `<div style="display:flex;gap:0;border:1px solid #D1D5DB;border-radius:6px;overflow:hidden">`;
@@ -975,6 +982,10 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
     html += `<button onclick="window.MG.inlineScoreToggle9('back')" style="font-size:12px;font-weight:700;padding:10px 14px;min-height:56px;border:none;cursor:pointer;background:${isBack9 ? '#0D2818' : '#FAFAF7'};color:${isBack9 ? '#fff' : '#6B7280'};border-left:1px solid #D1D5DB">Back</button>`;
     html += `</div>`;
   }
+  if (!readOnly && showQuickModalAction) {
+    html += `<button onclick="window.MG.openScoreModalQuick()" style="font-size:11px;font-weight:700;padding:8px 12px;min-height:56px;border:1px solid #D1D5DB;border-radius:8px;background:#FFFFFF;color:#4B5563;cursor:pointer;white-space:nowrap">Quick entry</button>`;
+  }
+  html += `</div>`;
   html += `</div></div>`;
 
   // Sprint 3 progress strip
@@ -992,7 +1003,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   </div>`;
 
   // Scorecard table
-  html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
+  html += `<div class="mg-score-matrix-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
   html += `<table style="width:100%;border-collapse:collapse;font-family:'SF Mono','Menlo','Courier New',monospace;font-size:12px;min-width:${numCols * 40 + 64}px">`;
 
   // ── Hole number header row (dark green) ──
@@ -1146,6 +1157,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
     html += `<style>
       @media (max-width: 767px) {
         .mg-inline-save-bar {
+          order: 4;
           position: sticky;
           bottom: 0;
           z-index: 6;
@@ -1153,29 +1165,35 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
           border-top: 1px solid #E8E5DE;
           padding-bottom: calc(14px + env(safe-area-inset-bottom));
         }
+        .mg-score-matrix-wrap { order: 3; }
       }
       @media (min-width: 768px) {
         .mg-inline-save-bar {
+          order: 2;
           position: sticky;
           top: 0;
           z-index: 6;
           background: #FAFAF7;
           border-bottom: 1px solid #E8E5DE;
         }
+        .mg-score-matrix-wrap { order: 3; }
       }
     </style>`;
     html += `<div class="mg-inline-save-bar" data-score-entry-state="${scoreEntryState}" style="padding:12px 16px 14px">`;
-    html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${allFilled ? '' : 'disabled'}
-      style="width:100%;min-height:56px;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
-      ${allFilled ? 'Save Hole ' + currentHole : 'Save Hole ' + currentHole}
+    const canSave = allFilled && !isSaving;
+    const primarySaveLabel = isSaving ? 'Saving...' : (syncState === 'error' ? 'Try again' : ('Save Hole ' + currentHole));
+    html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${canSave ? '' : 'disabled'}
+      style="width:100%;min-height:56px;padding:14px;background:${canSave ? '#B8962E' : '#E5E7EB'};color:${canSave ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${canSave ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${canSave ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
+      ${primarySaveLabel}
     </button>`;
     if (syncState) {
+      const savedHoleLabel = Number.isInteger(lastSavedHole) && lastSavedHole > 0 ? lastSavedHole : currentHole;
       const syncLabel = syncState === 'queued'
         ? 'Queued'
         : syncState === 'syncing'
           ? 'Syncing'
           : syncState === 'synced'
-            ? 'Synced'
+            ? `Saved • Hole ${savedHoleLabel} complete`
             : syncState === 'error'
               ? 'Try again'
               : '';
@@ -1435,6 +1453,7 @@ export function renderScrambleLeaderboard(state) {
   // SECTION 2: INLINE SCORE ENTRY (admin/scorer only)
   // ================================================================
   if ((!scrShowSubTabs || scrActiveSubTab === 'score') && state.adminAuthed && !roundComplete) {
+    const useSprint3Gameflow = !!(config?.featureFlags?.ux_sprint3_gameflow || config?.ux_sprint3_gameflow);
     if (!state._inlineScore) {
       const existingScores = holes[nextHole]?.scores || {};
       state._inlineScore = { hole: nextHole, scores: { ...existingScores } };
@@ -1463,7 +1482,9 @@ export function renderScrambleLeaderboard(state) {
       courseName: scrCourseName,
       isScramble: true,
       inlineInvalid: state._inlineScoreInvalid || {},
-      syncState: state._inlineSyncState || ''
+      syncState: state._inlineSyncState || '',
+      lastSavedHole: state._inlineLastSavedHole || null,
+      showQuickModalAction: useSprint3Gameflow
     }) + `</div>`;
   } else if (roundComplete && state.adminAuthed) {
     html += `<div style="background:var(--bg-secondary);border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid var(--border)">
@@ -2652,7 +2673,9 @@ export function renderRoundFeed(state) {
       isScramble: false,
       readOnly: !useSprint3Gameflow,
       inlineInvalid: state._inlineScoreInvalid || {},
-      syncState: state._inlineSyncState || ''
+      syncState: state._inlineSyncState || '',
+      lastSavedHole: state._inlineLastSavedHole || null,
+      showQuickModalAction: useSprint3Gameflow
     }) + `</div>`;
 
     // ── 3b. KEYPAD SCORE ENTRY SECTION (below read-only scorecard) ──
@@ -7214,6 +7237,7 @@ export function renderSettlement(state) {
   const isTrophy = state._trophyMode;
 
   let html = '';
+  let settlementSecondaryDetailsHtml = '';
 
   if (isTrophy) {
     html += `<div class="mg-card" style="background:linear-gradient(135deg,var(--mg-gold),var(--mg-gold-dim));padding:20px;text-align:center;border:none">
@@ -7267,7 +7291,7 @@ export function renderSettlement(state) {
     const remaining = completionMeta.incomplete
       .filter(item => item.missingCount > 0)
       .map(item => `Hole ${item.hole} (${item.missingCount} player${item.missingCount === 1 ? '' : 's'})`);
-    const blockerSummary = remaining.slice(0, 5).join(', ') + (remaining.length > 5 ? ', ...' : '');
+    const blockerSummary = remaining.join(', ');
     html += `<div class="mg-card" style="border:1px solid var(--mg-border);padding:18px;margin-top:8px">
       <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Settlement available after all holes are scored.</div>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Remaining: ${escHtml(blockerSummary || 'Scores still missing')}</div>
@@ -7627,6 +7651,11 @@ export function renderSettlement(state) {
           }
         };
       </script>`;
+    } else {
+      html += `<div class="mg-card" style="padding:16px;border:2px solid var(--mg-gold)">
+        <div class="mg-card-header" style="margin-bottom:4px">Who pays who</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">No transfers needed after netting balances.</div>
+      </div>`;
     }
 
     html += `<div style="display:flex;gap:10px;margin-top:12px">
@@ -7636,7 +7665,7 @@ export function renderSettlement(state) {
     html += shareStateChip;
 
     // ── Static Settlement Standings (secondary detail after action row) ──
-    html += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:12px">
+    settlementSecondaryDetailsHtml += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:12px">
       <div class="mg-card-header" style="margin-bottom:12px;font-family:var(--font-display);font-size:14px;letter-spacing:2px">FINAL STANDINGS</div>`;
 
     sortedPlayers.forEach((p, i) => {
@@ -7655,10 +7684,10 @@ export function renderSettlement(state) {
         <span style="font-size:${isWinner ? '22' : '18'}px;font-weight:900;color:${moneyColor};${isWinner ? 'text-shadow:0 0 8px rgba(197,160,89,0.3);' : ''}">${moneyStr}</span>
       </div>`;
     });
-    html += `</div>`;
+    settlementSecondaryDetailsHtml += `</div>`;
 
     // ── Shareable Settlement Card (screenshot-friendly, fixed dimensions) ──
-    html += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
+    settlementSecondaryDetailsHtml += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
       <!-- Top Banner -->
       <div style="background:#1B3022;padding:20px 24px;position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(197,160,89,0.05) 0px,rgba(197,160,89,0.05) 1px,transparent 1px,transparent 10px)"></div>
@@ -7735,16 +7764,20 @@ export function renderSettlement(state) {
       <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">Export Card</button>
     </div>`;
     html += shareStateChip;
-    html += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:8px">
+    settlementSecondaryDetailsHtml += `<div class="mg-card" style="padding:16px;border:1px solid var(--border-strong);margin-top:12px">
       <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px">No payout changes</div>
       <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Share the card for the recap.</div>
     </div>`;
   }
 
-  if (hasSecondaryModules) {
+  const hasSecondaryDetails = hasSecondaryModules || !!settlementSecondaryDetailsHtml;
+  if (hasSecondaryDetails) {
     html += `<details class="mg-card" style="padding:12px" id="settlement-details-accordion">
-      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">Game Details</summary>
+      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">Settlement Details</summary>
       <div style="margin-top:10px"></div>`;
+    if (settlementSecondaryDetailsHtml) {
+      html += settlementSecondaryDetailsHtml;
+    }
     if (!isTrophy) {
       html += `<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
         <button class="mg-btn" style="width:auto;padding:8px 14px;font-size:12px;background:var(--bg-tertiary);border:1px solid var(--mg-border);color:var(--mg-text);min-height:40px" onclick="window.MG.getRecap()">AI Recap</button>
@@ -7949,7 +7982,7 @@ export function renderSettlement(state) {
     }
   }
 
-  if (hasSecondaryModules) {
+  if (hasSecondaryDetails) {
     html += `</details>`;
   }
 

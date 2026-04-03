@@ -122,6 +122,51 @@ function maybeVibrate(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
+function installOddsPressFeedback() {
+  if (window.__waggleOddsPressFeedbackBound) return;
+  window.__waggleOddsPressFeedbackBound = true;
+
+  const oddsSelector = '.mg-odds-btn, .wg-dash-odds-chip';
+
+  const clearPressed = (button) => {
+    if (!button) return;
+    button.classList.remove('odds-pressed');
+  };
+
+  document.addEventListener('pointerdown', (event) => {
+    const button = event.target.closest(oddsSelector);
+    if (!button) return;
+    button.classList.add('odds-pressed');
+  }, true);
+
+  document.addEventListener('pointerup', (event) => {
+    clearPressed(event.target.closest(oddsSelector));
+  }, true);
+
+  document.addEventListener('pointercancel', (event) => {
+    clearPressed(event.target.closest(oddsSelector));
+  }, true);
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest(oddsSelector);
+    if (!button) return;
+    // Keep the pressed frame visible through click commit, then release.
+    requestAnimationFrame(() => clearPressed(button));
+  }, true);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const button = event.target.closest(oddsSelector);
+    if (!button) return;
+    button.classList.add('odds-pressed');
+  }, true);
+
+  document.addEventListener('keyup', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    clearPressed(event.target.closest(oddsSelector));
+  }, true);
+}
+
 function launchConfettiBurst(opts = {}) {
   const count = Number.isFinite(opts.count) ? opts.count : 110;
   const originX = Number.isFinite(opts.originX) ? opts.originX : 0.5;
@@ -347,6 +392,7 @@ async function bootstrap() {
 
   // Route
   window.addEventListener("hashchange", route);
+  installOddsPressFeedback();
   if (!location.hash) location.hash = "#dashboard";
   route();
 
@@ -567,6 +613,7 @@ async function flushMutationQueue() {
         switch (mutation.type) {
           case 'scores':
             result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores, mutation.ts);
+            if (result) state._inlineLastSavedHole = mutation.payload.holeNum;
             break;
           case 'bet':
             result = await Sync.submitBet(mutation.payload);
@@ -695,13 +742,35 @@ function countCompletedScoreHoles(holes, holesPerRound) {
 
 function emitUxEvent(eventName, props = {}) {
   try {
-    window._mgAnalytics = window._mgAnalytics || [];
-    window._mgAnalytics.push({
+    const eventSlug = state?._slug || '';
+    const payload = {
       event: eventName,
-      event_slug: state?._slug || '',
+      event_slug: eventSlug,
       ...props,
       timestamp: Date.now()
+    };
+
+    window._mgAnalytics = window._mgAnalytics || [];
+    window._mgAnalytics.push(payload);
+
+    const telemetryBody = JSON.stringify({
+      event: eventName,
+      slug: eventSlug,
+      props,
+      timestamp: payload.timestamp
     });
+    const endpoint = '/api/ux-telemetry';
+    if (navigator.sendBeacon) {
+      const blob = new Blob([telemetryBody], { type: 'application/json' });
+      navigator.sendBeacon(endpoint, blob);
+    } else {
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: telemetryBody,
+        keepalive: true
+      }).catch(() => {});
+    }
   } catch (_) {
     // Analytics should never block UX
   }
@@ -894,6 +963,11 @@ function route() {
       html = renderShootout(state);
       break;
     case "scorecard":
+      if (isRoundMode && isSprint3GameflowEnabled()) {
+        state._boardSubTab = 'score';
+        location.hash = '#dashboard';
+        return;
+      }
       html = isRoundMode ? renderCasualScorecard(state) : renderScorecard(state);
       break;
     case "settle":
@@ -942,8 +1016,9 @@ function route() {
   if (isRoundMode && state._showIdentityPicker && !state._spectatorMode && !state._trophyMode) {
     html += renderNamePickerModal(state);
   }
-  // Overlay score entry modal if open (persists across tab switches, skip for spectators)
-  if (isRoundMode && state._scoreModal && !state._spectatorMode && !isSprint3GameflowEnabled()) {
+  // Overlay score entry modal if open (fallback/quick entry; skip for spectators)
+  // Sprint 3 keeps inline as canonical, but modal remains available as explicit fallback.
+  if (isRoundMode && state._scoreModal && !state._spectatorMode && (!isSprint3GameflowEnabled() || state._scoreModalExplicit === true)) {
     html += renderScoreEntryOverlay(state);
   }
 
@@ -2838,6 +2913,8 @@ window.MG = {
         state._inlineScore.scores = { ...existing };
       }
     }
+    state._scoreModal = null;
+    state._scoreModalExplicit = false;
     state._inlineScoreInvalid = {};
     if ((isRoundMode || isScrambleMode) && state._boardSubTab !== 'score') {
       state._boardSubTab = 'score';
@@ -2869,27 +2946,32 @@ window.MG = {
           }
         }, 120);
       } else if (surface === 'modal') {
-        this.openScoreModal();
+        this.openScoreModal('modal');
       }
     }, 0);
   },
 
-  openScoreModal() {
+  openScoreModal(source = 'modal') {
     // Determine next unscored hole
     const holes = state._holes || {};
     const holesPerRound = state._config?.holesPerRound || 18;
     const nextHole = findNextIncompleteHole(holes, holesPerRound) || holesPerRound;
     const existing = getHoleScoresForEval(holes, nextHole);
     state._scoreModal = { hole: nextHole, scores: { ...existing } };
+    state._scoreModalExplicit = true;
     emitUxEvent('score_entry_opened', {
       hole: nextHole,
-      entry_surface: 'modal',
+      entry_surface: source === 'fab' ? 'fab' : 'modal',
       device_type: detectDeviceType()
     });
     refresh();
   },
+  openScoreModalQuick() {
+    this.openScoreModal('modal');
+  },
   closeScoreModal() {
     state._scoreModal = null;
+    state._scoreModalExplicit = false;
     refresh();
   },
   setScoreModalHole(h) {
@@ -3049,6 +3131,7 @@ window.MG = {
     const existingStats = (state._holes || {})[newHole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     state._inlineScoreInvalid = {};
+    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
   inlineScoreSetHole(h) {
@@ -3061,6 +3144,7 @@ window.MG = {
     const existingStats = (state._holes || {})[holeNum]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     state._inlineScoreInvalid = {};
+    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
 
@@ -3137,6 +3221,7 @@ window.MG = {
   },
 
   inlineScoreSaveAttempt() {
+    if (state._inlineSyncState === 'syncing') return;
     const inputs = Array.from(document.querySelectorAll('[data-inline-score-input="1"]'));
     if (inputs.length === 0) {
       this.inlineScoreSave();
@@ -3441,10 +3526,12 @@ window.MG = {
     const existingStats = (state._holes || {})[state._inlineScore.hole]?.stats || {};
     state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
     state._inlineScoreInvalid = {};
+    if (state._inlineSyncState === 'synced') state._inlineSyncState = '';
     refresh();
   },
   async inlineScoreSave() {
     if (!state._inlineScore) return;
+    if (state._inlineSyncState === 'syncing') return;
     const { hole, scores } = state._inlineScore;
     const requiredEntities = getRequiredScoreEntities();
     const missingRequired = requiredEntities.filter(name => !(scores[name] >= 1 && scores[name] <= 15));
@@ -3483,6 +3570,7 @@ window.MG = {
       is_offline: !Sync.isOnline()
     });
     const isRetrySave = state._inlineSyncState === 'queued' || state._inlineSyncState === 'error';
+    clearTimeout(state._inlineSyncStateTimer);
     state._inlineSyncState = 'syncing';
     refresh();
     const saveStart = Date.now();
@@ -3518,6 +3606,14 @@ window.MG = {
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
         state._inlineSyncState = 'synced';
+        state._inlineLastSavedHole = hole;
+        clearTimeout(state._inlineSyncStateTimer);
+        state._inlineSyncStateTimer = setTimeout(() => {
+          if (state._inlineSyncState === 'synced') {
+            state._inlineSyncState = '';
+            refresh();
+          }
+        }, 1800);
 
         // Store undo data before advancing
         state._lastScoredHole = { hole, scores: { ...scores }, stats: holeStats ? JSON.parse(JSON.stringify(holeStats)) : null };
@@ -3576,6 +3672,7 @@ window.MG = {
         });
       }
       if (!isOffline) {
+        clearTimeout(state._inlineSyncStateTimer);
         state._inlineSyncState = 'error';
         toast('Save failed — Try again');
         refresh();
@@ -3583,10 +3680,17 @@ window.MG = {
       }
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
+      emitUxEvent('score_save_failed', {
+        hole,
+        error_code: 'offline_queued',
+        is_retry: isRetrySave
+      });
       if (!state._holes) state._holes = {};
       const existingHole = state._holes[hole] || {};
       state._holes[hole] = { ...existingHole, scores: { ...scores } };
+      clearTimeout(state._inlineSyncStateTimer);
       state._inlineSyncState = 'queued';
+      state._inlineLastSavedHole = hole;
       // Store stats locally even when offline
       if (holeStats) {
         if (!state._holes[hole] || typeof state._holes[hole] !== 'object') {

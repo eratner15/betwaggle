@@ -1,0 +1,14 @@
+page,element,current_price,correct_price,status,evidence,notes,checked_at
+/,Season card + CTA,"$149/season pass and $32/event","$149/season pass and $32/event",correct,"index.html:2444|2445|2799|2836",No legacy $199/$9.99 found,2026-04-03T15:05:00-04:00
+/tour/,Comparison pricing row,"$149/season pass + $32/event","$149/season pass + $32/event",correct,"tour/index.html:295",Known prior $199 mismatch resolved,2026-04-03T15:05:00-04:00
+/pricing/,Meta/hero/cards/CTA/JS season pricing,"$149/season pass + $32/event","$149/season pass + $32/event",correct,"pricing/index.html:7|11|12|22|23|715|772|781|789|847|871|910|947|959|960|968",All sampled pricing copy is canonical,2026-04-03T15:05:00-04:00
+/demo/,Page pricing copy,No explicit price shown,"Should include event and season offer in CTA context",inconsistent,"demo/index.html + live /demo/ response",Demo index links to scenarios but does not show explicit price CTA text,2026-04-03T15:05:00-04:00
+/create/,Season pricing badge and tile,"$149/season pass","$149/season pass",correct,"create/index.html:494|2642",Canonical wording present,2026-04-03T15:05:00-04:00
+worker.js,WAGGLE_PRICES amounts,"event=3200 cents; season=14900 cents","$32/event and $149/season pass",correct,"worker.js:2158|2161|2162",Amounts match canonical pricing,2026-04-03T15:05:00-04:00
+worker.js,WAGGLE_LABELS display copy,"$149/season (label)","$149/season pass",incorrect,"worker.js:2159",Display labels need wording normalization to 'season pass',2026-04-03T15:05:00-04:00
+worker.js,Ad prompt segment copy,"club segment '$149/season'","$149/season pass",incorrect,"worker.js:4471|4476",Generated ad-copy seed is inconsistent,2026-04-03T15:05:00-04:00
+emails/affiliate-welcome.html,Affiliate commission line,"$149/season pass","$149/season pass",correct,"emails/affiliate-welcome.html:50",Canonical wording present,2026-04-03T15:05:00-04:00
+emails/outreach/ca-golf-sequence.html,Recurring offer pricing,"$149/season pass + $32/event","$149/season pass + $32/event",correct,"emails/outreach/ca-golf-sequence.html:12|42|92",Canonical wording present,2026-04-03T15:05:00-04:00
+emails/outreach/fl-charity-sequence.html,Recurring offer pricing,"$149/season pass","$149/season pass",correct,"emails/outreach/fl-charity-sequence.html:38",Canonical wording present,2026-04-03T15:05:00-04:00
+emails/outreach/objection-handling.md,Pricing objection response,"$32/event or $149/season pass","$32/event or $149/season pass",correct,"emails/outreach/objection-handling.md:15",Canonical wording present,2026-04-03T15:05:00-04:00
+core scan,Legacy $199 references,none found,"No $199 on audited customer-facing surfaces",correct,"rg scan 2026-04-03",Urgent mismatch appears remediated on audited pages,2026-04-03T15:05:00-04:00

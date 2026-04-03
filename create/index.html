@@ -21,7 +21,7 @@
 
     /* ── Top bar ── */
     .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--dark);border-bottom:1px solid rgba(255,255,255,0.08)}
-    .topbar a{color:var(--gold);text-decoration:none;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;min-height:56px}
+    .topbar a{color:var(--gold);text-decoration:none;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;min-height:56px;min-width:56px}
     .topbar .title{color:#fff;font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
 
     /* ── Progress ── */
@@ -37,7 +37,7 @@
     .step.active{display:block;animation:fadeIn 0.3s ease}
     @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    .step-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    .step-label{font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
     .step h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--dark);margin-bottom:8px;line-height:1.2}
     .step .desc{color:var(--muted);font-size:14px;margin-bottom:28px;line-height:1.6}
 
@@ -64,7 +64,7 @@
     .roster-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04)}
     .roster-row:last-child{border-bottom:none}
     .roster-row:nth-child(odd){background:rgba(26,71,42,0.02)}
-    .roster-row .num{color:var(--muted);font-size:11px;width:24px;flex-shrink:0}
+    .roster-row .num{color:var(--muted);font-size:12px;width:24px;flex-shrink:0}
     .roster-row .name{font-weight:600;flex:1}
     .roster-row .hcp{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
     .roster-count{font-size:13px;color:var(--green);font-weight:700;margin-top:12px;display:flex;align-items:center;gap:6px}
@@ -74,7 +74,7 @@
     /* ── Flights ── */
     .flight-box{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
     .flight-box h4{font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px}
-    .flight-box h4 .tees{font-size:10px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+    .flight-box h4 .tees{font-size:12px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
     .flight-team{font-size:13px;padding:5px 0;display:flex;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.03)}
     .flight-team:last-child{border-bottom:none}
     .flight-team .combined{font-family:'SF Mono',monospace;font-size:12px;color:var(--muted)}
@@ -85,16 +85,17 @@
     .format-card:hover{border-color:var(--green)}
     .format-card.selected{border-color:var(--green);background:#f0f7f2}
     .format-card h4{font-size:14px;font-weight:700;margin-bottom:2px}
-    .format-card p{font-size:11px;color:var(--muted)}
+    .format-card p{font-size:12px;color:var(--muted)}
 
-    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);min-height:56px}
     .toggle-row:last-child{border-bottom:none}
     .toggle-label{font-size:14px;font-weight:500}
     .toggle-desc{font-size:12px;color:var(--muted)}
-    .toggle{width:44px;height:26px;background:#d1d5db;border-radius:13px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
-    .toggle.on{background:var(--green)}
-    .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
-    .toggle.on::after{transform:translateX(18px)}
+    .toggle{width:56px;height:56px;background:transparent;border-radius:28px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+    .toggle::before{content:'';position:absolute;top:20px;left:8px;width:40px;height:16px;border-radius:999px;background:#d1d5db;transition:background 0.2s}
+    .toggle.on::before{background:var(--green)}
+    .toggle::after{content:'';position:absolute;top:16px;left:8px;width:24px;height:24px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+    .toggle.on::after{transform:translateX(24px)}
 
     /* ── Theme ── */
     .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -123,7 +124,7 @@
     .launch-success .sub{font-size:14px;color:var(--muted);margin-bottom:24px}
     .launch-url{background:var(--dark);border-radius:12px;padding:20px;margin:0 auto;max-width:400px}
     .launch-url a{color:var(--gold);font-size:15px;font-weight:700;text-decoration:none;word-break:break-all}
-    .launch-url .copy-hint{font-size:11px;color:rgba(255,255,255,0.5);margin-top:8px}
+    .launch-url .copy-hint{font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px}
     .launch-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px;justify-content:center}
     .launch-secondary-actions{display:flex;gap:10px;justify-content:center}
     .launch-btn{min-height:56px;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:transform 0.15s}
@@ -132,14 +133,14 @@
     .launch-btn.secondary{background:var(--white);color:var(--green);border:1.5px solid var(--border)}
     .qr-hero{margin:20px auto;padding:24px;background:var(--white);border-radius:16px;border:2px solid var(--border);text-align:center;max-width:280px}
     .qr-hero img{border-radius:10px}
-    .qr-hero .qr-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:12px}
+    .qr-hero .qr-label{font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:12px}
     .qr-hero .qr-hint{font-size:13px;color:var(--muted);margin-top:4px}
     .launch-proof-row{display:flex;gap:8px;overflow-x:auto;padding:2px 0 2px;margin-top:12px;scrollbar-width:none}
     .launch-proof-row::-webkit-scrollbar{display:none}
     .launch-proof-chip{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--green)}
     .admin-card{margin-top:20px;padding:16px 20px;background:var(--dark);border-radius:12px;color:#fff;text-align:left}
     .admin-card .pin-value{font-family:'SF Mono','Menlo',monospace;font-size:28px;font-weight:700;letter-spacing:4px;color:var(--gold);margin:4px 0 8px}
-    .admin-card .pin-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
+    .admin-card .pin-label{font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.5)}
     .admin-card .pin-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;line-height:1.5}
 
     /* ── Quick Start (Dark Sportsbook Theme) ── */
@@ -148,7 +149,7 @@
     .qs-inner{max-width:520px;margin:0 auto;padding:24px 20px 160px}
     .qs-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:rgba(252,249,244,0.5);cursor:pointer;border:none;background:none;padding:0;margin-bottom:24px;min-height:56px}
     .qs-back:hover{color:#FCF9F4}
-    .qs-section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:10px;display:block}
+    .qs-section-label{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:10px;display:block}
 
     /* GHIN lookup */
     .qs-ghin-row{display:flex;gap:8px;margin-bottom:12px}
@@ -158,7 +159,7 @@
     .qs-ghin-btn{padding:14px 20px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:56px;transition:background 0.15s}
     .qs-ghin-btn:hover{background:#d4b068}
     .qs-ghin-btn:disabled{opacity:0.4;cursor:not-allowed}
-    .qs-or-divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:rgba(252,249,244,0.3);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+    .qs-or-divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:rgba(252,249,244,0.3);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
     .qs-or-divider::before,.qs-or-divider::after{content:'';flex:1;height:1px;background:rgba(252,249,244,0.1)}
 
     /* Textarea */
@@ -179,13 +180,13 @@
     .qs-game-card.on{border-color:#C5A059;background:rgba(197,160,89,0.1);box-shadow:0 0 16px rgba(197,160,89,0.15)}
     .qs-game-card .qs-gc-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
     .qs-game-card .qs-gc-name{font-size:13px;font-weight:700;color:#FCF9F4;line-height:1.2}
-    .qs-game-card .qs-gc-desc{font-size:11px;color:rgba(252,249,244,0.45);line-height:1.3;margin-top:2px}
+    .qs-game-card .qs-gc-desc{font-size:12px;color:rgba(252,249,244,0.45);line-height:1.3;margin-top:2px}
     .qs-game-card.on .qs-gc-name{color:#C5A059}
 
     /* Quick combos */
     .qs-combos{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
     .qs-combos::-webkit-scrollbar{display:none}
-    .qs-combo-chip{padding:8px 14px;border:1.5px solid rgba(197,160,89,0.3);border-radius:20px;font-size:11px;font-weight:600;color:#C5A059;cursor:pointer;white-space:nowrap;background:rgba(197,160,89,0.06);transition:background 0.15s,border 0.15s;min-height:56px;display:flex;align-items:center}
+    .qs-combo-chip{padding:8px 14px;border:1.5px solid rgba(197,160,89,0.3);border-radius:20px;font-size:12px;font-weight:600;color:#C5A059;cursor:pointer;white-space:nowrap;background:rgba(197,160,89,0.06);transition:background 0.15s,border 0.15s;min-height:56px;display:flex;align-items:center}
     .qs-combo-chip:hover{background:rgba(197,160,89,0.15);border-color:#C5A059}
 
     /* Course search */
@@ -198,25 +199,25 @@
     .qs-course-result:hover{background:rgba(197,160,89,0.1)}
     .qs-course-result:last-child{border-bottom:none}
     .qs-course-result .qs-cr-name{font-size:14px;font-weight:600;color:#FCF9F4}
-    .qs-course-result .qs-cr-meta{font-size:11px;color:rgba(252,249,244,0.45);margin-top:2px}
+    .qs-course-result .qs-cr-meta{font-size:12px;color:rgba(252,249,244,0.45);margin-top:2px}
     .qs-course-selected{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(197,160,89,0.08);border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;margin-bottom:8px}
     .qs-course-selected .qs-cs-name{font-size:14px;font-weight:700;color:#C5A059;flex:1}
-    .qs-course-selected .qs-cs-meta{font-size:11px;color:rgba(252,249,244,0.5)}
+    .qs-course-selected .qs-cs-meta{font-size:12px;color:rgba(252,249,244,0.5)}
     .qs-course-selected .qs-cs-clear{padding:6px 10px;background:rgba(252,249,244,0.1);border:none;border-radius:6px;color:rgba(252,249,244,0.6);cursor:pointer;font-size:12px;font-weight:600}
     .qs-course-skip{font-size:12px;color:rgba(252,249,244,0.4);cursor:pointer;border:none;background:none;padding:4px 0;font-family:inherit}
     .qs-course-skip:hover{color:rgba(252,249,244,0.6)}
 
     /* Live odds preview */
     .qs-odds-preview{margin-top:16px;padding:16px;background:rgba(252,249,244,0.04);border:1px solid rgba(252,249,244,0.08);border-radius:12px}
-    .qs-odds-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.4);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .qs-odds-title{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.4);margin-bottom:10px;display:flex;align-items:center;gap:8px}
     .qs-odds-title::before{content:'';display:inline-block;width:6px;height:6px;background:#4ade80;border-radius:50%;animation:qsPulse 1.5s infinite}
     @keyframes qsPulse{0%,100%{opacity:1}50%{opacity:0.3}}
     .qs-odds-matchups{display:flex;flex-direction:column;gap:8px}
     .qs-odds-row{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px}
-    .qs-odds-chip{padding:6px 12px;border-radius:8px;font-weight:700;font-family:'SF Mono',monospace;font-size:12px}
+    .qs-odds-chip{padding:10px 14px;border-radius:8px;font-weight:700;font-family:Inter,sans-serif;font-size:13px;min-height:56px;display:inline-flex;align-items:center;justify-content:center;line-height:1.2}
     .qs-odds-fav{background:rgba(197,160,89,0.15);color:#C5A059;border:1px solid rgba(197,160,89,0.3)}
     .qs-odds-dog{background:rgba(252,249,244,0.06);color:rgba(252,249,244,0.7);border:1px solid rgba(252,249,244,0.1)}
-    .qs-odds-vs{color:rgba(252,249,244,0.3);font-size:11px;font-weight:600}
+    .qs-odds-vs{color:rgba(252,249,244,0.3);font-size:12px;font-weight:600}
 
     /* GO button */
     .qs-go{width:100%;min-height:56px;padding:20px;background:#C5A059;color:#1B3022;border:none;border-radius:14px;font-family:'Playfair Display',serif;font-size:20px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:box-shadow 0.3s,transform 0.15s;margin-top:28px;animation:qsGoPulse 2.5s ease-in-out infinite;position:relative;overflow:hidden}
@@ -242,6 +243,14 @@
     .btn-next:disabled{opacity:0.3;cursor:not-allowed}
     .btn-launch{background:var(--gold);color:var(--dark);font-size:16px;box-shadow:var(--shadow-glow)}
     .btn-launch:hover{transform:translateY(-1px)}
+    .type-card,.format-card,.theme-swatch,.qs-game-card,.qs-ghin-btn,.qs-course-result,.qs-go,.launch-btn{min-height:56px}
+    .topbar a:active,.btn:active,.launch-btn:active,.qs-game-card:active,.qs-combo-chip:active,.qs-ghin-btn:active,.qs-go:active{transform:scale(0.98)}
+    @media(max-width:600px){
+      .content [style*="font-size:10px"],
+      .content [style*="font-size:11px"],
+      .qs-overlay [style*="font-size:10px"],
+      .qs-overlay [style*="font-size:11px"]{font-size:12px !important}
+    }
     @media(max-width:720px){
       .launch-secondary-actions{justify-content:stretch}
       .launch-secondary-actions .launch-btn{flex:1;padding:12px 10px}
@@ -482,7 +491,7 @@
         {id:'quick',       icon:'⚡', name:'Weekend Warrior', desc:'Track any match, free. Skins, Nassau, Wolf, Match Play — pick your game and go.', badge:'FREE'},
         {id:'trip',        icon:'🏌️', name:'Buddies Trip',    desc:'Casual group. Nassau, skins, wolf, Vegas + more. 1-4 rounds.'},
         {id:'member_guest',icon:'🏆', name:'Member-Guest',   desc:'Flighted round robin. Multi-day. Flights, standings, futures.'},
-        {id:'scramble',    icon:'🏟️', name:'Scramble / Outing',desc:'Team event. Shotgun start. Live leaderboard, closest-to-pin, and side action. Perfect for charity and corporate outings.', badge:'$149/season'},
+        {id:'scramble',    icon:'🏟️', name:'Scramble / Outing',desc:'Team event. Shotgun start. Live leaderboard, closest-to-pin, and side action. Perfect for charity and corporate outings.', badge:'$149/season pass'},
         {id:'outing',      icon:'⛳', name:'Outing / Charity',desc:'Shotgun start. Custom format and scoring.'},
       ];
       return `
@@ -2200,7 +2209,7 @@
       const nassauOn = W.games.nassau;
       const skinsOn = W.games.skins;
 
-      // Compute cost display: $32 / num players
+      // Compute cost display: $32/event / num players
       const numPlayers = W.roster.length || 4;
       const perPerson = Math.round(3200 / Math.max(numPlayers, 1)) / 100;
 
@@ -2630,7 +2639,7 @@
         ${W._launchError ? `<div style="margin-top:16px;padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:var(--lose);font-size:13px">${esc(W._launchError)}</div>` : ''}
 
         <div style="margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:12px;color:#fff;text-align:center">
-          <div style="font-size:28px;font-weight:800;font-family:'Playfair Display',serif">$149/season</div>
+          <div style="font-size:28px;font-weight:800;font-family:'Playfair Display',serif">$149/season pass</div>
           <div style="font-size:13px;opacity:.8;margin-top:2px">Unlimited teams, live leaderboard, side games, What-If simulator</div>
         </div>`;
     }

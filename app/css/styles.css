@@ -867,8 +867,9 @@ body {
   padding: 12px 12px;
   min-width: 56px;
   min-height: 56px;
-  transition: all .15s ease-out;
+  transition: transform .12s ease-out, border-color .15s ease-out, background-color .15s ease-out, box-shadow .15s ease-out;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -879,6 +880,11 @@ body {
 .mg-odds-btn:active {
   transform: scale(0.96);
   background: var(--bg-hover);
+}
+.mg-odds-btn.odds-pressed {
+  transform: scale(0.97);
+  background: var(--bg-hover);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.32);
 }
 .mg-odds-btn:focus-visible {
   outline: 2px solid var(--gold-bright);
@@ -893,6 +899,7 @@ body {
   background: var(--gold-bright);
   border-width: 2px;
   transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 10px 20px rgba(0, 0, 0, 0.35);
 }
 .mg-odds-btn.selected .odds-line {
   color: var(--green-primary);

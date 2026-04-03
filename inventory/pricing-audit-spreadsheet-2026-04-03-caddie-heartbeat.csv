@@ -1,0 +1,21 @@
+page,element,current_price,correct_price,status,evidence,last_checked_et
+/,Event CTA buttons,"$32/event","$32/event",correct,"index.html:1438|1452|2359|2373|2727|2732|2756|2768",2026-04-03 14:03
+/,Season pass labels and CTAs,"$149/season","$149/season pass",incorrect,"index.html:2378|2379|2733|2770",2026-04-03 14:03
+/tour/,Event CTA buttons,"$32/event","$32/event",correct,"tour/index.html:131|210|272|304",2026-04-03 14:03
+/tour/,Comparison pricing row,"$149/season + $32/event","$149/season pass + $32/event",incorrect,"tour/index.html:295",2026-04-03 14:03
+/tour/ (live),Legacy pricing check,"No $199 observed","No $199",correct,"curl -I https://betwaggle.com/tour/ => 307 self-loop; no $199 in source",2026-04-03 14:03
+/pricing/ (source),Meta and hero season copy,"$149/season","$149/season pass",incorrect,"pricing/index.html:7|11|12|22|23|715",2026-04-03 14:03
+/pricing/ (source),Event CTAs,"$32/event","$32/event",correct,"pricing/index.html:707|741|762|899|909",2026-04-03 14:03
+/pricing/ (source),Season CTAs + JS prompts,"$149/season","$149/season pass",incorrect,"pricing/index.html:772|781|789|847|871|910|947|959|960|968",2026-04-03 14:03
+/pricing/ (live),Route availability,"404","200",incorrect,"curl -I https://betwaggle.com/pricing/ => 404",2026-04-03 14:03
+/demo/,Primary CTA,"$32/event","$32/event",correct,"demo/index.html:448",2026-04-03 14:03
+/demo/,Support pricing line,"$32/event","$32/event",correct,"demo/index.html:451",2026-04-03 14:03
+/create/ (source),Season badge + tile,"$149/season","$149/season pass",incorrect,"create/index.html:485|2633",2026-04-03 14:03
+/create/ (source),Event pricing amount,"3200 cents ($32)","3200 cents ($32/event)",correct,"create/index.html:2205|2365",2026-04-03 14:03
+/worker.js,Checkout labels event tier,"Waggle Event ($32)","Waggle Event ($32/event)",incorrect,"worker.js:2124|2126",2026-04-03 14:03
+/worker.js,Checkout labels season tier,"$149/season","$149/season pass",incorrect,"worker.js:2124|2127|4347|4352",2026-04-03 14:03
+/emails/SEQUENCE.md,Pricing style guide,"Always '$149/season'","Always '$149/season pass'",incorrect,"emails/SEQUENCE.md:25",2026-04-03 14:03
+/emails/outreach/ca-golf-sequence.html,Recurring offer copy,"$149/season","$149/season pass",incorrect,"lines 12|42|92",2026-04-03 14:03
+/emails/outreach/fl-charity-sequence.html,Recurring offer copy,"$149/season","$149/season pass",incorrect,"line 38",2026-04-03 14:03
+/emails/affiliate-welcome.html,Affiliate payout tier copy,"$149/season","$149/season pass",incorrect,"line 50",2026-04-03 14:03
+/emails/outreach/sc-nc-premium-sequence.html,Recurring offer copy,"$149/season pass","$149/season pass",correct,"lines 11|37|81",2026-04-03 14:03

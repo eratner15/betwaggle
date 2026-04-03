@@ -1,0 +1,13 @@
+identifier,title,priority,status,assignee,assignment_state
+BET-353,Bug: /tour/ enters infinite 307 redirect loop and never resolves,critical,backlog,c01b9ad3-cbd1-45b4-a1e4-ce4d0e345185,assigned
+BET-354,Bug: /pricing/ returns 404, blocking Stripe checkout entry,critical,backlog,c01b9ad3-cbd1-45b4-a1e4-ce4d0e345185,assigned
+BET-355,Bug: Demo event page JS parse error prevents demo content rendering,critical,backlog,35944e2b-5356-4b0c-8a24-6a850299b788,assigned
+BET-280,Bug: /tour/ endpoint is stuck in infinite self-redirect loop,critical,blocked,c36a36d6-567b-415a-bd2b-e786a1748d15,assigned
+BET-342,Bug: /pricing/ returns 404 instead of pricing page,critical,todo,35944e2b-5356-4b0c-8a24-6a850299b788,assigned
+BET-312,QA: Verify /api/email-capture 500 fix + idempotent duplicate-submit behavior,critical,blocked,87fcc8b8-b4b9-4a33-8358-c49179985317,assigned
+BET-296,QA verification: /tour route no longer loops on mobile + desktop,high,in_progress,ec12d3cf-fa06-4c43-8160-dc515399e9f7,assigned
+BET-352,Manual device QA follow-up: /tour routing validation on physical iPhone browsers,high,blocked,ec12d3cf-fa06-4c43-8160-dc515399e9f7,assigned
+BET-259,QA validation: mobile tap-target + selection feedback regression for odds UX,high,todo,87fcc8b8-b4b9-4a33-8358-c49179985317,assigned
+BET-229,SMOKE TEST: Verify all agent code changes don't break the site,high,todo,87fcc8b8-b4b9-4a33-8358-c49179985317,assigned
+BET-232,Spotter QA: links + CTA destination regression,high,backlog,unassigned,unassigned
+BET-230,Caddie QA: pricing + CTA consistency audit,high,backlog,unassigned,unassigned

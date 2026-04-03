@@ -57,6 +57,7 @@
       background: var(--ivory);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
       /* Subtle paper grain — like heavy-stock scorecard paper */
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
       background-size: 256px 256px;
@@ -80,6 +81,8 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      min-height: 56px;
+      padding: 8px 0;
     }
     .nav-logo-img {
       width: 34px;
@@ -112,6 +115,16 @@
       transition: color .15s;
     }
     .nav-demo:hover { color: var(--gold); }
+
+    a[href],
+    button {
+      transition: transform .12s ease, filter .12s ease;
+    }
+    a[href]:active,
+    button:active {
+      transform: scale(0.98);
+      filter: brightness(1.05);
+    }
 
     .nav-links {
       display: flex;
@@ -284,7 +297,7 @@
       letter-spacing: .03em;
     }
     .mockup-event-meta {
-      font-size: 11px;
+      font-size: 12px;
       color: rgba(255,255,255,.45);
       margin-top: 3px;
       letter-spacing: .04em;
@@ -306,10 +319,10 @@
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .match-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
     .live-dot {
       display: flex; align-items: center; gap: 5px;
-      font-size: 10px; font-weight: 700; color: var(--gold);
+      font-size: 12px; font-weight: 700; color: var(--gold);
       letter-spacing: .06em; text-transform: uppercase;
     }
     .live-dot::before {
@@ -331,7 +344,7 @@
       justify-content: space-between;
     }
     .team-name { font-size: 13px; color: var(--text); font-weight: 600; }
-    .team-hi { font-size: 11px; color: var(--muted); margin-left: 5px; }
+    .team-hi { font-size: 12px; color: var(--muted); margin-left: 5px; }
     .odds-pill {
       font-size: 14px;
       font-weight: 700;
@@ -670,7 +683,7 @@
       flex-shrink: 0;
     }
     .format-player-badge {
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: .05em;
       color: var(--gold-dk);
       font-weight: 600;
@@ -717,9 +730,10 @@
       text-decoration: underline;
       text-underline-offset: 3px;
       transition: color .12s;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       padding: 12px 0;
-      min-height: 44px;
+      min-height: 56px;
     }
     .format-guide-link:hover {
       color: var(--gold-dk);
@@ -781,7 +795,7 @@
     }
 
     .price-type {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: .12em;
       text-transform: uppercase;
@@ -835,13 +849,15 @@
     }
 
     .price-cta {
-      display: block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: var(--forest);
       margin-top: auto;
       color: #fff;
       text-align: center;
       padding: 14px;
-      min-height: 48px;
+      min-height: 56px;
       font-size: 13px;
       font-weight: 600;
       letter-spacing: .04em;
@@ -905,9 +921,11 @@
       letter-spacing: .04em;
       border-bottom: 1px solid rgba(255,255,255,.15);
       padding: 12px 4px;
-      min-height: 44px;
+      min-height: 56px;
+      min-width: 56px;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       transition: color .12s;
     }
     .final-links a:hover { color: rgba(255,255,255,.7); }
@@ -925,7 +943,7 @@
       color: rgba(255,255,255,.25);
       letter-spacing: .04em;
     }
-    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 12px 8px; min-height: 56px; min-width: 56px; display: inline-flex; align-items: center; justify-content: center; }
     footer a:hover { color: rgba(255,255,255,.6); }
 
     /* Entrance animations */
@@ -1284,9 +1302,26 @@
 
     /* Nav: hide secondary links on small screens */
     @media (max-width: 600px) {
-      nav { padding: 16px 16px; }
-      .nav-links { gap: 10px; }
-      .nav-demo { font-size: 11px; padding: 10px 2px; }
+      nav {
+        padding: 14px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .nav-links {
+        width: 100%;
+        gap: 8px;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .nav-demo {
+        width: 100%;
+        font-size: 12px;
+        padding: 0 10px;
+        min-height: 56px;
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 6px;
+        justify-content: center;
+      }
     }
 
     /* Hero: tighter on mobile */
@@ -1294,9 +1329,9 @@
       .hero { padding: 80px 16px 0; }
       .hero-inner { gap: 32px; }
       .hero-copy { padding-bottom: 8px; }
-      .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
-      .hero-sub { font-size: 15px; margin-bottom: 20px; }
-      .hero-fine { font-size: 11px; }
+      .hero-kicker { font-size: 12px; letter-spacing: .1em; margin-bottom: 14px; }
+      .hero-sub { font-size: 14px; margin-bottom: 20px; }
+      .hero-fine { font-size: 12px; }
       /* CTA full-width on mobile */
       .btn-primary { display: block; text-align: center; padding: 16px 24px; font-size: 16px; }
       /* Mockup: constrain and add breathing room */
@@ -1319,7 +1354,38 @@
       .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
       .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
       .proof-num { font-size: 28px; }
-      .proof-label { font-size: 11px; }
+      .proof-label { font-size: 12px; }
+    }
+
+    @media (max-width: 600px) {
+      #sound-toggle {
+        min-width: 56px !important;
+        min-height: 56px !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+      }
+
+      .section a[href="/courses/"],
+      .section a[href="/create/"],
+      .final-cta a {
+        min-height: 56px !important;
+        min-width: 56px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      [style*="font-size:10px"],
+      [style*="font-size:11px"] {
+        font-size: 12px !important;
+      }
+
+      .mockup-body [style*="font-size:10px"],
+      .mockup-body [style*="font-size:11px"],
+      #demo-ui [style*="font-size:10px"],
+      #demo-ui [style*="font-size:11px"] {
+        font-size: 12px !important;
+      }
     }
 
     /* Body sections: less padding on mobile */
@@ -1435,7 +1501,7 @@
     </a>
     <div class="nav-links">
       <a class="nav-demo" href="/demo/">Try the Demo</a>
-      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32</a>
+      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32/event</a>
     </div>
   </nav>
 
@@ -1449,7 +1515,7 @@
         <p class="hero-sub" style="margin-bottom:6px">The live sportsbook your foursome has been running manually for years.</p>
         <p class="hero-sub">$32/event to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic.</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32</a>
+          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32/event</a>
           <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
           <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; $32/event</span>
           <div style="margin-top:10px;text-align:center">
@@ -2301,7 +2367,7 @@
           <div style="font-weight:700;color:var(--forest);margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
           Par 72 &middot; Slope 155 &middot; Rating 76.4
         </div>
-        <a href="/courses/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
+        <a href="/courses/" style="display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:10px 14px;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
       </div>
       <div style="background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:28px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:12px">GHIN Integration</div>
@@ -2310,7 +2376,7 @@
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
           <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
         </div>
-        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32</a>
+        <a href="/create/" style="display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:10px 14px;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32/event</a>
       </div>
     </div>
   </div>
@@ -2356,7 +2422,7 @@
             <span class="price-detail">Perfect for a spontaneous money match</span>
             <span class="price-detail">One setup link for the entire group</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
@@ -2370,13 +2436,13 @@
             <span class="price-detail">Shareable settlement card at round end</span>
             <span class="price-detail">Any phone, no app required</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
           <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
-          <div class="price-amount">$149/season</div>
-          <span class="price-period">$149/season, unlimited events &amp; players</span>
+          <div class="price-amount">$149/season pass</div>
+          <span class="price-period">$149/season pass, unlimited events &amp; players</span>
           <div class="price-details">
             <span class="price-detail">Team scramble with live leaderboard</span>
             <span class="price-detail">Closest to pin and longest drive tracking</span>
@@ -2385,7 +2451,7 @@
             <span class="price-detail">Flight assignments and pairing management</span>
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32</a>
+          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
           <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
       </div>
@@ -2724,13 +2790,13 @@
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32</a>
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32/event</a>
         <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">$32/event &middot; No credit card required</span>
       </div>
       <div class="final-links">
         <a href="/demo/">Try the Demo</a>
-        <a href="/create/">Set Up Your Event &mdash; $32</a>
-        <a href="/create/?tier=season">Set Up Your Season &mdash; $149/season</a>
+        <a href="/create/">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/?tier=season">Set Up Your Season &mdash; $149/season pass</a>
       </div>
     </div>
   </div>
@@ -2753,7 +2819,7 @@
       document.getElementById('email-input').disabled = true;
       btn.textContent = 'Sent';
     } catch(err) {
-      btn.textContent = 'Set Up Your Event — $32';
+      btn.textContent = 'Set Up Your Event — $32/event';
       btn.disabled = false;
     }
   }
@@ -2765,9 +2831,9 @@
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32</a>
+        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32/event</a>
         <a href="/demo/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Try the Demo</a>
-        <a href="/create/?tier=season" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Season &mdash; $149/season</a>
+        <a href="/create/?tier=season" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Season &mdash; $149/season pass</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
       <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>

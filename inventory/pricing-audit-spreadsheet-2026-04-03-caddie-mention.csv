@@ -1,0 +1,15 @@
+page,element,current_price,correct_price,status,notes,checked_at_et
+/ (live+source),Primary event CTAs,"$32/event","$32/event",correct,"Homepage event pricing is canonical.",2026-04-03 14:13 ET
+/ (source),Season CTA text,"$149/season","$149/season pass",copy_mismatch,"Season wording still omits 'pass' in footer/CTA links.",2026-04-03 14:13 ET
+/tour/ (source),Pricing row,"$149/season + $32/event","$149/season pass + $32/event",copy_mismatch,"Source uses /season wording, no $199 found.",2026-04-03 14:13 ET
+/tour/ (live),Route availability,"307 self-redirect (Location: /tour/)","200 and auditable content",blocked,"Live audit blocked by route regression.",2026-04-03 14:13 ET
+/pricing/ (source),Hero/meta/CTA season wording,"$149/season","$149/season pass",copy_mismatch,"Meta tags, hero, table, JS prompts, and CTA use /season.",2026-04-03 14:13 ET
+/pricing/ (live),Route availability,"404 Event Not Found","200 and auditable content",blocked,"Live pricing page unavailable; cannot complete in-browser signoff.",2026-04-03 14:13 ET
+/demo/ (live+source),CTA + support pricing,"$32/event","$32/event",correct,"Demo pricing copy is canonical.",2026-04-03 14:13 ET
+emails/outreach/ca-golf-sequence.html,Season copy,"$149/season","$149/season pass",copy_mismatch,"Preview + body season wording not canonical.",2026-04-03 14:13 ET
+emails/outreach/fl-charity-sequence.html,Season copy,"$149/season","$149/season pass",copy_mismatch,"Recurring tournaments line not canonical.",2026-04-03 14:13 ET
+emails/affiliate-welcome.html,Season copy,"$149/season","$149/season pass",copy_mismatch,"Affiliate payout explanation not canonical.",2026-04-03 14:13 ET
+emails/outreach/sc-nc-premium-sequence.html,Season copy,"$149/season pass","$149/season pass",correct,"Template already canonical.",2026-04-03 14:13 ET
+create/index.html,Price labels,"$149/season and $32/event","$149/season pass and $32/event",copy_mismatch,"Season label uses /season.",2026-04-03 14:13 ET
+worker.js,Checkout/product labels,"$149/season and $32","$149/season pass and $32/event",copy_mismatch,"Label strings use /season and $32 shorthand.",2026-04-03 14:13 ET
+repo-wide,Legacy $199 check,"No $199 in audited source pages","No $199",correct,"No $199 found in homepage/tour/pricing/demo/email/worker/create audit set.",2026-04-03 14:13 ET

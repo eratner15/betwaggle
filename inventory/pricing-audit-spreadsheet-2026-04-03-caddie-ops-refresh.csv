@@ -1,0 +1,18 @@
+page,element,current_price,correct_price,status,notes,last_checked
+/,Hero + primary CTA,$32/event,$32/event,correct,Homepage event pricing copy and CTA match canonical,2026-04-03T14:28:00-04:00
+/,Season card amount,$149/season,$149/season pass,copy_mismatch,Numeric price correct but wording should be 'season pass',2026-04-03T14:28:00-04:00
+/,Footer CTA season link label,Set Up Your Season — $149/season,Set Up Your Season — $149/season pass,copy_mismatch,Season CTA wording mismatch,2026-04-03T14:28:00-04:00
+/tour/ (live),Route health,unavailable (307 self-redirect loop),should render pricing surfaces,blocked,Live route currently loops to itself,2026-04-03T14:28:00-04:00
+/tour/ (source),Comparison pricing row,$149/season and $32/event,$149/season pass and $32/event,copy_mismatch,No legacy $199 found; season wording mismatch remains,2026-04-03T14:28:00-04:00
+/tour/ (source),CTA labels,Set Up Your Event — $32/event,Set Up Your Event — $32/event,correct,CTA event pricing is correct,2026-04-03T14:28:00-04:00
+/pricing/ (live),Route health,404 (Event not found),should serve public pricing page,blocked,Critical conversion path broken,2026-04-03T14:28:00-04:00
+/pricing/ (source),Hero/meta/CTA season wording,$149/season,$149/season pass,copy_mismatch,Multiple instances use '/season' not '/season pass',2026-04-03T14:28:00-04:00
+/pricing/ (source),Event pricing,$32/event,$32/event,correct,Event pass wording consistent,2026-04-03T14:28:00-04:00
+/demo/,Primary CTA + helper copy,$32/event,$32/event,correct,No legacy pricing detected in demo surface,2026-04-03T14:28:00-04:00
+/create/ (source),Scramble badge,$149/season,$149/season pass,copy_mismatch,Numeric value correct but wording not normalized,2026-04-03T14:28:00-04:00
+/create/ (source),Event pricing callouts,$32/event,$32/event,correct,Event pricing consistent,2026-04-03T14:28:00-04:00
+worker.js,PRICES canonical amounts,"event=3200 cents; season=14900 cents","$32/event; $149/season pass",correct,Amounts are correct; labels still use '$149/season',2026-04-03T14:28:00-04:00
+worker.js,WAGGLE_LABELS display copy,$149/season and $32,$149/season pass and $32/event,copy_mismatch,Display labels use shorthand and '/season',2026-04-03T14:28:00-04:00
+emails/,Lifecycle drip CTA copy,$32/event,$32/event,correct,Drip campaign CTAs align to canonical event pricing,2026-04-03T14:28:00-04:00
+emails/,Season references (various outreach templates),$149/season,$149/season pass,copy_mismatch,Several outreach templates still use '/season' wording,2026-04-03T14:28:00-04:00
+repo-wide,Legacy $199 check,not found,not found,correct,No $199 strings found in audited source set,2026-04-03T14:28:00-04:00

@@ -1,0 +1,15 @@
+page,purpose,should_be_public,live_status,pricing_status,link_status,notes,checked_at_et
+/,Homepage conversion,yes,200,mixed,working,"$32/event correct; season wording still uses $149/season",2026-04-03 14:13 ET
+/tour/,Product tour and comparison,yes,307 self-redirect,blocked,broken,"Live route loops (Location: /tour/); source has no $199, but season wording uses $149/season",2026-04-03 14:13 ET
+/pricing/,Canonical pricing + checkout,yes,404,blocked,broken,"Live route returns Event Not Found; source uses $149/season wording",2026-04-03 14:13 ET
+/demo/,Interactive demo launcher,yes,200,correct,working,"$32/event copy is canonical; sim/settle tests pass",2026-04-03 14:13 ET
+/affiliate/,Legacy affiliate route,yes,200,not_priced,duplicate,"Duplicate public route with /affiliates/",2026-04-03 14:13 ET
+/affiliates/,Affiliate landing page,yes,200,not_priced,working,"Canonical affiliate page",2026-04-03 14:13 ET
+/marketing/,Internal docs alias,no,404,not_priced,blocked,"Currently blocked (not exposed)",2026-04-03 14:13 ET
+/gtm/,Internal docs alias,no,404,not_priced,blocked,"Currently blocked (not exposed)",2026-04-03 14:13 ET
+/ads/,Internal docs alias,no,404,not_priced,blocked,"Currently blocked (not exposed)",2026-04-03 14:13 ET
+/join/,Legacy alias,yes,301 redirect,not_priced,redirects,"Redirects to /create/",2026-04-03 14:13 ET
+/about/,Legacy alias,yes,301 redirect,not_priced,redirects,"Redirects to /overview/",2026-04-03 14:13 ET
+/games/stroke-play/,Legacy game alias,yes,301 redirect,not_priced,redirects,"Redirects to /games/",2026-04-03 14:13 ET
+/games/round-robin/,Legacy game alias,yes,301 redirect,not_priced,redirects,"Redirects to /games/",2026-04-03 14:13 ET
+/games/chapman/,Legacy game alias,yes,301 redirect,not_priced,redirects,"Redirects to /games/",2026-04-03 14:13 ET

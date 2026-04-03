@@ -54,6 +54,7 @@ function isBlockedPublicRoutePath(pathname) {
 function hasPrivateRouteAccess(request, url, env) {
   const privateToken = String(env.WAGGLE_PRIVATE_ROUTE_TOKEN || '').trim();
   const marketingPin = String(env.WAGGLE_MARKETING_PIN || '').trim();
+  const allowLegacyQueryPin = String(env.WAGGLE_ALLOW_LEGACY_QUERY_PIN || '').trim() === '1';
   const queryPin = String(url.searchParams.get('pin') || '').trim();
 
   // Allow explicit private token via header/query for internal QA and sharing.
@@ -68,8 +69,16 @@ function hasPrivateRouteAccess(request, url, env) {
     if (headerToken === privateToken || bearer === privateToken || queryPin === privateToken) return true;
   }
 
-  // Backward-compatible access using existing marketing pin.
-  if (marketingPin && queryPin === marketingPin) return true;
+  // Allow marketing PIN only via explicit admin header by default.
+  const marketingHeaderPin = String(
+    request.headers.get('x-marketing-pin') ||
+    request.headers.get('x-admin-pin') ||
+    ''
+  ).trim();
+  if (marketingPin && marketingHeaderPin && marketingHeaderPin === marketingPin) return true;
+
+  // Optional compatibility path for older pin links when explicitly enabled.
+  if (allowLegacyQueryPin && marketingPin && queryPin && queryPin === marketingPin) return true;
   return false;
 }
 
@@ -91,6 +100,44 @@ function hasApiAdminAccess(request, url, env) {
 
 function unauthorizedJson() {
   return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: EVENT_CORS });
+}
+
+function isApiLikePath(pathname) {
+  const path = String(pathname || '');
+  return path === '/api' || path.startsWith('/api/') || /\/api(?:\/|$)/.test(path);
+}
+
+function applyApiCorsHeaders(pathname, response) {
+  if (!isApiLikePath(pathname) || !response) return response;
+  const headers = new Headers(response.headers || {});
+  if (!headers.has('Access-Control-Allow-Origin')) {
+    headers.set('Access-Control-Allow-Origin', '*');
+  }
+  if (!headers.has('Access-Control-Allow-Methods')) {
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  }
+  if (!headers.has('Access-Control-Allow-Headers')) {
+    headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Pin, X-Admin-Token, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token');
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function withSyncHeaders(response, syncMeta) {
+  if (!response || !syncMeta) return response;
+  const rev = Number(syncMeta.rev || 0);
+  if (!Number.isFinite(rev) || rev <= 0) return response;
+  const headers = new Headers(response.headers || {});
+  headers.set('X-Waggle-Sync-Rev', String(rev));
+  if (syncMeta.updatedAt) headers.set('X-Waggle-Sync-Updated-At', String(syncMeta.updatedAt));
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 // Generate random 4-digit admin PIN (1000-9999)
@@ -129,6 +176,7 @@ function serverExpectedOdds(hcpA, hcpB) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const run = async () => {
     try {
 
     // Auto-seed events on first request (fire-and-forget, idempotent)
@@ -367,7 +415,7 @@ export default {
 
     // ===== EMAIL DRIP =====
     if (url.pathname === '/api/email/drip' && request.method === 'POST') {
-      return handleEmailDrip(request, env);
+      return handleEmailDrip(request, env, url);
     }
     if (url.pathname === '/api/email/drip' && request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: EMAIL_CORS });
@@ -427,6 +475,62 @@ export default {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
+    // ===== UX TELEMETRY (Sprint 3 score/settlement flow) =====
+    if (url.pathname === '/api/ux-telemetry' && request.method === 'POST') {
+      const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+      try {
+        const body = await request.json();
+        const allowedEvents = new Set([
+          'score_entry_opened',
+          'score_input_changed',
+          'score_save_attempted',
+          'score_save_succeeded',
+          'score_save_failed',
+          'round_completed',
+          'settlement_viewed',
+          'settlement_payment_cta_clicked',
+          'settlement_shared'
+        ]);
+        const eventName = String(body?.event || '').trim();
+        const slug = String(body?.slug || '').trim().toLowerCase();
+        const props = body?.props && typeof body.props === 'object' ? body.props : {};
+
+        if (!eventName || !allowedEvents.has(eventName) || !slug) {
+          return new Response(JSON.stringify({ error: 'Invalid telemetry payload' }), { status: 400, headers: corsHeaders });
+        }
+
+        const day = new Date().toISOString().slice(0, 10);
+        const totalKey = `ux-metric:${eventName}:${slug}`;
+        const dailyKey = `ux-metric:${eventName}:${slug}:${day}`;
+        const lastKey = `ux-last:${slug}:${eventName}`;
+
+        const [totalCur, dailyCur] = await Promise.all([
+          env.MG_BOOK.get(totalKey),
+          env.MG_BOOK.get(dailyKey)
+        ]);
+        const totalNext = (parseInt(totalCur || '0', 10) || 0) + 1;
+        const dailyNext = (parseInt(dailyCur || '0', 10) || 0) + 1;
+
+        await Promise.all([
+          env.MG_BOOK.put(totalKey, String(totalNext)),
+          env.MG_BOOK.put(dailyKey, String(dailyNext)),
+          env.MG_BOOK.put(lastKey, JSON.stringify({
+            event: eventName,
+            slug,
+            props,
+            ts: Number(body?.timestamp) || Date.now()
+          }), { expirationTtl: 60 * 60 * 24 * 14 })
+        ]);
+
+        return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
+      } catch {
+        return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400, headers: corsHeaders });
+      }
+    }
+    if (url.pathname === '/api/ux-telemetry' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+    }
+
     // ===== UNSUBSCRIBE =====
     if (url.pathname === '/api/unsubscribe' && request.method === 'GET') {
       return handleUnsubscribe(url, env);
@@ -448,7 +552,7 @@ export default {
     // ===== MULTI-TENANT EVENT API =====
     // /:slug/api/* — multi-tenant routes
     const waggleApiMatch = url.pathname.match(/^\/([a-z0-9_-]+)\/api\/(.*)/);
-    if (waggleApiMatch && !['create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'join', 'season', 'games', 'guides', 'my-events', 'register', 'partner', 'share', 'inventory', 'admin', 'pro'].includes(waggleApiMatch[1])) {
+    if (waggleApiMatch && !['create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'pricing', 'api', 'app', 'join', 'season', 'games', 'guides', 'cards', 'my-events', 'register', 'partner', 'share', 'inventory', 'admin', 'pro'].includes(waggleApiMatch[1])) {
       const slug = waggleApiMatch[1];
       const apiPath = waggleApiMatch[2];
       const resp = await handleEventApi(slug, apiPath, request, env, ctx);
@@ -462,7 +566,20 @@ export default {
     }
 
     // ===== FRIENDLY REDIRECTS for common dead-end routes (must be before SPA match) =====
-    const friendlyRedirects = { '/find': '/my-events/', '/new': '/create/', '/setup': '/create/', '/guide': '/overview/', '/rules': '/games/', '/help': '/overview/', '/join': '/create/', '/about': '/overview/', '/games/stroke-play': '/games/', '/games/round-robin': '/games/', '/games/chapman': '/games/' };
+    // Keep legacy aliases mapped to explicit canonical pages (not broad section hubs).
+    const friendlyRedirects = {
+      '/find': '/my-events/',
+      '/new': '/create/',
+      '/setup': '/create/',
+      '/guide': '/overview/',
+      '/rules': '/games/',
+      '/help': '/overview/',
+      '/join': '/register/',
+      '/about': '/tour/',
+      '/games/stroke-play': '/games/match-play/',
+      '/games/round-robin': '/games/nassau/',
+      '/games/chapman': '/games/best-ball/',
+    };
     const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
     if (redirectTarget) {
       return Response.redirect(`https://betwaggle.com${redirectTarget}`, 301);
@@ -470,7 +587,7 @@ export default {
 
     // /:slug/ — serve the SPA with dynamic config
     const waggleSpaMatch = url.pathname.match(/^\/([a-z0-9_-]+)(\/.*)?$/);
-    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'api', 'app', 'season', 'games', 'guides', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
+    if (waggleSpaMatch && !url.pathname.includes('/api/') && !['join', 'create', 'overview', 'tour', 'walkthrough', 'ads', 'gtm', 'affiliate', 'affiliates', 'marketing', 'go', 'success', 'courses', 'pricing', 'api', 'app', 'season', 'games', 'guides', 'cards', 'my-events', 'demo', 'register', 'partner', 'b', 'share', 'inventory', 'admin', 'pro'].includes(waggleSpaMatch[1])) {
       const slug = waggleSpaMatch[1];
       // Serve static assets (JS/CSS/images) from /app/ (shared SPA code)
       const subPath = waggleSpaMatch[2] || '/';
@@ -685,19 +802,25 @@ export default {
     }
 
     // /create/ — wizard (static)
-    if (url.pathname === '/create' || url.pathname === '/create/') {
+    if (url.pathname === '/create') {
+      return Response.redirect('https://betwaggle.com/create/', 301);
+    }
+    if (url.pathname === '/create/') {
       ctx.waitUntil(trackFunnelEvent(env, 'visit', {
         path: '/create',
         referrer: request.headers.get('referer') || '',
         userAgent: request.headers.get('user-agent') || '',
       }));
-      const wizReq = new Request(new URL('/create/index.html', request.url), request);
+      const wizReq = new Request(new URL('/create/', request.url), request);
       return env.ASSETS.fetch(wizReq);
     }
 
     // /overview/ — GM operations guide (static)
-    if (url.pathname === '/overview' || url.pathname === '/overview/') {
-      const ovReq = new Request(new URL('/overview/index.html', request.url), request);
+    if (url.pathname === '/overview') {
+      return Response.redirect('https://betwaggle.com/overview/', 301);
+    }
+    if (url.pathname === '/overview/') {
+      const ovReq = new Request(new URL('/overview/', request.url), request);
       return env.ASSETS.fetch(ovReq);
     }
 
@@ -1043,32 +1166,27 @@ export default {
       return handleSeasonPage(seasonPageMatch[1], env);
     }
 
-    // /tour/ — product tour page (static)
-    if (url.pathname === '/tour' || url.pathname === '/tour/') {
+    // /tour/ — product tour page (static, canonical trailing slash)
+    if (url.pathname === '/tour') {
+      return Response.redirect('https://betwaggle.com/tour/', 301);
+    }
+    if (url.pathname === '/tour/') {
       const tourReq = new Request(new URL('/tour/index.html', request.url), request);
       return env.ASSETS.fetch(tourReq);
     }
 
-    // /pricing/ — pricing page (static)
-    if (url.pathname === '/pricing' || url.pathname === '/pricing/') {
-      const pricingReq = new Request(new URL('/pricing/index.html', request.url), request);
-      return env.ASSETS.fetch(pricingReq);
+    // /pricing/ — pricing page (static, canonical trailing slash)
+    if (url.pathname === '/pricing') {
+      return Response.redirect(new URL('/pricing/', request.url).toString(), 301);
+    }
+    if (url.pathname === '/pricing/') {
+      return env.ASSETS.fetch(request);
     }
 
     // / — landing page (A/B test: 50/50 split, sticky via cookie)
-    if (url.pathname === '/' || url.pathname === '') {
-      const cookies = request.headers.get('Cookie') || '';
-      const abMatch = cookies.match(/waggle_ab=([AB])/);
-      let variant = abMatch ? abMatch[1] : (Math.random() < 0.5 ? 'A' : 'B');
-      const assetPath = variant === 'B' ? '/b/index.html' : '/index.html';
-      const response = await env.ASSETS.fetch(new Request(new URL(assetPath, request.url), request));
-      if (!abMatch) {
-        const r = new Response(response.body, response);
-        r.headers.set('Set-Cookie', `waggle_ab=${variant}; Path=/; Max-Age=2592000; SameSite=Lax`);
-        return r;
-      }
-      return response;
-    }
+    // Homepage — serve main index.html (A/B test disabled for stability)
+    // To re-enable A/B: uncomment and test thoroughly before deploying
+    // if (url.pathname === '/' || url.pathname === '') { ... }
 
     // ===== LEGACY: backward compat for /waggle/ URLs during migration =====
     if (url.pathname.startsWith('/waggle/')) {
@@ -1313,6 +1431,9 @@ export default {
       }
       return new Response('Internal Server Error', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
+    };
+    const response = await run();
+    return applyApiCorsHeaders(url.pathname, response);
   },
 
   // Cron handler: daily drip + cleanup, weekly digest (Mondays UTC), demo seed
@@ -1587,12 +1708,15 @@ async function sendHolePushNotifications(slug, holeNum, events, gameState, env) 
     } else if (ev.type === 'skin_carried') {
       body += `Skin carried \u2192 pot \u00d7${ev.potAfter} \u00b7 `;
     } else if (ev.type === 'nassau_front_complete') {
-      body += `Front 9 complete \u2014 ${ev.winner} leads \u00b7 `;
+      if (ev.winner) body += `Front 9 complete \u2014 ${ev.winner} leads \u00b7 `;
+      else body += `Front 9 complete \u2014 pushed \u00b7 `;
     } else if (ev.type === 'nassau_back_complete') {
-      body += `Back 9 complete \u2014 ${ev.winner} leads \u00b7 `;
+      if (ev.winner) body += `Back 9 complete \u2014 ${ev.winner} leads \u00b7 `;
+      else body += `Back 9 complete \u2014 pushed \u00b7 `;
     } else if (ev.type === 'nassau_total_complete') {
       title = `Round Complete`;
-      body += `Nassau total winner: ${ev.winner} \u00b7 `;
+      if (ev.winner) body += `Nassau total winner: ${ev.winner} \u00b7 `;
+      else body += `Nassau total: pushed \u00b7 `;
     } else if (ev.type === 'wolf_won') {
       body += `Wolf: ${ev.winner} wins H${ev.hole} \u00b7 `;
     }
@@ -2090,6 +2214,9 @@ async function markEventPaidInStorage(env, eventSlug, payment) {
   if (!eventSlug) return { ok: false, error: 'Missing event slug', kvUpdated: false, d1Updated: false };
   let kvUpdated = false;
   let d1Updated = false;
+  let canonicalConfig = null;
+  let fallbackEventType = 'unknown';
+  let fallbackEventName = eventSlug;
 
   // Update KV config for immediate app state
   if (env.MG_BOOK) {
@@ -2101,6 +2228,9 @@ async function markEventPaidInStorage(env, eventSlug, payment) {
         config.meta = { ...(config.meta || {}), checkout_payment: payment };
         await env.MG_BOOK.put(`config:${eventSlug}`, JSON.stringify(config));
         kvUpdated = true;
+        canonicalConfig = config;
+        fallbackEventType = config?.event?.eventType || fallbackEventType;
+        fallbackEventName = config?.event?.name || fallbackEventName;
       } catch (_) {}
     }
   }
@@ -2109,12 +2239,28 @@ async function markEventPaidInStorage(env, eventSlug, payment) {
   if (env.WAGGLE_DB) {
     try {
       const row = await env.WAGGLE_DB.prepare('SELECT id, config FROM events WHERE slug = ? LIMIT 1').bind(eventSlug).first();
-      if (row?.id && row?.config) {
+      if (row?.id) {
         let config;
-        try { config = JSON.parse(row.config); } catch { config = {}; }
+        try { config = row.config ? JSON.parse(row.config) : {}; } catch { config = {}; }
+        if ((!config || typeof config !== 'object' || !Object.keys(config).length) && canonicalConfig) {
+          config = canonicalConfig;
+        }
         config.event = { ...(config.event || {}), paid: true, paidAt: payment.paidAt, paymentTier: payment.tier };
         config.meta = { ...(config.meta || {}), checkout_payment: payment };
         await env.WAGGLE_DB.prepare('UPDATE events SET config = ? WHERE id = ?').bind(JSON.stringify(config), row.id).run();
+        d1Updated = true;
+      } else if (canonicalConfig) {
+        // Recover from historical data drift: KV event exists but events row is missing.
+        const insertId = `evt_${Date.now()}_${eventSlug}`;
+        await env.WAGGLE_DB.prepare(
+          'INSERT INTO events (id, slug, event_type, name, config, created_at) VALUES (?, ?, ?, ?, ?, datetime("now"))'
+        ).bind(
+          insertId,
+          eventSlug,
+          canonicalConfig?.event?.eventType || fallbackEventType,
+          canonicalConfig?.event?.name || fallbackEventName,
+          JSON.stringify(canonicalConfig)
+        ).run();
         d1Updated = true;
       }
     } catch (e) {
@@ -2270,6 +2416,34 @@ async function processSimpleCheckoutSession(env, session, source = 'unknown') {
   return { ok: true, payment };
 }
 
+function simpleCheckoutErrorStatus(errorMessage) {
+  const msg = String(errorMessage || '').toLowerCase();
+  if (msg.includes('not found')) return 404;
+  if (msg.includes('already paid')) return 409;
+  if (msg.includes('already being processed')) return 409;
+  if (msg.includes('not persisted in d1')) return 500;
+  if (msg.includes('unable to mark event paid')) return 500;
+  if (msg.includes('not configured')) return 500;
+  if (msg.includes('session is not paid')) return 402;
+  if (msg.includes('missing')) return 400;
+  if (msg.includes('unknown checkout tier')) return 400;
+  return 400;
+}
+
+function isRetryableSimpleCheckoutError(errorMessage) {
+  const msg = String(errorMessage || '').toLowerCase();
+  if (!msg) return true;
+  // Terminal payload/data issues should be acked so Stripe does not retry forever.
+  if (msg.includes('unknown checkout tier')) return false;
+  if (msg.includes('eventslug is required')) return false;
+  if (msg.includes('not found')) return false;
+  if (msg.includes('already paid')) return false;
+  if (msg.includes('missing session id')) return false;
+  if (msg.includes('session is not paid')) return false;
+  // Storage/persistence/lock errors can be transient.
+  return true;
+}
+
 async function handleSimpleCheckout(request, env) {
   if (!env.STRIPE_SECRET_KEY) return new Response(JSON.stringify({ error: 'Payments not configured' }), { status: 500, headers: EVENT_CORS });
 
@@ -2305,6 +2479,8 @@ async function handleSimpleCheckout(request, env) {
     }
   }
 
+  const idempotencyKey = await sha256Hex(`simple_checkout:${tier}:${email}:${eventSlug || '-'}`);
+
   const stripeBody = new URLSearchParams({
     'payment_method_types[]': 'card',
     'line_items[0][price_data][currency]': 'usd',
@@ -2323,7 +2499,11 @@ async function handleSimpleCheckout(request, env) {
   try {
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': idempotencyKey || createOpaqueId(),
+      },
       body: stripeBody.toString(),
     });
 
@@ -2344,7 +2524,7 @@ async function handleSimpleCheckout(request, env) {
 function buildSimpleCheckoutUiSuccessUrl(tier, eventSlug) {
   const safeTier = String(tier || '').trim().toLowerCase();
   const safeEventSlug = String(eventSlug || '').trim().toLowerCase();
-  const base = `https://betwaggle.com/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${encodeURIComponent(safeTier || 'event')}`;
+  const base = `https://betwaggle.com/api/checkout/success?session_id={CHECKOUT_SESSION_ID}&format=html&tier=${encodeURIComponent(safeTier || 'event')}`;
   if (safeTier === 'event' && safeEventSlug) {
     return `${base}&eventSlug=${encodeURIComponent(safeEventSlug)}`;
   }
@@ -2381,7 +2561,10 @@ async function handleSimpleCheckoutSuccess(request, url, env) {
 
     const session = await stripeRes.json();
     const result = await processSimpleCheckoutSession(env, session, 'checkout_success');
-    if (!result.ok) return new Response(JSON.stringify({ error: result.error || 'Checkout processing failed' }), { status: 400, headers: EVENT_CORS });
+    if (!result.ok) {
+      const status = simpleCheckoutErrorStatus(result.error);
+      return new Response(JSON.stringify({ error: result.error || 'Checkout processing failed' }), { status, headers: EVENT_CORS });
+    }
 
     const expectedTier = String(url.searchParams.get('expected_tier') || url.searchParams.get('tier') || '').trim().toLowerCase();
     const expectedEventSlug = String(url.searchParams.get('expected_event_slug') || url.searchParams.get('eventSlug') || '').trim().toLowerCase();
@@ -2969,14 +3152,15 @@ function sleep(ms) {
 
 async function acquireKvLock(env, key, opts = {}) {
   if (!env?.MG_BOOK || !key) return { ok: false, token: '' };
-  const ttlSeconds = Math.max(1, Number(opts.ttlSeconds || 10));
+  // Cloudflare KV requires expiration_ttl >= 60 seconds.
+  const ttlSeconds = Math.max(60, Number(opts.ttlSeconds || 60));
   const maxAttempts = Math.max(1, Number(opts.maxAttempts || 3));
   const retryDelayMs = Math.max(5, Number(opts.retryDelayMs || 100));
   const settleMs = Math.max(0, Number(opts.settleMs || 20));
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const existing = await env.MG_BOOK.get(key, 'text');
     if (!existing) {
-      const token = crypto.randomUUID();
+      const token = createOpaqueId();
       await env.MG_BOOK.put(key, token, { expirationTtl: ttlSeconds });
       if (settleMs) await sleep(settleMs);
       const owner = await env.MG_BOOK.get(key, 'text');
@@ -3042,6 +3226,47 @@ async function enforceApiRateLimit(env, request, prefix, limit = 5, windowSecond
     if (count >= Math.max(1, Number(limit) || 1)) return { allowed: false, error: 'Too many requests. Try again later.' };
     await env.MG_BOOK.put(rateKey, String(count + 1), { expirationTtl: Math.max(1, Number(windowSeconds) || 60) });
     return { allowed: true };
+  } finally {
+    await releaseKvLock(env, lockKey, lock.token);
+  }
+}
+
+async function getEventSyncMeta(env, slug) {
+  if (!env?.MG_BOOK || !slug) return { rev: 0, updatedAt: null };
+  const meta = await kvGetJsonSafe(env, `${slug}:sync-meta`);
+  if (!meta || typeof meta !== 'object') return { rev: 0, updatedAt: null };
+  return {
+    rev: Number(meta.rev || 0) || 0,
+    updatedAt: meta.updatedAt || null,
+    scope: meta.scope || null,
+    source: meta.source || null,
+    actor: meta.actor || null,
+  };
+}
+
+async function bumpEventSyncMeta(env, slug, details = {}) {
+  if (!env?.MG_BOOK || !slug) return { rev: 0, updatedAt: null };
+  const lockKey = `${slug}:sync-meta-lock`;
+  const lock = await acquireKvLock(env, lockKey, {
+    ttlSeconds: 10,
+    maxAttempts: 4,
+    retryDelayMs: 40,
+    settleMs: 10,
+  });
+  if (!lock.ok) return { rev: 0, updatedAt: null };
+  try {
+    const existing = await kvGetJsonSafe(env, `${slug}:sync-meta`);
+    const rev = Number(existing?.rev || 0) + 1;
+    const updatedAt = new Date().toISOString();
+    const next = {
+      rev,
+      updatedAt,
+      scope: String(details.scope || existing?.scope || '').slice(0, 48),
+      source: String(details.source || existing?.source || '').slice(0, 48),
+      actor: String(details.actor || existing?.actor || '').slice(0, 64),
+    };
+    await env.MG_BOOK.put(`${slug}:sync-meta`, JSON.stringify(next));
+    return next;
   } finally {
     await releaseKvLock(env, lockKey, lock.token);
   }
@@ -3792,7 +4017,18 @@ async function handleStripeWebhook(request, env) {
       if (session?.metadata?.waggle_checkout_tier) {
         const result = await processSimpleCheckoutSession(env, session, 'webhook');
         if (!result.ok) {
-          console.error('stripe_simple_checkout_process_error', { sessionId: session?.id, error: result.error || 'unknown' });
+          const errorMessage = result.error || 'unknown';
+          const retryable = isRetryableSimpleCheckoutError(errorMessage);
+          console.error('stripe_simple_checkout_process_error', {
+            sessionId: session?.id,
+            error: errorMessage,
+            retryable,
+          });
+          if (retryable) {
+            const err = new Error(errorMessage || 'Simple checkout processing failed');
+            err.name = 'StripeSimpleCheckoutProcessingError';
+            throw err;
+          }
         }
       }
       // Handle subscription checkout
@@ -5939,7 +6175,7 @@ const EVENT_CORS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Pin, X-Admin-Token',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Pin, X-Admin-Token, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token',
   'Cache-Control': 'no-store'
 };
 
@@ -5965,6 +6201,41 @@ function wggNetScores(grossScores, players, holeNum, strokeIndex) {
     net[name] = gross - wggStrokesOnHole(hi, holeNum, strokeIndex);
   }
   return net;
+}
+
+function wggResolveLowScoreWinner(standings = [], scoreKey = 'score') {
+  if (!Array.isArray(standings) || standings.length === 0) {
+    return { winner: null, tiedPlayers: [] };
+  }
+  const bestScore = Number(standings[0]?.[scoreKey]);
+  if (!Number.isFinite(bestScore)) {
+    return { winner: null, tiedPlayers: [] };
+  }
+  const tiedPlayers = standings
+    .filter((entry) => Number(entry?.[scoreKey]) === bestScore)
+    .map((entry) => entry?.name)
+    .filter(Boolean);
+  if (tiedPlayers.length === 1) {
+    return { winner: tiedPlayers[0], tiedPlayers: [] };
+  }
+  return { winner: null, tiedPlayers };
+}
+
+function wggResolvePressWinner(running = {}) {
+  const sorted = Object.entries(running).sort((a, b) => a[1] - b[1]);
+  if (sorted.length === 0) return { winner: null, tiedPlayers: [] };
+  const bestScore = Number(sorted[0]?.[1]);
+  if (!Number.isFinite(bestScore)) {
+    return { winner: null, tiedPlayers: [] };
+  }
+  const tiedPlayers = sorted
+    .filter((entry) => Number(entry?.[1]) === bestScore)
+    .map((entry) => entry?.[0])
+    .filter(Boolean);
+  if (tiedPlayers.length === 1) {
+    return { winner: tiedPlayers[0], tiedPlayers: [] };
+  }
+  return { winner: null, tiedPlayers };
 }
 
 function wggRunSkins(holeNum, grossScores, prevState, players, strokeIndex, grossOnly) {
@@ -6003,17 +6274,20 @@ function wggRunNassau(holeNum, grossScores, prevState, players, strokeIndex) {
 
   if (holeNum === 9) {
     const sorted = Object.entries(state.running).map(([n, s]) => ({ name: n, score: s.front })).sort((a, b) => a.score - b.score);
-    state.frontWinner = sorted[0]?.name;
-    events.push({ type: 'nassau_front_complete', winner: sorted[0]?.name, standings: sorted });
+    const { winner, tiedPlayers } = wggResolveLowScoreWinner(sorted, 'score');
+    state.frontWinner = winner;
+    events.push({ type: 'nassau_front_complete', winner, tiedPlayers, standings: sorted });
   }
 
   if (holeNum === 18) {
     const backSorted = Object.entries(state.running).map(([n, s]) => ({ name: n, score: s.back })).sort((a, b) => a.score - b.score);
     const totalSorted = Object.entries(state.running).map(([n, s]) => ({ name: n, score: s.total })).sort((a, b) => a.score - b.score);
-    state.backWinner = backSorted[0]?.name;
-    state.totalWinner = totalSorted[0]?.name;
-    events.push({ type: 'nassau_back_complete', winner: backSorted[0]?.name });
-    events.push({ type: 'nassau_total_complete', winner: totalSorted[0]?.name });
+    const backResult = wggResolveLowScoreWinner(backSorted, 'score');
+    const totalResult = wggResolveLowScoreWinner(totalSorted, 'score');
+    state.backWinner = backResult.winner;
+    state.totalWinner = totalResult.winner;
+    events.push({ type: 'nassau_back_complete', winner: backResult.winner, tiedPlayers: backResult.tiedPlayers, standings: backSorted });
+    events.push({ type: 'nassau_total_complete', winner: totalResult.winner, tiedPlayers: totalResult.tiedPlayers, standings: totalSorted });
   }
 
   for (const press of state.presses || []) {
@@ -6028,9 +6302,9 @@ function wggRunNassau(holeNum, grossScores, prevState, players, strokeIndex) {
     const segmentEnd = (press.segment === 'front') ? 9 : 18;
     if (holeNum === segmentEnd || (press.segment === 'full' && holeNum === 18)) {
       press.active = false;
-      const sorted = Object.entries(press.running).sort((a, b) => a[1] - b[1]);
-      press.winner = sorted[0]?.[0];
-      events.push({ type: 'press_complete', pressId: press.id, player: press.player, winner: press.winner });
+      const pressResult = wggResolvePressWinner(press.running);
+      press.winner = pressResult.winner;
+      events.push({ type: 'press_complete', pressId: press.id, player: press.player, winner: press.winner, tiedPlayers: pressResult.tiedPlayers });
     }
   }
 
@@ -6627,10 +6901,22 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ ok: true, status: 'complete' }), { headers: EVENT_CORS });
   }
 
+  // GET /sync-meta — sync revision diagnostics for cross-device consistency
+  if (path === 'sync-meta' && request.method === 'GET') {
+    const sync = await getEventSyncMeta(env, K);
+    return new Response(JSON.stringify({ ok: true, slug: K, sync }), { headers: EVENT_CORS });
+  }
+
   // GET /state
   if (path === 'state' && request.method === 'GET') {
     const [bets, scores, settings] = await Promise.all([env.MG_BOOK.get(`${K}:bets`, 'json'), env.MG_BOOK.get(`${K}:scores`, 'json'), env.MG_BOOK.get(`${K}:settings`, 'json')]);
-    return new Response(JSON.stringify({ bets: bets || [], scores: scores || {}, settings: settings || { announcements: [], lockedMatches: [], oddsOverrides: {} } }), { headers: EVENT_CORS });
+    const sync = await getEventSyncMeta(env, K);
+    return new Response(JSON.stringify({
+      bets: bets || [],
+      scores: scores || {},
+      settings: settings || { announcements: [], lockedMatches: [], oddsOverrides: {} },
+      sync,
+    }), { headers: EVENT_CORS });
   }
 
   // GET /player/:name
@@ -6916,7 +7202,12 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // POST /scores
   if (path === 'scores' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
+    }
     // 1E: Validate score values
     for (const [matchId, matchData] of Object.entries(body)) {
       if (typeof matchData === 'object' && matchData !== null) {
@@ -6937,7 +7228,18 @@ async function handleEventApi(slug, path, request, env, ctx) {
 
     try {
       const existing = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
-      const merged = { ...existing, ...body };
+      const merged = { ...existing };
+      const scoreUpdatedAt = new Date().toISOString();
+      for (const [matchId, incoming] of Object.entries(body || {})) {
+        if (incoming && typeof incoming === 'object' && !Array.isArray(incoming)) {
+          const current = (merged[matchId] && typeof merged[matchId] === 'object' && !Array.isArray(merged[matchId]))
+            ? merged[matchId]
+            : {};
+          merged[matchId] = { ...current, ...incoming, updatedAt: scoreUpdatedAt };
+        } else {
+          merged[matchId] = incoming;
+        }
+      }
       await env.MG_BOOK.put(`${K}:scores`, JSON.stringify(merged));
 
       // Auto-settle bets (simplified — core logic preserved)
@@ -6985,7 +7287,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
           await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
         }
       }
-      return new Response(JSON.stringify({ ok: true, scores: merged }), { headers: EVENT_CORS });
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'scores', source: 'api', actor: isAdmin ? 'admin' : 'system' });
+      return new Response(JSON.stringify({ ok: true, scores: merged, sync }), { headers: EVENT_CORS });
     } finally {
       await releaseKvLock(env, scoresLockKey, scoresLock.token);
     }
@@ -6994,7 +7297,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // GET /scores
   if (path === 'scores' && request.method === 'GET') {
     const scores = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
-    return new Response(JSON.stringify(scores), { headers: EVENT_CORS });
+    const sync = await getEventSyncMeta(env, K);
+    return withSyncHeaders(new Response(JSON.stringify(scores), { headers: EVENT_CORS }), sync);
   }
 
   // POST /settings
@@ -7052,7 +7356,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // GET /game-state
   if (path === 'game-state' && request.method === 'GET') {
     const [holes, gameState] = await Promise.all([env.MG_BOOK.get(`${K}:holes`, 'json'), env.MG_BOOK.get(`${K}:game-state`, 'json')]);
-    return new Response(JSON.stringify({ holes: holes || {}, gameState: gameState || {} }), { headers: EVENT_CORS });
+    const sync = await getEventSyncMeta(env, K);
+    return withSyncHeaders(new Response(JSON.stringify({ holes: holes || {}, gameState: gameState || {} }), { headers: EVENT_CORS }), sync);
   }
 
   // POST /event/press — public auto-press endpoint (no admin auth needed)
@@ -7083,6 +7388,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       pressCount = gameState.nassau.presses.length;
 
       await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      await bumpEventSyncMeta(env, K, { scope: 'game-state', source: 'event-press', actor: isAdmin ? 'admin' : 'public' });
     } finally {
       await releaseKvLock(env, stateLockKey, stateLock.token);
     }
@@ -7117,6 +7423,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       if (!gameState.nassau.presses) gameState.nassau.presses = [];
       gameState.nassau.presses.push({ id: pressId, player, segment, startHole, running: {}, active: true, winner: null });
       await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      await bumpEventSyncMeta(env, K, { scope: 'game-state', source: 'nassau-press', actor: isAdmin ? 'admin' : 'public' });
     } finally {
       await releaseKvLock(env, stateLockKey, stateLock.token);
     }
@@ -7151,6 +7458,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       gameState.vegas.teamA = teamA;
       gameState.vegas.teamB = teamB;
       await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      await bumpEventSyncMeta(env, K, { scope: 'game-state', source: 'vegas-teams', actor: isAdmin ? 'admin' : 'public' });
     } finally {
       await releaseKvLock(env, stateLockKey, stateLock.token);
     }
@@ -7175,6 +7483,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
       if (!gameState.wolf) gameState.wolf = { picks: {}, results: {} };
       gameState.wolf.picks[holeNum] = { wolf, partner: partner || null, format: partner ? '2v2' : '1v3', lockedAt: Date.now() };
       await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      await bumpEventSyncMeta(env, K, { scope: 'game-state', source: 'wolf-pick', actor: isAdmin ? 'admin' : 'public' });
       return new Response(JSON.stringify({ ok: true, pick: gameState.wolf.picks[holeNum] }), { headers: EVENT_CORS });
     } finally {
       await releaseKvLock(env, writeLockKey, writeLock.token);
@@ -7354,6 +7663,7 @@ async function handleEventApi(slug, path, request, env, ctx) {
           allEvents.push(...(result.events || []));
         }
         await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+        await bumpEventSyncMeta(env, K, { scope: 'hole', source: 'hole-score', actor: isAdmin ? 'admin' : 'public' });
       } catch (e) {
         warnings.push(`Game engine error on hole ${holeNum}: ${e.message}`);
         console.error('waggle-game-engine-failure', { slug, holeNum, error: e.message });
@@ -8019,6 +8329,13 @@ Match player names to rows. Only include holes with scores written.`;
   // POST /event/start-round — start a new round (archive scores, reset scorecard)
   if (path === 'event/start-round' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
+    const writeLockKey = `${K}:write-lock`;
+    const writeLock = await acquireKvLock(env, writeLockKey, { ttlSeconds: 15, maxAttempts: 6, retryDelayMs: 80, settleMs: 20 });
+    if (!writeLock.ok) {
+      return new Response(JSON.stringify({ error: 'Score update is in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+
+    try {
     const body = await request.json().catch(() => ({}));
     const { roundNumber, course, courseId, tees } = body;
 
@@ -8112,6 +8429,9 @@ Match player names to rows. Only include holes with scores written.`;
     await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed));
 
     return new Response(JSON.stringify({ ok: true, round: config.event.currentRound }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, writeLockKey, writeLock.token);
+    }
   }
 
   // ─── Team Registration Endpoints ─────────────────────────────────────────
@@ -8712,12 +9032,35 @@ const EMAIL_CORS = {
 const EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS = 24 * 60 * 60;
 let emailCaptureD1Unavailable = false;
 
+function createOpaqueId() {
+  try {
+    if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+      return globalThis.crypto.randomUUID();
+    }
+  } catch {}
+  try {
+    if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+      const bytes = new Uint8Array(16);
+      globalThis.crypto.getRandomValues(bytes);
+      return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch {}
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function getEmailCaptureRequestId(request) {
   return String(
     request.headers.get('x-request-id') ||
     request.headers.get('cf-ray') ||
-    crypto.randomUUID()
+    createOpaqueId()
   ).trim();
+}
+
+function normalizeEmailCaptureText(value, fallback, maxLen = 120) {
+  const raw = String(value ?? '').trim();
+  const base = raw || String(fallback || '').trim();
+  const clean = base.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ');
+  return clean.slice(0, maxLen) || String(fallback || '').trim() || 'landing_page';
 }
 
 async function sha256Hex(value) {
@@ -8800,10 +9143,12 @@ async function triggerCaptureDripWelcome(env, {
 }) {
   const resendResult = await sendDripEmail(env, normalizedEmail, 0, source, { requestId, emailHash, trigger: 'email_capture' });
 
-  const latestRecord = await env.MG_BOOK.get(kvKey, 'json');
+  const latestRecord = await kvGetJsonSafe(env, kvKey);
   if (latestRecord) {
+    const nowIso = new Date().toISOString();
     latestRecord.drip_step = Math.max(1, Number(latestRecord.drip_step || 0));
-    latestRecord.last_drip_trigger_at = new Date().toISOString();
+    latestRecord.drip_started_at = nowIso;
+    latestRecord.last_drip_trigger_at = nowIso;
     await env.MG_BOOK.put(kvKey, JSON.stringify(latestRecord));
   }
 
@@ -8815,9 +9160,20 @@ async function triggerCaptureDripWelcome(env, {
   }));
 }
 
+async function kvGetJsonSafe(env, key) {
+  if (!env?.MG_BOOK || !key) return null;
+  try {
+    return await env.MG_BOOK.get(key, 'json');
+  } catch (e) {
+    console.warn('kv_json_parse_failed', key, e?.message || e);
+    return null;
+  }
+}
+
 async function handleEmailCapture(request, env, ctx) {
   const requestId = getEmailCaptureRequestId(request);
   let emailHash = '';
+  let stage = 'parse_body';
   let body;
   try {
     body = await request.json();
@@ -8834,6 +9190,7 @@ async function handleEmailCapture(request, env, ctx) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    stage = 'hash_email';
     emailHash = await sha256Hex(normalizedEmail);
 
     if (!env.MG_BOOK) {
@@ -8841,6 +9198,7 @@ async function handleEmailCapture(request, env, ctx) {
     }
 
     // Rate limit: 5 per IP per minute (lock-protected to reduce race overshoot).
+    stage = 'rate_limit';
     const rl = await enforceEmailCaptureRateLimit(env, request);
     if (!rl.allowed) {
       return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.', code: 'RATE_LIMITED', requestId, emailHash }), { status: rl.status || 429, headers: EMAIL_CORS });
@@ -8848,6 +9206,7 @@ async function handleEmailCapture(request, env, ctx) {
 
     const kvKey = `email:${normalizedEmail}`;
     const emailLockKey = `email-capture-lock:${normalizedEmail}`;
+    stage = 'capture_lock';
     const emailLock = await acquireKvLock(env, emailLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 40, settleMs: 10 });
     if (!emailLock.ok) {
       return new Response(JSON.stringify({ error: 'Email capture in progress. Retry shortly.', code: 'CAPTURE_LOCKED', requestId, emailHash }), { status: 409, headers: EMAIL_CORS });
@@ -8855,9 +9214,10 @@ async function handleEmailCapture(request, env, ctx) {
 
     try {
       const nowIso = new Date().toISOString();
-      const existing = await env.MG_BOOK.get(kvKey, 'json');
-      const baseSource = source || existing?.source || 'landing_page';
-      const baseSourcePage = source_page || source || existing?.source_page || baseSource || 'landing_page';
+      stage = 'kv_read_existing';
+      const existing = await kvGetJsonSafe(env, kvKey);
+      const baseSource = normalizeEmailCaptureText(source, existing?.source || 'landing_page', 80);
+      const baseSourcePage = normalizeEmailCaptureText(source_page || source, existing?.source_page || baseSource || 'landing_page', 240);
 
       if (existing) {
         const updated = {
@@ -8869,7 +9229,9 @@ async function handleEmailCapture(request, env, ctx) {
           opted_in_newsletter: opted_in_newsletter === false ? false : (existing.opted_in_newsletter !== false),
           captured_at: nowIso,
         };
+        stage = 'kv_write_existing';
         await env.MG_BOOK.put(kvKey, JSON.stringify(updated));
+        stage = 'd1_upsert_existing';
         const d1Stored = await persistEmailCaptureInD1(env, updated);
         if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
           return new Response(JSON.stringify({
@@ -8892,14 +9254,17 @@ async function handleEmailCapture(request, env, ctx) {
             }), { status: 503, headers: EMAIL_CORS });
           }
           const suppressionKey = `email-drip:capture:${normalizedEmail}`;
-          const suppression = await env.MG_BOOK.get(suppressionKey, 'json');
+          stage = 'capture_existing_suppression_read';
+          const suppression = await kvGetJsonSafe(env, suppressionKey);
           if (!suppression) {
+            stage = 'capture_existing_suppression_write';
             await env.MG_BOOK.put(suppressionKey, JSON.stringify({
               requestedAt: nowIso,
               requestId,
               emailHash,
             }), { expirationTtl: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS });
 
+            stage = 'capture_existing_waituntil_or_drip';
             const dripJob = triggerCaptureDripWelcome(env, {
               kvKey,
               normalizedEmail,
@@ -8965,11 +9330,14 @@ async function handleEmailCapture(request, env, ctx) {
         opted_in_newsletter: opted_in_newsletter !== false,
         created_at: nowIso,
         captured_at: nowIso,
+        drip_started_at: nowIso,
         drip_step: 0,
         converted: false,
       };
 
+      stage = 'kv_write_new';
       await env.MG_BOOK.put(kvKey, JSON.stringify(record));
+      stage = 'd1_upsert_new';
       const d1Stored = await persistEmailCaptureInD1(env, record);
       if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
         return new Response(JSON.stringify({
@@ -9002,7 +9370,8 @@ async function handleEmailCapture(request, env, ctx) {
       }
 
       const suppressionKey = `email-drip:capture:${normalizedEmail}`;
-      const suppression = await env.MG_BOOK.get(suppressionKey, 'json');
+      stage = 'capture_new_suppression_read';
+      const suppression = await kvGetJsonSafe(env, suppressionKey);
       if (suppression) {
         return new Response(JSON.stringify({
           ok: true,
@@ -9017,6 +9386,7 @@ async function handleEmailCapture(request, env, ctx) {
         }), { headers: EMAIL_CORS });
       }
 
+      stage = 'capture_new_suppression_write';
       await env.MG_BOOK.put(suppressionKey, JSON.stringify({
         requestedAt: nowIso,
         requestId,
@@ -9024,6 +9394,7 @@ async function handleEmailCapture(request, env, ctx) {
       }), { expirationTtl: EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS });
 
       if (ctx?.waitUntil) {
+        stage = 'capture_new_waituntil';
         ctx.waitUntil(
           triggerCaptureDripWelcome(env, {
             kvKey,
@@ -9056,6 +9427,7 @@ async function handleEmailCapture(request, env, ctx) {
       }
 
       try {
+        stage = 'capture_new_drip_sync';
         await triggerCaptureDripWelcome(env, {
           kvKey,
           normalizedEmail,
@@ -9094,6 +9466,7 @@ async function handleEmailCapture(request, env, ctx) {
     console.error('email_capture_error', JSON.stringify({
       requestId,
       emailHash: emailHash || null,
+      stage,
       message: e?.message || String(e),
     }));
     return new Response(JSON.stringify({ error: 'Internal server error', code: 'INTERNAL_ERROR', requestId, emailHash }), { status: 500, headers: EMAIL_CORS });
@@ -9219,8 +9592,13 @@ async function processDripEmails(env) {
             summary.skipped += 1;
             continue;
           }
-          const createdAt = new Date(record.created_at).getTime();
-          const daysSinceCreated = (now - createdAt) / (1000 * 60 * 60 * 24);
+          const dripBaseAt = record.drip_started_at || record.captured_at || record.created_at;
+          const dripBaseTs = new Date(dripBaseAt).getTime();
+          if (!Number.isFinite(dripBaseTs) || dripBaseTs <= 0) {
+            summary.skipped += 1;
+            continue;
+          }
+          const daysSinceCreated = (now - dripBaseTs) / (1000 * 60 * 60 * 24);
           const currentStep = record.drip_step || 0;
 
           if (currentStep >= DRIP_SEQUENCE.length) {
@@ -9255,11 +9633,10 @@ async function processDripEmails(env) {
   return summary;
 }
 
-async function handleEmailDrip(request, env) {
+async function handleEmailDrip(request, env, url) {
   try {
-    // Simple auth check to prevent abuse (expect marketing PIN in header)
-    const pin = request.headers.get('X-Marketing-Pin') || '';
-    if (!env.WAGGLE_MARKETING_PIN || pin !== env.WAGGLE_MARKETING_PIN) {
+    // Shared admin access gate: accepts private route token or marketing pin.
+    if (!hasApiAdminAccess(request, url, env)) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: EMAIL_CORS

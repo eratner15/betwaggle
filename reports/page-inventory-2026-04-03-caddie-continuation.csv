@@ -1,0 +1,58 @@
+route,file,title,purpose,visibility,live_status,pricing_status,link_health,notes,checked_at
+/,index.html,"Waggle — Live Golf Sportsbook. 12 Games. No App.",Homepage,public,200,correct,working,"Primary entrypoint",2026-04-03T15:05:00-04:00
+/admin/outreach/,admin/outreach/index.html,"Outreach Campaign Admin | Waggle",Internal docs/tooling,internal_candidate,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/ads-private/,ads-private/index.html,"Waggle — Ad Creative Brief",Internal docs/tooling,internal_candidate,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/affiliate/,affiliate/index.html,"Redirecting to Affiliates | Waggle",Affiliate,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/affiliates/,affiliates/index.html,"Partner with Waggle — Earn on Every Outing | Waggle Affiliates",Affiliate,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/app/,app/index.html,"Waggle — Your Group's Sportsbook",App route,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/app/overview/,app/overview/index.html,"GM Operations Manual — Turnberry Isle Member-Guest 2026",App route,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/app/whatif/,app/whatif/index.html,"What-If Analysis — MG 2026",App route,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/b/,b/index.html,"Waggle — No More Golf Math. Automatic Settlement.",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/dashboard/,cards/dashboard/index.html,"(none)",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/match-play/,cards/match-play/index.html,"BetWaggle - The Duel",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/nassau/,cards/nassau/index.html,"BetWaggle - The Triple Crown",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/scramble/,cards/scramble/index.html,"BetWaggle - The Team Trophy",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/settlement/,cards/settlement/index.html,"Settlement Ceremony Cards",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/skins/,cards/skins/index.html,"BetWaggle - The Auction House",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/cards/wolf/,cards/wolf/index.html,"BetWaggle - The War Room",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/courses/,courses/index.html,"Find Your Course — Waggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/create/,create/index.html,"Create Your Outing — Waggle",Event creation,public,200,correct,working,"",2026-04-03T15:05:00-04:00
+/demo/,demo/index.html,"Live Demo — Waggle Golf Sportsbook",Demo index,public,200,inconsistent,working,"No explicit price CTA on demo index",2026-04-03T15:05:00-04:00
+/games/,games/index.html,"Golf Betting Games: Complete Rules and Strategy Guide | Waggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/banker/,games/banker/index.html,"Banker Golf Game: Rules, Scoring &amp; How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/best-ball/,games/best-ball/index.html,"Best Ball Golf: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/bingo-bango-bongo/,games/bingo-bango-bongo/index.html,"Bingo Bango Bongo Golf: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/bloodsome/,games/bloodsome/index.html,"Bloodsome Golf Game: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/match-play/,games/match-play/index.html,"Match Play Golf: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/nassau/,games/nassau/index.html,"Nassau Golf Betting: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/scramble/,games/scramble/index.html,"Scramble Golf Format: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/skins/,games/skins/index.html,"Skins Game in Golf: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/stableford/,games/stableford/index.html,"Stableford Golf Scoring: Rules, Points & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/vegas/,games/vegas/index.html,"Vegas Golf Betting: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/games/wolf/,games/wolf/index.html,"Wolf Golf Game: Rules, Scoring & How to Play | BetWaggle",SEO game page,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/gtm-private/,gtm-private/index.html,"Waggle — Go-To-Market Strategy",Internal docs/tooling,internal_candidate,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/guides/,guides/index.html,"Golf Betting Guides: Strategy, Rules, and Event Playbooks | Waggle",SEO guide,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/guides/best-golf-betting-games-for-a-foursome/,guides/best-golf-betting-games-for-a-foursome/index.html,"Best Golf Betting Games for a Foursome: Complete Guide | BetWaggle",SEO guide,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/guides/golf-trip-betting-formats/,guides/golf-trip-betting-formats/index.html,"Golf Trip Betting Formats: The Complete Guide to Trip Games | BetWaggle",SEO guide,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/guides/how-to-run-a-charity-golf-scramble/,guides/how-to-run-a-charity-golf-scramble/index.html,"How to Run a Charity Golf Scramble: Complete Planning Guide | BetWaggle",SEO guide,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/guides/how-to-settle-golf-bets/,guides/how-to-settle-golf-bets/index.html,"How to Settle Golf Bets: The Complete Guide | BetWaggle",SEO guide,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/inventory/,inventory/index.html,"Waggle — Site Inventory &amp; Test Links",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/marketing-private/,marketing-private/index.html,"Waggle -- Marketing Command Center",Internal docs/tooling,internal_candidate,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/mclemore/,mclemore/index.html,"McLemore Buddies Trip — BetWaggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/my-events/,my-events/index.html,"My Events — Waggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/overview/,overview/index.html,"GM Operations Guide — Waggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/partner/,partner/index.html,"Partner Dashboard | Waggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/pricing/,pricing/index.html,"Pricing — Waggle | Golf Sportsbook for Every Group Size",Pricing,public,200,correct,working,"",2026-04-03T15:05:00-04:00
+/pro/,pro/index.html,"Waggle for Course Pros — Turn Every Scramble Into a Sportsbook",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/register/,register/index.html,"Register Your Team — Waggle",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/share/,share/index.html,"What is Waggle? — Golf Sportsbook for Your Group",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/tour/,tour/index.html,"How It Works — Waggle",Product tour,public,200,correct,working,"",2026-04-03T15:05:00-04:00
+/walkthrough/,walkthrough/index.html,"Waggle in 60 Seconds",Marketing/content,public,200,n/a,working,"",2026-04-03T15:05:00-04:00
+/join/,(live-only),"(live route)",Known-issue tracking,public,301,n/a,working,"redirects_to=https://betwaggle.com/register/",2026-04-03T15:05:00-04:00
+/about/,(live-only),"(live route)",Known-issue tracking,public,301,n/a,working,"redirects_to=https://betwaggle.com/tour/",2026-04-03T15:05:00-04:00
+/games/stroke-play/,(live-only),"(live route)",Known-issue tracking,public,301,n/a,working,"redirects_to=https://betwaggle.com/games/match-play/",2026-04-03T15:05:00-04:00
+/games/round-robin/,(live-only),"(live route)",Known-issue tracking,public,301,n/a,working,"redirects_to=https://betwaggle.com/games/nassau/",2026-04-03T15:05:00-04:00
+/games/chapman/,(live-only),"(live route)",Known-issue tracking,public,301,n/a,working,"redirects_to=https://betwaggle.com/games/best-ball/",2026-04-03T15:05:00-04:00
+/marketing/,(live-only),"(live route)",Known-issue tracking,public,404,n/a,broken,"",2026-04-03T15:05:00-04:00
+/gtm/,(live-only),"(live route)",Known-issue tracking,public,404,n/a,broken,"",2026-04-03T15:05:00-04:00
+/ads/,(live-only),"(live route)",Known-issue tracking,public,404,n/a,broken,"",2026-04-03T15:05:00-04:00

@@ -1,0 +1,101 @@
+[
+  {
+    "page": "home",
+    "width": 375,
+    "interactiveCount": 52,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 139,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/home-375.png"
+  },
+  {
+    "page": "home",
+    "width": 390,
+    "interactiveCount": 52,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 139,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/home-390.png"
+  },
+  {
+    "page": "home",
+    "width": 428,
+    "interactiveCount": 52,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 139,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/home-428.png"
+  },
+  {
+    "page": "affiliates",
+    "width": 375,
+    "interactiveCount": 13,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 13,
+    "under12Count": 0,
+    "under14Count": 22,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/affiliates-375.png"
+  },
+  {
+    "page": "affiliates",
+    "width": 390,
+    "interactiveCount": 13,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 13,
+    "under12Count": 0,
+    "under14Count": 22,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/affiliates-390.png"
+  },
+  {
+    "page": "affiliates",
+    "width": 428,
+    "interactiveCount": 13,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 13,
+    "under12Count": 0,
+    "under14Count": 22,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/affiliates-428.png"
+  },
+  {
+    "page": "create",
+    "width": 375,
+    "interactiveCount": 7,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 9,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/create-375.png"
+  },
+  {
+    "page": "create",
+    "width": 390,
+    "interactiveCount": 7,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 9,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/create-390.png"
+  },
+  {
+    "page": "create",
+    "width": 428,
+    "interactiveCount": 7,
+    "tooSmallCount": 0,
+    "tooSmallExamples": [],
+    "minFontSize": 12,
+    "under12Count": 0,
+    "under14Count": 9,
+    "screenshot": "/home/eratner/betwaggle/tests/artifacts/mobile-audit-2026-04-03/create-428.png"
+  }
+]

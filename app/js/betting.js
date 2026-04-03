@@ -17,6 +17,7 @@ let _simulationRngState = 1;
 let _simulationState = {
   holesSimulated: {},  // Track simulated holes per match
   lastOddsUpdate: {},  // Last odds movement timestamp per match
+  marketProbabilities: {}, // Persist simulated market probabilities per matchup
   betActivity: []      // Recent virtual bet activity
 };
 
@@ -103,6 +104,7 @@ export function resetSimulation() {
   _simulationState = {
     holesSimulated: {},
     lastOddsUpdate: {},
+    marketProbabilities: {},
     betActivity: []
   };
   _oddsHistory = {};
@@ -259,46 +261,47 @@ function simulateOddsFluctuations(now) {
       const updateInterval = (8000 + simulationRandom() * 7000) / _simulationSpeed;
       if (now - lastUpdate < updateInterval) return;
 
-      // Get current odds (this will store in history automatically)
+      // Get true baseline odds.
       const currentOdds = getMatchMoneyline(teamAId, teamBId);
-
-      // Apply market simulation - slight random walk with mean reversion
-      const baseProb = currentOdds.probA;
-
-      // Market "noise" - random small movements ±1-3%
-      const noise = (simulationRandom() - 0.5) * 0.06; // ±3% max
-
-      // Longer-term drift - simulate changing market sentiment
-      const drift = generateMarketDrift(matchKey, now);
-
-      // Mean reversion - prevents odds from drifting too far from true handicap odds
       const trueOdds = calculateTrueHandicapOdds(teamAId, teamBId);
-      const reversion = (trueOdds.probA - baseProb) * 0.02; // 2% pull toward true odds
+      const baseProb = Number.isFinite(_simulationState.marketProbabilities[matchKey])
+        ? _simulationState.marketProbabilities[matchKey]
+        : currentOdds.probA;
 
-      // Combine all factors
-      let newProb = baseProb + noise + drift + reversion;
+      const matchState = _simulationState.holesSimulated[matchKey] || null;
+      const holesPlayed = Math.max(0, Number(matchState?.holesPlayed || 0));
+      const totalHoles = Math.max(1, Number(matchState?.totalHoles || 9));
+      const progress = Math.max(0, Math.min(1, holesPlayed / totalHoles));
+      const scoreDiff = Number(matchState?.scoreA || 0) - Number(matchState?.scoreB || 0);
 
-      // Clamp to reasonable bounds (keep within ±15% of original true odds)
-      const minProb = Math.max(0.05, trueOdds.probA * 0.85);
-      const maxProb = Math.min(0.95, trueOdds.probA * 1.15);
-      newProb = Math.max(minProb, Math.min(maxProb, newProb));
+      // Market movement terms:
+      // - noise: micro fluctuation
+      // - drift: sentiment drift
+      // - reversion: pull toward fair handicap price
+      // - scoreboardImpulse: in-play signal from current lead
+      const noise = (simulationRandom() - 0.5) * (0.018 + (1 - progress) * 0.012);
+      const drift = generateMarketDrift(matchKey, now);
+      const reversion = (trueOdds.probA - baseProb) * (0.06 + progress * 0.08);
+      const scoreboardImpulse = (scoreDiff * (0.004 + progress * 0.010));
 
-      // Only update if change is meaningful (>1% probability shift)
-      if (Math.abs(newProb - baseProb) > 0.01) {
-        // Apply the simulated odds by temporarily overriding
-        const simId = `sim_${teamAId}_${teamBId}`;
-        const probB = 1 - newProb;
-        const mlA = probToML(newProb);
-        const mlB = probToML(probB);
+      let nextProb = baseProb + noise + drift + reversion + scoreboardImpulse;
 
-        // Store the simulated odds as an override
-        _oddsOverrides[simId] = { mlA, mlB };
+      // Keep movement meaningful but bounded per update.
+      const maxStep = 0.015 + progress * 0.03; // ~1.5% early, up to ~4.5% late
+      const rawStep = nextProb - baseProb;
+      if (Math.abs(rawStep) > maxStep) {
+        nextProb = baseProb + (Math.sign(rawStep) * maxStep);
+      }
 
-        // Get the odds again to trigger delta calculation and history storage
-        getMatchMoneyline(teamAId, teamBId, simId);
+      // Tighten allowable drift as match progresses.
+      const dynamicBand = 0.16 - progress * 0.08; // ±16% -> ±8%
+      const minProb = Math.max(0.03, trueOdds.probA - dynamicBand);
+      const maxProb = Math.min(0.97, trueOdds.probA + dynamicBand);
+      nextProb = Math.max(minProb, Math.min(maxProb, nextProb));
 
-        // Clean up the temporary override
-        delete _oddsOverrides[simId];
+      // Ignore tiny moves so animation cadence stays intentional.
+      if (Math.abs(nextProb - baseProb) >= 0.004) {
+        _simulationState.marketProbabilities[matchKey] = nextProb;
       }
 
       _simulationState.lastOddsUpdate[matchKey] = now;
@@ -903,10 +906,18 @@ function calculateOddsDeltas(current, previous) {
 
   if (!previous) {
     const seededMovement = buildMovementPayload(current.mlA, current.mlB, current.mlA, current.mlB);
+    const animationPayload = {
+      previousOdds: { ...seededMovement.previousOdds },
+      currentOdds: { ...seededMovement.currentOdds },
+      delta: { ...seededMovement.delta },
+      direction: { ...seededMovement.direction },
+      magnitude: { ...seededMovement.magnitude }
+    };
     return {
       deltaA: 0, deltaB: 0,
       directionA: 'unchanged', directionB: 'unchanged',
       magnitudeA: 'small', magnitudeB: 'small',
+      oddsAnimation: animationPayload,
       oddsMovement: {
         previousOdds: attachCanonicalAliases(seededMovement.previousOdds),
         currentOdds: attachCanonicalAliases(seededMovement.currentOdds),
@@ -940,12 +951,20 @@ function calculateOddsDeltas(current, previous) {
     direction: attachCanonicalAliases(movement.direction),
     magnitude: attachCanonicalAliases(movement.magnitude)
   };
+  const animationPayload = {
+    previousOdds: { ...movement.previousOdds },
+    currentOdds: { ...movement.currentOdds },
+    delta: { ...movement.delta },
+    direction: { ...movement.direction },
+    magnitude: { ...movement.magnitude }
+  };
 
   return {
     deltaA, deltaB,
     directionA, directionB,
     magnitudeA: movementMagnitude(deltaA),
     magnitudeB: movementMagnitude(deltaB),
+    oddsAnimation: animationPayload,
     oddsMovement: movementWithAliases,
     oddsDelta: movementWithAliases
   };
@@ -1091,6 +1110,15 @@ export function getMatchMoneyline(teamAId, teamBId, matchId) {
     );
   }
 
+  // In demo simulation mode, blend to the persisted simulated market probability.
+  if (_demoMode) {
+    const simulationKey = getMatchKey(teamAId, teamBId);
+    const simulatedProbA = _simulationState.marketProbabilities[simulationKey];
+    if (Number.isFinite(simulatedProbA)) {
+      probA = Math.max(0.03, Math.min(0.97, simulatedProbA));
+    }
+  }
+
   const probB = 1 - probA;
   const mlA = probToML(probA);
   const mlB = probToML(probB);
@@ -1181,6 +1209,27 @@ function getRecentMomentum(liveState) {
   return Math.max(-2, Math.min(2, momentum));
 }
 
+function getDifficultySignal(liveState, totalHoles) {
+  const profile = resolveHoleDifficultyProfile(liveState, totalHoles);
+  const events = Array.isArray(liveState?.holeResults) ? liveState.holeResults : [];
+  if (events.length === 0) return 0;
+
+  let weightedDelta = 0;
+  let weightTotal = 0;
+  events.forEach((event) => {
+    const holeIdx = Math.max(0, Math.min(totalHoles - 1, Number(event?.hole || 1) - 1));
+    const difficulty = Number.isFinite(Number(event?.difficulty))
+      ? Number(event.difficulty)
+      : profile[holeIdx] || 1;
+    const delta = Math.max(-1, Math.min(1, Number(event?.delta) || 0));
+    weightedDelta += (delta * difficulty);
+    weightTotal += Math.max(0.8, Math.min(1.25, difficulty));
+  });
+
+  if (weightTotal <= 0) return 0;
+  return Math.max(-1.5, Math.min(1.5, weightedDelta / weightTotal));
+}
+
 function getLatestHoleSignal(liveState, totalHoles) {
   const events = Array.isArray(liveState?.holeResults) ? liveState.holeResults : [];
   const latest = events.length > 0 ? events[events.length - 1] : null;
@@ -1265,6 +1314,7 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
   const remainingDifficulty = averageRemainingDifficulty(liveState, holesPlayed, totalHoles);
   const completedDifficulty = averageCompletedDifficulty(liveState, holesPlayed, totalHoles);
   const momentum = getRecentMomentum(liveState);
+  const difficultySignal = getDifficultySignal(liveState, totalHoles);
   const latestHoleSignal = getLatestHoleSignal(liveState, totalHoles);
   const evidenceVolatility = Math.max(
     0.82,
@@ -1302,7 +1352,10 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
     evidenceVolatility *
     (1 / Math.max(0.9, remainingDifficulty));
   const scoreScale = Math.max(0.8, ((holesRemaining * 0.72) * remainingDifficulty) / evidenceVolatility);
-  const weightedDiff = (scoreDiff / Math.max(0.7, completedDifficulty)) + (momentum * 0.35);
+  const weightedDiff =
+    (scoreDiff / Math.max(0.7, completedDifficulty)) +
+    (momentum * 0.35) +
+    (difficultySignal * 0.55);
   const scoreLikelihood = sigmoid(weightedDiff / scoreScale);
 
   let liveProb =
@@ -1318,7 +1371,10 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
   liveProb += latestHoleImpact;
 
   // As holes run out, push probability toward close-out certainty.
-  const closeoutDiff = (scoreDiff * (2.2 + completion * 3.0)) + (momentum * 0.6);
+  const closeoutDiff =
+    (scoreDiff * (2.2 + completion * 3.0)) +
+    (momentum * 0.6) +
+    (difficultySignal * 0.8);
   const closeoutProb = sigmoid(closeoutDiff / ((holesRemaining * remainingDifficulty) + 0.55));
   const convergenceWeight = Math.pow(completion, 1.95);
   liveProb = (liveProb * (1 - convergenceWeight)) + (closeoutProb * convergenceWeight);
@@ -1345,6 +1401,13 @@ export function getLiveMatchMoneyline(teamAId, teamBId, matchId, liveState) {
     const endgame = (3 - holesRemainingRaw) / 3; // 1 hole left -> stronger push
     const target = scoreDiff > 0 ? 0.995 : 0.005;
     liveProb = (liveProb * (1 - endgame * 0.6)) + (target * endgame * 0.6);
+  }
+
+  // Certainty floor: once a side is up by >= holes remaining, force strong convergence.
+  if (holesRemainingRaw > 0 && Math.abs(scoreDiff) >= holesRemainingRaw) {
+    const certaintyWeight = Math.max(0.35, Math.min(0.85, completion));
+    const certaintyTarget = scoreDiff > 0 ? 0.992 : 0.008;
+    liveProb = (liveProb * (1 - certaintyWeight)) + (certaintyTarget * certaintyWeight);
   }
 
   const minProb = Math.max(0.001, 0.01 + (1 - completion) * 0.02 - (completion * 0.009));
@@ -1541,6 +1604,8 @@ function buildLiveStateFromHoleResult(existingState, holeResult = {}) {
   }
 
   if (hasScoreSignal || hasDifficultySignal) {
+    // Replace existing event for the same hole to keep rapid updates stable.
+    next.holeResults = next.holeResults.filter((entry) => Number(entry?.hole) !== Number(holeNumber));
     next.holeResults.push({
       hole: holeNumber,
       winner: holeResult.winner || null,
@@ -1911,7 +1976,8 @@ export function settleBetsWithZeroSumValidation(state) {
       if (!match || match.status !== "final") return;
 
       // Wolf - rotating partnership game with dynamic teams and point-based scoring
-      const settlement = settleWolfBet({ ...bet, selection: normalizedSelection }, match);
+      const wolfSettlementMatch = attachMatchGameState(match, state?._gameState, "wolf");
+      const settlement = settleWolfBet({ ...bet, selection: normalizedSelection }, wolfSettlementMatch);
       if (settlement) {
         proposedStatus = settlement.status;
         proposedPayout = settlement.payout;
@@ -2353,6 +2419,15 @@ export function correctZeroSumViolations(betsToSettle) {
       idx++;
       safety++;
     }
+  }
+
+  // Hard stop: if we still cannot reconcile to exact cents, refund all stakes in this bucket.
+  if (remaining !== 0) {
+    return normalized.map(({ stakeCents, payoutCents, ...bet }) => ({
+      ...bet,
+      proposedStatus: "push",
+      proposedPayout: centsToDollars(stakeCents)
+    }));
   }
 
   return normalized.map(({ stakeCents, payoutCents, ...bet }) => ({
@@ -3161,35 +3236,43 @@ function settleWolfBet(bet, match) {
   // Wolf bet should have these fields:
   // - selection: playerId (which player the bet is on)
   // - pointValue: value per point (defaults to stake / expected total points)
+  const players = Array.isArray(match?.players) ? match.players : [];
+  const wolfState = getMatchGameState(match, "wolf");
+  let running = normalizeWolfRunningMap(wolfState?.running);
 
-  if (!match.wolfHoles || !match.players || match.players.length !== 4) {
-    console.warn("[Wolf] Missing wolf hole data or incorrect player count (need 4 players)");
+  // Worker persists wolf outcomes as wolf.results; derive running scores for settlement.
+  if (Object.keys(running).length === 0 && wolfState?.results) {
+    running = deriveWolfRunningFromResults(wolfState.results, players);
+  }
+
+  // Backward-compatible fallback for legacy fixtures.
+  if (Object.keys(running).length === 0 && match?.wolfHoles && players.length === 4) {
+    const wolfResult = calculateWolfResult(match);
+    running = normalizeWolfRunningMap(wolfResult?.playerPoints);
+  }
+
+  const entries = Object.entries(running).filter(([, value]) => Number.isFinite(value));
+  if (entries.length === 0) {
+    console.warn("[Wolf] Missing wolf settlement data (running/results/wolfHoles)");
     return null;
   }
 
-  const wolfResult = calculateWolfResult(match);
-  const selection = bet.selection;
+  const maxScore = Math.max(...entries.map(([, value]) => value));
+  const leaders = entries.filter(([, value]) => value === maxScore).map(([name]) => name);
+  const canonicalMap = buildWolfIdentityCanonicalMap(players);
+  const selectedIdentity = canonicalWolfIdentity(bet.selection, canonicalMap);
+  const selectedIsLeader = leaders.some((name) => canonicalWolfIdentity(name, canonicalMap) === selectedIdentity);
 
-  // Get points won by selected player
-  const pointsWon = wolfResult.playerPoints[selection] || 0;
-
-  let status = "lost";
-  let payout = 0;
-
-  if (pointsWon > 0) {
-    status = "won";
-
-    // Calculate payout based on points won
-    // Wolf betting can be complex - could be total points, could be position-based
-    const pointValue = bet.pointValue || (bet.stake / 18); // Default point value
-    const totalPayout = pointsWon * pointValue;
-
-    const stakeCents = dollarsToCents(bet.stake);
-    const payoutCents = dollarsToCents(totalPayout);
-    payout = centsToDollars(payoutCents);
+  if (leaders.length !== 1) {
+    if (selectedIsLeader) return { status: "push", payout: bet.stake };
+    return { status: "lost", payout: 0 };
   }
 
-  return { status, payout };
+  if (selectedIsLeader) {
+    return { status: "won", payout: getPayoutForWin(bet) };
+  }
+
+  return { status: "lost", payout: 0 };
 }
 
 /**
@@ -3616,6 +3699,21 @@ function getMatchGameState(match, key) {
   return null;
 }
 
+function attachMatchGameState(match, rootGameState, key) {
+  if (!match) return match;
+  const merged = {
+    ...(match.gameState || {})
+  };
+  if (!merged[key] && rootGameState?.[key]) {
+    merged[key] = rootGameState[key];
+  }
+  if (Object.keys(merged).length === 0) return match;
+  return {
+    ...match,
+    gameState: merged
+  };
+}
+
 function getPayoutForWin(bet) {
   const stakeCents = dollarsToCents(bet.stake);
   const payoutCents = calculatePayoutCents(stakeCents, bet.odds);
@@ -3625,6 +3723,90 @@ function getPayoutForWin(bet) {
 function normalizeSelectionValue(selection) {
   if (selection === null || selection === undefined) return "";
   return String(selection).trim().toLowerCase();
+}
+
+function normalizeWolfRunningMap(running) {
+  if (!running || typeof running !== "object") return {};
+  const normalized = {};
+  Object.entries(running).forEach(([name, value]) => {
+    const numeric = Number(value);
+    if (!name || !Number.isFinite(numeric)) return;
+    normalized[name] = numeric;
+  });
+  return normalized;
+}
+
+function deriveWolfRunningFromResults(results, players = []) {
+  const running = {};
+  players.forEach((player) => {
+    if (!player) return;
+    const key = player.name || player.id;
+    if (!key) return;
+    running[key] = 0;
+  });
+
+  if (!results || typeof results !== "object") return running;
+
+  Object.values(results).forEach((result) => {
+    if (!result || typeof result !== "object") return;
+
+    const holePlayers = Object.keys(result.net || {});
+    const wolf = result.wolf || null;
+    const partner = result.partner || null;
+    const winners = [];
+    const losers = [];
+
+    if (result.wolfTeamWon) {
+      if (wolf) winners.push(wolf);
+      if (partner) winners.push(partner);
+      holePlayers.forEach((name) => {
+        if (!winners.includes(name)) losers.push(name);
+      });
+    } else {
+      holePlayers.forEach((name) => {
+        if (name !== wolf && name !== partner) winners.push(name);
+      });
+      if (wolf) losers.push(wolf);
+      if (partner) losers.push(partner);
+    }
+
+    if (winners.length === 0 || losers.length === 0) return;
+
+    const unitLoss = 1;
+    const totalPot = losers.length * unitLoss;
+    const winnerShare = totalPot / winners.length;
+
+    winners.forEach((name) => {
+      if (!name) return;
+      running[name] = (running[name] || 0) + winnerShare;
+    });
+    losers.forEach((name) => {
+      if (!name) return;
+      running[name] = (running[name] || 0) - unitLoss;
+    });
+  });
+
+  return running;
+}
+
+function buildWolfIdentityCanonicalMap(players = []) {
+  const canonical = new Map();
+  players.forEach((player) => {
+    if (!player || typeof player !== "object") return;
+    const id = normalizeSelectionValue(player.id);
+    const name = normalizeSelectionValue(player.name);
+    const chosen = id || name;
+    if (!chosen) return;
+    if (id) canonical.set(id, chosen);
+    if (name) canonical.set(name, chosen);
+  });
+  return canonical;
+}
+
+function canonicalWolfIdentity(identity, canonicalMap) {
+  const normalized = normalizeSelectionValue(identity);
+  if (!normalized) return "";
+  return canonicalMap.get(normalized) || normalized;
 }
 
 function settleVegasBet(bet, match) {

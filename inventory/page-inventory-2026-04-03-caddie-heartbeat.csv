@@ -1,0 +1,16 @@
+route,purpose,should_be_public,http_status,pricing_status,link_status,notes,last_checked_et
+/,Homepage conversion entry,yes,200,mixed,working,"Season copy still says $149/season in source",2026-04-03 14:03
+/tour/,Product tour and comparison,yes,307,mixed,redirect_loop_risk,"Self-redirect loop live; source has $149/season at pricing row",2026-04-03 14:03
+/pricing/,Pricing page,yes,404,incorrect,broken,"Live route is down; source includes multiple $149/season strings",2026-04-03 14:03
+/demo/,Demo launcher,yes,200,correct,working,"Loads with $32/event CTA and support copy",2026-04-03 14:03
+/create/,Event setup wizard,yes,200,mixed,working_with_redirect,"Source has $149/season labels; event amount is $32",2026-04-03 14:03
+/affiliate/,Legacy affiliate route,no,301,n/a,redirect,"Redirects to /affiliates/ (duplicate route issue remains)",2026-04-03 14:03
+/affiliates/,Affiliate landing page,yes,200,n/a,working,"Canonical affiliate route currently live",2026-04-03 14:03
+/marketing/,Internal marketing docs,no,404,n/a,protected,"Publicly blocked now",2026-04-03 14:03
+/gtm/,Internal GTM docs,no,404,n/a,protected,"Publicly blocked now",2026-04-03 14:03
+/ads/,Internal ads docs,no,404,n/a,protected,"Publicly blocked now",2026-04-03 14:03
+/join/,Friendly redirect,yes,301,n/a,redirect,"Redirects to /create/ (not a 404 anymore)",2026-04-03 14:03
+/about/,Friendly redirect,yes,301,n/a,redirect,"Redirects to /overview/ (not a 404 anymore)",2026-04-03 14:03
+/games/stroke-play/,Legacy game route,yes,301,n/a,redirect,"Redirects to /games/",2026-04-03 14:03
+/games/round-robin/,Legacy game route,yes,301,n/a,redirect,"Redirects to /games/",2026-04-03 14:03
+/games/chapman/,Legacy game route,yes,301,n/a,redirect,"Redirects to /games/",2026-04-03 14:03
