@@ -1,306 +1,449 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>BetWaggle - Sunday Nassau</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&amp;family=Manrope:wght@400;500;600;700&amp;family=Inter:wght@700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "inverse-surface": "#31302d",
-                        "tertiary-fixed-dim": "#2ae500",
-                        "surface-container-highest": "#e5e2dd",
-                        "secondary-fixed": "#ffdea5",
-                        "on-tertiary-fixed-variant": "#095300",
-                        "on-background": "#1c1c19",
-                        "error": "#ba1a1a",
-                        "surface": "#fcf9f4",
-                        "on-primary-fixed": "#0b2013",
-                        "secondary": "#775a19",
-                        "on-error-container": "#93000a",
-                        "surface-dim": "#dcdad5",
-                        "primary-fixed-dim": "#b4cdb8",
-                        "inverse-on-surface": "#f3f0eb",
-                        "outline": "#737973",
-                        "on-tertiary-container": "#1daa00",
-                        "on-surface": "#1c1c19",
-                        "tertiary-container": "#043400",
-                        "on-tertiary-fixed": "#022100",
-                        "on-secondary-fixed": "#261900",
-                        "surface-variant": "#e5e2dd",
-                        "on-surface-variant": "#434843",
-                        "on-primary-fixed-variant": "#364c3c",
-                        "on-secondary-fixed-variant": "#5d4201",
-                        "error-container": "#ffdad6",
-                        "outline-variant": "#c3c8c1",
-                        "surface-tint": "#4d6453",
-                        "primary-fixed": "#d0e9d4",
-                        "primary-container": "#1b3022",
-                        "surface-container": "#f0ede9",
-                        "inverse-primary": "#b4cdb8",
-                        "primary": "#061b0e",
-                        "tertiary": "#011d00",
-                        "on-primary": "#ffffff",
-                        "on-secondary-container": "#785a1a",
-                        "on-error": "#ffffff",
-                        "on-secondary": "#ffffff",
-                        "background": "#fcf9f4",
-                        "surface-container-low": "#f6f3ee",
-                        "on-primary-container": "#819986",
-                        "secondary-container": "#fed488",
-                        "on-tertiary": "#ffffff",
-                        "tertiary-fixed": "#79ff5b",
-                        "surface-bright": "#fcf9f4",
-                        "surface-container-lowest": "#ffffff",
-                        "secondary-fixed-dim": "#e9c176",
-                        "surface-container-high": "#ebe8e3"
-                    },
-                    fontFamily: {
-                        "headline": ["Playfair Display"],
-                        "body": ["Inter"],
-                        "label": ["Inter"]
-                    },
-                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
-                },
-            },
-        }
-    </script>
-<style>.material-symbols-outlined {
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BetWaggle - The Triple Crown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,600;6..72,700;6..72,800&family=Manrope:wght@500;600;700;800&family=Inter:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --forest: #1b3022;
+      --forest-deep: #0c1f13;
+      --gold: #c5a059;
+      --gold-soft: #f0d8aa;
+      --ivory: #fcf9f4;
+      --linen: #f4f1eb;
+      --ink: #1c1c19;
+      --muted: #5f645e;
+      --card: #fffdf9;
+      --shadow: 0 12px 40px rgba(27, 48, 34, 0.08);
     }
-.bg-linen-texture {
-    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDPQ8JPaTliB-ONT5cshS57d9rrvRd4QWz2YLwvopuh8chUJ1gFKFRIqII8ooXVccE-LS_FN0beRwCpA3tjABixJQFb1wBSyPM_pKeEEMK4SsHU4G9Wz3u4Hc8Tk0Tnjh7Sc29Ux-pnkUWgZY0cRuQI19ROO0MiXl4yHAxvr_My1MbeTleSTYuCUf-R7L7Z9jo1M6QViFrvqYxlrvbyZ7WX9z2ikjoU-mzaQGIoQC5BB0UQ6p0ZsKicBsnUcvyHKFEsgRFDl73BnxbS);
-    background-repeat: repeat
-    }</style>
-<style>
+
+    * { box-sizing: border-box; }
+
     body {
+      margin: 0;
       min-height: max(884px, 100dvh);
+      font-family: "Manrope", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 480px at 15% -20%, rgba(197, 160, 89, 0.2), transparent 65%),
+        radial-gradient(840px 420px at 120% 0%, rgba(27, 48, 34, 0.14), transparent 68%),
+        var(--ivory);
+    }
+
+    .app {
+      width: min(390px, 100%);
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: 18px 16px 96px;
+      background: linear-gradient(180deg, #fdfbf7 0%, var(--linen) 100%);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(27, 48, 34, 0.05) 0.6px, transparent 0.6px);
+      background-size: 3px 3px;
+      opacity: 0.38;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px;
+    }
+
+    .brand {
+      font-family: "Newsreader", serif;
+      font-size: 30px;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+    }
+
+    .hero {
+      margin-top: 8px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-family: "Newsreader", serif;
+      font-size: 40px;
+      line-height: 0.9;
+      color: var(--forest);
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .chips {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(27, 48, 34, 0.12);
+      font-family: "Inter", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--forest);
+    }
+
+    .chip.gold {
+      background: linear-gradient(135deg, var(--gold-soft), #e6c785);
+      border-color: rgba(197, 160, 89, 0.4);
+      color: #563d10;
+    }
+
+    .stack {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .bet-card {
+      border-radius: 17px;
+      background: var(--card);
+      border: 1px solid rgba(197, 160, 89, 0.26);
+      box-shadow: var(--shadow);
+      padding: 13px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bet-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(155deg, rgba(197, 160, 89, 0.08), transparent 50%);
+    }
+
+    .bet-card h2 {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #7d6229;
+    }
+
+    .row {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .duel {
+      font-family: "Newsreader", serif;
+      font-size: 21px;
+      color: var(--forest);
+      line-height: 1;
+    }
+
+    .status {
+      font-family: "Inter", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 5px 8px;
+      border: 1px solid rgba(27, 48, 34, 0.15);
+      background: #f8f4ec;
+      color: var(--forest);
+    }
+
+    .status.live {
+      background: rgba(27, 48, 34, 0.95);
+      color: #f6e3be;
+      border-color: rgba(197, 160, 89, 0.45);
+    }
+
+    .leader {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .crown {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f4dfb6, #e7c47d);
+      border: 1px solid rgba(197, 160, 89, 0.38);
+      font-family: "Inter", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #624612;
+      padding: 6px 9px;
+    }
+
+    .thermometer {
+      margin-top: 10px;
+      border-radius: 999px;
+      height: 9px;
+      background: #e8e1d5;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .thermometer::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 62%;
+      background: linear-gradient(90deg, #2d5a39, #d6b472);
+    }
+
+    .thermo-label {
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-family: "Inter", sans-serif;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #656a63;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+
+    .press-box {
+      margin-top: 16px;
+      border-radius: 18px;
+      padding: 14px 12px;
+      background: linear-gradient(145deg, var(--forest), var(--forest-deep));
+      border-top: 1px solid rgba(197, 160, 89, 0.32);
+      color: #f8f2e8;
+      box-shadow: 0 20px 36px rgba(12, 31, 19, 0.34);
+      position: relative;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .press-box::after {
+      content: "";
+      position: absolute;
+      right: -30px;
+      top: -45px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(197, 160, 89, 0.28), transparent 70%);
+      pointer-events: none;
+    }
+
+    .press-box h3 {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #e2c990;
+    }
+
+    .timeline {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(197, 160, 89, 0.2);
+      border-radius: 12px;
+      padding: 9px 8px;
+    }
+
+    .event .hole {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-family: "Inter", sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(240, 216, 170, 0.26);
+      color: #ffe7bb;
+    }
+
+    .event .desc {
+      font-size: 12px;
+      line-height: 1.33;
+      color: #f3efe5;
+      font-weight: 600;
+    }
+
+    .tag {
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-family: "Inter", sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #352507;
+      background: #f3d89f;
+    }
+
+    .press-anim {
+      margin-top: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(240, 216, 170, 0.48);
+      background: rgba(240, 216, 170, 0.16);
+      padding: 8px;
+      font-family: "Inter", sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #ffe9be;
+      text-align: center;
+      animation: pressPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pressPulse {
+      0%, 100% { opacity: 0.62; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
     }
   </style>
-  </head>
-<body class="bg-surface font-body text-on-surface selection:bg-secondary-container max-w-[390px] mx-auto min-h-screen pb-40 overflow-x-hidden">
-<!-- Top AppBar (from JSON) -->
-<header class="fixed top-0 w-full z-50 bg-[#1B3022] dark:bg-slate-950 text-[#C5A059] flex justify-between items-center px-6 h-16 border-b border-[#C5A059]/20 shadow-sm">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-[#C5A059] active:scale-95 transition-transform cursor-pointer">menu</span>
-<h1 class="text-2xl font-headline italic tracking-tight text-[#C5A059]">BetWaggle</h1>
-</div>
-<div class="w-8 h-8 rounded-full border border-[#C5A059]/30 overflow-hidden active:scale-95 transition-transform cursor-pointer">
-<img class="w-full h-full object-cover" data-alt="Close up portrait of a professional golfer in a white polo shirt with a sun-drenched golf course background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdgV_XBA8lBze09udSaH_m1Hd2J047VA24GqG2260HbIVJXqse97SuEb06eL89qld5eFUjN8i9AqyVtGKN4qKaHArTSfhqnZwxbfZ6xe7jsqKGBJzAFmP2P-WNhoXhicR6W_B6jmmqxA3JDDeXNIzyiq3CaCf1lG_nracfMQw_X5Q0FmAII0O2G1UUgv8urP2eGU95qXi47nImEWLLtOqRQPjeoBdRAncsrtEJVgAqID6oMhtfXCxQfmDr4TDjEZ0eEfRpWFMELQzi"/>
-</div>
-</header>
-<main class="mt-20 px-4">
-<!-- Tournament Header -->
-<section class="mb-8">
-<div class="flex justify-between items-start mb-2">
-<div>
-<span class="font-label text-[10px] text-secondary font-bold uppercase tracking-[0.2em] block mb-1">Live Tournament</span>
-<h2 class="font-headline text-4xl font-semibold text-primary-container leading-tight">Sunday Nassau</h2>
-</div>
-</div>
-<div class="flex items-center gap-2 text-on-surface-variant mb-4">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span class="font-body text-sm font-medium">Baltusrol Lower • Mar 30</span>
-</div>
-<div class="flex flex-wrap gap-2">
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-fixed-variant text-[10px] font-label font-bold rounded-full tracking-wider">NASSAU</span>
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-fixed-variant text-[10px] font-label font-bold rounded-full tracking-wider">$20/BET</span>
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-fixed-variant text-[10px] font-label font-bold rounded-full tracking-wider">4 PLAYERS</span>
-</div>
-</section>
-<!-- The Three Bets Stack -->
-<section class="relative space-y-4 mb-8">
-<!-- Card 1: FRONT 9 (Active) -->
-<div class="relative bg-surface-container-lowest p-5 rounded-xl shadow-[0_12px_40px_rgba(27,48,34,0.06)] border-t-2 border-secondary/20">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-label text-xs font-bold text-secondary tracking-widest">FRONT 9</h3>
-<span class="flex items-center gap-1 px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold rounded-full">
-<span class="w-1.5 h-1.5 bg-on-tertiary-fixed rounded-full animate-pulse"></span> LIVE
-                    </span>
-</div>
-<div class="flex justify-between items-end mb-4">
-<div>
-<p class="text-lg font-headline font-semibold text-primary-container">Mike R. vs Danny T.</p>
-<p class="text-on-tertiary-container font-bold text-sm">Mike 2 UP thru 6</p>
-</div>
-<div class="text-right">
-<p class="text-[10px] font-label text-on-surface-variant mb-1 uppercase tracking-tighter">Handicap Differential</p>
-<p class="text-xs font-bold">+2 Strokes</p>
-</div>
-</div>
-<!-- Hole Dots -->
-<div class="flex gap-2.5 items-center justify-center py-3 bg-surface-container-low rounded-lg">
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-primary-container border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">1</span>
-</div>
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-primary-container border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">2</span>
-</div>
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-error/80 border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">3</span>
-</div>
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-surface-container-highest border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">4</span>
-</div>
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-primary-container border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">5</span>
-</div>
-<div class="flex flex-col items-center">
-<span class="w-3 h-3 rounded-full bg-secondary-container border border-secondary/20"></span>
-<span class="text-[8px] font-bold mt-1">6</span>
-</div>
-<div class="flex items-center gap-1 opacity-20">
-<span class="w-3 h-3 rounded-full border-2 border-primary-container/30"></span>
-<span class="w-3 h-3 rounded-full border-2 border-primary-container/30"></span>
-<span class="w-3 h-3 rounded-full border-2 border-primary-container/30"></span>
-</div>
-</div>
-<p class="mt-3 text-[10px] font-body font-medium italic text-on-surface-variant text-center">Press available at 2 down</p>
-</div>
-<!-- Card 2: BACK 9 (Inactive) -->
-<div class="bg-surface-container p-5 rounded-xl border border-secondary/10 opacity-70">
-<div class="flex justify-between items-center mb-2">
-<h3 class="font-label text-xs font-bold text-on-surface-variant/60 tracking-widest uppercase">BACK 9</h3>
-<span class="text-[10px] font-label font-bold text-on-surface-variant/40">LOCKED</span>
-</div>
-<p class="text-sm font-body text-on-surface-variant font-medium">Not started — Starts Hole 10</p>
-</div>
-<!-- Card 3: OVERALL 18 -->
-<div class="bg-surface-container-low p-5 rounded-xl border border-secondary/15">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-label text-xs font-bold text-primary-container tracking-widest uppercase">OVERALL 18</h3>
-<p class="text-[10px] font-bold text-secondary">$20 STAKE</p>
-</div>
-<div class="flex justify-between items-center">
-<div>
-<p class="text-sm font-headline font-semibold text-primary-container">Total Progress</p>
-<p class="text-on-tertiary-container font-bold text-sm">Mike 2 UP thru 6</p>
-</div>
-<div class="h-10 w-[1px] bg-secondary/20"></div>
-<div class="text-right">
-<p class="text-[10px] font-label text-on-surface-variant uppercase tracking-tighter">Net Strokes</p>
-<p class="text-xs font-bold">M: 24 | D: 26</p>
-</div>
-</div>
-</div>
-</section>
-<!-- Press Tracker -->
-<section class="mb-8 p-5 rounded-xl border-2 border-secondary/30 bg-secondary-fixed/10">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-label text-xs font-bold text-secondary tracking-[0.15em] uppercase">ACTIVE PRESSES</h3>
-<button class="flex items-center gap-1 px-3 py-1 border border-secondary rounded-full text-[10px] font-label font-bold text-secondary active:scale-95 transition-all">
-<span class="material-symbols-outlined text-[12px]">add</span> NEW PRESS
-                </button>
-</div>
-<div class="bg-surface-container-lowest p-4 rounded-lg border border-secondary/10 shadow-sm">
-<div class="flex justify-between items-start">
-<div class="flex-1">
-<p class="text-[10px] font-label font-bold text-secondary mb-1">PRESS 1 (Hole 5)</p>
-<p class="text-sm font-body font-bold text-primary-container leading-tight">Danny pressed on Hole 5</p>
-<p class="text-xs font-body text-on-surface-variant mt-1">Danny 1 UP since press</p>
-</div>
-<div class="text-right">
-<p class="text-lg font-headline font-bold text-primary-container">$20</p>
-</div>
-</div>
-</div>
-</section>
-<!-- Scorecard Summary -->
-<section class="mb-8 overflow-hidden rounded-xl border border-secondary/15">
-<div class="bg-primary-container text-on-primary-fixed p-3 flex justify-between items-center">
-<h3 class="font-label text-[10px] font-bold text-secondary-container tracking-widest uppercase">Scorecard Summary</h3>
-<span class="font-headline italic text-xs text-secondary-fixed">Holes 1—6</span>
-</div>
-<div class="bg-surface-container-lowest overflow-x-auto">
-<table class="w-full text-center text-[11px] font-body border-collapse">
-<thead>
-<tr class="bg-surface-container-low border-b border-secondary/10">
-<th class="p-2 text-left font-bold w-20">HOLE</th>
-<th class="p-2 border-x border-secondary/5">1</th>
-<th class="p-2 border-x border-secondary/5 text-secondary">2</th>
-<th class="p-2 border-x border-secondary/5">3</th>
-<th class="p-2 border-x border-secondary/5 text-secondary">4</th>
-<th class="p-2 border-x border-secondary/5">5</th>
-<th class="p-2 border-x border-secondary/5 text-secondary">6</th>
-</tr>
-</thead>
-<tbody>
-<tr class="border-b border-secondary/5">
-<td class="p-2 text-left font-bold text-primary-container">Mike</td>
-<td class="p-2 font-bold">4 (3)</td>
-<td class="p-2 font-bold text-secondary">5 (4)</td>
-<td class="p-2 font-bold">5 (5)</td>
-<td class="p-2 font-bold text-secondary">4 (3)</td>
-<td class="p-2 font-bold">4 (3)</td>
-<td class="p-2 font-bold text-secondary">5 (4)</td>
-</tr>
-<tr class="bg-surface-container-low/30">
-<td class="p-2 text-left font-bold text-on-surface-variant">Danny</td>
-<td class="p-2">5 (5)</td>
-<td class="p-2 text-secondary">5 (5)</td>
-<td class="p-2">4 (4)</td>
-<td class="p-2 text-secondary">4 (4)</td>
-<td class="p-2">5 (5)</td>
-<td class="p-2 text-secondary">5 (5)</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<!-- Money at Stake -->
-<section class="mb-10 bg-primary-container p-6 rounded-2xl relative overflow-hidden">
-<div class="absolute top-0 right-0 p-4 opacity-10">
-<span class="material-symbols-outlined text-6xl text-white">payments</span>
-</div>
-<h3 class="font-label text-[10px] font-bold text-secondary-container tracking-widest uppercase mb-6">Money at Stake</h3>
-<div class="space-y-3 mb-6">
-<div class="flex justify-between text-white/80 text-xs">
-<span>Front 9 Stake</span>
-<span class="font-bold">$20.00</span>
-</div>
-<div class="flex justify-between text-white/80 text-xs">
-<span>Back 9 Stake</span>
-<span class="font-bold">$20.00</span>
-</div>
-<div class="flex justify-between text-white/80 text-xs">
-<span>Overall Stake</span>
-<span class="font-bold">$20.00</span>
-</div>
-<div class="flex justify-between text-secondary-container text-xs">
-<span>Press 1 Active</span>
-<span class="font-bold">$20.00</span>
-</div>
-</div>
-<div class="pt-4 border-t border-white/10 flex justify-between items-center">
-<span class="text-white text-sm font-bold">Total Exposure</span>
-<span class="text-tertiary-fixed text-2xl font-headline font-bold">$80.00</span>
-</div>
-</section>
-</main>
-<!-- Bottom CTA Bar -->
-<div class="fixed bottom-0 left-0 right-0 p-4 bg-[#FCF9F4]/95 backdrop-blur-md z-50 border-t border-[#C5A059]/15" style="padding-bottom:calc(1rem + env(safe-area-inset-bottom,0px))">
-<div class="max-w-[420px] mx-auto flex flex-col gap-2">
-<a href="/create/?format=nassau&tier=free" class="w-full h-14 bg-gradient-to-br from-[#1B3022] to-[#304D39] text-white font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 rounded-lg shadow-xl active:scale-95 transition-transform no-underline">
-<span class="material-symbols-outlined text-[18px]">play_arrow</span>
-Play Nassau Free
-</a>
-<div class="flex items-center justify-center gap-4">
-<a href="/demo-nassau/#dashboard" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">See Live Demo</a>
-<span class="text-[#1B3022]/20">|</span>
-<a href="/games/nassau/" class="text-xs text-[#1B3022]/50 hover:text-[#1B3022] no-underline">Read Rules</a>
-</div>
-</div>
-</div>
-</body></html>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#1b3022;">MENU</div>
+      <div class="brand">betwaggle</div>
+      <div style="width:30px;height:30px;border-radius:50%;background:#e5e2dd;border:1px solid rgba(27,48,34,.15);"></div>
+    </header>
+
+    <section class="hero">
+      <h1>The Triple Crown</h1>
+      <p>Baltusrol Lower - April 3</p>
+      <div class="chips">
+        <span class="chip gold">Nassau</span>
+        <span class="chip">$20 / Bet</span>
+        <span class="chip">Front - Back - Overall</span>
+      </div>
+    </section>
+
+    <section class="stack">
+      <article class="bet-card">
+        <h2>Front 9</h2>
+        <div class="row">
+          <div class="duel">Mike vs Danny</div>
+          <span class="status live">Live</span>
+        </div>
+        <div class="leader">
+          <div class="crown">CROWN Mike 2 Up</div>
+          <span class="status">Thru 6</span>
+        </div>
+        <div class="thermometer"></div>
+        <div class="thermo-label"><span>All Square</span><span>Mike +2</span></div>
+      </article>
+
+      <article class="bet-card">
+        <h2>Back 9</h2>
+        <div class="row">
+          <div class="duel">Pending Start</div>
+          <span class="status">Locked</span>
+        </div>
+        <div class="leader">
+          <div class="crown">CROWN Not Set</div>
+          <span class="status">Hole 10</span>
+        </div>
+        <div class="thermometer" style="opacity:.45;"></div>
+        <div class="thermo-label"><span>All Square</span><span>Awaiting Tee</span></div>
+      </article>
+
+      <article class="bet-card">
+        <h2>Overall 18</h2>
+        <div class="row">
+          <div class="duel">Mike vs Danny</div>
+          <span class="status">Open</span>
+        </div>
+        <div class="leader">
+          <div class="crown">CROWN Mike 2 Up</div>
+          <span class="status">6 / 18</span>
+        </div>
+        <div class="thermometer"></div>
+        <div class="thermo-label"><span>Danny Rally</span><span>Mike Edge</span></div>
+      </article>
+    </section>
+
+    <section class="press-box">
+      <h3>Press Timeline</h3>
+      <div class="timeline">
+        <article class="event">
+          <div class="hole">H3</div>
+          <div class="desc">Danny goes 2 down and fires first press.</div>
+          <span class="tag">Press</span>
+        </article>
+
+        <article class="event">
+          <div class="hole">H5</div>
+          <div class="desc">Mike answers with birdie to neutralize pressure.</div>
+          <span class="tag">Counter</span>
+        </article>
+
+        <article class="event">
+          <div class="hole">H6</div>
+          <div class="desc">Auto-press armed if Danny drops another hole.</div>
+          <span class="tag">Armed</span>
+        </article>
+      </div>
+      <div class="press-anim">PRESS! Auto-Press Window Open</div>
+    </section>
+  </main>
+</body>
+</html>
