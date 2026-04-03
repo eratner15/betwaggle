@@ -1,0 +1,15 @@
+page,element,current_price,correct_price,status,evidence,checked_at
+/,Hero + CTA,$32/event,$32/event,correct,index.html:1516|1518,2026-04-03T19:00:00-0400
+/,Season plan card + season CTA,$149/season pass,$149/season pass,correct,index.html:2444|2799|2836,2026-04-03T19:00:00-0400
+/tour/,Pricing row + CTA,$149/season pass and $32/event,$149/season pass and $32/event,correct,tour/index.html:295|131|210|272|304,2026-04-03T19:00:00-0400
+/pricing/,Meta + hero + table + CTA,$149/season pass and $32/event,$149/season pass and $32/event,correct,pricing/index.html:7|11|12|22|23|715|781|847|910,2026-04-03T19:00:00-0400
+/demo/,Primary CTA and support line,$32/event,$32/event,correct,demo/index.html:448|451,2026-04-03T19:00:00-0400
+/create/,Season badge and season tile,$149/season pass,$149/season pass,correct,create/index.html:494|2642,2026-04-03T19:00:00-0400
+worker.js,Event/season amount constants,3200/14900 cents,$32/event and $149/season pass,correct,worker.js:2158|2161|2162,2026-04-03T19:00:00-0400
+worker.js,Checkout labels and product labels,"$149/season and $32","$149/season pass and $32/event",incorrect,worker.js:2159|2161|2162,2026-04-03T19:00:00-0400
+worker.js,Ad prompt segment pricing copy,$149/season,$149/season pass,incorrect,worker.js:4471|4476,2026-04-03T19:00:00-0400
+/emails/outreach/ca-golf-sequence.html,Preview + body pricing,$149/season pass and $32/event,$149/season pass and $32/event,correct,emails/outreach/ca-golf-sequence.html:12|42|92,2026-04-03T19:00:00-0400
+/emails/outreach/fl-charity-sequence.html,Body pricing,$149/season pass,$149/season pass,correct,emails/outreach/fl-charity-sequence.html:38,2026-04-03T19:00:00-0400
+/emails/outreach/sc-nc-premium-sequence.html,Pricing copy,$149/season pass and $32/event,$149/season pass and $32/event,correct,emails/outreach/sc-nc-premium-sequence.html:11|37|81,2026-04-03T19:00:00-0400
+/emails/outreach/objection-handling.md,Objection-response pricing,$149/season pass and $32/event,$149/season pass and $32/event,correct,emails/outreach/objection-handling.md:15,2026-04-03T19:00:00-0400
+core scan,Legacy $199 references,none found,none expected,correct,"rg scan on index/tour/pricing/demo/create/worker/emails",2026-04-03T19:00:00-0400

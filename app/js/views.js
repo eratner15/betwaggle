@@ -928,6 +928,7 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   const hasInlineInvalid = Object.keys(inlineInvalid || {}).some(k => inlineInvalid[k]);
   const hasEdits = Object.keys(inlScores || {}).length > 0;
   const isSaving = syncState === 'syncing';
+  const allowQuickModalAction = !!showQuickModalAction && (typeof window !== 'undefined' ? window.innerWidth <= 360 : false);
   const scoreEntryState = isSaving
     ? 'saving'
     : syncState === 'queued'
@@ -982,8 +983,8 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
     html += `<button onclick="window.MG.inlineScoreToggle9('back')" style="font-size:12px;font-weight:700;padding:10px 14px;min-height:56px;border:none;cursor:pointer;background:${isBack9 ? '#0D2818' : '#FAFAF7'};color:${isBack9 ? '#fff' : '#6B7280'};border-left:1px solid #D1D5DB">Back</button>`;
     html += `</div>`;
   }
-  if (!readOnly && showQuickModalAction) {
-    html += `<button onclick="window.MG.openScoreModalQuick()" style="font-size:11px;font-weight:700;padding:8px 12px;min-height:56px;border:1px solid #D1D5DB;border-radius:8px;background:#FFFFFF;color:#4B5563;cursor:pointer;white-space:nowrap">Quick entry</button>`;
+  if (!readOnly && allowQuickModalAction) {
+    html += `<button onclick="window.MG.openScoreModalQuick()" style="font-size:11px;font-weight:700;padding:8px 12px;min-height:56px;border:1px solid #D1D5DB;border-radius:8px;background:#FFFFFF;color:#4B5563;cursor:pointer;white-space:nowrap">Quick score</button>`;
   }
   html += `</div>`;
   html += `</div></div>`;
@@ -7233,6 +7234,14 @@ export function renderSettlement(state) {
   const completionMeta = getCompletedHolesMeta(holes, holesPerRound, requiredEntities);
   const holesPlayed = completionMeta.completedCount;
   const hasSecondaryModules = Object.values(games).some(Boolean);
+  const secondaryModuleLabels = [];
+  if (games.skins) secondaryModuleLabels.push('Skins');
+  if (games.nassau) secondaryModuleLabels.push('Nassau');
+  if (games.wolf) secondaryModuleLabels.push('Wolf');
+  if (games.vegas) secondaryModuleLabels.push('Vegas');
+  if (games.nines) secondaryModuleLabels.push('9s');
+  if (games.scramble) secondaryModuleLabels.push('Scramble');
+  if (games.stroke_play) secondaryModuleLabels.push('Stroke play');
 
   const isTrophy = state._trophyMode;
 
@@ -7772,8 +7781,11 @@ export function renderSettlement(state) {
 
   const hasSecondaryDetails = hasSecondaryModules || !!settlementSecondaryDetailsHtml;
   if (hasSecondaryDetails) {
+    const detailsSummary = secondaryModuleLabels.length > 0
+      ? `Details: ${secondaryModuleLabels.slice(0, 3).join(', ')}${secondaryModuleLabels.length > 3 ? ' +' + (secondaryModuleLabels.length - 3) : ''}`
+      : 'Settlement details';
     html += `<details class="mg-card" style="padding:12px" id="settlement-details-accordion">
-      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">Settlement Details</summary>
+      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">${escHtml(detailsSummary)}</summary>
       <div style="margin-top:10px"></div>`;
     if (settlementSecondaryDetailsHtml) {
       html += settlementSecondaryDetailsHtml;
