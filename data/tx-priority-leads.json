@@ -1,0 +1,302 @@
+[
+  {
+    "name": "TPC Craig Ranch",
+    "club": "TPC Craig Ranch",
+    "city": "McKinney",
+    "state": "TX",
+    "website": "https://www.tpc.com/craig-ranch",
+    "contact_email": "events@tpccraigranch.com",
+    "segment": "corporate_outing",
+    "notes": "PGA Tour venue (AT&T Byron Nelson host), premium corporate event space, north DFW draw"
+  },
+  {
+    "name": "Cowboys Golf Club",
+    "club": "Cowboys Golf Club",
+    "city": "Grapevine",
+    "state": "TX",
+    "website": "https://www.cowboysgolfclub.com",
+    "contact_email": "events@cowboysgolfclub.com",
+    "segment": "corporate_outing",
+    "notes": "Only NFL-themed golf club in the world, massive brand appeal for corporate outings and charity events"
+  },
+  {
+    "name": "Bear Creek Golf Club - East & West",
+    "club": "Bear Creek Golf Club",
+    "city": "Dallas",
+    "state": "TX",
+    "website": "https://www.bearcreekgolf.com",
+    "contact_email": "events@bearcreekgolf.com",
+    "segment": "charity_scramble",
+    "notes": "36 holes near DFW Airport, high-volume charity scramble host with affordable group rates"
+  },
+  {
+    "name": "Bridlewood Golf Club",
+    "club": "Bridlewood Golf Club",
+    "city": "Flower Mound",
+    "state": "TX",
+    "website": "https://www.bridlewoodgolfclub.com",
+    "contact_email": "events@bridlewoodgolfclub.com",
+    "segment": "charity_scramble",
+    "notes": "D Magazine Best of Dallas winner, popular charity scramble venue in north DFW suburbs"
+  },
+  {
+    "name": "The Tribute Golf Links",
+    "club": "The Tribute at The Colony",
+    "city": "The Colony",
+    "state": "TX",
+    "website": "https://www.thetributegc.com",
+    "contact_email": "events@thetributegc.com",
+    "segment": "corporate_outing",
+    "notes": "Scottish links-style course on Lake Lewisville, unique venue for corporate outings and member events"
+  },
+  {
+    "name": "Topgolf at The Woodlands Resort",
+    "club": "The Woodlands Country Club",
+    "city": "The Woodlands",
+    "state": "TX",
+    "website": "https://www.woodlandsresort.com/golf",
+    "contact_email": "golf@woodlandsresort.com",
+    "segment": "resort",
+    "notes": "36-hole resort with PGA Tour history (Insperity Invitational), full conference and event facilities"
+  },
+  {
+    "name": "Wildcat Golf Club",
+    "club": "Wildcat Golf Club",
+    "city": "Houston",
+    "state": "TX",
+    "website": "https://www.wildcatgolfclub.com",
+    "contact_email": "events@wildcatgolfclub.com",
+    "segment": "charity_scramble",
+    "notes": "Two 18-hole courses, one of Houston's top public facilities for charity and corporate events"
+  },
+  {
+    "name": "Memorial Park Golf Course",
+    "club": "Memorial Park Golf Course",
+    "city": "Houston",
+    "state": "TX",
+    "website": "https://www.memorialparkgolf.com",
+    "contact_email": "golf@memorialparkgolf.com",
+    "segment": "public_daily_fee",
+    "notes": "Newly renovated by Tom Doak, Houston Open host, premier municipal course for large outings"
+  },
+  {
+    "name": "BlackHorse Golf Club",
+    "club": "BlackHorse Golf Club",
+    "city": "Cypress",
+    "state": "TX",
+    "website": "https://www.blackhorsegolfclub.com",
+    "contact_email": "events@blackhorsegolfclub.com",
+    "segment": "corporate_outing",
+    "notes": "36 holes northwest of Houston, strong corporate outing program with dedicated events staff"
+  },
+  {
+    "name": "Barton Creek Resort & Spa",
+    "club": "Omni Barton Creek Resort",
+    "city": "Austin",
+    "state": "TX",
+    "website": "https://www.omnihotels.com/hotels/austin-barton-creek/golf",
+    "contact_email": "golf@omnihotels.com",
+    "segment": "resort",
+    "notes": "Four courses at a luxury resort, top destination for multi-day corporate retreats and member-guest events"
+  },
+  {
+    "name": "Avery Ranch Golf Club",
+    "club": "Avery Ranch Golf Club",
+    "city": "Austin",
+    "state": "TX",
+    "website": "https://www.averyranchgolf.com",
+    "contact_email": "events@averyranchgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Popular north Austin course with active tournament and charity event calendar"
+  },
+  {
+    "name": "Falconhead Golf Club",
+    "club": "Falconhead Golf Club",
+    "city": "Bee Cave",
+    "state": "TX",
+    "website": "https://www.falconheadaustin.com",
+    "contact_email": "events@falconheadaustin.com",
+    "segment": "corporate_outing",
+    "notes": "Hill Country setting west of Austin, upscale semi-private club popular for corporate outings"
+  },
+  {
+    "name": "TPC San Antonio - AT&T Oaks & Canyons",
+    "club": "TPC San Antonio",
+    "city": "San Antonio",
+    "state": "TX",
+    "website": "https://www.tpc.com/san-antonio",
+    "contact_email": "events@tpcsanantonio.com",
+    "segment": "resort",
+    "notes": "JW Marriott resort, PGA Tour Valero Texas Open host, premier destination for corporate groups"
+  },
+  {
+    "name": "La Cantera Resort & Spa",
+    "club": "La Cantera Golf Club",
+    "city": "San Antonio",
+    "state": "TX",
+    "website": "https://www.lacanteragolfclub.com",
+    "contact_email": "golf@lacanteragolfclub.com",
+    "segment": "resort",
+    "notes": "Two resort courses with Hill Country views, strong group and corporate outing infrastructure"
+  },
+  {
+    "name": "The Quarry Golf Club",
+    "club": "The Quarry Golf Club",
+    "city": "San Antonio",
+    "state": "TX",
+    "website": "https://www.quarrygolf.com",
+    "contact_email": "events@quarrygolf.com",
+    "segment": "corporate_outing",
+    "notes": "Built in a former quarry, iconic and photogenic venue that drives strong charity event interest"
+  },
+  {
+    "name": "Horseshoe Bay Resort",
+    "club": "Horseshoe Bay Resort",
+    "city": "Horseshoe Bay",
+    "state": "TX",
+    "website": "https://www.horseshoebaytexas.com",
+    "contact_email": "golf@hsbresort.com",
+    "segment": "resort",
+    "notes": "Three Robert Trent Jones Sr. courses, top Texas destination resort for multi-day member-guest and charity events"
+  },
+  {
+    "name": "Wolfdancer Golf Club",
+    "club": "Hyatt Regency Lost Pines",
+    "city": "Cedar Creek",
+    "state": "TX",
+    "website": "https://www.wolfdancergolfclub.com",
+    "contact_email": "golf@wolfdancergolfclub.com",
+    "segment": "resort",
+    "notes": "Hyatt resort course near Austin, strong corporate retreat and outing business"
+  },
+  {
+    "name": "Stonebridge Ranch Country Club",
+    "club": "Stonebridge Ranch Country Club",
+    "city": "McKinney",
+    "state": "TX",
+    "website": "https://www.stonebridgeranchcc.com",
+    "contact_email": "events@stonebridgeranchcc.com",
+    "segment": "member_guest",
+    "notes": "36-hole private club with active member-guest tournament program, north DFW growth corridor"
+  },
+  {
+    "name": "Brookhaven Country Club",
+    "club": "Brookhaven Country Club",
+    "city": "Dallas",
+    "state": "TX",
+    "website": "https://www.brookhavencc.com",
+    "contact_email": "events@brookhavencc.com",
+    "segment": "member_guest",
+    "notes": "Large membership base with regular member-guest events and charity partnerships"
+  },
+  {
+    "name": "Prestonwood Country Club",
+    "club": "Prestonwood Country Club",
+    "city": "Dallas",
+    "state": "TX",
+    "website": "https://www.prestonwoodcc.com",
+    "contact_email": "events@prestonwoodcc.com",
+    "segment": "member_guest",
+    "notes": "Two courses, strong member-guest tradition, north Dallas corporate membership base"
+  },
+  {
+    "name": "Tour 18 Golf Course",
+    "club": "Tour 18 Houston",
+    "city": "Humble",
+    "state": "TX",
+    "website": "https://www.tour18golf.com",
+    "contact_email": "events@tour18golf.com",
+    "segment": "charity_scramble",
+    "notes": "Replica holes from famous courses, novelty factor drives strong charity scramble bookings"
+  },
+  {
+    "name": "The Courses at Watters Creek",
+    "club": "The Courses at Watters Creek",
+    "city": "Allen",
+    "state": "TX",
+    "website": "https://www.watterscreek.com",
+    "contact_email": "events@watterscreek.com",
+    "segment": "charity_scramble",
+    "notes": "Public course in Allen with dedicated tournament services, frequent charity scramble host in north DFW"
+  },
+  {
+    "name": "Waterchase Golf Club",
+    "club": "Waterchase Golf Club",
+    "city": "Fort Worth",
+    "state": "TX",
+    "website": "https://www.waterchasegolf.com",
+    "contact_email": "events@waterchasegolf.com",
+    "segment": "charity_scramble",
+    "notes": "Well-maintained public course in south Fort Worth, regular host of charity and corporate scrambles"
+  },
+  {
+    "name": "The Golf Club at Star Ranch",
+    "club": "Star Ranch Golf Club",
+    "city": "Hutto",
+    "state": "TX",
+    "website": "https://www.starranchgolf.com",
+    "contact_email": "events@starranchgolf.com",
+    "segment": "corporate_outing",
+    "notes": "Northeast Austin daily-fee course with dedicated tournament coordinator and event pavilion"
+  },
+  {
+    "name": "Shadowglen Golf Club",
+    "club": "Shadowglen Golf Club",
+    "city": "Manor",
+    "state": "TX",
+    "website": "https://www.shadowglengolf.com",
+    "contact_email": "events@shadowglengolf.com",
+    "segment": "charity_scramble",
+    "notes": "East Austin area course with competitive group rates and strong charity event track record"
+  },
+  {
+    "name": "Brackenridge Park Golf Course",
+    "club": "Brackenridge Park Golf Course",
+    "city": "San Antonio",
+    "state": "TX",
+    "website": "https://www.alamocitygolftrail.com/brackenridge-park",
+    "contact_email": "info@alamocitygolftrail.com",
+    "segment": "public_daily_fee",
+    "notes": "Historic Tillinghast design, part of Alamo City Golf Trail, affordable large-group outing venue"
+  },
+  {
+    "name": "Whispering Pines Golf Club",
+    "club": "Whispering Pines Golf Club",
+    "city": "Trinity",
+    "state": "TX",
+    "website": "https://www.whisperingpinesgolfclub.com",
+    "contact_email": "info@whisperingpinesgolfclub.com",
+    "segment": "member_guest",
+    "notes": "Consistently ranked #1 in Texas, ultra-exclusive member-guest events with high-end clientele"
+  },
+  {
+    "name": "Ridglea Country Club",
+    "club": "Ridglea Country Club",
+    "city": "Fort Worth",
+    "state": "TX",
+    "website": "https://www.ridgleacc.com",
+    "contact_email": "events@ridgleacc.com",
+    "segment": "member_guest",
+    "notes": "Historic Fort Worth club with 36 holes, active member-guest and invitational tournament calendar"
+  },
+  {
+    "name": "Iron Horse Golf Course",
+    "club": "Iron Horse Golf Course",
+    "city": "North Richland Hills",
+    "state": "TX",
+    "website": "https://www.ironhorsegc.com",
+    "contact_email": "events@ironhorsegc.com",
+    "segment": "charity_scramble",
+    "notes": "Award-winning municipal course in mid-cities DFW, strong charity scramble and corporate event bookings"
+  },
+  {
+    "name": "Fossil Creek Golf Club",
+    "club": "Fossil Creek Golf Club",
+    "city": "Fort Worth",
+    "state": "TX",
+    "website": "https://www.fossilcreekgolfclub.com",
+    "contact_email": "events@fossilcreekgolfclub.com",
+    "segment": "corporate_outing",
+    "notes": "Arnold Palmer design in north Fort Worth, well-regarded for corporate outings with full event support"
+  }
+]

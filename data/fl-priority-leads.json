@@ -1,0 +1,502 @@
+[
+  {
+    "name": "TPC Sawgrass - Stadium Course",
+    "club": "TPC Sawgrass",
+    "city": "Ponte Vedra Beach",
+    "state": "FL",
+    "website": "https://tpc.com/sawgrass/",
+    "contact_email": "events@tpc.com",
+    "segment": "corporate_outing",
+    "notes": "Home of THE PLAYERS Championship. Premier corporate outing venue in NE Florida with dedicated events team."
+  },
+  {
+    "name": "TPC Tampa Bay",
+    "club": "TPC Tampa Bay",
+    "city": "Lutz",
+    "state": "FL",
+    "website": "https://tpc.com/tampabay/",
+    "contact_email": "events@tpc.com",
+    "segment": "charity_scramble",
+    "notes": "High-volume charity and corporate event host in Tampa metro. Accessible public TPC facility."
+  },
+  {
+    "name": "Trump National Doral - Blue Monster",
+    "club": "Trump National Doral Miami",
+    "city": "Doral",
+    "state": "FL",
+    "website": "https://www.trumpgolfdoral.com/",
+    "contact_email": "golf@trumpgolfdoral.com",
+    "segment": "resort",
+    "notes": "Iconic Miami resort with 4 courses. Major corporate outing and charity gala destination."
+  },
+  {
+    "name": "PGA National Resort - The Champion",
+    "club": "PGA National Resort & Spa",
+    "city": "Palm Beach Gardens",
+    "state": "FL",
+    "website": "https://www.pgaresort.com/",
+    "contact_email": "golf@pgaresort.com",
+    "segment": "resort",
+    "notes": "Home of Honda Classic. 5 courses, dedicated group events coordinator. Palm Beach corporate market."
+  },
+  {
+    "name": "Streamsong Resort - Red Course",
+    "club": "Streamsong Resort",
+    "city": "Bowling Green",
+    "state": "FL",
+    "website": "https://www.streamsongresort.com/",
+    "contact_email": "events@streamsongresort.com",
+    "segment": "resort",
+    "notes": "Top-ranked destination resort with 3 courses. Popular for corporate retreats and buddy trips."
+  },
+  {
+    "name": "Innisbrook Resort - Copperhead Course",
+    "club": "Innisbrook Golf Resort",
+    "city": "Palm Harbor",
+    "state": "FL",
+    "website": "https://www.innisbrookgolfresort.com/",
+    "contact_email": "golf@innisbrookgolfresort.com",
+    "segment": "resort",
+    "notes": "Home of Valspar Championship. 4 courses, huge corporate outing and charity event business."
+  },
+  {
+    "name": "Arnold Palmer's Bay Hill Club & Lodge",
+    "club": "Bay Hill Club & Lodge",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.bayhill.com/",
+    "contact_email": "events@bayhill.com",
+    "segment": "corporate_outing",
+    "notes": "Home of Arnold Palmer Invitational. Strong charity event ties through Arnie's Army foundation."
+  },
+  {
+    "name": "Grand Cypress Golf Club",
+    "club": "Grand Cypress Resort",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.grandcypress.com/",
+    "contact_email": "golf@grandcypress.com",
+    "segment": "resort",
+    "notes": "45 holes near Disney. Major corporate outing destination for Orlando convention market."
+  },
+  {
+    "name": "World Golf Village - King & Bear",
+    "club": "World Golf Village",
+    "city": "St. Augustine",
+    "state": "FL",
+    "website": "https://www.worldgolfvillage.com/",
+    "contact_email": "events@worldgolfvillage.com",
+    "segment": "charity_scramble",
+    "notes": "Home of World Golf Hall of Fame. Two public courses ideal for charity scrambles and group events."
+  },
+  {
+    "name": "Sawgrass Country Club",
+    "club": "Sawgrass Country Club",
+    "city": "Ponte Vedra Beach",
+    "state": "FL",
+    "website": "https://www.sawgrasscountryclub.com/",
+    "contact_email": "events@sawgrasscountryclub.com",
+    "segment": "member_guest",
+    "notes": "Premier private club in Ponte Vedra. Active member-guest tournament schedule."
+  },
+  {
+    "name": "Reunion Resort - Watson Course",
+    "club": "Reunion Resort",
+    "city": "Kissimmee",
+    "state": "FL",
+    "website": "https://www.reunionresort.com/",
+    "contact_email": "golf@reunionresort.com",
+    "segment": "resort",
+    "notes": "3 signature courses (Watson, Nicklaus, Palmer). Disney-area resort popular for corporate groups."
+  },
+  {
+    "name": "Waldorf Astoria Golf Club",
+    "club": "Waldorf Astoria Orlando",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.waldorfastoriagolfclub.com/",
+    "contact_email": "golf@waldorfastoriagolfclub.com",
+    "segment": "corporate_outing",
+    "notes": "Rees Jones design near Disney. Upscale corporate outing venue tied to Waldorf brand."
+  },
+  {
+    "name": "Tiburon Golf Club - Gold Course",
+    "club": "The Ritz-Carlton Golf Resort Naples",
+    "city": "Naples",
+    "state": "FL",
+    "website": "https://www.ritzcarlton.com/en/hotels/rswnp-the-ritz-carlton-naples-tiburon/golf/",
+    "contact_email": "golf@tiburongolfclub.com",
+    "segment": "resort",
+    "notes": "Home of LPGA CME Group Tour Championship. Premium Naples corporate event venue."
+  },
+  {
+    "name": "Hammock Beach Resort - Ocean Course",
+    "club": "Hammock Beach Resort",
+    "city": "Palm Coast",
+    "state": "FL",
+    "website": "https://www.hammockbeach.com/",
+    "contact_email": "golf@hammockbeach.com",
+    "segment": "resort",
+    "notes": "Jack Nicklaus ocean course. Popular for corporate retreats and charity events on the coast."
+  },
+  {
+    "name": "ChampionsGate Golf Club",
+    "club": "ChampionsGate",
+    "city": "ChampionsGate",
+    "state": "FL",
+    "website": "https://www.championsgategolf.com/",
+    "contact_email": "events@championsgategolf.com",
+    "segment": "charity_scramble",
+    "notes": "Greg Norman 36-hole facility near Disney. High-volume charity scramble and corporate outing host."
+  },
+  {
+    "name": "Orange County National Golf Center",
+    "club": "Orange County National",
+    "city": "Winter Garden",
+    "state": "FL",
+    "website": "https://www.ocngolf.com/",
+    "contact_email": "events@ocngolf.com",
+    "segment": "charity_scramble",
+    "notes": "36 holes, massive practice facility. One of Central FL's busiest charity scramble venues."
+  },
+  {
+    "name": "Shingle Creek Golf Club",
+    "club": "Rosen Shingle Creek",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.shinglecreekgolf.com/",
+    "contact_email": "golf@shinglecreekgolf.com",
+    "segment": "corporate_outing",
+    "notes": "Adjacent to convention center hotels. Prime Orlando corporate outing location."
+  },
+  {
+    "name": "Weston Hills Country Club",
+    "club": "Weston Hills Country Club",
+    "city": "Weston",
+    "state": "FL",
+    "website": "https://www.westonhillscc.com/",
+    "contact_email": "events@westonhillscc.com",
+    "segment": "charity_scramble",
+    "notes": "Semi-private 36-hole facility in Broward County. Active charity event schedule."
+  },
+  {
+    "name": "Jacaranda Golf Club",
+    "club": "Jacaranda Golf Club",
+    "city": "Plantation",
+    "state": "FL",
+    "website": "https://www.jacarandagolf.com/",
+    "contact_email": "events@jacarandagolf.com",
+    "segment": "charity_scramble",
+    "notes": "36-hole municipal in Broward. Highest volume charity scramble host in South FL due to pricing."
+  },
+  {
+    "name": "Crandon Golf at Key Biscayne",
+    "club": "Crandon Golf",
+    "city": "Key Biscayne",
+    "state": "FL",
+    "website": "https://www.crandongolf.com/",
+    "contact_email": "events@crandongolf.com",
+    "segment": "charity_scramble",
+    "notes": "Former Senior PGA Tour venue. Miami's premier public course for charity outings."
+  },
+  {
+    "name": "Biltmore Golf Course",
+    "club": "Biltmore Hotel Miami",
+    "city": "Coral Gables",
+    "state": "FL",
+    "website": "https://www.biltmorehotel.com/golf/",
+    "contact_email": "golf@biltmorehotel.com",
+    "segment": "corporate_outing",
+    "notes": "Historic Coral Gables landmark. Upscale corporate event destination in Miami."
+  },
+  {
+    "name": "Doral Golf Resort - Silver Fox",
+    "club": "Miami Beach Golf Club",
+    "city": "Miami Beach",
+    "state": "FL",
+    "website": "https://www.miamibeachgolfclub.com/",
+    "contact_email": "events@miamibeachgolfclub.com",
+    "segment": "charity_scramble",
+    "notes": "Only golf course on Miami Beach. Popular charity event venue due to unique location."
+  },
+  {
+    "name": "Inverrary Country Club",
+    "club": "Inverrary Country Club",
+    "city": "Lauderhill",
+    "state": "FL",
+    "website": "https://www.inverrarycc.com/",
+    "contact_email": "events@inverrarycc.com",
+    "segment": "charity_scramble",
+    "notes": "Former PGA Tour host. Affordable semi-private facility popular for Broward charity scrambles."
+  },
+  {
+    "name": "Boca Raton Resort - Resort Course",
+    "club": "The Boca Raton",
+    "city": "Boca Raton",
+    "state": "FL",
+    "website": "https://www.thebocaraton.com/",
+    "contact_email": "golf@thebocaraton.com",
+    "segment": "resort",
+    "notes": "Iconic Palm Beach County resort. Two courses, strong corporate and charity event business."
+  },
+  {
+    "name": "BallenIsles Country Club",
+    "club": "BallenIsles Country Club",
+    "city": "Palm Beach Gardens",
+    "state": "FL",
+    "website": "https://www.ballenisles.org/",
+    "contact_email": "events@ballenisles.org",
+    "segment": "member_guest",
+    "notes": "54 holes, 3 courses. Very active member-guest tournament calendar in Palm Beach."
+  },
+  {
+    "name": "Breakers Rees Jones Course",
+    "club": "The Breakers Palm Beach",
+    "city": "West Palm Beach",
+    "state": "FL",
+    "website": "https://www.thebreakers.com/golf/",
+    "contact_email": "golf@thebreakers.com",
+    "segment": "resort",
+    "notes": "Legendary Palm Beach resort. Premium corporate outing and charity gala golf venue."
+  },
+  {
+    "name": "Old Palm Golf Club",
+    "club": "Old Palm Golf Club",
+    "city": "Palm Beach Gardens",
+    "state": "FL",
+    "website": "https://www.oldpalmgolfclub.com/",
+    "contact_email": "events@oldpalmgolfclub.com",
+    "segment": "member_guest",
+    "notes": "Ultra-exclusive Raymond Floyd design. Active member-guest events."
+  },
+  {
+    "name": "Copperleaf Golf Club",
+    "club": "Copperleaf Golf Club",
+    "city": "Bonita Springs",
+    "state": "FL",
+    "website": "https://www.copperleafgc.com/",
+    "contact_email": "golf@copperleafgc.com",
+    "segment": "member_guest",
+    "notes": "Private club in SW FL with strong member-guest tournament tradition."
+  },
+  {
+    "name": "Naples Beach Hotel Golf Club",
+    "club": "The Naples Beach Club",
+    "city": "Naples",
+    "state": "FL",
+    "website": "https://www.naplesbeachclub.com/",
+    "contact_email": "golf@naplesbeachclub.com",
+    "segment": "resort",
+    "notes": "Newly renovated Naples resort. Corporate retreat and charity outing destination in SW FL."
+  },
+  {
+    "name": "Lely Resort Golf & Country Club",
+    "club": "Lely Resort",
+    "city": "Naples",
+    "state": "FL",
+    "website": "https://www.lelyresortgolf.com/",
+    "contact_email": "events@lelyresortgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Two public courses in Naples. Affordable option for SW FL charity scrambles."
+  },
+  {
+    "name": "Pelican's Nest Golf Club",
+    "club": "Pelican's Nest Golf Club",
+    "city": "Bonita Springs",
+    "state": "FL",
+    "website": "https://www.pelicansnestgc.com/",
+    "contact_email": "events@pelicansnestgc.com",
+    "segment": "charity_scramble",
+    "notes": "Tom Fazio 36-hole semi-private in SW FL. Regular charity event host."
+  },
+  {
+    "name": "Tampa Palms Golf & Country Club",
+    "club": "Tampa Palms Golf & Country Club",
+    "city": "Tampa",
+    "state": "FL",
+    "website": "https://www.tampapalms.com/",
+    "contact_email": "events@tampapalms.com",
+    "segment": "charity_scramble",
+    "notes": "Semi-private club accessible for Tampa-area charity scrambles and corporate outings."
+  },
+  {
+    "name": "Westchase Golf Club",
+    "club": "Westchase Golf Club",
+    "city": "Tampa",
+    "state": "FL",
+    "website": "https://www.westchasegc.com/",
+    "contact_email": "events@westchasegc.com",
+    "segment": "charity_scramble",
+    "notes": "Popular Tampa public course. High charity scramble volume due to competitive pricing."
+  },
+  {
+    "name": "Cove Cay Golf Club",
+    "club": "Cove Cay Golf Club",
+    "city": "Clearwater",
+    "state": "FL",
+    "website": "https://www.covecaygolf.com/",
+    "contact_email": "events@covecaygolf.com",
+    "segment": "charity_scramble",
+    "notes": "Semi-private waterfront course in Clearwater. Active charity and corporate event calendar."
+  },
+  {
+    "name": "Bardmoor Golf & Tennis Club",
+    "club": "Bardmoor Golf & Tennis Club",
+    "city": "Largo",
+    "state": "FL",
+    "website": "https://www.bardmoorgolf.com/",
+    "contact_email": "events@bardmoorgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Semi-private in Pinellas County. Reliable charity scramble venue near St. Pete."
+  },
+  {
+    "name": "Copperhead Course at Innisbrook",
+    "club": "Belleair Country Club",
+    "city": "Belleair",
+    "state": "FL",
+    "website": "https://www.belleaircc.com/",
+    "contact_email": "events@belleaircc.com",
+    "segment": "member_guest",
+    "notes": "Historic Donald Ross design. Prestigious member-guest tournaments in Tampa Bay area."
+  },
+  {
+    "name": "Plantation Bay Golf & Country Club",
+    "club": "Plantation Bay",
+    "city": "Ormond Beach",
+    "state": "FL",
+    "website": "https://www.plantationbaygolf.com/",
+    "contact_email": "golf@plantationbaygolf.com",
+    "segment": "member_guest",
+    "notes": "45 holes across 3 courses in Volusia County. Active member-guest tournament schedule."
+  },
+  {
+    "name": "LPGA International",
+    "club": "LPGA International",
+    "city": "Daytona Beach",
+    "state": "FL",
+    "website": "https://www.lpgainternational.com/",
+    "contact_email": "events@lpgainternational.com",
+    "segment": "charity_scramble",
+    "notes": "Two Rees Jones/Arthur Hills courses. LPGA brand draws strong charity event interest."
+  },
+  {
+    "name": "Eagle Creek Golf Club",
+    "club": "Eagle Creek Golf Club",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.eaglecreekgc.com/",
+    "contact_email": "events@eaglecreekgc.com",
+    "segment": "charity_scramble",
+    "notes": "Public course in south Orlando. Affordable charity scramble option near the airport."
+  },
+  {
+    "name": "Falcon's Fire Golf Club",
+    "club": "Falcon's Fire Golf Club",
+    "city": "Kissimmee",
+    "state": "FL",
+    "website": "https://www.falconsfire.com/",
+    "contact_email": "events@falconsfire.com",
+    "segment": "charity_scramble",
+    "notes": "Rees Jones public course near Disney. Popular charity outing venue in Osceola County."
+  },
+  {
+    "name": "MetroWest Golf Club",
+    "club": "MetroWest Golf Club",
+    "city": "Orlando",
+    "state": "FL",
+    "website": "https://www.metrowestgolf.com/",
+    "contact_email": "events@metrowestgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Robert Trent Jones Sr. design. Central Orlando location ideal for charity event attendance."
+  },
+  {
+    "name": "Dye's Valley Course at TPC Sawgrass",
+    "club": "Ponte Vedra Inn & Club",
+    "city": "Ponte Vedra Beach",
+    "state": "FL",
+    "website": "https://www.pontevedra.com/",
+    "contact_email": "golf@pontevedra.com",
+    "segment": "resort",
+    "notes": "Historic oceanfront resort with 36 holes. NE FL corporate retreat and member-guest destination."
+  },
+  {
+    "name": "Jacksonville Golf & Country Club",
+    "club": "Jacksonville Golf & Country Club",
+    "city": "Jacksonville",
+    "state": "FL",
+    "website": "https://www.jaxgolfcc.com/",
+    "contact_email": "events@jaxgolfcc.com",
+    "segment": "member_guest",
+    "notes": "One of Jax's oldest private clubs. Strong member-guest event tradition."
+  },
+  {
+    "name": "Deerwood Country Club",
+    "club": "Deerwood Country Club",
+    "city": "Jacksonville",
+    "state": "FL",
+    "website": "https://www.deerwoodclub.com/",
+    "contact_email": "events@deerwoodclub.com",
+    "segment": "member_guest",
+    "notes": "Exclusive Jax private club with active member-guest tournament calendar."
+  },
+  {
+    "name": "Queen's Harbour Yacht & Country Club",
+    "club": "Queen's Harbour Yacht & Country Club",
+    "city": "Jacksonville",
+    "state": "FL",
+    "website": "https://www.queensharbour.com/",
+    "contact_email": "events@queensharbour.com",
+    "segment": "member_guest",
+    "notes": "Upscale Jax private club. Waterfront setting popular for member-guest and charity events."
+  },
+  {
+    "name": "Heritage Oaks Golf Club",
+    "club": "Heritage Oaks Golf Club",
+    "city": "Sarasota",
+    "state": "FL",
+    "website": "https://www.heritageoaksgolf.com/",
+    "contact_email": "events@heritageoaksgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Public course in Sarasota. High-volume charity scramble host for Sarasota nonprofits."
+  },
+  {
+    "name": "University Park Country Club",
+    "club": "University Park Country Club",
+    "city": "Sarasota",
+    "state": "FL",
+    "website": "https://www.universitypark-fl.com/",
+    "contact_email": "golf@universitypark-fl.com",
+    "segment": "charity_scramble",
+    "notes": "27-hole semi-private in Sarasota. Affordable venue for charity events and corporate outings."
+  },
+  {
+    "name": "Misty Creek Country Club",
+    "club": "Misty Creek Country Club",
+    "city": "Sarasota",
+    "state": "FL",
+    "website": "https://www.mistycreekcc.com/",
+    "contact_email": "events@mistycreekcc.com",
+    "segment": "charity_scramble",
+    "notes": "Semi-private Sarasota facility accessible for charity scramble bookings."
+  },
+  {
+    "name": "Viera East Golf Club",
+    "club": "Viera East Golf Club",
+    "city": "Viera",
+    "state": "FL",
+    "website": "https://www.vieraeastgolf.com/",
+    "contact_email": "events@vieraeastgolf.com",
+    "segment": "charity_scramble",
+    "notes": "Public course on the Space Coast. Serves Brevard County charity scramble market."
+  },
+  {
+    "name": "Emerald Bay Golf Club",
+    "club": "Emerald Bay Golf Club",
+    "city": "Destin",
+    "state": "FL",
+    "website": "https://www.emeraldbaygolfclub.com/",
+    "contact_email": "events@emeraldbaygolfclub.com",
+    "segment": "corporate_outing",
+    "notes": "Robert Cupp design in the Panhandle. Popular for Destin-area corporate retreats and buddy trips."
+  }
+]
