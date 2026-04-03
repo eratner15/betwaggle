@@ -547,7 +547,7 @@ function getCourseHcpIndex(config) {
 // ─── PREMIUM SCORECARD RENDERER ───
 // Renders a trifold-style country club scorecard with yardage, HCP, par, player scores,
 // golf-standard color coding (circles under par, squares over par), and running totals.
-function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly }) {
+function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, entities, inlScores, holesPerRound, courseName, isScramble, readOnly, inlineInvalid = {}, syncState = '' }) {
   const isBack9 = currentHole > 9;
   const startHole = isBack9 ? 10 : 1;
   const endHole = isBack9 ? Math.min(18, holesPerRound) : Math.min(9, holesPerRound);
@@ -557,6 +557,24 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
   const inlYds = yardage ? yardage[currentHole - 1] : null;
   const hasYardage = yardage && yardage.some(y => y > 0);
   const hasHcp = hcpIndex && hcpIndex.length > 0;
+  const missingEntities = entities.filter(e => {
+    const n = e.name || e;
+    return !(inlScores[n] >= 1 && inlScores[n] <= 15);
+  });
+  const waitingCount = missingEntities.length;
+  const allFilled = entities.length > 0 && waitingCount === 0 && !Object.keys(inlineInvalid || {}).some(k => inlineInvalid[k]);
+  const completedHoles = Object.keys(holes || {}).filter(h => {
+    const hs = holes[h]?.scores || {};
+    return entities.every(e => {
+      const n = e.name || e;
+      return hs[n] >= 1 && hs[n] <= 15;
+    });
+  }).length;
+  const remainingHoles = Math.max(0, holesPerRound - completedHoles);
+  const missingShortNames = missingEntities.map(e => {
+    const name = (e.name || e || '').trim();
+    return name.split(' ')[0] || name;
+  });
 
   // Score style helper — golf standard color coding
   function scoreStyle(score, par) {
@@ -596,6 +614,20 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
     html += `</div>`;
   }
   html += `</div></div>`;
+
+  // Sprint 3 progress strip
+  html += `<div style="padding:10px 14px;border-bottom:1px solid #E8E5DE;background:${allFilled ? 'rgba(22,163,74,0.08)' : '#F8FBF8'}">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0D2818">Hole ${currentHole} of ${holesPerRound}</div>
+        <div style="font-size:12px;color:#4B5563;margin-top:2px">${completedHoles} complete • ${remainingHoles} left</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:${allFilled ? '#15803D' : '#B45309'}">${allFilled ? 'All scores in • ready to save' : `Waiting on ${waitingCount} score${waitingCount === 1 ? '' : 's'}`}</div>
+        ${!allFilled && missingShortNames.length > 0 ? `<div style="font-size:11px;color:#6B7280;margin-top:2px">Missing: ${escHtml(missingShortNames.join(', '))}</div>` : ''}
+      </div>
+    </div>
+  </div>`;
 
   // Scorecard table
   html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
@@ -682,13 +714,19 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
         const inputColor = st ? st.color : '#1A1A1A';
         const inputBorder = displayScore ? (st && st.border !== 'none' ? st.border.split(' ').pop() : '#B8962E') : '#B8962E';
         const inputRadius = st && st.shape === 'circle' ? 'border-radius:50%;' : 'border-radius:3px;';
+        const scoreInputId = `inline-score-${escHtml(entityName).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+        const isInvalid = !!inlineInvalid[entityName];
         html += `<td style="padding:3px 2px;text-align:center;${currentHighlight}">
           <input type="number" inputmode="numeric" pattern="[0-9]*"
-            style="width:36px;height:36px;text-align:center;border:2px solid ${inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:14px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
+            id="${scoreInputId}"
+            data-inline-score-input="1"
+            style="width:36px;height:36px;text-align:center;border:2px solid ${isInvalid ? '#DC2626' : inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:14px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
             value="${displayScore || ''}"
             onfocus="this.select()"
-            oninput="window.MG.inlineScoreType('${escHtml(entityName)}',this.value)"
+            oninput="window.MG.inlineScoreInput('${escHtml(entityName)}',this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();window.MG.inlineScoreSaveAttempt();}"
             placeholder="\u00b7">
+          ${isInvalid ? `<div style="font-size:10px;color:#DC2626;margin-top:4px;font-weight:700">Enter 1-15</div>` : ''}
         </td>`;
       } else if (isCurrent && readOnly) {
         // Current hole in read-only mode — highlight but no input
@@ -741,15 +779,19 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
 
   // Save button (only in editable mode — not when readOnly with separate keypad below)
   if (!readOnly) {
-    const allFilled = entities.length > 0 && entities.every(e => {
-      const n = e.name || e;
-      return inlScores[n] >= 1 && inlScores[n] <= 15;
-    });
     html += `<div style="padding:12px 16px 14px">`;
-    html += `<button onclick="window.MG.inlineScoreSave()" ${allFilled ? '' : 'disabled'}
+    html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${allFilled ? '' : 'disabled'}
       style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
-      ${allFilled ? 'Save Hole ' + currentHole + ' \u2192' : 'Fill in all scores for Hole ' + currentHole}
+      ${allFilled ? 'Save Hole ' + currentHole : 'Save Hole ' + currentHole}
     </button>`;
+    if (syncState) {
+      const syncLabel = syncState === 'queued' ? 'Queued' : syncState === 'syncing' ? 'Syncing' : syncState === 'synced' ? 'Synced' : '';
+      if (syncLabel) {
+        html += `<div style="margin-top:8px;display:flex;justify-content:center">
+          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${syncState === 'queued' ? 'rgba(180,83,9,0.12)' : 'rgba(22,163,74,0.12)'};color:${syncState === 'queued' ? '#B45309' : '#15803D'}">${syncLabel}</span>
+        </div>`;
+      }
+    }
     html += `</div>`;
   }
 
@@ -999,7 +1041,7 @@ export function renderScrambleLeaderboard(state) {
     // Map team names to entity objects for premium scorecard
     const scrEntities = teamsFallback.map(t => ({ name: typeof t === 'string' ? t : (t.name || t) }));
 
-    html += renderPremiumScorecard({
+    html += `<div id="board-card-score-entry">` + renderPremiumScorecard({
       currentHole,
       pars,
       hcpIndex: scrHcp,
@@ -1009,12 +1051,18 @@ export function renderScrambleLeaderboard(state) {
       inlScores,
       holesPerRound,
       courseName: scrCourseName,
-      isScramble: true
-    });
+      isScramble: true,
+      inlineInvalid: state._inlineScoreInvalid || {},
+      syncState: state._inlineSyncState || ''
+    }) + `</div>`;
   } else if (roundComplete && state.adminAuthed) {
     html += `<div style="background:var(--bg-secondary);border-radius:12px;padding:20px;margin-bottom:8px;text-align:center;border:1px solid var(--border)">
       <div style="font-size:20px;font-weight:700;color:var(--gold-bright);margin-bottom:8px">Round Complete</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">All ${holesPerRound} holes scored. Final results below.</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">All ${holesPerRound} holes scored</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
+      </div>
     </div>`;
   }
 
@@ -1887,7 +1935,7 @@ export function renderRoundFeed(state) {
       const scores = Object.values(holeData.scores).filter(s => s != null);
       if (scores.length === 0) return '#374151';
 
-      const par = pars[holeNum] || 4;
+      const par = pars[holeNum - 1] || 4;
       const bestScore = Math.min(...scores);
       const diff = bestScore - par;
 
@@ -2004,8 +2052,8 @@ export function renderRoundFeed(state) {
   // ================================================================
   if ((!showSubTabs || activeSubTab === 'score') && !roundComplete && players.length > 0) {
     // Add hole progress strip at the top
-    const currentHole = state._inlineScore?.hole || (latestHole < holesPerRound ? latestHole + 1 : holesPerRound);
-    html += renderHoleProgressStrip(holes, holesPerRound, currentHole, pars);
+    const progressHole = state._inlineScore?.hole || (latestHole < holesPerRound ? latestHole + 1 : holesPerRound);
+    html += renderHoleProgressStrip(holes, holesPerRound, progressHole, pars);
     const yardage = getCourseYardage(config);
     const resolvedHcp = hcpIndex.length > 0 ? hcpIndex : getCourseHcpIndex(config);
     const courseName = config?.course?.name || config?.event?.course || config?.event?.venue || '';
@@ -2170,7 +2218,7 @@ export function renderRoundFeed(state) {
       html += `<div style="height:2px;background:linear-gradient(90deg,transparent,#B8962E,transparent);margin:4px 0 8px;border-radius:1px"></div>`;
     }
 
-    html += renderPremiumScorecard({
+    html += `<div id="board-card-score-entry">` + renderPremiumScorecard({
       currentHole,
       pars,
       hcpIndex: resolvedHcp,
@@ -2181,8 +2229,10 @@ export function renderRoundFeed(state) {
       holesPerRound,
       courseName,
       isScramble: false,
-      readOnly: true
-    });
+      readOnly: true,
+      inlineInvalid: state._inlineScoreInvalid || {},
+      syncState: state._inlineSyncState || ''
+    }) + `</div>`;
 
     // ── 3b. KEYPAD SCORE ENTRY SECTION (below read-only scorecard) ──
     if (!roundComplete && players.length > 0 && !state._spectatorMode) {
@@ -2389,12 +2439,18 @@ export function renderRoundFeed(state) {
 
       // Save button — large, thumb-friendly
       const kpAllFilled = players.every(p => kpScores[p.name] >= 1);
-      html += `<button onclick="window.MG.inlineScoreSave()"
+      html += `<button onclick="window.MG.inlineScoreSaveAttempt()"
         style="width:100%;padding:18px;margin-top:14px;border-radius:12px;border:none;background:${kpAllFilled ? 'var(--mg-green,#0D2818)' : 'var(--mg-border,#D1D5DB)'};color:${kpAllFilled ? 'white' : 'var(--page-text-muted,#9CA3AF)'};font-size:18px;font-weight:800;cursor:${kpAllFilled ? 'pointer' : 'default'};box-shadow:${kpAllFilled ? '0 4px 16px rgba(13,40,24,0.3)' : 'none'};-webkit-tap-highlight-color:transparent;transition:transform .08s;min-height:56px;letter-spacing:0.3px"
         ${kpAllFilled ? '' : 'disabled'}
         ${kpAllFilled ? 'onpointerdown="this.style.transform=\'scale(0.97)\'" onpointerup="this.style.transform=\'\'" onpointerleave="this.style.transform=\'\'"' : ''}>
-        ${kpAllFilled ? 'Save Hole ' + kpHole + ' &#8594;' : 'Tap scores for Hole ' + kpHole}
+        ${kpAllFilled ? 'Save Hole ' + kpHole : 'Tap scores for Hole ' + kpHole}
       </button>`;
+      if (state._inlineSyncState) {
+        const syncColor = state._inlineSyncState === 'queued' ? '#B45309' : '#15803D';
+        const syncBg = state._inlineSyncState === 'queued' ? 'rgba(180,83,9,0.12)' : 'rgba(22,163,74,0.12)';
+        const syncLabel = state._inlineSyncState === 'queued' ? 'Queued' : state._inlineSyncState === 'syncing' ? 'Syncing' : 'Synced';
+        html += `<div style="margin-top:8px;display:flex;justify-content:center"><span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${syncBg};color:${syncColor}">${syncLabel}</span></div>`;
+      }
 
       // Undo last hole button (shown when there's a recent submission to undo)
       if (state._lastScoredHole && state._lastScoredHole.hole !== kpHole) {
@@ -2570,8 +2626,11 @@ export function renderRoundFeed(state) {
   } else if (roundComplete && !state._spectatorMode) {
     html += `<div style="border:2px solid var(--mg-gold);border-radius:10px;padding:20px;margin-bottom:8px;text-align:center;background:var(--bg-primary)">
       <div style="font-size:20px;font-weight:700;color:var(--mg-gold);margin-bottom:8px">Round Complete</div>
-      <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored. Time to settle up.</div>
-      <a href="#settle" style="display:inline-block;padding:14px 32px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 3px 12px rgba(212,160,23,0.3)">View Settlement</a>
+      <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="#settle" style="display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 3px 12px rgba(212,160,23,0.3);min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
+      </div>
     </div>`;
   }
 
@@ -3540,8 +3599,12 @@ export function renderRoundFeed(state) {
   if (roundComplete) {
     html += `<div style="padding:20px;text-align:center;border-top:3px solid var(--mg-gold);border-radius:10px;background:var(--mg-surface);margin-bottom:8px">
       <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--mg-gold);margin-bottom:8px">ROUND COMPLETE</div>
-      <div style="font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:14px">Final results are ready</div>
-      <a href="#settle" style="text-decoration:none;display:inline-block;padding:14px 32px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;min-height:44px">View Settlement</a>
+      <div style="font-size:18px;font-weight:700;color:var(--mg-text);margin-bottom:8px">Round Complete</div>
+      <div style="font-size:13px;color:var(--mg-text-muted);margin-bottom:14px">All ${holesPerRound} holes scored</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a href="#settle" style="text-decoration:none;display:inline-block;padding:14px 24px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:15px;font-weight:700;min-height:48px">Review Settlement</a>
+        <button onclick="window.MG.editLastScoredHole()" style="padding:14px 24px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;min-height:48px">Edit Last Hole</button>
+      </div>
     </div>`;
   }
 
@@ -4075,7 +4138,8 @@ function renderAdminScores(state) {
 
   // Settle Round button (Problem 7)
   if (!allFinal && allScored) {
-    html += `<button class="mg-btn mg-btn-gold" style="margin-bottom:12px;padding:12px" onclick="window.MG.settleRound(${selectedRound})">Settle Round ${selectedRound} (${roundMatches.length - finalCount} remaining)</button>`;
+    html += `<button class="mg-btn mg-btn-gold" style="margin-bottom:8px;padding:12px" onclick="window.MG.settleRound(${selectedRound})">Settle Round ${selectedRound} (${roundMatches.length - finalCount} remaining)</button>`;
+    html += `<div style="font-size:12px;color:var(--mg-text-muted);margin-bottom:12px">Finalizes remaining matches and settles active bets.</div>`;
   } else if (allFinal) {
     html += `<div style="text-align:center;padding:8px;margin-bottom:8px;color:var(--mg-win);font-weight:600;font-size:13px">Round ${selectedRound} — All ${roundMatches.length} matches final ✓</div>`;
   }
@@ -6724,6 +6788,8 @@ export function renderSettlement(state) {
   const config = state._config;
   const games = config?.games || {};
   const holesPlayed = Object.keys(holes).length;
+  const holesPerRound = config?.holesPerRound || 18;
+  const hasSecondaryModules = Object.values(games).some(Boolean);
 
   const isTrophy = state._trophyMode;
 
@@ -6740,8 +6806,7 @@ export function renderSettlement(state) {
     <span>Settlement Card</span>
     <div style="display:flex;gap:8px">
       ${isTrophy ? '' : `<button class="mg-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--mg-surface);border:1px solid var(--mg-border);color:var(--mg-text)" onclick="window.MG.getRecap()">AI Recap</button>
-      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.exportSettlementCard()">&#x1F4F8; Export</button>
-      <button class="mg-btn mg-btn-gold" style="width:auto;padding:6px 16px;font-size:13px" onclick="window.MG.shareSettlement()">Share</button>`}
+      `}
     </div>
   </div>
   <div id="mg-recap-card" style="display:none"></div>`;
@@ -6766,6 +6831,25 @@ export function renderSettlement(state) {
     <div style="font-size:20px;font-weight:700;color:var(--mg-gold-dim);margin:4px 0">${escHtml(eventName)}</div>
     <div style="font-size:12px;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed !== 1 ? 's' : ''} played</div>
   </div>`;
+
+  if (holesPlayed < holesPerRound) {
+    const settleNames = settlePlayers.map(p => p.name).filter(Boolean);
+    const remaining = [];
+    for (let h = 1; h <= holesPerRound; h++) {
+      const hs = holes[h]?.scores || holes[h] || {};
+      const missingCount = settleNames.filter(n => !(hs[n] >= 1 && hs[n] <= 15)).length;
+      if (missingCount > 0) {
+        remaining.push(`Hole ${h} (${missingCount} player${missingCount === 1 ? '' : 's'})`);
+      }
+    }
+    const blockerSummary = remaining.slice(0, 5).join(', ') + (remaining.length > 5 ? ', ...' : '');
+    html += `<div class="mg-card" style="border:1px solid var(--mg-border);padding:18px;margin-top:8px">
+      <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Settlement available after all holes are scored.</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Remaining: ${escHtml(blockerSummary || 'Scores still missing')}</div>
+      <a href="#dashboard" onclick="window.MG.setBoardTab&&window.MG.setBoardTab('score')" style="display:inline-block;margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:700">Return to Score Entry</a>
+    </div>`;
+    return html;
+  }
 
   // ── Premium Settlement Reveal Experience ──
   if (settleHasPnL) {
@@ -7017,15 +7101,19 @@ export function renderSettlement(state) {
             </div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a href="${venmoUrl}" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx});if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
+            <a href="${venmoUrl}" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx});window.MG.trackSettlementPaymentCta&&window.MG.trackSettlementPaymentCta('venmo',${amount});window.MG.setPaymentStatus&&window.MG.setPaymentStatus(${pairIdx},'Opened Venmo');if(!this.href.startsWith('venmo'))return;event.preventDefault();window.location.href=this.href;setTimeout(()=>window.open('${venmoWeb}','_blank'),1200)"
               style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary);color:#3D95CE;border:1.5px solid rgba(61,149,206,0.3);padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:56px;min-width:130px">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 1.5c.9 1.5 1.3 3 1.3 4.9 0 6.1-5.2 14-9.4 19.6H3.5L0 2.3l7.1-.7 1.9 15.2C11.3 13 14 6.4 14 3.5c0-1.2-.2-2-.6-2.7l6.1.7z"/></svg>
-              Venmo \$${amount}</a>
-            <a href="${cashappUrl}" target="_blank" rel="noopener" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx})"
+              Pay with Venmo</a>
+            <a href="${cashappUrl}" target="_blank" rel="noopener" onclick="window.MG.markPaymentSent('${payKey}',${pairIdx});window.MG.trackSettlementPaymentCta&&window.MG.trackSettlementPaymentCta('cashapp',${amount});window.MG.setPaymentStatus&&window.MG.setPaymentStatus(${pairIdx},'Opened Cash App')"
               style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#00D632;color:#FFFFFF;padding:14px 12px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;min-height:56px;min-width:130px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.59 3.47A5.1 5.1 0 0020.55.49C19.37.04 18-.08 16.6.02a7.36 7.36 0 00-4.87 2.65 7.36 7.36 0 00-4.87-2.65C5.48-.08 4.1.04 2.92.49A5.1 5.1 0 00-.12 3.47a8.55 8.55 0 00.37 5.21c1.2 2.86 3.86 5.68 7.9 8.37a3.78 3.78 0 004.23 0c4.04-2.69 6.7-5.51 7.9-8.37a8.55 8.55 0 00.37-5.21z"/></svg>
-              Cash App</a>
+              Pay with Cash App</a>
+            <button onclick="navigator.clipboard.writeText('${from.replace(/'/g, "\\'")} pays ${to.replace(/'/g, "\\'")} \$${amount} for ${eventName.replace(/'/g, "\\'")}');window.MG.setPaymentStatus&&window.MG.setPaymentStatus(${pairIdx},'Copied payment details')"
+              style="flex-basis:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg-tertiary);color:var(--text-primary);padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--border);cursor:pointer;min-height:44px">
+              Copy payment details</button>
           </div>
+          <div id="payment-status-${pairIdx}" style="margin-top:8px;font-size:11px;font-weight:700;color:var(--mg-text-muted)"></div>
           ${zelleInfo[to] ? `<div style="margin-top:8px;display:flex;align-items:center;gap:8px">
             <span style="font-size:12px;color:var(--mg-text-muted)">Zelle:</span>
             <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(zelleInfo[to])}</span>
@@ -7039,6 +7127,10 @@ export function renderSettlement(state) {
       // Payment tracking script
       html += `<script>
         window.MG = window.MG || {};
+        window.MG.setPaymentStatus = function(pairIdx, text) {
+          var chip = document.getElementById('payment-status-' + pairIdx);
+          if (chip) chip.textContent = text || '';
+        };
         window.MG.markPaymentSent = function(key, pairIdx) {
           try { localStorage.setItem(key, '1'); } catch(e) {}
           var el = document.getElementById('pay-pair-' + pairIdx);
@@ -7056,6 +7148,11 @@ export function renderSettlement(state) {
         };
       </script>`;
     }
+
+    html += `<div style="display:flex;gap:10px;margin-top:12px">
+      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--mg-gold);color:var(--mg-green);border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px">Share Results</button>
+      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">Export Card</button>
+    </div>`;
 
     // ── Shareable Settlement Card (screenshot-friendly, fixed dimensions) ──
     html += `<div id="settlement-share-card" style="margin-top:16px;width:100%;max-width:400px;margin-left:auto;margin-right:auto;background:#FCF9F4;border-radius:12px;overflow:hidden;border:1px solid rgba(197,160,89,0.2);box-shadow:0 12px 40px rgba(27,48,34,0.08)">
@@ -7125,14 +7222,20 @@ export function renderSettlement(state) {
 
     // ── Share + Create CTA row ──
     html += `<div style="display:flex;gap:10px;margin-top:16px">
-      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px;letter-spacing:0.5px">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share Card</button>
-      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">
+      <button onclick="window.MG.shareSettlement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;min-height:56px;letter-spacing:0.5px">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Share Text</button>
+        Share Results</button>
+      <button onclick="window.MG.exportSettlementCard()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-tertiary);color:var(--text-primary);border:1.5px solid var(--border-strong);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;min-height:56px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Export Card</button>
     </div>
     <a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}" style="display:block;text-align:center;margin-top:10px;padding:14px;background:rgba(27,48,34,0.06);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--green-primary);text-decoration:none">Create Your Own Outing &rarr;</a>`;
+  }
+
+  if (hasSecondaryModules) {
+    html += `<details class="mg-card" style="padding:12px" id="settlement-details-accordion">
+      <summary style="cursor:pointer;font-size:13px;font-weight:800;letter-spacing:0.5px;color:var(--mg-text)">Game Details</summary>
+      <div style="margin-top:10px"></div>`;
   }
 
   // ── Skins ──
@@ -7332,6 +7435,10 @@ export function renderSettlement(state) {
     }
   }
 
+  if (hasSecondaryModules) {
+    html += `</details>`;
+  }
+
   if (isTrophy) {
     html += `<div class="mg-card" style="text-align:center;padding:20px;font-size:13px;color:var(--mg-text-muted);border:1px dashed var(--mg-border)">
       This event is archived. Share the link to revisit these results anytime.
@@ -7341,7 +7448,6 @@ export function renderSettlement(state) {
   html += `<div style="text-align:center;padding:16px 0;font-size:11px;color:var(--mg-text-muted)">Powered by Waggle · betwaggle.com</div>`;
 
   // Auto-present share modal when round is complete
-  const holesPerRound = config?.holesPerRound || 18;
   if (holesPlayed >= holesPerRound && settleHasPnL) {
     const shownKey = `waggle_share_shown_${state._slug}`;
     if (!sessionStorage.getItem(shownKey)) {
