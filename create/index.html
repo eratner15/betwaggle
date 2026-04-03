@@ -572,7 +572,7 @@
           if (data && data.name) {
             const ta = document.querySelector('.qs-textarea');
             const cur = ta ? ta.value.trim() : '';
-            const line = data.name + ', ' + (data.handicap || 0).toFixed(1);
+            const line = data.name + ', ' + (data.handicapIndex || data.handicap || 0).toFixed(1);
             ta.value = cur ? cur + '\n' + line : line;
             ghinEl.value = '';
             lastEl.value = '';
@@ -725,6 +725,9 @@
           ${oddsHtml}
           </div>
 
+          <span class="qs-section-label" style="margin-top:24px">Course</span>
+          ${courseHtml}
+
           <span class="qs-section-label" style="margin-top:24px">Pick Your Games</span>
           <div class="qs-combos">
             <div class="qs-combo-chip" onclick="qsSetCombo(['skins','nassau','match_play'])">Classic Trio</div>
@@ -735,9 +738,6 @@
           <div class="qs-games-grid">
             ${allGames.map(g => `<div class="qs-game-card ${_qsGames[g.id] ? 'on' : ''}" onclick="qsToggleGame('${g.id}')"><span class="qs-gc-icon">${g.icon}</span><div><div class="qs-gc-name">${g.name}</div><div class="qs-gc-desc">${g.desc}</div></div></div>`).join('')}
           </div>
-
-          <span class="qs-section-label" style="margin-top:24px">Course</span>
-          ${courseHtml}
 
           ${_qsError ? `<div class="qs-error">${_qsError}</div>` : ''}
 
@@ -932,7 +932,7 @@
         <label>Event Name</label>
         <input type="text" value="${esc(W.name)}" placeholder="e.g. Cabot Citrus Invitational 2026" oninput="W.name=this.value;upNav()">
         <label>Venue</label>
-        <input type="text" value="${esc(W.venue)}" placeholder="e.g. Cabot Citrus Farms, Nova Scotia" oninput="W.venue=this.value;upNav()">
+        <input type="text" value="${esc(W.venue)}" placeholder="e.g. Cabot Citrus Farms, Nova Scotia" oninput="W.venue=this.value" onblur="upNav()">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px">
           <div>
             <label style="margin-top:0">Start Date</label>
@@ -2205,15 +2205,7 @@
             style="width:100%;padding:13px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit">
           ${W._courseSearching ? `<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>` : ''}
         </div>
-        ${W._courseResults.length > 0 ? `
-        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px">
-          ${W._courseResults.map(c => `
-          <button onclick="selectCourse(${JSON.stringify(c).replace(/"/g,'&quot;')})"
-            style="display:block;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit">
-            <div style="font-size:14px;font-weight:600">${esc(c.club_name)}</div>
-            <div style="font-size:12px;color:var(--muted)">${esc(c.course_name||'')} ${c.location?'· '+esc(c.location):''}</div>
-          </button>`).join('')}
-        </div>` : ''}
+        <div class="course-results-container" style="margin-top:4px"></div>
         ${W.course ? `<div style="margin-top:6px;font-size:12px;color:var(--green);font-weight:600">✓ ${esc(W.course.club_name)} selected</div>` : ''}
 
         <label style="margin-top:20px">Trip name <span style="font-weight:400;color:var(--muted);font-size:11px">optional</span></label>
@@ -2284,15 +2276,7 @@
             style="width:100%;padding:13px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:10px;background:var(--white);font-family:inherit">
           ${W._courseSearching ? '<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)">...</div>' : ''}
         </div>
-        ${W._courseResults.length > 0 ? `
-        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;max-height:200px;overflow-y:auto">
-          ${W._courseResults.map(c => `
-          <button onclick="selectCourse(${JSON.stringify(c).replace(/"/g,'&quot;')})"
-            style="display:block;width:100%;padding:12px 14px;border:none;border-bottom:1px solid var(--border);background:transparent;text-align:left;cursor:pointer;font-family:inherit">
-            <div style="font-size:14px;font-weight:600">${esc(c.club_name)}</div>
-            <div style="font-size:12px;color:var(--muted)">${esc(c.course_name||'')} ${c.location?'· '+esc(c.location):''}</div>
-          </button>`).join('')}
-        </div>` : ''}
+        <div class="course-results-container" style="margin-top:4px;max-height:200px;overflow-y:auto"></div>
         ${W.course ? '<div style="margin-top:6px;font-size:12px;color:var(--green);font-weight:600">&#10003; ' + esc(W.course.club_name) + ' selected</div>' : ''}
 
         <label style="margin-top:20px">Date</label>
@@ -2542,14 +2526,14 @@
     let _courseDebounce = null;
     function searchCourses(q) {
       clearTimeout(_courseDebounce);
-      if (!q || q.length < 3) { W._courseResults = []; W._courseSearching = false; render(); return; }
-      W._courseSearching = true; render();
+      if (!q || q.length < 3) { W._courseResults = []; W._courseSearching = false; renderCourseResults(); return; }
+      W._courseSearching = true;
       _courseDebounce = setTimeout(async () => {
         try {
           const res = await fetch(`/api/courses/search?q=${encodeURIComponent(q)}`);
           W._courseResults = res.ok ? await res.json() : [];
         } catch { W._courseResults = []; }
-        W._courseSearching = false; render();
+        W._courseSearching = false; renderCourseResults();
       }, 400);
     }
     function selectCourse(c) {

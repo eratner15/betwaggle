@@ -88,7 +88,7 @@ async function seedDemoScramble(env) {
   const existing = await env.MG_BOOK.get(KEY);
   if (existing) return { seeded: false };
 
-  const teamNames = ['Team Alpha', 'Team Bravo', 'Team Charlie', 'Team Delta', 'Team Eagle', 'Team Falcon', 'Team Grizzly', 'Team Hawk'];
+  const teamNames = ['The Wolves', 'The Falcons', 'The Mustangs', 'The Vipers', 'The Titans', 'The Panthers', 'The Rockets', 'The Sharks'];
   const teams = teamNames.map((name, i) => ({ name, handicapIndex: [5.2, 4.8, 6.1, 5.5, 7.0, 4.2, 6.8, 5.9][i] }));
   const pars = [4,5,3,4,4,4,3,5,4, 4,3,4,5,4,3,4,5,4]; // par 72
 
@@ -160,15 +160,15 @@ async function seedDemoScramble(env) {
   const baseTs = new Date().setHours(10, 15, 0, 0);
   const feed = [
     { ts: baseTs + 87 * 60000, type: 'chirp', text: 'Front 9 complete. Three teams within a shot. Back 9 is going to be a war.', player: 'System' },
-    { ts: baseTs + 82 * 60000, type: 'score', text: 'Team Delta aces the par 3 7th. Best shot of the day. The tent erupted.', player: 'Team Delta' },
-    { ts: baseTs + 75 * 60000, type: 'score', text: 'Team Falcon birdies #6. Tied for the lead at -5. Ice in their veins.', player: 'Team Falcon' },
-    { ts: baseTs + 68 * 60000, type: 'score', text: 'Team Alpha eagles #5. The avalanche has started — they\'re -6 through 5.', player: 'Team Alpha' },
-    { ts: baseTs + 55 * 60000, type: 'score', text: 'Team Grizzly hits it to 4 feet on 7. Birdie inevitable. They\'re lurking.', player: 'Team Grizzly' },
+    { ts: baseTs + 82 * 60000, type: 'score', text: 'The Vipers ace the par 3 7th. Best shot of the day. The tent erupted.', player: 'The Vipers' },
+    { ts: baseTs + 75 * 60000, type: 'score', text: 'The Falcons birdie #6. Tied for the lead at -5. Ice in their veins.', player: 'The Falcons' },
+    { ts: baseTs + 68 * 60000, type: 'score', text: 'The Wolves eagle #5. The avalanche has started — they\'re -6 through 5.', player: 'The Wolves' },
+    { ts: baseTs + 55 * 60000, type: 'score', text: 'The Panthers hit it to 4 feet on 7. Birdie inevitable. They\'re lurking.', player: 'The Panthers' },
     { ts: baseTs + 42 * 60000, type: 'chirp', text: 'Three teams deadlocked at -5 heading to the back nine. Buckle up.', player: 'System' },
-    { ts: baseTs + 35 * 60000, type: 'score', text: 'Team Eagle shoots +1 through 6. Bracket busted already. Drinks on them.', player: 'Team Eagle' },
-    { ts: baseTs + 22 * 60000, type: 'score', text: 'Team Falcon\'s birdie putt lips out on 3. The howl heard across the course.', player: 'Team Falcon' },
-    { ts: baseTs + 12 * 60000, type: 'side', text: 'Closest to pin on #4: Team Delta, 6\' 2\". Money on the line.', player: 'Team Delta' },
-    { ts: baseTs, type: 'score', text: 'Team Bravo fires -4 on the front. They\'re coming. Nobody\'s safe.', player: 'Team Bravo' },
+    { ts: baseTs + 35 * 60000, type: 'score', text: 'The Titans shoot +1 through 6. Bracket busted already. Drinks on them.', player: 'The Titans' },
+    { ts: baseTs + 22 * 60000, type: 'score', text: 'The Falcons\' birdie putt lips out on 3. The howl heard across the course.', player: 'The Falcons' },
+    { ts: baseTs + 12 * 60000, type: 'side', text: 'Closest to pin on #4: The Vipers, 6\' 2\". Money on the line.', player: 'The Vipers' },
+    { ts: baseTs, type: 'score', text: 'The Falcons fire -4 on the front. They\'re coming. Nobody\'s safe.', player: 'The Falcons' },
   ];
   await env.MG_BOOK.put('demo-scramble:feed', JSON.stringify(feed));
 
