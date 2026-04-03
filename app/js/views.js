@@ -8464,15 +8464,12 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
         <div style="font-size:14px;color:var(--text-primary);margin-top:6px">Place your bets before first tee</div>`;
     }
 
-    html += `<div style="background:linear-gradient(135deg,var(--bg-secondary) 0%,var(--green-muted) 100%);border:1px solid var(--gold-primary,var(--mg-gold));border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;overflow:hidden;box-shadow:0 0 20px rgba(212,160,23,0.1)">
-      <div>
-        <div style="font-size:12px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-bright);margin-bottom:14px">You Are Invited</div>
-        <div style="font-size:28px;font-weight:800;color:var(--text-primary);margin-bottom:6px;line-height:1.2">${escHtml(eventName)}</div>
-        ${courseName ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${escHtml(courseName)}${eventDate ? ' &middot; ' + escHtml(eventDate) : ''}</div>` : ''}
-        ${state.bettorName ? `<div style="margin-bottom:12px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:11px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
-        ${countdownHtml}
-        ${totalPot > 0 ? `<div style="margin-top:16px;font-size:12px;color:rgba(212,160,23,0.6)">Estimated pot: <span style="font-family:'SF Mono',monospace;font-weight:800;color:var(--gold-bright);font-size:16px">$${totalPot}</span></div>` : ''}
-      </div>
+    html += `<div style="background:linear-gradient(180deg,#1B3022 0%,#0D1F15 100%);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.2)">
+      <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:26px;font-weight:700;color:#FCF9F4;margin-bottom:4px;line-height:1.2">${escHtml(eventName)}</div>
+      ${courseName ? `<div style="font-size:13px;color:rgba(252,249,244,0.5);margin-bottom:20px">${escHtml(courseName)}${eventDate ? ' &middot; ' + escHtml(eventDate) : ''}</div>` : '<div style="margin-bottom:20px"></div>'}
+      ${state.bettorName ? `<div style="margin-bottom:16px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(197,160,89,0.15);border:1px solid rgba(197,160,89,0.3);border-radius:20px;font-size:12px;font-weight:600;color:#C5A059;cursor:pointer"><span style="width:6px;height:6px;border-radius:50%;background:#C5A059"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+      ${countdownHtml}
+      ${totalPot > 0 ? `<div style="margin-top:20px"><span style="display:inline-block;background:rgba(197,160,89,0.15);border:1px solid rgba(197,160,89,0.25);border-radius:20px;padding:6px 16px;font-size:12px;color:rgba(252,249,244,0.5)">Estimated pot <span style="font-family:'SF Mono',monospace;font-weight:800;color:#C5A059;font-size:18px;margin-left:4px">$${totalPot}</span></span></div>` : ''}
     </div>`;
   }
 
@@ -8480,9 +8477,9 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   if (state.adminAuthed || state._isAdmin) {
     html += `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
       <button onclick="location.hash='#scorecard'"
-        style="width:100%;padding:16px;background:var(--gold-bright);color:var(--bg-secondary);border:none;border-radius:10px;font-size:17px;font-weight:800;cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 12px rgba(212,160,23,0.3);-webkit-tap-highlight-color:transparent;transition:transform .1s"
+        style="width:100%;padding:18px;background:linear-gradient(135deg,#C5A059 0%,#D4B76A 100%);color:#1B3022;border:none;border-radius:12px;font-family:'Playfair Display',var(--font-display),serif;font-size:18px;font-weight:700;cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(197,160,89,0.35);-webkit-tap-highlight-color:transparent;transition:transform .1s,box-shadow .15s;letter-spacing:0.02em"
         onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
-        Start Scoring &#9971;
+        Start Scoring
       </button>`;
     if (!eventDate) {
       html += `<button onclick="window._tripScheduleTeeTime()"
@@ -8498,14 +8495,15 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
   // ── b) Course Preview ──
   if (courseName) {
     const totalYardage = config?.courseYardage?.reduce((s, y) => s + y, 0) || 0;
-    html += `<div style="background:var(--mg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:12px;overflow:hidden;margin-bottom:12px">
+      <div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:16px;font-weight:700;color:var(--mg-green)">${escHtml(courseName)}</div>
-          <div style="font-size:12px;color:var(--mg-text-muted);margin-top:2px">Par ${totalPar}${totalYardage ? ' &middot; ' + totalYardage.toLocaleString() + ' yards' : ''}</div>
+          <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">${escHtml(courseName)}</div>
+          <div style="font-size:12px;color:rgba(252,249,244,0.5);margin-top:3px">Par ${totalPar}${totalYardage ? ' &middot; ' + totalYardage.toLocaleString() + ' yards' : ''}</div>
         </div>
-        <div style="font-size:28px">&#9971;</div>
+        <div style="font-size:24px;opacity:0.6">&#9971;</div>
       </div>
+      <div style="padding:12px 16px">
       ${(state.adminAuthed || state._isAdmin) ? `<details style="cursor:pointer;margin-bottom:8px">
         <summary style="font-size:12px;font-weight:600;color:var(--gold-bright);padding:6px 0">Change Course</summary>
         <div style="margin-top:8px;position:relative">
