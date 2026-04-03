@@ -2704,11 +2704,12 @@ export function renderRoundFeed(state) {
     // ================================================================
     const sorted = [...players].sort((a, b) => (a.handicapIndex || 0) - (b.handicapIndex || 0));
 
-    // Header
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
-      <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Pre-Match Action</span>
-      <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">Lines are set</span>
-    </div>`;
+    // Header — Heritage style
+    html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:0.75rem 0.75rem 0 0;padding:14px 16px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">The Field</span>
+      <span style="font-size:11px;font-weight:700;color:rgba(197,160,89,0.8);letter-spacing:0.5px">${sorted.length} PLAYERS</span>
+    </div>
+    <div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-top:none;border-radius:0 0 0.75rem 0.75rem;padding:8px 12px;margin-bottom:12px">`;
 
     // Player rows with odds — card-based
     sorted.forEach((p, i) => {
@@ -2719,32 +2720,37 @@ export function renderRoundFeed(state) {
       const oddsBorderColor = isFav2 ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
       const isFavCard = i === 0;
 
-      // Card styles — FAV gets gold gradient
+      // Card styles — Heritage design with gold accents
       const cardBg = isFavCard
-        ? 'background:linear-gradient(135deg,rgba(212,160,23,0.08),var(--bg-secondary));border:1px solid var(--gold-primary,var(--mg-gold));box-shadow:0 0 12px rgba(212,160,23,0.1)'
-        : 'background:var(--bg-secondary);border:1px solid var(--border)';
-      const badgeBg = isFavCard ? 'background:var(--gold-bright);color:var(--bg-secondary)' : i < 3 ? 'background:transparent;border:1.5px solid var(--gold-primary,var(--mg-gold));color:var(--gold-bright)' : 'background:transparent;border:1.5px solid var(--border-strong,var(--border));color:var(--text-secondary)';
+        ? 'background:linear-gradient(135deg,rgba(197,160,89,0.06),var(--card-bg,#FFFFFF));border:1.5px solid #C5A059;box-shadow:0 0 16px rgba(197,160,89,0.12)'
+        : `background:${i % 2 === 0 ? 'var(--card-bg,#FFFFFF)' : 'rgba(27,48,34,0.02)'};border:1px solid rgba(197,160,89,0.1)`;
+      const badgeBg = isFavCard ? 'background:#C5A059;color:#1B3022' : i < 3 ? 'background:transparent;border:1.5px solid #C5A059;color:#C5A059' : 'background:transparent;border:1.5px solid rgba(197,160,89,0.3);color:rgba(197,160,89,0.6)';
 
-      html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px">
+      html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;position:relative">
+        ${isFavCard ? '<div style="position:absolute;top:8px;right:10px;font-size:9px;font-weight:800;letter-spacing:1.5px;color:#C5A059;background:rgba(197,160,89,0.1);border:1px solid rgba(197,160,89,0.25);padding:2px 8px;border-radius:4px">FAV</div>' : ''}
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+            <span style="width:26px;height:26px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
             <div style="min-width:0">
-              <div style="font-size:15px;font-weight:${isFavCard ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
-              <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
+              <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:${isFavCard ? '16px' : '15px'};font-weight:700;color:var(--text-primary,#1C1C19);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+              <div style="font-size:11px;color:rgba(197,160,89,0.7);font-weight:600;margin-top:2px">HI ${p.handicapIndex || 0}</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor2};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+            <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 14px;border-radius:8px;border:1.5px solid ${isFav2 ? '#C5A059' : 'rgba(197,160,89,0.3)'};background:${isFav2 ? 'linear-gradient(135deg,#1B3022,#2D4A35)' : 'var(--card-bg,#FFFFFF)'};color:${isFav2 ? '#C5A059' : 'var(--text-secondary)'};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:64px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s,box-shadow .15s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
           </div>
         </div>
       </div>`;
     });
 
-    // Opening Lines — head-to-head spreads — card-based
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px;padding:0">
-      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Opening Lines</span>
-    </div>`;
+    html += `</div>`; // close The Field container
+
+    // Opening Lines — Heritage style
+    html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:0.75rem 0.75rem 0 0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">Opening Lines</span>
+      <span style="font-size:11px;font-weight:700;color:rgba(197,160,89,0.8);letter-spacing:0.5px">H2H SPREADS</span>
+    </div>
+    <div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-top:none;border-radius:0 0 0.75rem 0.75rem;padding:8px 12px;margin-bottom:12px">`;
     for (let i = 0; i < Math.floor(sorted.length / 2); i++) {
       const fav = sorted[i];
       const dog = sorted[sorted.length - 1 - i];
@@ -2769,18 +2775,24 @@ export function renderRoundFeed(state) {
       `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
       `${worstPlayer.name.split(' ')[0]} makes a birdie today: Yes/No`,
     ];
-    html += `<div style="margin-top:12px;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5)">Prop Bets</span>
-    </div>`;
+    html += `</div>`; // close Opening Lines container
+
+    // Props — Heritage style
+    html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:0.75rem 0.75rem 0 0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">Prop Bets</span>
+    </div>
+    <div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-top:none;border-radius:0 0 0.75rem 0.75rem;padding:8px 12px;margin-bottom:12px">`;
     propsList.forEach(prop => {
       html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
         <div style="font-size:12px;color:var(--text-primary);font-style:italic">${escHtml(prop)}</div>
       </div>`;
     });
 
-    // Trash talk — dark card with gold left border
-    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-top:8px;margin-bottom:6px">
-      <div style="font-size:12px;font-style:italic;color:var(--text-secondary)">"${escHtml(worstPlayer.name.split(' ')[0])} is getting ${Math.round((worstPlayer.handicapIndex || 0) - (bestPlayer.handicapIndex || 0))} strokes and still won't win a skin. Prove me wrong."</div>
+    html += `</div>`; // close Props container
+
+    // Trash talk — Heritage gold accent
+    html += `<div style="background:rgba(197,160,89,0.05);border:1px solid rgba(197,160,89,0.15);border-left:3px solid #C5A059;border-radius:10px;padding:14px 16px;margin-top:8px;margin-bottom:6px">
+      <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:13px;font-style:italic;color:var(--text-secondary);line-height:1.5">"${escHtml(worstPlayer.name.split(' ')[0])} is getting ${Math.round((worstPlayer.handicapIndex || 0) - (bestPlayer.handicapIndex || 0))} strokes and still won't win a skin. Prove me wrong."</div>
     </div>`;
 
     // Add Player inline (admin only)
