@@ -39,6 +39,28 @@ function normalizeRoutePathname(pathname) {
   return normalized;
 }
 
+function getLegacyAffiliateCanonicalPath(pathname) {
+  const raw = String(pathname || '/');
+  const normalized = normalizeRoutePathname(raw);
+  if (!normalized.startsWith('/affiliate/')) return null;
+
+  // Keep legacy utility endpoint stable.
+  if (normalized === '/affiliate/generate/' || normalized === '/affiliate/generate/index/' || normalized === '/affiliate/generate/index.html/') {
+    return null;
+  }
+
+  if (normalized === '/affiliate/' || normalized === '/affiliate/index/' || normalized === '/affiliate/index.html/') {
+    return '/affiliates/';
+  }
+
+  if (normalized === '/affiliate/dashboard/' || normalized === '/affiliate/dashboard.html/' || normalized === '/affiliate/dashboard/index/' || normalized === '/affiliate/dashboard/index.html/') {
+    return '/affiliates/dashboard';
+  }
+
+  const suffix = normalized.slice('/affiliate/'.length);
+  return `/affiliates/${suffix}`.replace(/\/{2,}/g, '/').replace(/\/index\.html\/?$/i, '/').replace(/\/index\/?$/i, '/');
+}
+
 function isPrivateRoutePath(pathname) {
   const normalized = normalizeRoutePathname(pathname);
   if (PRIVATE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return true;
@@ -279,17 +301,19 @@ export default {
 
     // GET /api/ghin/debug — test auth and search (dev only)
     if (url.pathname === '/api/ghin/debug') {
+      if (isProductionHostname(url.hostname)) return privateRouteNotFound();
+      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
       const h = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
       try {
         const auth = await getGhinAuth(env);
-        if (!auth) return new Response(JSON.stringify({ error: 'GHIN auth failed' }), { headers: h });
+        if (!auth) return new Response(JSON.stringify({ error: 'GHIN auth failed' }), { status: 502, headers: h });
         const { token, assocId } = auth;
         const params = new URLSearchParams({ last_name: 'Smith', per_page: '5', page: '1', status: 'Active', sorting_criteria: 'last_name_first_name' });
         if (assocId) params.set('association_id', assocId); else params.set('country', 'US');
         const res = await fetch(`${GHIN_BASE}/golfers/search.json?${params}`, { headers: { ...GHIN_HEADERS, 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         return new Response(JSON.stringify({ ok: true, assocId, searchStatus: res.status, count: data.golfers?.length, sample: data.golfers?.slice(0,2) }), { headers: h });
-      } catch(e) { return new Response(JSON.stringify({ error: e.message }), { headers: h }); }
+      } catch(e) { return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: h }); }
     }
 
     // GET /api/courses/:id — custom PGA Frisco courses
@@ -414,7 +438,7 @@ export default {
     }
 
     // ===== EMAIL DRIP =====
-    if (url.pathname === '/api/email/drip' && request.method === 'POST') {
+    if (url.pathname === '/api/email/drip' && (request.method === 'POST' || request.method === 'GET')) {
       return handleEmailDrip(request, env, url);
     }
     if (url.pathname === '/api/email/drip' && request.method === 'OPTIONS') {
@@ -480,6 +504,7 @@ export default {
       const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
       try {
         const body = await request.json();
+        const aliases = { score_save_clicked: 'score_save_attempted' };
         const allowedEvents = new Set([
           'score_entry_opened',
           'score_input_changed',
@@ -491,9 +516,35 @@ export default {
           'settlement_payment_cta_clicked',
           'settlement_shared'
         ]);
-        const eventName = String(body?.event || '').trim();
+        const rawEventName = String(body?.event || '').trim();
+        const eventName = aliases[rawEventName] || rawEventName;
         const slug = String(body?.slug || '').trim().toLowerCase();
-        const props = body?.props && typeof body.props === 'object' ? body.props : {};
+        const inProps = body?.props && typeof body.props === 'object' ? body.props : {};
+        const props = { ...inProps };
+
+        // Normalize common payload fields so KPI queries remain stable across clients.
+        if (typeof props.hole !== 'undefined') props.hole = Math.max(1, parseInt(props.hole, 10) || 1);
+        if (typeof props.player_count_filled !== 'undefined') props.player_count_filled = Math.max(0, parseInt(props.player_count_filled, 10) || 0);
+        if (typeof props.player_count_total !== 'undefined') props.player_count_total = Math.max(0, parseInt(props.player_count_total, 10) || 0);
+        if (typeof props.latency_ms !== 'undefined') props.latency_ms = Math.max(0, parseInt(props.latency_ms, 10) || 0);
+        if (typeof props.holes_played !== 'undefined') props.holes_played = Math.max(0, parseInt(props.holes_played, 10) || 0);
+        if (typeof props.holes_per_round !== 'undefined') props.holes_per_round = Math.max(1, parseInt(props.holes_per_round, 10) || 18);
+        if (typeof props.duration_sec_from_first_save !== 'undefined') props.duration_sec_from_first_save = Math.max(0, parseInt(props.duration_sec_from_first_save, 10) || 0);
+        if (typeof props.amount !== 'undefined') props.amount = Math.max(0, Number(props.amount) || 0);
+
+        // Canonical enum cleanup.
+        if (typeof props.entry_surface === 'string') {
+          const entrySurface = props.entry_surface.toLowerCase();
+          props.entry_surface = ['inline', 'modal', 'fab'].includes(entrySurface) ? entrySurface : 'inline';
+        }
+        if (typeof props.provider === 'string') {
+          const provider = props.provider.toLowerCase();
+          props.provider = provider === 'cashapp' ? 'cashapp' : 'venmo';
+        }
+        if (typeof props.method === 'string') {
+          const method = props.method.toLowerCase();
+          props.method = ['native_share', 'image_export', 'copy_link'].includes(method) ? method : 'copy_link';
+        }
 
         if (!eventName || !allowedEvents.has(eventName) || !slug) {
           return new Response(JSON.stringify({ error: 'Invalid telemetry payload' }), { status: 400, headers: corsHeaders });
@@ -528,7 +579,7 @@ export default {
       }
     }
     if (url.pathname === '/api/ux-telemetry' && request.method === 'OPTIONS') {
-      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+      return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } });
     }
 
     // ===== UNSUBSCRIBE =====
@@ -743,18 +794,7 @@ export default {
 
     // GET /api/pending-checkout?email={email} — check for abandoned checkout
     if (url.pathname === '/api/pending-checkout' && request.method === 'GET') {
-      if (!hasApiAdminAccess(request, url, env)) return unauthorizedJson();
-      const email = (url.searchParams.get('email') || '').trim().toLowerCase();
-      if (!email) return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-      const pending = await env.MG_BOOK.get(`pending-checkout:${email}`, 'json');
-      if (pending) {
-        // Check if temp config still exists
-        const tempConfig = await env.MG_BOOK.get(`pending:${pending.tempId}`, 'text');
-        if (tempConfig) {
-          return new Response(JSON.stringify({ pending: true, eventName: pending.eventName, tempId: pending.tempId }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-        }
-      }
-      return new Response(JSON.stringify({ pending: false }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      return handlePendingCheckoutLookup(request, url, env);
     }
     if (url.pathname === '/api/pending-checkout' && request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin, X-Waggle-Private-Token, X-Private-Token' } });
@@ -920,8 +960,6 @@ export default {
 
     // /api/affiliate-signup — public affiliate signup from /affiliates/ page
     if (url.pathname === '/api/affiliate-signup' && request.method === 'POST') {
-      const rl = await enforceApiRateLimit(env, request, 'api-rl:affiliate-signup', 5, 60);
-      if (!rl.allowed) return new Response(JSON.stringify({ error: rl.error }), { status: 429, headers: EVENT_CORS });
       return handleAffiliateSignup(request, env);
     }
     if (url.pathname === '/api/affiliate-signup' && request.method === 'OPTIONS') {
@@ -1033,27 +1071,14 @@ export default {
       url.pathname === '/affiliates/dashboard/' ||
       url.pathname === '/affiliates/dashboard.html'
     ) {
-      const req = new Request(new URL('/affiliate/dashboard.html', request.url), request);
+      const req = new Request(new URL('/affiliates/dashboard.html', request.url), request);
       return env.ASSETS.fetch(req);
     }
 
-    // /affiliate/dashboard — legacy alias, permanently redirect to canonical /affiliates/dashboard
-    if (
-      url.pathname === '/affiliate/dashboard' ||
-      url.pathname === '/affiliate/dashboard/' ||
-      url.pathname === '/affiliate/dashboard.html'
-    ) {
-      const canonicalAffiliateDashboardUrl = `${url.origin}/affiliates/dashboard${url.search}`;
-      return Response.redirect(canonicalAffiliateDashboardUrl, 301);
-    }
-
-    // /affiliate/ — legacy alias, permanently redirect to canonical /affiliates/
-    if (
-      url.pathname === '/affiliate' ||
-      url.pathname === '/affiliate/' ||
-      url.pathname === '/affiliate/index.html'
-    ) {
-      const canonicalAffiliateUrl = `${url.origin}/affiliates/${url.search}`;
+    // /affiliate/* — legacy alias, permanently redirect to canonical /affiliates/*.
+    const canonicalAffiliatePath = getLegacyAffiliateCanonicalPath(url.pathname);
+    if (canonicalAffiliatePath) {
+      const canonicalAffiliateUrl = `${url.origin}${canonicalAffiliatePath}${url.search}`;
       return Response.redirect(canonicalAffiliateUrl, 301);
     }
 
@@ -2156,9 +2181,9 @@ document.getElementById('inp-email').addEventListener('keydown', e => { if (e.ke
 // ─── Stripe Payment Gate ───────────────────────────────────────────────
 
 const WAGGLE_PRICES = { member_guest: 14900, scramble: 14900, trip: 3200, outing: 3200 };
-const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149/season)', scramble: 'Waggle Scramble / Outing ($149/season)', trip: 'Waggle Buddies Trip ($32)', outing: 'Waggle Event ($32)' };
+const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149/season)', scramble: 'Waggle Scramble / Outing ($149/season)', trip: 'Waggle Buddies Trip ($32/event)', outing: 'Waggle Event ($32/event)' };
 const CHECKOUT_TIERS = {
-  event: { amount: 3200, label: 'Waggle Event ($32)' },
+  event: { amount: 3200, label: 'Waggle Event ($32/event)' },
   season: { amount: 14900, label: 'Waggle Season Pass ($149/season)' },
 };
 
@@ -2289,6 +2314,9 @@ async function getCheckoutEventStatus(env, slug) {
   let kvActive = false;
   let kvSlugMatches = false;
   let kvPaid = false;
+  let kvPaymentSessionId = '';
+  let d1Paid = false;
+  let d1PaymentSessionId = '';
 
   if (env.MG_BOOK) {
     const configRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
@@ -2318,24 +2346,36 @@ async function getCheckoutEventStatus(env, slug) {
         const expiresAt = config?.event?.expiresAt ? new Date(config.event.expiresAt).getTime() : 0;
         const isExpired = Number.isFinite(expiresAt) && expiresAt > 0 && Date.now() > expiresAt;
         kvPaid = !!config?.event?.paid;
+        kvPaymentSessionId = String(config?.meta?.checkout_payment?.sessionId || '').trim();
         kvActive = kvValid && kvSlugMatches && !kvPaid && !['cancelled', 'refunded', 'archived', 'draft'].includes(status) && !isExpired;
       } catch (_) {
         kvValid = false;
         kvActive = false;
         kvSlugMatches = false;
         kvPaid = false;
+        kvPaymentSessionId = '';
       }
     }
   }
   if (env.WAGGLE_DB) {
     try {
-      const row = await env.WAGGLE_DB.prepare('SELECT id FROM events WHERE slug = ? LIMIT 1').bind(slug).first();
+      const row = await env.WAGGLE_DB.prepare('SELECT id, config FROM events WHERE slug = ? LIMIT 1').bind(slug).first();
       d1Exists = !!row?.id;
+      if (row?.config) {
+        try {
+          const config = JSON.parse(row.config);
+          d1Paid = !!config?.event?.paid;
+          d1PaymentSessionId = String(config?.meta?.checkout_payment?.sessionId || '').trim();
+        } catch (_) {
+          d1Paid = false;
+          d1PaymentSessionId = '';
+        }
+      }
     } catch (e) {
       console.error('event_exists_checkout_d1_error', e?.message || e);
     }
   }
-  return { exists: kvExists || d1Exists, kvExists, d1Exists, kvValid, kvActive, kvSlugMatches, kvPaid };
+  return { exists: kvExists || d1Exists, kvExists, d1Exists, kvValid, kvActive, kvSlugMatches, kvPaid, kvPaymentSessionId, d1Paid, d1PaymentSessionId };
 }
 
 function isCheckoutEventPayable(status) {
@@ -2394,6 +2434,13 @@ async function processSimpleCheckoutSession(env, session, source = 'unknown') {
     if (tier === 'event') {
       if (!eventSlug) return { ok: false, error: 'eventSlug is required for event tier' };
       const status = await getCheckoutEventStatus(env, eventSlug);
+      if (status?.kvPaid || status?.d1Paid) {
+        const settledSessionId = String(status?.kvPaymentSessionId || status?.d1PaymentSessionId || '').trim();
+        if (settledSessionId && settledSessionId !== id) {
+          return { ok: false, error: 'Event already paid' };
+        }
+        return { ok: true, payment: { ...payment, alreadyPaid: true } };
+      }
       if (!isCheckoutEventPayable(status)) return { ok: false, error: 'Event not found' };
       const saved = await markEventPaidInStorage(env, eventSlug, payment);
       if (!saved.ok) return { ok: false, error: 'Unable to mark event paid' };
@@ -2456,13 +2503,23 @@ async function handleSimpleCheckout(request, env) {
   const tierConfig = CHECKOUT_TIERS[tier];
   if (!tierConfig) return new Response(JSON.stringify({ error: 'tier must be \"event\" or \"season\"' }), { status: 400, headers: EVENT_CORS });
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400, headers: EVENT_CORS });
-  if (tier === 'event' && !eventSlug) return new Response(JSON.stringify({ error: 'eventSlug required for event tier' }), { status: 400, headers: EVENT_CORS });
+  if (tier === 'event' && !eventSlug) {
+    const setupUrl = `https://betwaggle.com/create/?checkout=event&prefill_email=${encodeURIComponent(email)}`;
+    return new Response(JSON.stringify({
+      ok: true,
+      requiresEventSlug: true,
+      mode: 'event_setup_required',
+      message: 'Create your event first, then complete the $32 checkout.',
+      checkoutUrl: setupUrl,
+      setupUrl,
+    }), { headers: EVENT_CORS });
+  }
   if (tier === 'event') {
     if (!/^[a-z0-9_-]{2,64}$/.test(eventSlug)) {
       return new Response(JSON.stringify({ error: 'Invalid eventSlug format' }), { status: 400, headers: EVENT_CORS });
     }
     const status = await getCheckoutEventStatus(env, eventSlug);
-    if (status?.kvPaid) {
+    if (status?.kvPaid || status?.d1Paid) {
       return new Response(JSON.stringify({ error: 'Event already paid' }), { status: 409, headers: EVENT_CORS });
     }
     if (!isCheckoutEventPayable(status)) {
@@ -2474,6 +2531,8 @@ async function handleSimpleCheckout(request, env) {
         kvSlugMatches: !!status.kvSlugMatches,
         kvActive: !!status.kvActive,
         kvPaid: !!status.kvPaid,
+        d1Exists: !!status.d1Exists,
+        d1Paid: !!status.d1Paid,
       });
       return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404, headers: EVENT_CORS });
     }
@@ -2548,6 +2607,13 @@ function buildSimpleCheckoutSuccessRedirect(payment) {
   return `https://betwaggle.com/pricing/?checkout=success&tier=${encodeURIComponent(tier || 'event')}`;
 }
 
+function getSimpleCheckoutSessionContext(session) {
+  return {
+    tier: String(session?.metadata?.waggle_checkout_tier || '').trim().toLowerCase(),
+    eventSlug: String(session?.metadata?.waggle_event_slug || '').trim().toLowerCase(),
+  };
+}
+
 async function handleSimpleCheckoutSuccess(request, url, env) {
   const sessionId = String(url.searchParams.get('session_id') || '').trim();
   if (!sessionId) return new Response(JSON.stringify({ error: 'session_id required' }), { status: 400, headers: EVENT_CORS });
@@ -2560,22 +2626,22 @@ async function handleSimpleCheckoutSuccess(request, url, env) {
     if (!stripeRes.ok) return new Response(JSON.stringify({ error: 'Checkout session not found' }), { status: 404, headers: EVENT_CORS });
 
     const session = await stripeRes.json();
+    const expectedTier = String(url.searchParams.get('expected_tier') || url.searchParams.get('tier') || '').trim().toLowerCase();
+    const expectedEventSlug = String(url.searchParams.get('expected_event_slug') || url.searchParams.get('eventSlug') || '').trim().toLowerCase();
+    const sessionContext = getSimpleCheckoutSessionContext(session);
+    if (expectedTier && expectedTier !== sessionContext.tier) {
+      return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
+    }
+    if (expectedEventSlug) {
+      if (sessionContext.eventSlug !== expectedEventSlug) {
+        return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
+      }
+    }
+
     const result = await processSimpleCheckoutSession(env, session, 'checkout_success');
     if (!result.ok) {
       const status = simpleCheckoutErrorStatus(result.error);
       return new Response(JSON.stringify({ error: result.error || 'Checkout processing failed' }), { status, headers: EVENT_CORS });
-    }
-
-    const expectedTier = String(url.searchParams.get('expected_tier') || url.searchParams.get('tier') || '').trim().toLowerCase();
-    const expectedEventSlug = String(url.searchParams.get('expected_event_slug') || url.searchParams.get('eventSlug') || '').trim().toLowerCase();
-    if (expectedTier && expectedTier !== String(result.payment?.tier || '').toLowerCase()) {
-      return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
-    }
-    if (expectedEventSlug) {
-      const actualEventSlug = String(result.payment?.eventSlug || '').trim().toLowerCase();
-      if (actualEventSlug !== expectedEventSlug) {
-        return new Response(JSON.stringify({ error: 'Checkout context mismatch' }), { status: 403, headers: EVENT_CORS });
-      }
     }
 
     if (shouldReturnHtmlSuccess(request, url)) {
@@ -3058,10 +3124,13 @@ async function handleCreateCheckout(request, env) {
   // Store pending checkout reference for recovery
   const pendingEmail = (config.event?.adminContact || '').trim().toLowerCase();
   if (pendingEmail) {
+    const lookupScopeHash = await buildPendingCheckoutLookupScopeHash(request);
     await env.MG_BOOK.put(`pending-checkout:${pendingEmail}`, JSON.stringify({
       tempId,
       eventName: config.event?.name,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      lookupScopeHash: lookupScopeHash || '',
+      lookupScopeVersion: 'ip-ua-v1',
     }), { expirationTtl: 7200 }); // 2 hours, same as temp config
   }
 
@@ -3229,6 +3298,92 @@ async function enforceApiRateLimit(env, request, prefix, limit = 5, windowSecond
   } finally {
     await releaseKvLock(env, lockKey, lock.token);
   }
+}
+
+function getClientIpAddress(request) {
+  return String(request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || 'unknown')
+    .split(',')[0]
+    .trim() || 'unknown';
+}
+
+function isValidEmailAddress(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim().toLowerCase());
+}
+
+async function buildPendingCheckoutLookupScopeHash(request) {
+  const ip = getClientIpAddress(request);
+  const userAgent = String(request.headers.get('user-agent') || '').trim().slice(0, 256);
+  const material = `ip-ua-v1|${ip}|${userAgent}`;
+  return sha256Hex(material);
+}
+
+function isTrustedPublicCheckoutLookup(request, url) {
+  const trustedHosts = new Set(['betwaggle.com', 'www.betwaggle.com']);
+  const origin = String(request.headers.get('origin') || '').trim();
+  const referer = String(request.headers.get('referer') || '').trim();
+  const hasTrustedOrigin = (() => {
+    if (!origin) return true;
+    try {
+      return trustedHosts.has(new URL(origin).hostname.toLowerCase());
+    } catch {
+      return false;
+    }
+  })();
+  const hasTrustedReferer = (() => {
+    if (!referer) return true;
+    try {
+      return trustedHosts.has(new URL(referer).hostname.toLowerCase());
+    } catch {
+      return false;
+    }
+  })();
+  const requestHost = String(url.hostname || '').toLowerCase();
+  return trustedHosts.has(requestHost) && hasTrustedOrigin && hasTrustedReferer;
+}
+
+async function handlePendingCheckoutLookup(request, url, env) {
+  const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+  if (!email || !isValidEmailAddress(email)) {
+    return new Response(JSON.stringify({ pending: false }), { headers: EVENT_CORS });
+  }
+
+  const isAdmin = hasApiAdminAccess(request, url, env);
+  if (!isAdmin) {
+    if (!isTrustedPublicCheckoutLookup(request, url)) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: EVENT_CORS });
+    }
+    const rl = await enforceApiRateLimit(env, request, 'pending-checkout-public', 5, 60);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.' }), { status: 429, headers: EVENT_CORS });
+    }
+  }
+
+  const pending = await env.MG_BOOK.get(`pending-checkout:${email}`, 'json');
+  if (!pending?.tempId) {
+    return new Response(JSON.stringify({ pending: false }), { headers: EVENT_CORS });
+  }
+
+  const tempConfig = await env.MG_BOOK.get(`pending:${pending.tempId}`, 'text');
+  if (!tempConfig) {
+    return new Response(JSON.stringify({ pending: false }), { headers: EVENT_CORS });
+  }
+
+  if (!isAdmin) {
+    const expectedScopeHash = String(pending.lookupScopeHash || '').trim();
+    if (!expectedScopeHash) {
+      return new Response(JSON.stringify({ pending: false }), { headers: EVENT_CORS });
+    }
+    const requestScopeHash = await buildPendingCheckoutLookupScopeHash(request);
+    if (!requestScopeHash || requestScopeHash !== expectedScopeHash) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: EVENT_CORS });
+    }
+  }
+
+  return new Response(JSON.stringify({
+    pending: true,
+    eventName: String(pending.eventName || ''),
+    tempId: pending.tempId,
+  }), { headers: EVENT_CORS });
 }
 
 async function getEventSyncMeta(env, slug) {
@@ -3403,7 +3558,7 @@ async function handleCheckoutSuccess(url, env) {
 
     if (organizerEmail) {
       promises.push(resendPost({
-        from: 'Waggle <hello@betwaggle.com>',
+        from: 'Evan at Waggle <evan@betwaggle.com>',
         to: organizerEmail,
         subject: `Your Waggle event is live: ${eventName}`,
         html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;padding:32px 24px">
@@ -4193,7 +4348,16 @@ async function handleCreateEventFromConfig(config, env) {
   if (isRoundMode) {
     config.featureFlags = { ...(config.featureFlags || {}) };
     const hasSprint3Override = typeof config.featureFlags.ux_sprint3_gameflow === 'boolean' || typeof config.ux_sprint3_gameflow === 'boolean';
-    if (!hasSprint3Override) config.featureFlags.ux_sprint3_gameflow = true;
+    if (!hasSprint3Override) {
+      // Sprint 3 soft launch: default-enabled only for one week after rollout start.
+      const sprint3RolloutStartMs = Date.parse('2026-04-03T00:00:00.000Z');
+      const sprint3RolloutDurationMs = 7 * 24 * 60 * 60 * 1000;
+      const nowMs = Date.now();
+      const inRolloutWindow = Number.isFinite(sprint3RolloutStartMs)
+        && nowMs >= sprint3RolloutStartMs
+        && nowMs < (sprint3RolloutStartMs + sprint3RolloutDurationMs);
+      config.featureFlags.ux_sprint3_gameflow = inRolloutWindow;
+    }
     config.ux_sprint3_gameflow = !!config.featureFlags.ux_sprint3_gameflow;
   }
   const hasPlayers = isRoundMode ? (config.players?.length >= 2 || config.roster?.length >= 2) : (config.teams && Object.keys(config.teams).length >= 2);
@@ -4467,7 +4631,7 @@ async function handleAdsGenerate(request, env) {
   if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
 
   const segDesc = {
-    trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($32)',
+    trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($32/event)',
     club: 'golf club members or staff running member-guests or charity outings ($149/season)',
     pro: 'club professionals offering a live betting add-on to members',
   };
@@ -4840,9 +5004,193 @@ async function handleOutreachSend(request, env) {
   let body;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: ADS_JSON }); }
   if (!mktgAuth(body.pin, env)) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: ADS_JSON });
-  if (!env.WAGGLE_DB || !env.RESEND_API_KEY) return new Response(JSON.stringify({ error: 'missing config' }), { status: 500, headers: ADS_JSON });
+  if (!env.RESEND_API_KEY) return new Response(JSON.stringify({ error: 'missing config' }), { status: 500, headers: ADS_JSON });
+
+  const mergeTemplate = (templateText, values) => {
+    let out = String(templateText || '');
+    Object.entries(values || {}).forEach(([key, value]) => {
+      const safeVal = String(value ?? '');
+      out = out.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), safeVal);
+    });
+    return out;
+  };
+
+  // Batch state campaign mode: accepts { state, template, leads } and sends to matching leads.
+  if (body.state && body.template && Array.isArray(body.leads)) {
+    const state = String(body.state || '').trim().toUpperCase();
+    const template = String(body.template || '').trim();
+    if (!state) return new Response(JSON.stringify({ error: 'state required' }), { status: 400, headers: ADS_JSON });
+    if (!template) return new Response(JSON.stringify({ error: 'template required' }), { status: 400, headers: ADS_JSON });
+
+    const templateUrl = new URL(`/emails/outreach/${template}`, 'https://betwaggle.com');
+    const templateResponse = await env.ASSETS.fetch(templateUrl);
+    let templateHtml = '';
+    if (templateResponse.ok) {
+      templateHtml = await templateResponse.text();
+    } else {
+      // Inline fallback keeps delivery path resilient if a template is missing.
+      templateHtml = '<p>Hi {{first_name}},</p><p>Wanted to share Waggle for {{course_name}} at {{club_name}}.</p><p><a href="https://betwaggle.com">See Waggle</a></p>';
+    }
+
+    const defaultSubjects = {
+      'scramble-pitch.html': 'Your next scramble - live leaderboard, betting, and settlement in one link',
+      'affiliate-invite.html': 'Earn $8-$12 every time a group at your course bets on golf',
+      'follow-up.html': 'Following up - Waggle for your next outing',
+      'scramble-season-newsletter.html': 'Scramble season is here - are you ready?'
+    };
+    const baseSubject = String(body.subject || defaultSubjects[template] || 'Waggle for your course');
+
+    const inputLeads = body.leads.filter((lead) => {
+      const leadState = String(lead?.state || '').trim().toUpperCase();
+      const email = String(lead?.pro_email || lead?.email || lead?.contact_email || '').trim();
+      return leadState === state && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    });
+
+    if (!inputLeads.length) {
+      return new Response(JSON.stringify({ ok: true, state, template, attempted: 0, sent: 0, failed: 0, results: [] }), { headers: ADS_JSON });
+    }
+
+    const results = [];
+    let sent = 0;
+    let failed = 0;
+    const fromAddress = String(body.from || '').trim() || 'Waggle <hello@betwaggle.com>';
+
+    for (const lead of inputLeads) {
+      const leadId = String(lead.id || '').trim() || `${state}-${slugify(lead.course_name || lead.club_name || crypto.randomUUID())}`;
+      const recipientEmail = String(lead.pro_email || lead.email || lead.contact_email || '').trim().toLowerCase();
+      const recipientName = String(lead.pro_name || lead.contact_name || '').trim() || 'there';
+      const firstName = recipientName.split(' ')[0] || 'there';
+      const courseName = String(lead.course_name || lead.name || '').trim() || 'your course';
+      const clubName = String(lead.club_name || lead.club || '').trim() || courseName;
+      const city = String(lead.city || '').trim();
+      const refCode = String(lead.ref_code || lead.affiliate_code || 'waggle').trim();
+      const unsubscribeUrl = `https://betwaggle.com/unsubscribe?email=${encodeURIComponent(recipientEmail)}`;
+      const mergedHtml = mergeTemplate(templateHtml, {
+        recipient_name: recipientName,
+        first_name: firstName,
+        course_name: courseName,
+        club_name: clubName,
+        email: recipientEmail,
+        city,
+        state,
+        ref_code: refCode,
+        unsubscribe_url: unsubscribeUrl,
+      });
+      const mergedSubject = mergeTemplate(baseSubject, {
+        recipient_name: recipientName,
+        first_name: firstName,
+        course_name: courseName,
+        club_name: clubName,
+        city,
+        state,
+      });
+
+      try {
+        // Try MailChannels first (free, sends from betwaggle.com), fall back to Resend
+        let resendPayload = {};
+        let sendOk = false;
+        const mcResponse = await fetch('https://api.mailchannels.net/tx/v1/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            personalizations: [{ to: [{ email: recipientEmail, name: recipientName }] }],
+            from: { email: fromAddress.match(/<(.+)>/)?.[1] || 'evan@betwaggle.com', name: fromAddress.replace(/<.*>/, '').trim() || 'Evan at Waggle' },
+            subject: mergedSubject,
+            content: [{ type: 'text/html', value: mergedHtml }],
+          })
+        }).catch(() => null);
+        if (mcResponse && mcResponse.status >= 200 && mcResponse.status < 300) {
+          sendOk = true;
+          resendPayload = { id: 'mc-' + Date.now() };
+        } else if (env.RESEND_API_KEY) {
+          // Fallback to Resend (sends from cafecito-ai.com domain)
+          const resendResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: fromAddress.replace('betwaggle.com', 'cafecito-ai.com'), to: [recipientEmail], subject: mergedSubject, html: mergedHtml })
+          });
+          resendPayload = await resendResponse.json().catch(() => ({}));
+          sendOk = resendResponse.ok && !!resendPayload?.id;
+        }
+        const ok = sendOk;
+        if (ok) sent += 1;
+        else failed += 1;
+
+        const trackPayload = {
+          ts: Date.now(),
+          ok,
+          state,
+          template,
+          leadId,
+          email: recipientEmail,
+          course_name: courseName,
+          resend_id: resendPayload?.id || null,
+          error: ok ? null : (resendPayload?.message || 'send failed'),
+        };
+        if (env.MG_BOOK) {
+          await env.MG_BOOK.put(`outreach:admin-send:${state}:${template}:${leadId}`, JSON.stringify(trackPayload));
+          if (ok) {
+            await env.MG_BOOK.put(`outreach:sent:${leadId}:${template}`, JSON.stringify({ ts: Date.now(), emailId: resendPayload.id }));
+          }
+        }
+        if (ok) {
+          await env.WAGGLE_DB.prepare(`
+            INSERT INTO outreach_events (id, course_lead_id, type, template_used, notes)
+            VALUES (?, ?, ?, ?, ?)
+          `).bind(
+            crypto.randomUUID().slice(0, 8),
+            leadId,
+            'email_sent',
+            template,
+            `Admin batch state=${state} to ${recipientEmail}`
+          ).run().catch(() => {});
+          await env.WAGGLE_DB.prepare(`
+            UPDATE courses_leads
+            SET status = 'contacted', last_contacted_at = datetime('now'), updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(leadId).run().catch(() => {});
+        }
+
+        results.push({
+          leadId,
+          email: recipientEmail,
+          ok,
+          resendId: resendPayload?.id || null,
+          error: ok ? null : (resendPayload?.message || 'send failed'),
+        });
+      } catch (err) {
+        failed += 1;
+        const errorMessage = err?.message || 'send failed';
+        if (env.MG_BOOK) {
+          await env.MG_BOOK.put(`outreach:admin-send:${state}:${template}:${leadId}`, JSON.stringify({
+            ts: Date.now(),
+            ok: false,
+            state,
+            template,
+            leadId,
+            email: recipientEmail,
+            course_name: courseName,
+            resend_id: null,
+            error: errorMessage,
+          }));
+        }
+        results.push({ leadId, email: recipientEmail, ok: false, resendId: null, error: errorMessage });
+      }
+    }
+
+    return new Response(JSON.stringify({
+      ok: true,
+      state,
+      template,
+      attempted: inputLeads.length,
+      sent,
+      failed,
+      results,
+    }), { headers: ADS_JSON });
+  }
 
   const { course_lead_id, template, subject, recipient_name, recipient_email } = body;
+  if (!env.WAGGLE_DB) return new Response(JSON.stringify({ error: 'db not configured' }), { status: 500, headers: ADS_JSON });
   if (!course_lead_id || !template || !subject || !recipient_email) {
     return new Response(JSON.stringify({ error: 'missing required fields' }), { status: 400, headers: ADS_JSON });
   }
@@ -5584,6 +5932,21 @@ async function handleAffiliateSignup(request, env) {
     return new Response(JSON.stringify({ error: 'Valid email is required' }), { status: 400, headers: h });
   }
 
+  const existingAffiliate = await lookupAffiliateByEmail(normalizedEmail, env);
+  if (existingAffiliate?.code) {
+    return new Response(JSON.stringify({
+      ok: true,
+      existing: true,
+      affiliate_id: existingAffiliate.code,
+      ref_code: existingAffiliate.code,
+      link: `https://betwaggle.com/create/?ref=${existingAffiliate.code}`,
+      dashboard: `https://betwaggle.com/affiliates/?code=${existingAffiliate.code}`
+    }), { headers: h });
+  }
+
+  const rl = await enforceApiRateLimit(env, request, 'api-rl:affiliate-signup', 5, 60);
+  if (!rl.allowed) return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.' }), { status: 429, headers: h });
+
   // Generate 6-char uppercase alphanumeric ref code (e.g., ABC123)
   const uc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let affiliate_id = '';
@@ -5612,6 +5975,7 @@ async function handleAffiliateSignup(request, env) {
       course: course_name || '',
       registeredAt: now
     }));
+    await env.MG_BOOK.put(`affiliate-email:${normalizedEmail}`, affiliate_id);
 
     // Also register in D1 affiliates table if available
     if (env.WAGGLE_DB) {
@@ -5633,6 +5997,30 @@ async function handleAffiliateSignup(request, env) {
     link: `https://betwaggle.com/create/?ref=${affiliate_id}`,
     dashboard: `https://betwaggle.com/affiliates/?code=${affiliate_id}`
   }), { headers: h });
+}
+
+async function lookupAffiliateByEmail(email, env) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  if (env.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare(
+        `SELECT code FROM affiliates WHERE lower(email) = ? LIMIT 1`
+      ).bind(normalizedEmail).first();
+      if (row?.code) return { code: String(row.code).trim().toUpperCase(), source: 'd1' };
+    } catch (dbErr) {
+      console.error('AFFILIATE_LOOKUP_BY_EMAIL_D1', dbErr?.message || dbErr);
+    }
+  }
+
+  if (!env.MG_BOOK) return null;
+  try {
+    const code = await env.MG_BOOK.get(`affiliate-email:${normalizedEmail}`, 'text');
+    if (code && String(code).trim()) return { code: String(code).trim().toUpperCase(), source: 'kv-email-index' };
+  } catch {}
+
+  return null;
 }
 
 function handleAffiliateGenerate(url) {
@@ -6939,33 +7327,66 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // POST /player
   if (path === 'player' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
+    }
     const { credits } = body;
     const cleanName = sanitizeName(body.name);
     if (!cleanName || cleanName.length < 2) return new Response(JSON.stringify({ error: 'Name required (2+ characters)' }), { status: 400, headers: EVENT_CORS });
-    const key = cleanName.toLowerCase();
-    const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
-    if (players[key] && players[key].name !== cleanName) {
-      return new Response(JSON.stringify({ error: `A player with a similar name already exists ("${players[key].name}"). Use a unique name (e.g., add last initial).` }), { status: 409, headers: EVENT_CORS });
+    const playersLockKey = `${K}:players-write-lock`;
+    const playersLock = await acquireKvLock(env, playersLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!playersLock.ok) {
+      return new Response(JSON.stringify({ error: 'Player update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
     }
-    if (players[key]) { players[key].credits = Math.floor(Number(credits) || 0); }
-    else { players[key] = { name: cleanName, credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
-    await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
-    return new Response(JSON.stringify({ ok: true, player: players[key] }), { headers: EVENT_CORS });
+    try {
+      const key = cleanName.toLowerCase();
+      const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+      if (players[key] && players[key].name !== cleanName) {
+        return new Response(JSON.stringify({ error: `A player with a similar name already exists ("${players[key].name}"). Use a unique name (e.g., add last initial).` }), { status: 409, headers: EVENT_CORS });
+      }
+      if (players[key]) {
+        players[key].credits = Math.floor(Number(credits) || 0);
+      } else {
+        players[key] = { name: cleanName, credits: Math.floor(Number(credits) || 0), totalWagered: 0 };
+      }
+      await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'players', source: 'player-create', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, player: players[key], sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, playersLockKey, playersLock.token);
+    }
   }
 
   // POST /player/add-credits
   if (path === 'player/add-credits' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
+    }
     const { name, amount } = body;
     if (!name || !amount) return new Response(JSON.stringify({ error: 'Name and amount required' }), { status: 400, headers: EVENT_CORS });
-    const key = name.trim().toLowerCase();
-    const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
-    if (!players[key]) { players[key] = { name: name.trim(), credits: 0, totalWagered: 0 }; }
-    players[key].credits += Math.floor(Number(amount));
-    await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
-    return new Response(JSON.stringify({ ok: true, player: players[key] }), { headers: EVENT_CORS });
+    const playersLockKey = `${K}:players-write-lock`;
+    const playersLock = await acquireKvLock(env, playersLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!playersLock.ok) {
+      return new Response(JSON.stringify({ error: 'Player update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    try {
+      const key = name.trim().toLowerCase();
+      const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+      if (!players[key]) { players[key] = { name: name.trim(), credits: 0, totalWagered: 0 }; }
+      players[key].credits += Math.floor(Number(amount));
+      await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'players', source: 'player-add-credits', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, player: players[key], sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, playersLockKey, playersLock.token);
+    }
   }
 
   // POST /join
@@ -7007,56 +7428,92 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // POST /join-approve
   if (path === 'join-approve' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const { id, credits } = await request.json();
-    const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
-    const req = requests.find(r => r.id === id);
-    if (!req) return new Response(JSON.stringify({ error: 'Request not found' }), { status: 404, headers: EVENT_CORS });
-    req.status = 'approved';
-    await env.MG_BOOK.put(`${K}:join-requests`, JSON.stringify(requests));
-    const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
-    const key = req.name.trim().toLowerCase();
-    if (!players[key]) { players[key] = { name: req.name.trim(), hi: req.hi, credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
-    else { players[key].hi = req.hi; }
-    await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
-    // Send approval notification email (fire-and-forget)
-    if (env.RESEND_API_KEY && req.email) {
-      const config = eventConfig;
-      ctx.waitUntil((async () => {
-        try {
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              from: 'hello@betwaggle.com',
-              to: req.email,
-              subject: `You're in! Join ${config?.event?.name || 'the event'}`,
-              html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
-                <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
-                  <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
-                </div>
-                <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
-                  <p style="font-size:16px;font-weight:600;color:#0D2818">You've been approved!</p>
-                  <p style="font-size:14px;color:#3D3D3D;line-height:1.6">Open the sportsbook to see live odds, place bets, and follow the action:</p>
-                  <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
-                </div>
-              </div>`
-            })
-          });
-        } catch {}
-      })());
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
     }
-    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+    const { id, credits } = body;
+    if (!id) return new Response(JSON.stringify({ error: 'id required' }), { status: 400, headers: EVENT_CORS });
+    const approvalLockKey = `${K}:join-approval-write-lock`;
+    const approvalLock = await acquireKvLock(env, approvalLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!approvalLock.ok) {
+      return new Response(JSON.stringify({ error: 'Join approval in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    let req = null;
+    try {
+      const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
+      req = requests.find(r => r.id === id);
+      if (!req) return new Response(JSON.stringify({ error: 'Request not found' }), { status: 404, headers: EVENT_CORS });
+      req.status = 'approved';
+      await env.MG_BOOK.put(`${K}:join-requests`, JSON.stringify(requests));
+      const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+      const key = req.name.trim().toLowerCase();
+      if (!players[key]) { players[key] = { name: req.name.trim(), hi: req.hi, credits: Math.floor(Number(credits) || 0), totalWagered: 0 }; }
+      else { players[key].hi = req.hi; }
+      await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'join-requests', source: 'join-approve', actor: 'admin' });
+      // Send approval notification email (fire-and-forget)
+      if (env.RESEND_API_KEY && req.email) {
+        const config = eventConfig;
+        ctx.waitUntil((async () => {
+          try {
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: 'hello@betwaggle.com',
+                to: req.email,
+                subject: `You're in! Join ${config?.event?.name || 'the event'}`,
+                html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
+                  <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+                    <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
+                  </div>
+                  <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
+                    <p style="font-size:16px;font-weight:600;color:#0D2818">You've been approved!</p>
+                    <p style="font-size:14px;color:#3D3D3D;line-height:1.6">Open the sportsbook to see live odds, place bets, and follow the action:</p>
+                    <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
+                  </div>
+                </div>`
+              })
+            });
+          } catch {}
+        })());
+      }
+      return new Response(JSON.stringify({ ok: true, sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, approvalLockKey, approvalLock.token);
+    }
   }
 
   // POST /join-reject
   if (path === 'join-reject' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const { id } = await request.json();
-    const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
-    const req = requests.find(r => r.id === id);
-    if (req) req.status = 'rejected';
-    await env.MG_BOOK.put(`${K}:join-requests`, JSON.stringify(requests));
-    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
+    }
+    const id = String(body?.id || '').trim();
+    if (!id) return new Response(JSON.stringify({ error: 'id required' }), { status: 400, headers: EVENT_CORS });
+    const approvalLockKey = `${K}:join-approval-write-lock`;
+    const approvalLock = await acquireKvLock(env, approvalLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!approvalLock.ok) {
+      return new Response(JSON.stringify({ error: 'Join rejection in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    try {
+      const requests = (await env.MG_BOOK.get(`${K}:join-requests`, 'json')) || [];
+      const req = requests.find(r => r.id === id);
+      if (!req) return new Response(JSON.stringify({ error: 'Request not found' }), { status: 404, headers: EVENT_CORS });
+      req.status = 'rejected';
+      await env.MG_BOOK.put(`${K}:join-requests`, JSON.stringify(requests));
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'join-requests', source: 'join-reject', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, approvalLockKey, approvalLock.token);
+    }
   }
 
   // POST /bet
@@ -7078,10 +7535,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (stakeNum > MAX_SINGLE_BET) return new Response(JSON.stringify({ error: `Max single bet is $${MAX_SINGLE_BET}` }), { status: 400, headers: EVENT_CORS });
 
     const lockKey = `${K}:bet-lock`;
-    const lockId = crypto.randomUUID();
-    const existingLock = await env.MG_BOOK.get(lockKey, 'text');
-    if (existingLock) return new Response(JSON.stringify({ error: 'Sportsbook busy \u2014 tap again' }), { status: 409, headers: EVENT_CORS });
-    await env.MG_BOOK.put(lockKey, lockId, { expirationTtl: 60 });
+    const betLock = await acquireKvLock(env, lockKey, {
+      ttlSeconds: 30,
+      maxAttempts: 4,
+      retryDelayMs: 40,
+      settleMs: 15,
+    });
+    if (!betLock.ok) return new Response(JSON.stringify({ error: 'Sportsbook busy \u2014 tap again' }), { status: 409, headers: EVENT_CORS });
 
     try {
       if (matchId && configRaw) {
@@ -7147,9 +7607,10 @@ async function handleEventApi(slug, path, request, env, ctx) {
       };
       bets.push(bet);
       await env.MG_BOOK.put(`${K}:bets`, JSON.stringify(bets));
-      return new Response(JSON.stringify({ ok: true, bet, credits: player.credits }), { headers: EVENT_CORS });
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'bets', source: 'bet-create', actor: isAdmin ? 'admin' : 'public' });
+      return new Response(JSON.stringify({ ok: true, bet, credits: player.credits, sync }), { headers: EVENT_CORS });
     } finally {
-      await env.MG_BOOK.delete(lockKey);
+      await releaseKvLock(env, lockKey, betLock.token);
     }
   } catch (betErr) {
     console.error('Bet handler error:', betErr.message, betErr.stack);
@@ -7167,36 +7628,56 @@ async function handleEventApi(slug, path, request, env, ctx) {
   if (path.startsWith('bet/') && request.method === 'PUT') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
     const betId = path.split('/')[1];
-    const body = await request.json();
-    const bets = (await env.MG_BOOK.get(`${K}:bets`, 'json')) || [];
-    const idx = bets.findIndex(b => b.id === betId);
-    if (idx === -1) return new Response(JSON.stringify({ error: 'Bet not found' }), { status: 404, headers: EVENT_CORS });
-    const previousStatus = bets[idx].status;
-    const VALID_BET_STATUSES = ['active', 'won', 'lost', 'voided', 'push'];
-    if (body.status) {
-      if (!VALID_BET_STATUSES.includes(body.status)) return new Response(JSON.stringify({ error: 'Invalid bet status' }), { status: 400, headers: EVENT_CORS });
-      bets[idx].status = body.status;
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
     }
-    if (body.payout !== undefined) {
-      const payout = Number(body.payout);
-      if (isNaN(payout) || payout < 0 || payout > 50000) return new Response(JSON.stringify({ error: 'Invalid payout amount' }), { status: 400, headers: EVENT_CORS });
-      bets[idx].payout = payout;
-    }
-    if (['voided', 'won', 'lost', 'push'].includes(body.status)) bets[idx].settledAt = new Date().toISOString();
 
-    if (previousStatus === 'active' && ['won', 'lost', 'push', 'voided'].includes(body.status)) {
-      const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
-      const playerKey = bets[idx].bettor.trim().toLowerCase();
-      if (players[playerKey]) {
-        const payout = body.status === 'won' ? (bets[idx].payout ?? Math.round(bets[idx].stake * bets[idx].odds))
-                     : body.status === 'push' ? bets[idx].stake : body.status === 'voided' ? bets[idx].stake : 0;
-        players[playerKey].credits += payout;
-        if (body.status === 'voided') players[playerKey].totalWagered = Math.max(0, (players[playerKey].totalWagered || 0) - bets[idx].stake);
-        await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+    const lockKey = `${K}:bet-lock`;
+    const betLock = await acquireKvLock(env, lockKey, {
+      ttlSeconds: 30,
+      maxAttempts: 4,
+      retryDelayMs: 40,
+      settleMs: 15,
+    });
+    if (!betLock.ok) return new Response(JSON.stringify({ error: 'Sportsbook busy - tap again' }), { status: 409, headers: EVENT_CORS });
+
+    try {
+      const bets = (await env.MG_BOOK.get(`${K}:bets`, 'json')) || [];
+      const idx = bets.findIndex(b => b.id === betId);
+      if (idx === -1) return new Response(JSON.stringify({ error: 'Bet not found' }), { status: 404, headers: EVENT_CORS });
+      const previousStatus = bets[idx].status;
+      const VALID_BET_STATUSES = ['active', 'won', 'lost', 'voided', 'push'];
+      if (body.status) {
+        if (!VALID_BET_STATUSES.includes(body.status)) return new Response(JSON.stringify({ error: 'Invalid bet status' }), { status: 400, headers: EVENT_CORS });
+        bets[idx].status = body.status;
       }
+      if (body.payout !== undefined) {
+        const payout = Number(body.payout);
+        if (isNaN(payout) || payout < 0 || payout > 50000) return new Response(JSON.stringify({ error: 'Invalid payout amount' }), { status: 400, headers: EVENT_CORS });
+        bets[idx].payout = payout;
+      }
+      if (['voided', 'won', 'lost', 'push'].includes(body.status)) bets[idx].settledAt = new Date().toISOString();
+
+      if (previousStatus === 'active' && ['won', 'lost', 'push', 'voided'].includes(body.status)) {
+        const players = (await env.MG_BOOK.get(`${K}:players`, 'json')) || {};
+        const playerKey = bets[idx].bettor.trim().toLowerCase();
+        if (players[playerKey]) {
+          const payout = body.status === 'won' ? (bets[idx].payout ?? Math.round(bets[idx].stake * bets[idx].odds))
+                       : body.status === 'push' ? bets[idx].stake : body.status === 'voided' ? bets[idx].stake : 0;
+          players[playerKey].credits += payout;
+          if (body.status === 'voided') players[playerKey].totalWagered = Math.max(0, (players[playerKey].totalWagered || 0) - bets[idx].stake);
+          await env.MG_BOOK.put(`${K}:players`, JSON.stringify(players));
+        }
+      }
+      await env.MG_BOOK.put(`${K}:bets`, JSON.stringify(bets));
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'bets', source: 'bet-update', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, bet: bets[idx], sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, lockKey, betLock.token);
     }
-    await env.MG_BOOK.put(`${K}:bets`, JSON.stringify(bets));
-    return new Response(JSON.stringify({ ok: true, bet: bets[idx] }), { headers: EVENT_CORS });
   }
 
   // POST /scores
@@ -7207,6 +7688,15 @@ async function handleEventApi(slug, path, request, env, ctx) {
       body = await request.json();
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
+    }
+    const expectedSyncRevRaw = String(
+      request.headers.get('x-waggle-sync-rev') ||
+      request.headers.get('x-sync-rev') ||
+      ''
+    ).trim();
+    const expectedSyncRev = expectedSyncRevRaw ? Number.parseInt(expectedSyncRevRaw, 10) : null;
+    if (expectedSyncRevRaw && (!Number.isFinite(expectedSyncRev) || expectedSyncRev < 0)) {
+      return new Response(JSON.stringify({ error: 'Invalid X-Waggle-Sync-Rev header' }), { status: 400, headers: EVENT_CORS });
     }
     // 1E: Validate score values
     for (const [matchId, matchData] of Object.entries(body)) {
@@ -7227,6 +7717,18 @@ async function handleEventApi(slug, path, request, env, ctx) {
     }
 
     try {
+      if (expectedSyncRev !== null) {
+        const currentSync = await getEventSyncMeta(env, K);
+        if (Number(currentSync.rev || 0) !== expectedSyncRev) {
+          return new Response(JSON.stringify({
+            error: 'Sync conflict. Refresh scores and retry.',
+            code: 'SYNC_CONFLICT',
+            expectedRev: expectedSyncRev,
+            currentRev: Number(currentSync.rev || 0),
+            sync: currentSync,
+          }), { status: 409, headers: EVENT_CORS });
+        }
+      }
       const existing = (await env.MG_BOOK.get(`${K}:scores`, 'json')) || {};
       const merged = { ...existing };
       const scoreUpdatedAt = new Date().toISOString();
@@ -7304,25 +7806,39 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // POST /settings
   if (path === 'settings' && request.method === 'POST') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    const body = await request.json();
-    const existing = (await env.MG_BOOK.get(`${K}:settings`, 'json')) || {};
-    const merged = { ...existing, ...body };
-    await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(merged));
-
-    // If players/roster updated, also update the base config so config.json reflects changes
-    if (body.players || body.roster) {
-      try {
-        const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
-        if (cfgRaw) {
-          const cfg = JSON.parse(cfgRaw);
-          if (body.players) cfg.players = body.players;
-          if (body.roster) cfg.roster = body.roster;
-          await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
-        }
-      } catch {}
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: EVENT_CORS });
     }
+    const settingsLockKey = `${K}:settings-write-lock`;
+    const settingsLock = await acquireKvLock(env, settingsLockKey, { ttlSeconds: 10, maxAttempts: 4, retryDelayMs: 60, settleMs: 20 });
+    if (!settingsLock.ok) {
+      return new Response(JSON.stringify({ error: 'Settings update in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
+    }
+    try {
+      const existing = (await env.MG_BOOK.get(`${K}:settings`, 'json')) || {};
+      const merged = { ...existing, ...body };
+      await env.MG_BOOK.put(`${K}:settings`, JSON.stringify(merged));
 
-    return new Response(JSON.stringify({ ok: true, settings: merged }), { headers: EVENT_CORS });
+      // If players/roster updated, also update the base config so config.json reflects changes
+      if (body.players || body.roster) {
+        try {
+          const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
+          if (cfgRaw) {
+            const cfg = JSON.parse(cfgRaw);
+            if (body.players) cfg.players = body.players;
+            if (body.roster) cfg.roster = body.roster;
+            await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(cfg));
+          }
+        } catch {}
+      }
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'settings', source: 'settings-update', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, settings: merged, sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, settingsLockKey, settingsLock.token);
+    }
   }
 
   // GET /settings
@@ -7349,8 +7865,21 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // DELETE /bets
   if (path === 'bets' && request.method === 'DELETE') {
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
-    await env.MG_BOOK.put(`${K}:bets`, '[]');
-    return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
+    const lockKey = `${K}:bet-lock`;
+    const betLock = await acquireKvLock(env, lockKey, {
+      ttlSeconds: 30,
+      maxAttempts: 4,
+      retryDelayMs: 40,
+      settleMs: 15,
+    });
+    if (!betLock.ok) return new Response(JSON.stringify({ error: 'Sportsbook busy - tap again' }), { status: 409, headers: EVENT_CORS });
+    try {
+      await env.MG_BOOK.put(`${K}:bets`, '[]');
+      const sync = await bumpEventSyncMeta(env, K, { scope: 'bets', source: 'bet-delete-all', actor: 'admin' });
+      return new Response(JSON.stringify({ ok: true, sync }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, lockKey, betLock.token);
+    }
   }
 
   // GET /game-state
@@ -9026,7 +9555,7 @@ async function handleGhinSearch(q, env) {
 const EMAIL_CORS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Marketing-Pin',
 };
 const EMAIL_CAPTURE_DRIP_SUPPRESSION_SECONDS = 24 * 60 * 60;
@@ -9077,6 +9606,13 @@ async function sha256Hex(value) {
 
 async function persistEmailCaptureInD1(env, record) {
   if (!env.WAGGLE_DB || emailCaptureD1Unavailable) return false;
+  const email = record.email;
+  const source = record.source || '';
+  const sourcePage = record.source_page || '';
+  const gameInterest = record.game_interest || null;
+  const courseInterest = record.course_interest || null;
+  const optedIn = record.opted_in_newsletter ? 1 : 0;
+  const capturedAt = record.captured_at || record.created_at;
   try {
     await env.WAGGLE_DB.prepare(
       `INSERT INTO email_captures
@@ -9090,17 +9626,53 @@ async function persistEmailCaptureInD1(env, record) {
          opted_in_newsletter = excluded.opted_in_newsletter,
          captured_at = excluded.captured_at`
     ).bind(
-      record.email,
-      record.source || '',
-      record.source_page || '',
-      record.game_interest || null,
-      record.course_interest || null,
-      record.opted_in_newsletter ? 1 : 0,
-      record.captured_at || record.created_at
+      email,
+      source,
+      sourcePage,
+      gameInterest,
+      courseInterest,
+      optedIn,
+      capturedAt
     ).run();
     return true;
   } catch (e) {
-    if (String(e?.message || '').toLowerCase().includes('no such table')) {
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('on conflict clause does not match')) {
+      try {
+        const update = await env.WAGGLE_DB.prepare(
+          `UPDATE email_captures
+           SET source = ?, source_page = ?, game_interest = ?, course_interest = ?, opted_in_newsletter = ?, captured_at = ?
+           WHERE email = ?`
+        ).bind(
+          source,
+          sourcePage,
+          gameInterest,
+          courseInterest,
+          optedIn,
+          capturedAt,
+          email
+        ).run();
+        if ((update?.meta?.changes || 0) === 0) {
+          await env.WAGGLE_DB.prepare(
+            `INSERT INTO email_captures
+             (email, source, source_page, game_interest, course_interest, opted_in_newsletter, captured_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            email,
+            source,
+            sourcePage,
+            gameInterest,
+            courseInterest,
+            optedIn,
+            capturedAt
+          ).run();
+        }
+        return true;
+      } catch (fallbackErr) {
+        console.error('email_capture_d1_fallback_error', fallbackErr?.message || fallbackErr);
+      }
+    }
+    if (msg.includes('no such table')) {
       emailCaptureD1Unavailable = true;
     }
     console.error('email_capture_d1_error', e?.message || e);
@@ -9121,13 +9693,13 @@ async function enforceEmailCaptureRateLimit(env, request) {
   const rlKey = `email-rl:${ip}`;
   const lockKey = `${rlKey}:lock`;
   const lock = await acquireKvLock(env, lockKey, { ttlSeconds: 5, maxAttempts: 4, retryDelayMs: 25, settleMs: 10 });
-  if (!lock.ok) return { allowed: false, status: 429, error: 'Rate limiter busy. Retry shortly.' };
+  if (!lock.ok) return { allowed: false, status: 429, error: 'Rate limiter busy. Retry shortly.', retryAfterSeconds: 5 };
 
   try {
     const rlCount = parseInt(await env.MG_BOOK.get(rlKey, 'text') || '0', 10);
-    if (rlCount >= 5) return { allowed: false, status: 429, error: 'Too many requests. Try again later.' };
+    if (rlCount >= 5) return { allowed: false, status: 429, error: 'Too many requests. Try again later.', retryAfterSeconds: 60 };
     await env.MG_BOOK.put(rlKey, String(rlCount + 1), { expirationTtl: 60 });
-    return { allowed: true };
+    return { allowed: true, remaining: Math.max(0, 4 - rlCount), windowSeconds: 60 };
   } finally {
     await releaseKvLock(env, lockKey, lock.token);
   }
@@ -9201,7 +9773,11 @@ async function handleEmailCapture(request, env, ctx) {
     stage = 'rate_limit';
     const rl = await enforceEmailCaptureRateLimit(env, request);
     if (!rl.allowed) {
-      return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.', code: 'RATE_LIMITED', requestId, emailHash }), { status: rl.status || 429, headers: EMAIL_CORS });
+      const rateLimitHeaders = new Headers(EMAIL_CORS);
+      if (Number.isFinite(Number(rl.retryAfterSeconds)) && Number(rl.retryAfterSeconds) > 0) {
+        rateLimitHeaders.set('Retry-After', String(Math.floor(Number(rl.retryAfterSeconds))));
+      }
+      return new Response(JSON.stringify({ error: rl.error || 'Too many requests. Try again later.', code: 'RATE_LIMITED', requestId, emailHash }), { status: rl.status || 429, headers: rateLimitHeaders });
     }
 
     const kvKey = `email:${normalizedEmail}`;
@@ -9234,13 +9810,12 @@ async function handleEmailCapture(request, env, ctx) {
         stage = 'd1_upsert_existing';
         const d1Stored = await persistEmailCaptureInD1(env, updated);
         if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
-          return new Response(JSON.stringify({
-            error: 'Capture persistence failed',
-            code: 'CAPTURE_PERSIST_FAILED',
+          console.warn('email_capture_d1_degraded', JSON.stringify({
             requestId,
             emailHash,
-            stored: { kv: true, d1: false }
-          }), { status: 500, headers: EMAIL_CORS });
+            stage,
+            mode: 'existing',
+          }));
         }
 
         if (updated.opted_in_newsletter) {
@@ -9340,13 +9915,12 @@ async function handleEmailCapture(request, env, ctx) {
       stage = 'd1_upsert_new';
       const d1Stored = await persistEmailCaptureInD1(env, record);
       if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
-        return new Response(JSON.stringify({
-          error: 'Capture persistence failed',
-          code: 'CAPTURE_PERSIST_FAILED',
+        console.warn('email_capture_d1_degraded', JSON.stringify({
           requestId,
           emailHash,
-          stored: { kv: true, d1: false }
-        }), { status: 500, headers: EMAIL_CORS });
+          stage,
+          mode: 'new',
+        }));
       }
 
       if (!record.opted_in_newsletter) {
@@ -9522,6 +10096,27 @@ const DRIP_SEQUENCE = [
   }
 ];
 
+function getDripFromAddress(env) {
+  const override = String(env?.RESEND_FROM_DRIP || '').trim();
+  if (override) return override;
+  return 'Waggle <hello@betwaggle.com>';
+}
+
+function hasEmailDripAccess(request, url, env) {
+  if (hasApiAdminAccess(request, url, env)) return true;
+  const token = String(env?.EMAIL_DRIP_CRON_TOKEN || '').trim();
+  if (!token) return false;
+  const headerToken = String(
+    request.headers.get('x-cron-token') ||
+    request.headers.get('x-email-drip-token') ||
+    ''
+  ).trim();
+  const authHeader = String(request.headers.get('authorization') || '').trim();
+  const bearer = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+  const queryToken = String(url?.searchParams?.get('token') || '').trim();
+  return headerToken === token || bearer === token || queryToken === token;
+}
+
 
 async function sendDripEmail(env, email, stepIndex, source, meta = {}) {
   const step = DRIP_SEQUENCE[stepIndex];
@@ -9541,7 +10136,7 @@ async function sendDripEmail(env, email, stepIndex, source, meta = {}) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Waggle <hello@betwaggle.com>',
+        from: getDripFromAddress(env),
         to: [email],
         subject: step.subject,
         html,
@@ -9635,8 +10230,8 @@ async function processDripEmails(env) {
 
 async function handleEmailDrip(request, env, url) {
   try {
-    // Shared admin access gate: accepts private route token or marketing pin.
-    if (!hasApiAdminAccess(request, url, env)) {
+    // Allow admin access and an optional dedicated cron token.
+    if (!hasEmailDripAccess(request, url, env)) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: EMAIL_CORS
