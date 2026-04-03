@@ -67,11 +67,12 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
   const skinsWon = {};
   entities.forEach(e => { skinsWon[e.name] = { count: 0, value: 0 }; });
 
-  html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,rgba(197,160,89,0.12));border-top:2px solid var(--gold-primary,#C5A059);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">${title}</span>
-    <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${skinsBetVal}/skin</span>
+  html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+  html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">${title}</span>
+    <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${skinsBetVal}/skin</span>
   </div>`;
+  html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
 
   const holesToShow = maxHoles ? scoredHoles.slice(-maxHoles) : scoredHoles;
   holesToShow.forEach(h => {
@@ -81,36 +82,37 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
       const val = (sk.potWon || 1) * (numP - 1) * skinsBetVal;
       if (skinsWon[sk.winner]) { skinsWon[sk.winner].count++; skinsWon[sk.winner].value += val; }
       const isCarryWin = (sk.potWon || 1) > 1;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${h < Math.max(...scoredHoles) ? 'border-bottom:1px solid var(--border)' : ''}">
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-left:3px solid #C5A059;padding-left:10px;margin-bottom:4px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
-          <span style="font-size:13px;font-weight:600;color:var(--win,#16A34A)">${escHtml(String(sk.winner).split(' ')[0])}</span>
-          ${isCarryWin ? `<span style="font-size:10px;font-weight:700;background:var(--gold-primary,#C5A059);color:white;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
+          <span style="font-size:13px;font-weight:700;color:#1B3022">${escHtml(String(sk.winner).split(' ')[0])}</span>
+          ${isCarryWin ? `<span style="font-size:10px;font-weight:800;background:#C5A059;color:#1B3022;padding:2px 6px;border-radius:4px">${sk.potWon}x CARRY</span>` : ''}
         </div>
-        <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--gold-primary,#C5A059)">$${val}</span>
+        <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:#C5A059">$${val}</span>
       </div>`;
       currentPot = 1;
     } else if (sk.carried) {
       currentPot = (sk.potBefore || currentPot) + 1;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(197,160,89,0.08);border-radius:6px;margin-bottom:4px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:12px;font-weight:700;color:var(--page-text-muted);width:28px">H${h}</span>
-          <span style="font-size:12px;font-weight:600;color:var(--page-text-muted)">Tied</span>
+          <span style="font-size:12px;font-weight:600;font-style:italic;color:#C5A059">Tied</span>
         </div>
-        <span style="font-size:11px;font-weight:700;background:rgba(197,160,89,0.15);color:var(--gold-primary);padding:3px 8px;border-radius:4px">CARRY \u2192 ${currentPot}x</span>
+        <span style="font-size:11px;font-weight:700;color:#C5A059;padding:3px 8px;border-radius:4px;border:1px solid rgba(197,160,89,0.3)">CARRY \u2192 ${currentPot}x</span>
       </div>`;
     }
   });
 
   const skinsRanked = Object.entries(skinsWon).sort((a, b) => b[1].value - a[1].value);
   if (skinsRanked.some(([, v]) => v.count > 0)) {
-    html += `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
-    skinsRanked.forEach(([name, data]) => {
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-        <span style="font-size:13px;font-weight:600;color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+    html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(197,160,89,0.15)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#C5A059;margin-bottom:6px">Leaderboard</div>`;
+    skinsRanked.forEach(([name, data], idx) => {
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;background:${idx % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'var(--card-bg,#FFFFFF)'};border-radius:4px;padding-left:4px;padding-right:4px">
+        <span style="font-size:13px;font-weight:${idx === 0 ? '700' : '600'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
         <div style="display:flex;gap:12px;align-items:center">
           <span style="font-size:12px;color:var(--page-text-muted)">${data.count} skin${data.count !== 1 ? 's' : ''}</span>
-          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--gold-primary)">$${data.value}</span>
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:#C5A059">$${data.value}</span>
         </div>
       </div>`;
     });
@@ -118,11 +120,11 @@ function renderSkinsPanel({ title, skinsHoles, scoredHoles, entities, skinsBetVa
   }
 
   if (currentPot > 1) {
-    html += `<div style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:var(--gold-primary);background:rgba(197,160,89,0.08);padding:6px;border-radius:6px">
-      ${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}
+    html += `<div style="margin-top:10px;text-align:center">
+      <span style="display:inline-block;background:#C5A059;color:#1B3022;padding:6px 12px;border-radius:20px;font-weight:800;font-size:12px">${currentPot}x carry active \u2022 Next skin worth $${currentPot * (numP - 1) * skinsBetVal}</span>
     </div>`;
   }
-  html += `</div>`;
+  html += `</div></div>`;
   return html;
 }
 
@@ -2848,11 +2850,12 @@ export function renderRoundFeed(state) {
       const frontHoles = scoredHoles.filter(h => h <= 9);
       const backHoles = scoredHoles.filter(h => h > 9);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid var(--green-primary,#1B3022);border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Nassau</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${nassauBetVal}/side</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Nassau</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${nassauBetVal}/side</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
 
       // Three bets as compact cards
       const bets = [
@@ -2883,14 +2886,14 @@ export function renderRoundFeed(state) {
           }
         }
 
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${bet.label !== 'Overall' ? 'border-bottom:1px solid var(--border)' : ''}">
+        html += `<div style="background:rgba(27,48,34,0.03);border:1px solid rgba(197,160,89,0.1);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--page-text)">${bet.label}</div>
+            <div style="font-size:13px;font-weight:700;color:#1B3022">${bet.label}</div>
             <div style="font-size:11px;color:var(--page-text-muted)">${!started ? 'Not started' : complete ? 'Final' : 'Thru ' + bet.thru}</div>
           </div>
-          <div style="text-align:right">
-            ${leaderName ? `<div style="font-size:13px;font-weight:700;color:${complete ? 'var(--win,#16A34A)' : 'var(--page-text)'}">${escHtml(leaderName.split(' ')[0])}</div>` : ''}
-            ${leaderMargin ? `<div style="font-size:12px;font-weight:600;color:var(--win,#16A34A)">${leaderMargin}</div>` : ''}
+          <div style="text-align:right;display:flex;align-items:center;gap:8px">
+            ${leaderName ? `<span style="font-size:13px;font-weight:700;color:#1B3022">${escHtml(leaderName.split(' ')[0])}</span>` : ''}
+            ${leaderMargin ? `<span style="font-size:12px;font-weight:700;color:${leaderMargin === 'ALL SQUARE' ? '#1B3022' : '#C5A059'};${leaderMargin !== 'ALL SQUARE' ? 'background:rgba(197,160,89,0.12);padding:2px 6px;border-radius:4px' : ''}">${leaderMargin}</span>` : ''}
           </div>
         </div>`;
       });
@@ -2898,10 +2901,13 @@ export function renderRoundFeed(state) {
       // Presses
       const presses = nassauState.presses || [];
       if (presses.length > 0) {
-        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--gold-primary);margin-bottom:4px">Active Presses</div>`;
+        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(197,160,89,0.15)">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#C5A059;margin-bottom:6px">Active Presses</div>`;
         presses.forEach(press => {
-          html += `<div style="font-size:12px;color:var(--page-text-muted);padding:2px 0">${escHtml(press.by || 'Press')} on Hole ${press.hole || '?'} \u2022 $${nassauBetVal}</div>`;
+          html += `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+            <span style="background:#C5A059;color:#1B3022;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800">PRESS!</span>
+            <span style="font-size:12px;color:var(--page-text-muted)">${escHtml(press.by || 'Press')} on Hole ${press.hole || '?'} \u2022 $${nassauBetVal}</span>
+          </div>`;
         });
         html += `</div>`;
       }
@@ -2909,7 +2915,7 @@ export function renderRoundFeed(state) {
       // Total exposure
       const totalNassau = (3 + presses.length) * nassauBetVal;
       html += `<div style="margin-top:8px;text-align:right;font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--page-text-muted)">Exposure: $${totalNassau}</div>`;
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── WOLF ROTATION ──
@@ -2919,48 +2925,52 @@ export function renderRoundFeed(state) {
       const currentWolf = wolfOrder[(nextHoleNum - 1) % wolfOrder.length];
       const wolfPointsPerHole = parseInt(config?.structure?.wolfPoints) || 1;
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #8B6914;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Wolf</span>
-        <span style="font-size:12px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.1);padding:3px 8px;border-radius:4px">Hole ${nextHoleNum}: ${escHtml(currentWolf.split(' ')[0])} is Wolf</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">\ud83d\udc3a Wolf</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Hole ${nextHoleNum}</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
 
       // Rotation display
       html += `<div style="display:flex;gap:6px;margin-bottom:10px">`;
       wolfOrder.forEach((name, i) => {
         const isWolf = name === currentWolf;
-        html += `<div style="flex:1;text-align:center;padding:8px 4px;border-radius:8px;${isWolf ? 'background:#8B6914;color:white' : 'background:var(--bg-secondary);color:var(--page-text-muted)'};font-size:12px;font-weight:${isWolf ? '800' : '600'}">
-          ${isWolf ? '\ud83d\udc3a ' : ''}${escHtml(name.split(' ')[0])}
+        html += `<div style="flex:1;text-align:center;padding:${isWolf ? '10px 4px' : '8px 4px'};border-radius:8px;${isWolf ? 'border:2px solid #C5A059;box-shadow:0 0 12px rgba(197,160,89,0.2);background:rgba(197,160,89,0.08);color:#1B3022' : 'background:rgba(27,48,34,0.03);color:var(--page-text-muted);border:1px solid rgba(197,160,89,0.1)'};font-size:${isWolf ? '13px' : '12px'};font-weight:${isWolf ? '800' : '600'}">
+          ${isWolf ? '\ud83d\udc51 ' : ''}${escHtml(name.split(' ')[0])}
         </div>`;
       });
       html += `</div>`;
 
-      // Wolf history (last few holes)
+      // Wolf history (timeline with gold dots)
       const wolfPicks = wolfState.picks || {};
       const recentWolfHoles = scoredHoles.slice(-5);
       if (recentWolfHoles.length > 0) {
+        html += `<div style="border-left:2px solid rgba(197,160,89,0.3);margin-left:8px;padding-left:14px">`;
         recentWolfHoles.forEach(h => {
           const wolf = wolfOrder[(h - 1) % wolfOrder.length];
           const pick = wolfPicks[h];
           const isLone = pick === 'lone' || pick === 'LONE_WOLF';
           const partner = pick && !isLone ? pick : null;
-          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px">
-            <span style="color:var(--page-text-muted);width:28px">H${h}</span>
-            <span style="font-weight:600;color:var(--page-text)">${escHtml(wolf.split(' ')[0])}</span>
-            <span style="color:${isLone ? '#8B6914' : 'var(--page-text-muted)'};font-weight:${isLone ? '700' : '500'}">${isLone ? 'LONE WOLF \ud83d\udc3a' : partner ? 'Picked ' + escHtml(partner.split(' ')[0]) : '--'}</span>
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;position:relative">
+            <div style="position:absolute;left:-21px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:#C5A059"></div>
+            <span style="color:var(--page-text-muted);width:28px;font-weight:600">H${h}</span>
+            <span style="font-weight:700;color:#1B3022">${escHtml(wolf.split(' ')[0])}</span>
+            <span style="color:${isLone ? '#C5A059' : 'var(--page-text-muted)'};font-weight:${isLone ? '800' : '500'}">${isLone ? '<span style="background:#C5A059;color:#1B3022;font-weight:800;padding:2px 6px;border-radius:4px;font-size:10px">LONE WOLF</span>' : partner ? 'Picked ' + escHtml(partner.split(' ')[0]) : '--'}</span>
           </div>`;
         });
+        html += `</div>`;
       }
 
       // Wolf Hammer countdown
       const hammerStart = holesPerRound - 1; // holes 17-18
       const holesUntilHammer = Math.max(0, hammerStart - latestHole);
       if (holesUntilHammer > 0 && holesUntilHammer <= 10) {
-        html += `<div style="margin-top:8px;text-align:center;font-size:11px;font-weight:700;color:#8B6914;background:rgba(139,105,20,0.08);padding:6px;border-radius:6px">
-          WOLF HAMMER in ${holesUntilHammer} hole${holesUntilHammer !== 1 ? 's' : ''} \u2022 4x value
+        html += `<div style="margin-top:10px;text-align:center">
+          <span style="display:inline-block;background:#C5A059;color:#1B3022;padding:6px 12px;border-radius:20px;font-weight:800;font-size:11px">WOLF HAMMER in ${holesUntilHammer} hole${holesUntilHammer !== 1 ? 's' : ''} \u2022 4x value</span>
         </div>`;
       }
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── VEGAS ──
@@ -2972,26 +2982,31 @@ export function renderRoundFeed(state) {
       const bLeading = score.B < score.A;
       const diff = Math.abs(score.A - score.B);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #B91C1C;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Vegas</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${vegasBet}/pt</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Vegas</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${vegasBet}/pt</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       html += `<div style="display:flex;justify-content:space-around;text-align:center;padding:8px 0">
         <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:4px">Team A</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#C5A059;margin-bottom:4px">Team A</div>
           <div style="font-size:11px;color:var(--page-text-muted);margin-bottom:4px">${(v.teamA||[]).map(n=>escHtml(n.split(' ')[0])).join(' / ')}</div>
-          <div style="font-size:28px;font-weight:800;color:${aLeading?'var(--win,#16A34A)':'var(--page-text)'};font-family:var(--font-mono)">${score.A}</div>
+          <div style="font-size:28px;font-weight:800;color:${aLeading?'#1B3022':'var(--page-text)'};font-family:var(--font-mono)">${score.A}</div>
         </div>
-        <div style="font-size:13px;color:var(--page-text-muted);align-self:center;font-weight:600">vs</div>
+        <div style="display:flex;flex-direction:column;align-items:center;align-self:center;gap:4px">
+          <div style="width:1px;height:20px;background:rgba(197,160,89,0.3)"></div>
+          <span style="font-size:11px;color:#C5A059;font-weight:700">vs</span>
+          <div style="width:1px;height:20px;background:rgba(197,160,89,0.3)"></div>
+        </div>
         <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:4px">Team B</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#C5A059;margin-bottom:4px">Team B</div>
           <div style="font-size:11px;color:var(--page-text-muted);margin-bottom:4px">${(v.teamB||[]).map(n=>escHtml(n.split(' ')[0])).join(' / ')}</div>
-          <div style="font-size:28px;font-weight:800;color:${bLeading?'var(--win,#16A34A)':'var(--page-text)'};font-family:var(--font-mono)">${score.B}</div>
+          <div style="font-size:28px;font-weight:800;color:${bLeading?'#1B3022':'var(--page-text)'};font-family:var(--font-mono)">${score.B}</div>
         </div>
       </div>`;
-      html += `<div style="text-align:center;margin-top:4px;font-size:12px;font-weight:600;color:${diff > 0 ? 'var(--win,#16A34A)' : 'var(--page-text-muted)'}">${diff > 0 ? `Team ${aLeading ? 'A' : 'B'} leads by ${diff}` : 'All square'}</div>`;
-      html += `</div>`;
+      html += `<div style="text-align:center;margin-top:4px;font-size:12px;font-weight:600;color:${diff > 0 ? '#C5A059' : 'var(--page-text-muted)'}">${diff > 0 ? `Team ${aLeading ? 'A' : 'B'} leads by ${diff}` : 'All square'}</div>`;
+      html += `</div></div>`;
     }
 
     // ── STABLEFORD ──
@@ -3000,21 +3015,22 @@ export function renderRoundFeed(state) {
       const running = gameState.stableford.running;
       const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #7C3AED;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Stableford</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${stblBet}/pt</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Stableford</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${stblBet}/pt</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       sorted.forEach(([name, pts], i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
-            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+            <span style="font-size:11px;color:#C5A059;width:16px;font-weight:700">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
           </div>
-          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? '#C5A059' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── MATCH PLAY ──
@@ -3023,19 +3039,25 @@ export function renderRoundFeed(state) {
       const running = gameState.match_play.running;
       const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #0369A1;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Match Play</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${mpBet}/match</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Match Play</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${mpBet}/match</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       sorted.forEach(([name, pts], i) => {
-        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'A/S';
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
-          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
+        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'ALL SQUARE';
+        const isDormie = (holesPerRound - latestHole) === Math.abs(pts) && pts !== 0;
+        const statusColor = pts === 0 ? '#1B3022' : pts > 0 ? '#C5A059' : 'var(--loss,#DC2626)';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${isDormie ? `<span style="background:#C5A059;color:#1B3022;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800">DORMIE</span>` : ''}
+            <span style="font-size:${pts !== 0 ? '20px' : '13px'};font-weight:800;color:${statusColor}">${status}</span>
+          </div>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── BANKER ──
@@ -3046,23 +3068,24 @@ export function renderRoundFeed(state) {
       const bankerState = gameState.banker;
       const currentBanker = bankerState.currentBanker || null;
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #D97706;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Banker</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bankerBet}/pt</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Banker</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${bankerBet}/pt</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       if (currentBanker) {
-        html += `<div style="text-align:center;margin-bottom:8px;font-size:12px;font-weight:700;color:#D97706;background:rgba(217,119,6,0.1);padding:4px 8px;border-radius:6px">
+        html += `<div style="text-align:center;margin-bottom:8px;font-size:12px;font-weight:800;color:#C5A059;background:rgba(197,160,89,0.08);padding:6px 8px;border-radius:6px;border:1px solid rgba(197,160,89,0.15)">
           Current Banker: ${escHtml(currentBanker.split(' ')[0])}
         </div>`;
       }
       sorted.forEach(([name, pts], i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
-          <span style="font-size:14px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'};font-family:var(--font-mono)">${pts > 0 ? '+' : ''}${pts}</span>
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:14px;font-weight:700;color:${pts > 0 ? '#C5A059' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'};font-family:var(--font-mono)">${pts > 0 ? '+' : ''}${pts}</span>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── BINGO BANGO BONGO ──
@@ -3071,21 +3094,22 @@ export function renderRoundFeed(state) {
       const running = gameState.bingo.running;
       const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #059669;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Bingo Bango Bongo</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bbbBet}/pt</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Bingo Bango Bongo</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${bbbBet}/pt</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       sorted.forEach(([name, pts], i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
-            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+            <span style="font-size:11px;color:#C5A059;width:16px;font-weight:700">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
           </div>
-          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? '#C5A059' : 'var(--page-text)'};font-family:var(--font-mono)">${pts} pts</span>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── BLOODSOME ──
@@ -3094,19 +3118,20 @@ export function renderRoundFeed(state) {
       const running = gameState.bloodsome.running;
       const sorted = Object.entries(running).sort((a, b) => b[1] - a[1]);
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #BE185D;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Bloodsome</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${bloodBet}/pt</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Bloodsome</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${bloodBet}/pt</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       sorted.forEach(([name, pts], i) => {
-        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'A/S';
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
-          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? 'var(--win,#16A34A)' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
+        const status = pts > 0 ? `${pts} UP` : pts < 0 ? `${Math.abs(pts)} DN` : 'ALL SQUARE';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
+          <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
+          <span style="font-size:13px;font-weight:700;color:${pts > 0 ? '#C5A059' : pts < 0 ? 'var(--loss,#DC2626)' : 'var(--page-text-muted)'}">${status}</span>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     // ── STROKE PLAY ──
@@ -3115,21 +3140,22 @@ export function renderRoundFeed(state) {
       const net = gameState.stroke_play.net;
       const sorted = Object.entries(net).sort((a, b) => (a[1] || 0) - (b[1] || 0));
 
-      html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-top:2px solid #1B4332;border-radius:10px;padding:var(--space-3,12px) var(--space-4,16px);margin-bottom:var(--space-3,12px)">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--page-text);letter-spacing:-0.01em">Stroke Play (Net)</span>
-        <span style="font-size:12px;color:var(--page-text-muted);font-weight:600">$${spBet}</span>
+      html += `<div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-radius:0.75rem;overflow:hidden;margin-bottom:var(--space-3,12px)">`;
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4;letter-spacing:-0.01em">Stroke Play (Net)</span>
+        <span style="background:rgba(197,160,89,0.2);color:#C5A059;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">$${spBet}</span>
       </div>`;
+      html += `<div style="padding:var(--space-3,12px) var(--space-4,16px)">`;
       sorted.forEach(([name, score], i) => {
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;background:${i % 2 === 1 ? 'rgba(27,48,34,0.03)' : 'transparent'};border-radius:4px">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--page-text-muted);width:16px">${i + 1}</span>
-            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:var(--page-text)">${escHtml(name.split(' ')[0])}</span>
+            <span style="font-size:11px;color:#C5A059;width:16px;font-weight:700">${i + 1}</span>
+            <span style="font-size:13px;font-weight:${i === 0 ? '700' : '500'};color:#1B3022">${escHtml(name.split(' ')[0])}</span>
           </div>
-          <span style="font-size:14px;font-weight:700;color:${i === 0 ? 'var(--win,#16A34A)' : 'var(--page-text)'};font-family:var(--font-mono)">${score}</span>
+          <span style="font-size:14px;font-weight:700;color:${i === 0 ? '#C5A059' : 'var(--page-text)'};font-family:var(--font-mono)">${score}</span>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     }
   }
 
