@@ -153,7 +153,8 @@ export default {
           headers: { 'Authorization': `Key ${apiKey}` }
         });
         if (!gcRes.ok) {
-          return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          // Fall through to local SEED_COURSES search
+          return handleCourseSearch(url, env);
         }
         const gcData = await gcRes.json();
         const courses = (gcData.courses || []).slice(0, 20).map(c => {

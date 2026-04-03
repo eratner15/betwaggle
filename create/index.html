@@ -555,35 +555,80 @@
     let _qsCourseSearching = false;
     let _qsSelectedCourse = null;
 
+    let _qsGhinResults = [];
     function qsGhinLookup() {
-      const ghinEl = document.getElementById('qs-ghin-num');
-      const lastEl = document.getElementById('qs-ghin-last');
-      if (!ghinEl || !lastEl) return;
-      const ghin = ghinEl.value.trim();
-      const last = lastEl.value.trim();
-      if (!ghin || !last) return;
+      const nameEl = document.getElementById('qs-ghin-last');
+      if (!nameEl) return;
+      const name = nameEl.value.trim();
+      if (name.length < 2) return;
       _qsGhinSearching = true;
       const btn = document.querySelector('.qs-ghin-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Looking up...'; }
-      fetch('/api/ghin-lookup?ghin=' + encodeURIComponent(ghin) + '&last_name=' + encodeURIComponent(last))
+      if (btn) { btn.disabled = true; btn.textContent = 'Searching...'; }
+      // Search by name first (most users don't know their GHIN)
+      fetch('/api/ghin/search?q=' + encodeURIComponent(name))
         .then(r => r.json())
         .then(data => {
           _qsGhinSearching = false;
-          if (data && data.name) {
-            const ta = document.querySelector('.qs-textarea');
-            const cur = ta ? ta.value.trim() : '';
-            const line = data.name + ', ' + (data.handicapIndex || data.handicap || 0).toFixed(1);
-            ta.value = cur ? cur + '\n' + line : line;
-            ghinEl.value = '';
-            lastEl.value = '';
-            updateQsPreview();
+          const results = Array.isArray(data) ? data : [];
+          if (results.length > 0) {
+            // Show results as a dropdown for user to pick
+            _qsGhinResults = results;
+            renderQsGhinResults();
+          } else {
+            // Try direct GHIN lookup if the input looks like a number
+            const ghinEl = document.getElementById('qs-ghin-num');
+            const ghin = ghinEl ? ghinEl.value.trim() : '';
+            if (ghin && /^\d{5,10}$/.test(ghin)) {
+              return fetch('/api/ghin-lookup?ghin=' + encodeURIComponent(ghin) + '&last_name=' + encodeURIComponent(name))
+                .then(r => r.json())
+                .then(d => {
+                  if (d && d.name) { qsAddGhinPlayer(d.name, d.handicapIndex || 0); }
+                  else { renderQsGhinError('No golfer found. Try a different name or add manually below.'); }
+                });
+            }
+            renderQsGhinError('No golfer found for "' + name + '". Try last name only, or add manually below.');
           }
-          if (btn) { btn.disabled = false; btn.textContent = 'Look Up'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Search'; }
         })
         .catch(() => {
           _qsGhinSearching = false;
-          if (btn) { btn.disabled = false; btn.textContent = 'Look Up'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Search'; }
         });
+    }
+    function renderQsGhinResults() {
+      const wrap = document.getElementById('qs-ghin-dropdown');
+      if (!wrap) return;
+      if (_qsGhinResults.length === 0) { wrap.innerHTML = ''; return; }
+      wrap.innerHTML = _qsGhinResults.slice(0, 6).map((g, i) =>
+        `<div onclick="qsPickGhin(${i})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(252,249,244,0.08);display:flex;justify-content:space-between;align-items:center;transition:background 0.15s" onmouseover="this.style.background='rgba(197,160,89,0.15)'" onmouseout="this.style.background='transparent'">
+          <div><div style="font-weight:600;font-size:14px;color:#FCF9F4">${esc(g.name)}</div><div style="font-size:11px;color:rgba(252,249,244,0.5)">${esc(g.club || '')}${g.state ? ' · ' + esc(g.state) : ''}</div></div>
+          <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#C5A059">${g.handicapIndex || g.hi_display || '?'}</div><div style="font-size:10px;color:rgba(252,249,244,0.4)">HI</div></div>
+        </div>`
+      ).join('');
+    }
+    function qsPickGhin(idx) {
+      const g = _qsGhinResults[idx];
+      if (!g) return;
+      qsAddGhinPlayer(g.name, parseFloat(g.handicapIndex || g.hi_display) || 0);
+      _qsGhinResults = [];
+      const wrap = document.getElementById('qs-ghin-dropdown');
+      if (wrap) wrap.innerHTML = '';
+    }
+    function qsAddGhinPlayer(name, hi) {
+      const ta = document.querySelector('.qs-textarea');
+      if (!ta) return;
+      const cur = ta.value.trim();
+      const line = name + ', ' + hi.toFixed(1);
+      ta.value = cur ? cur + '\n' + line : line;
+      ta.dispatchEvent(new Event('input'));
+      const nameEl = document.getElementById('qs-ghin-last');
+      if (nameEl) nameEl.value = '';
+      const ghinEl = document.getElementById('qs-ghin-num');
+      if (ghinEl) ghinEl.value = '';
+    }
+    function renderQsGhinError(msg) {
+      const wrap = document.getElementById('qs-ghin-dropdown');
+      if (wrap) wrap.innerHTML = `<div style="padding:10px 14px;font-size:13px;color:rgba(252,249,244,0.5)">${msg}</div>`;
     }
 
     let _qsCourseTimeout = null;
@@ -709,9 +754,11 @@
 
           <span class="qs-section-label">Players</span>
           <div class="qs-ghin-row">
-            <input class="qs-ghin-input" id="qs-ghin-num" type="text" placeholder="GHIN #" style="flex:0.6" value="${esc(_qsGhinNum)}">
-            <input class="qs-ghin-input" id="qs-ghin-last" type="text" placeholder="Last name" style="flex:1" value="${esc(_qsGhinLast)}">
-            <button class="qs-ghin-btn" onclick="qsGhinLookup()" ${_qsGhinSearching ? 'disabled' : ''}>${_qsGhinSearching ? '...' : 'Look Up'}</button>
+            <input class="qs-ghin-input" id="qs-ghin-last" type="text" placeholder="Last name (e.g. Sullivan)" style="flex:1" value="${esc(_qsGhinLast)}" onkeydown="if(event.key==='Enter'){event.preventDefault();qsGhinLookup()}">
+            <input class="qs-ghin-input" id="qs-ghin-num" type="text" placeholder="GHIN # (optional)" style="flex:0.5" value="${esc(_qsGhinNum)}" onkeydown="if(event.key==='Enter'){event.preventDefault();qsGhinLookup()}">
+            <button class="qs-ghin-btn" onclick="qsGhinLookup()" ${_qsGhinSearching ? 'disabled' : ''}>${_qsGhinSearching ? '...' : 'Search'}</button>
+          </div>
+          <div id="qs-ghin-dropdown" style="max-height:240px;overflow-y:auto;border-radius:0 0 8px 8px;background:rgba(27,48,34,0.95)"></div>
           </div>
           <div class="qs-or-divider">or type names below</div>
           <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8" oninput="updateQsPreview()">${esc(curText)}</textarea>
