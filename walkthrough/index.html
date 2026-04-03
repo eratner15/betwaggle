@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Waggle in 60 Seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green: #1B3022;
+  --green-light: #2A4A35;
+  --green-lighter: #3A5E48;
+  --gold: #C5A059;
+  --gold-light: #D4B76E;
+  --gold-dim: rgba(197,160,89,0.3);
+  --white: #F5F2EB;
+  --white-dim: rgba(245,242,235,0.6);
+  --red: #E74C3C;
+  --green-accent: #2ECC71;
+  --slide-duration: 5000;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--green);
+  color: var(--white);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+}
+
+/* ===== TIMER BAR ===== */
+.timer-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--gold);
+  z-index: 100;
+  transition: none;
+}
+.timer-bar.animating {
+  transition: width 5s linear;
+}
+
+/* ===== PROGRESS DOTS ===== */
+.progress-dots {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+.progress-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  transition: all 0.3s ease;
+}
+.progress-dots .dot.active {
+  background: var(--gold);
+  transform: scale(1.3);
+}
+.progress-dots .dot.seen {
+  background: rgba(197,160,89,0.6);
+}
+
+/* ===== SLIDES ===== */
+.slides-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px 70px;
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.slide.exit-left {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.slide-headline {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.slide-subline {
+  font-size: 15px;
+  color: var(--white-dim);
+  text-align: center;
+  margin-bottom: 24px;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.slide-visual {
+  width: 100%;
+  max-width: 360px;
+}
+
+/* ===== MOCKUP COMPONENTS ===== */
+.mockup-card {
+  background: var(--green-light);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(197,160,89,0.15);
+  width: 100%;
+}
+
+.mockup-card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.mockup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.mockup-row:last-child { border-bottom: none; }
+
+.mockup-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mockup-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--green);
+}
+
+.mockup-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.mockup-score {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.mockup-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px;
+}
+.chip-active {
+  background: var(--gold);
+  color: var(--green);
+}
+.chip-inactive {
+  background: rgba(255,255,255,0.08);
+  color: var(--white-dim);
+}
+
+.mockup-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--white);
+  font-size: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===== ODDS CELL ===== */
+.odds-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 64px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.odds-cell .odds-label {
+  font-size: 10px;
+  color: var(--white-dim);
+  margin-bottom: 2px;
+}
+.odds-cell .odds-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--gold);
+  transition: color 0.5s ease;
+}
+.odds-cell.shift-up .odds-value { color: var(--green-accent); }
+.odds-cell.shift-down .odds-value { color: var(--red); }
+
+.odds-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ===== SETTLEMENT ===== */
+.settlement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--green-light);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+}
+.settlement-row.revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.4s ease;
+}
+.settlement-amount.positive { color: var(--green-accent); }
+.settlement-amount.negative { color: var(--red); }
+.settlement-amount {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* ===== QR CODE (CSS only) ===== */
+.qr-mock {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 12px;
+  margin: 0 auto 16px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 2px;
+  padding: 8px;
+  overflow: hidden;
+}
+.qr-cell {
+  border-radius: 2px;
+}
+.qr-cell.dark { background: var(--green); }
+.qr-cell.light { background: transparent; }
+
+/* ===== TEXT MESSAGE MOCKUP ===== */
+.text-bubble {
+  background: #34C759;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px;
+  font-size: 14px;
+  max-width: 260px;
+  margin: 0 0 0 auto;
+  line-height: 1.4;
+}
+.text-bubble a {
+  color: white;
+  text-decoration: underline;
+}
+
+/* ===== SKINS TRACKER ===== */
+.skins-hole {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.skins-hole:last-child { border-bottom: none; }
+.skins-hole-num {
+  font-size: 12px;
+  color: var(--white-dim);
+  width: 50px;
+}
+.skins-winner {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+}
+.skins-pot {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+}
+.skins-carry {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ===== SHARE CARD ===== */
+.share-card-mock {
+  background: linear-gradient(135deg, var(--green-light), var(--green));
+  border: 2px solid var(--gold);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+.share-card-mock .sc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.share-card-mock .sc-subtitle {
+  font-size: 11px;
+  color: var(--white-dim);
+  margin-bottom: 14px;
+}
+.share-card-mock .sc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.share-card-mock .sc-row:last-child { border-bottom: none; }
+.share-card-mock .sc-amount {
+  font-weight: 700;
+}
+
+/* ===== PRICING ===== */
+.pricing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.pricing-tier {
+  background: var(--green-light);
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid rgba(197,160,89,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pricing-tier.featured {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, var(--green-light), rgba(197,160,89,0.08));
+}
+.pricing-tier-name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+.pricing-tier-desc {
+  font-size: 12px;
+  color: var(--white-dim);
+}
+.pricing-tier-price {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.pricing-tier-price .per {
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  color: var(--white-dim);
+}
+
+/* ===== CTA BUTTONS ===== */
+.cta-primary {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--green);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 18px;
+  padding: 16px 40px;
+  border-radius: 12px;
+  text-decoration: none;
+  margin-bottom: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cta-primary:active {
+  transform: scale(0.97);
+}
+.cta-secondary {
+  display: inline-block;
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 10px 20px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+.cta-secondary:active {
+  background: rgba(197,160,89,0.1);
+}
+
+/* ===== TITLE SLIDE ===== */
+.title-logo {
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  font-size: 52px;
+  color: var(--gold);
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+.title-tagline {
+  font-size: 16px;
+  color: var(--white);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+/* ===== SCORE ENTRY ANIMATION ===== */
+@keyframes scoreFlash {
+  0% { background: rgba(197,160,89,0.3); }
+  100% { background: transparent; }
+}
+.score-flash {
+  animation: scoreFlash 0.8s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* ===== SWIPE HINT ===== */
+.swipe-hint {
+  position: fixed;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(197,160,89,0.4);
+  z-index: 100;
+  transition: opacity 0.5s ease;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 500px) {
+  .slide { padding: 60px 40px 70px; }
+  .title-logo { font-size: 64px; }
+  .slide-headline { font-size: 32px; }
+  .slide-visual { max-width: 420px; }
+}
+
+@media (min-width: 768px) {
+  .slide-headline { font-size: 36px; }
+  .slide-subline { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="timer-bar" id="timerBar"></div>
+
+<div class="slides-container" id="slidesContainer">
+
+  <!-- SLIDE 0: TITLE -->
+  <div class="slide active" data-slide="0">
+    <div class="title-logo">Waggle</div>
+    <div class="slide-headline" style="font-size: 22px; margin-bottom: 16px;">in 60 Seconds</div>
+    <div class="title-tagline">The sportsbook for your golf group.<br>No app. No math. No arguments.</div>
+  </div>
+
+  <!-- SLIDE 1: CREATE -->
+  <div class="slide" data-slide="1">
+    <div class="slide-headline">Create in 30 Seconds</div>
+    <div class="slide-subline">Pick your game. Add your players. Done.</div>
+    <div class="slide-visual">
+      <div class="mockup-card">
+        <div class="mockup-card-title">Choose Your Games</div>
+        <div style="text-align:center; margin-bottom: 14px;">
+          <span class="chip chip-active">Skins</span>
+          <span class="chip chip-active">Nassau</span>
+          <span class="chip chip-active">Match Play</span>
+          <span class="chip chip-inactive">Wolf</span>
+          <span class="chip chip-inactive">Vegas</span>
+        </div>
+        <div class="mockup-card-title">Players</div>
+        <div class="mockup-input">Mike T.</div>
+        <div class="mockup-input">Dave R.</div>
+        <div class="mockup-input">Chris L.</div>
+        <div class="mockup-input">Steve M.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: SHARE THE LINK -->
+  <div class="slide" data-slide="2">
+    <div class="slide-headline">Share the Link</div>
+    <div class="slide-subline">Everyone joins on their phone. No app download.</div>
+    <div class="slide-visual">
+      <div class="qr-mock" id="qrMock"></div>
+      <div style="margin-top: 8px;">
+        <div class="text-bubble">
+          Boys trip is ON. Join the board:<br>
+          <a href="#">betwaggle.com/scottsdale-25</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: LIVE SCORING -->
+  <div class="slide" data-slide="3">
+    <div class="slide-headline">Live Scoring</div>
+    <div class="slide-subline">Enter scores hole by hole. Everyone sees live updates.</div>
+    <div class="slide-visual">
+      <div class="mockup-card" id="leaderboard">
+        <div class="mockup-card-title">Leaderboard &mdash; Thru 9</div>
+        <div class="mockup-row" id="lb-row-0">
+          <div class="mockup-player">
+            <div class="mockup-avatar" style="background: var(--gold);">M</div>
+            <div>
+              <div class="mockup-name">Mike T.</div>
+              <div style="font-size:11px; color: var(--white-dim);">1 under</div>
+            </div>
+          </div>
+          <div class="mockup-score">35</div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-player">
+            <div class="mockup-avatar" style="background: #6CB4EE;">D</div>
+            <div>
+              <div class="mockup-name">Dave R.</div>
+              <div style="font-size:11px; color: var(--white-dim);">even</div>
+            </div>
+          </div>
+          <div class="mockup-score">36</div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-player">
+            <div class="mockup-avatar" style="background: #E87461;">C</div>
+            <div>
+              <div class="mockup-name">Chris L.</div>
+              <div style="font-size:11px; color: var(--white-dim);">+2</div>
+            </div>
+          </div>
+          <div class="mockup-score">38</div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-player">
+            <div class="mockup-avatar" style="background: #A78BFA;">S</div>
+            <div>
+              <div class="mockup-name">Steve M.</div>
+              <div style="font-size:11px; color: var(--white-dim);">+4</div>
+            </div>
+          </div>
+          <div class="mockup-score">40</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: THE SPORTSBOOK -->
+  <div class="slide" data-slide="4">
+    <div class="slide-headline">The Sportsbook</div>
+    <div class="slide-subline">Live odds update every hole. Tap any number to bet.</div>
+    <div class="slide-visual">
+      <div class="mockup-card">
+        <div class="mockup-card-title">The Bar &mdash; Live Odds</div>
+        <div style="margin-bottom: 14px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Match: Mike T. vs Dave R.</div>
+          <div class="odds-row" id="oddsRow1">
+            <div class="odds-cell" id="oddsMike"><span class="odds-label">Mike T.</span><span class="odds-value">-150</span></div>
+            <div class="odds-cell"><span class="odds-label">Draw</span><span class="odds-value">+350</span></div>
+            <div class="odds-cell" id="oddsDave"><span class="odds-label">Dave R.</span><span class="odds-value">+130</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Match: Chris L. vs Steve M.</div>
+          <div class="odds-row" id="oddsRow2">
+            <div class="odds-cell"><span class="odds-label">Chris L.</span><span class="odds-value">-110</span></div>
+            <div class="odds-cell"><span class="odds-label">Draw</span><span class="odds-value">+400</span></div>
+            <div class="odds-cell"><span class="odds-label">Steve M.</span><span class="odds-value">-105</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: SIDE ACTION -->
+  <div class="slide" data-slide="5">
+    <div class="slide-headline">Side Action</div>
+    <div class="slide-subline">Skins, props, over/unders -- all running automatically.</div>
+    <div class="slide-visual">
+      <div class="mockup-card">
+        <div class="mockup-card-title">Skins Tracker &mdash; $20/skin</div>
+        <div class="skins-hole">
+          <div class="skins-hole-num">Hole 1</div>
+          <div class="skins-winner">Mike T. (birdie)</div>
+          <div class="skins-pot">$20</div>
+        </div>
+        <div class="skins-hole">
+          <div class="skins-hole-num">Hole 2</div>
+          <div class="skins-winner skins-carry">Carry</div>
+          <div class="skins-pot">--</div>
+        </div>
+        <div class="skins-hole">
+          <div class="skins-hole-num">Hole 3</div>
+          <div class="skins-winner skins-carry">Carry</div>
+          <div class="skins-pot">--</div>
+        </div>
+        <div class="skins-hole">
+          <div class="skins-hole-num">Hole 4</div>
+          <div class="skins-winner">Dave R. (par)</div>
+          <div class="skins-pot" style="color: var(--green-accent); font-size: 16px;">$80</div>
+        </div>
+        <div class="skins-hole">
+          <div class="skins-hole-num">Hole 5</div>
+          <div class="skins-winner">Chris L. (birdie)</div>
+          <div class="skins-pot">$20</div>
+        </div>
+        <div style="text-align:center; margin-top:10px; padding-top:10px; border-top: 1px solid rgba(255,255,255,0.08);">
+          <span style="font-size:12px; color: var(--white-dim);">Pot:</span>
+          <span style="font-weight:700; color: var(--gold); font-size:16px; margin-left:4px;">$120 claimed</span>
+          <span style="font-size:12px; color: var(--white-dim); margin-left:8px;">|</span>
+          <span style="font-size:12px; color: var(--red); margin-left:8px;">$0 carrying</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: SETTLEMENT -->
+  <div class="slide" data-slide="6">
+    <div class="slide-headline">Settlement</div>
+    <div class="slide-subline">One tap. Everyone sees what they owe. Venmo links included.</div>
+    <div class="slide-visual" id="settlementVisual">
+      <div class="settlement-row" data-delay="0">
+        <div class="mockup-player">
+          <div class="mockup-avatar" style="background: var(--gold);">M</div>
+          <div class="mockup-name">Mike T.</div>
+        </div>
+        <div class="settlement-amount positive">+$87</div>
+      </div>
+      <div class="settlement-row" data-delay="200">
+        <div class="mockup-player">
+          <div class="mockup-avatar" style="background: #6CB4EE;">D</div>
+          <div class="mockup-name">Dave R.</div>
+        </div>
+        <div class="settlement-amount positive">+$34</div>
+      </div>
+      <div class="settlement-row" data-delay="400">
+        <div class="mockup-player">
+          <div class="mockup-avatar" style="background: #E87461;">C</div>
+          <div class="mockup-name">Chris L.</div>
+        </div>
+        <div class="settlement-amount negative">-$42</div>
+      </div>
+      <div class="settlement-row" data-delay="600">
+        <div class="mockup-player">
+          <div class="mockup-avatar" style="background: #A78BFA;">S</div>
+          <div class="mockup-name">Steve M.</div>
+        </div>
+        <div class="settlement-amount negative">-$79</div>
+      </div>
+      <div style="text-align:center; margin-top: 12px; opacity: 0;" id="venmoLink">
+        <span class="mockup-badge" style="background: #008CFF; color: white; font-size: 13px; padding: 6px 16px;">Pay via Venmo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: SHARE CARD -->
+  <div class="slide" data-slide="7">
+    <div class="slide-headline">The Share Card</div>
+    <div class="slide-subline">Drop it in the group chat. That's your marketing.</div>
+    <div class="slide-visual">
+      <div class="share-card-mock">
+        <div class="sc-title">Scottsdale '25</div>
+        <div class="sc-subtitle">Final Settlement &bull; 18 Holes &bull; Skins + Nassau</div>
+        <div class="sc-row"><span>Mike T.</span><span class="sc-amount" style="color: var(--green-accent);">+$87</span></div>
+        <div class="sc-row"><span>Dave R.</span><span class="sc-amount" style="color: var(--green-accent);">+$34</span></div>
+        <div class="sc-row"><span>Chris L.</span><span class="sc-amount" style="color: var(--red);">-$42</span></div>
+        <div class="sc-row"><span>Steve M.</span><span class="sc-amount" style="color: var(--red);">-$79</span></div>
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 11px; color: var(--gold);">betwaggle.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: PRICING -->
+  <div class="slide" data-slide="8">
+    <div class="slide-headline">Simple Pricing</div>
+    <div class="slide-subline">Under $4 per player for a full tournament experience.</div>
+    <div class="slide-visual">
+      <div class="pricing-grid">
+        <div class="pricing-tier">
+          <div>
+            <div class="pricing-tier-name">Casual Round</div>
+            <div class="pricing-tier-desc">2-4 players, basic games</div>
+          </div>
+          <div class="pricing-tier-price">Free</div>
+        </div>
+        <div class="pricing-tier featured">
+          <div>
+            <div class="pricing-tier-name">Buddies Trip</div>
+            <div class="pricing-tier-desc">Up to 8 players, all games + sportsbook</div>
+          </div>
+          <div class="pricing-tier-price">$32 <span class="per">/event</span></div>
+        </div>
+        <div class="pricing-tier">
+          <div>
+            <div class="pricing-tier-name">Tournament</div>
+            <div class="pricing-tier-desc">16+ players, multi-day, custom rules</div>
+          </div>
+          <div class="pricing-tier-price">$99 <span class="per">/event</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: CTA -->
+  <div class="slide" data-slide="9">
+    <div class="slide-headline" style="font-size: 40px; margin-bottom: 24px;">Ready?</div>
+    <a href="/create/" class="cta-primary">Set Up Your Event &rarr;</a>
+    <a href="/demo-buddies/" class="cta-secondary">See the Live Demo &rarr;</a>
+  </div>
+
+</div>
+
+<div class="progress-dots" id="progressDots"></div>
+<div class="swipe-hint" id="swipeHint">tap to advance</div>
+
+<script>
+(function() {
+  const SLIDE_DURATION = 5000;
+  const TOTAL_SLIDES = 10;
+  let current = 0;
+  let timer = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let swiping = false;
+
+  const container = document.getElementById('slidesContainer');
+  const slides = container.querySelectorAll('.slide');
+  const timerBar = document.getElementById('timerBar');
+  const dotsContainer = document.getElementById('progressDots');
+  const swipeHint = document.getElementById('swipeHint');
+
+  // Build progress dots
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dotsContainer.appendChild(dot);
+  }
+
+  // Build QR mock
+  const qrMock = document.getElementById('qrMock');
+  const qrPattern = [
+    1,1,1,0,1,1,1,
+    1,0,1,1,1,0,1,
+    1,1,1,0,1,1,1,
+    0,1,0,1,0,1,0,
+    1,0,1,1,1,0,1,
+    1,1,0,0,1,1,1,
+    1,1,1,0,1,1,1
+  ];
+  qrPattern.forEach(function(v) {
+    const cell = document.createElement('div');
+    cell.className = 'qr-cell ' + (v ? 'dark' : 'light');
+    qrMock.appendChild(cell);
+  });
+
+  function goTo(index, direction) {
+    if (index < 0 || index >= TOTAL_SLIDES || index === current) return;
+
+    const prev = slides[current];
+    const next = slides[index];
+
+    // Clear classes
+    prev.classList.remove('active');
+    prev.classList.add(direction === 'back' ? '' : 'exit-left');
+    if (direction === 'back') {
+      prev.style.transform = 'translateX(40px)';
+      prev.style.opacity = '0';
+    }
+
+    setTimeout(function() {
+      prev.classList.remove('exit-left');
+      prev.style.transform = '';
+      prev.style.opacity = '';
+    }, 400);
+
+    if (direction === 'back') {
+      next.style.transform = 'translateX(-40px)';
+      next.offsetHeight; // force reflow
+      next.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      next.style.transform = '';
+    }
+
+    next.classList.add('active');
+
+    // Update dots
+    const dots = dotsContainer.querySelectorAll('.dot');
+    dots.forEach(function(d, i) {
+      d.classList.remove('active');
+      if (i < index) d.classList.add('seen');
+      if (i === index) { d.classList.add('active'); d.classList.remove('seen'); }
+    });
+
+    current = index;
+    startTimer();
+    runSlideAnimations(current);
+
+    // Hide swipe hint after first interaction
+    if (swipeHint.style.opacity !== '0') {
+      swipeHint.style.opacity = '0';
+    }
+  }
+
+  function advance() {
+    if (current < TOTAL_SLIDES - 1) {
+      goTo(current + 1, 'forward');
+    } else {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timerBar.classList.remove('animating');
+    timerBar.style.width = '100%';
+    timerBar.offsetHeight; // force reflow
+    timerBar.classList.add('animating');
+    timerBar.style.width = '0%';
+
+    // Don't auto-advance on CTA slide
+    if (current === TOTAL_SLIDES - 1) return;
+
+    timer = setTimeout(advance, SLIDE_DURATION);
+  }
+
+  // Tap to advance
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('a') || e.target.closest('button')) return;
+    if (swiping) return;
+    advance();
+  });
+
+  // Swipe detection
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    swiping = false;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      swiping = true;
+      if (dx < 0) {
+        advance();
+      } else {
+        if (current > 0) goTo(current - 1, 'back');
+      }
+      setTimeout(function() { swiping = false; }, 100);
+    }
+  }, { passive: true });
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); if (current > 0) goTo(current - 1, 'back'); }
+  });
+
+  // Slide-specific animations
+  function runSlideAnimations(idx) {
+    if (idx === 3) animateScoreEntry();
+    if (idx === 4) animateOddsShift();
+    if (idx === 6) animateSettlement();
+  }
+
+  function animateScoreEntry() {
+    var row = document.getElementById('lb-row-0');
+    if (row) {
+      setTimeout(function() { row.classList.add('score-flash'); }, 800);
+      setTimeout(function() { row.classList.remove('score-flash'); }, 2000);
+    }
+  }
+
+  function animateOddsShift() {
+    var mike = document.getElementById('oddsMike');
+    var dave = document.getElementById('oddsDave');
+    if (!mike || !dave) return;
+    setTimeout(function() {
+      mike.querySelector('.odds-value').textContent = '-180';
+      mike.classList.add('shift-up');
+      dave.querySelector('.odds-value').textContent = '+160';
+      dave.classList.add('shift-down');
+    }, 1500);
+    setTimeout(function() {
+      mike.classList.remove('shift-up');
+      dave.classList.remove('shift-down');
+    }, 3500);
+  }
+
+  function animateSettlement() {
+    var rows = document.querySelectorAll('#settlementVisual .settlement-row');
+    rows.forEach(function(row) {
+      row.classList.remove('revealed');
+    });
+    var venmo = document.getElementById('venmoLink');
+    if (venmo) venmo.style.opacity = '0';
+
+    rows.forEach(function(row, i) {
+      setTimeout(function() {
+        row.classList.add('revealed');
+      }, 400 + (i * 250));
+    });
+
+    if (venmo) {
+      setTimeout(function() {
+        venmo.style.opacity = '1';
+        venmo.style.transition = 'opacity 0.4s ease';
+      }, 400 + (rows.length * 250) + 200);
+    }
+  }
+
+  // Start
+  startTimer();
+})();
+</script>
+</body>
+</html>
