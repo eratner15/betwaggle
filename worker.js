@@ -8522,9 +8522,8 @@ async function handleEventApi(slug, path, request, env, ctx) {
     return new Response(JSON.stringify({ ok: true, teamA, teamB }), { headers: EVENT_CORS });
   }
 
-  // POST /wolf-pick
+  // POST /wolf-pick — open to all players (wolf selection is a gameplay action, not admin)
   if (path === 'wolf-pick' && request.method === 'POST') {
-    if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
     const body = await request.json().catch(() => ({}));
     const { holeNum, wolf, partner } = body;
     if (!holeNum || holeNum < 1 || holeNum > 18 || !wolf) return new Response(JSON.stringify({ error: 'holeNum and wolf required' }), { status: 400, headers: EVENT_CORS });

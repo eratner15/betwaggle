@@ -7912,6 +7912,54 @@ export function renderCasualScorecard(state) {
     html += `</div>`;
   }
 
+  // ── Wolf Picker (shown for all players when Wolf is active) ──
+  const games = config?.games || {};
+  const gameState = state._gameState || {};
+  if (games.wolf) {
+    const wolfOrder = (config?.wolfOrder || players.map(p => p.name)).filter(n => players.some(p => p.name === n));
+    const nextUnscoredForWolf = (() => {
+      for (let h = 1; h <= holesPerRound; h++) {
+        const hd = holes[h];
+        const sc = hd?.scores || hd;
+        if (!sc || !Object.values(sc).some(v => v >= 1)) return h;
+      }
+      return null;
+    })();
+    const wolfHole = nextUnscoredForWolf || 1;
+    const wolfIdx = (wolfHole - 1) % wolfOrder.length;
+    const expectedWolf = wolfOrder[wolfIdx] || '';
+    const wolfPicks = gameState.wolf?.picks || {};
+    const wolfPick = wolfPicks[wolfHole];
+
+    if (!wolfPick && nextUnscoredForWolf) {
+      // No pick yet for this hole — show the picker
+      html += `<div class="game-card dark" style="margin-bottom:12px">
+        <div class="game-card-title">Wolf — Hole ${wolfHole}</div>
+        <div style="font-size:13px;color:rgba(250,248,245,0.6);margin-bottom:10px">
+          <strong style="color:var(--gold-primary)">${escHtml(expectedWolf.split(' ')[0])}</strong> is the wolf. Pick a partner or go lone.
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          <button onclick="window.MG.setWolfPick(${wolfHole},'${escHtml(expectedWolf)}',null)"
+            style="padding:10px 16px;border:2px solid var(--gold-primary);border-radius:8px;background:rgba(196,163,90,0.15);color:var(--gold-primary);cursor:pointer;font-size:13px;font-weight:700;min-height:44px">
+            Lone Wolf
+          </button>`;
+      players.forEach(p => {
+        if (p.name === expectedWolf) return;
+        html += `<button onclick="window.MG.setWolfPick(${wolfHole},'${escHtml(expectedWolf)}','${escHtml(p.name)}')"
+          style="padding:10px 16px;border:2px solid rgba(250,248,245,0.2);border-radius:8px;background:rgba(250,248,245,0.05);color:#FAF8F5;cursor:pointer;font-size:13px;font-weight:600;min-height:44px">
+          ${escHtml(p.name.split(' ')[0])}
+        </button>`;
+      });
+      html += `</div></div>`;
+    } else if (wolfPick) {
+      // Pick exists — show it
+      html += `<div class="game-card dark" style="margin-bottom:12px;padding:12px 16px">
+        <div style="font-size:12px;color:rgba(250,248,245,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Wolf — Hole ${wolfHole}</div>
+        <div style="font-size:15px;color:#FAF8F5"><strong style="color:var(--gold-primary)">${escHtml((wolfPick.wolf || '').split(' ')[0])}</strong>${wolfPick.partner ? ' + ' + escHtml((wolfPick.partner || '').split(' ')[0]) : ' <span style="color:var(--gold-primary);font-size:12px">LONE WOLF</span>'}</div>
+      </div>`;
+    }
+  }
+
   // ── Score Entry (the engine — this goes FIRST) ──
   const inlineScore = state._inlineScore;
   const currentHole = inlineScore ? inlineScore.hole : null;
