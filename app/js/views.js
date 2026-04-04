@@ -5357,6 +5357,71 @@ function renderCashBetting(state) {
       </div>`;
     }
 
+    // ── Pre-game: Opening Lines (H2H spreads) ──
+    const config = state._config || {};
+    const players = getPlayersFromConfig(config);
+    const sorted = [...players].sort((a, b) => (a.handicapIndex || 0) - (b.handicapIndex || 0));
+    if (sorted.length >= 2) {
+      html += `<div style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
+          <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;color:#C5A059">Opening Lines</span>
+          <span style="font-size:10px;color:var(--mg-text-muted);font-style:italic">H2H spreads</span>
+        </div>`;
+      for (let i = 0; i < sorted.length; i++) {
+        for (let j = i + 1; j < sorted.length; j++) {
+          const fav = sorted[i];
+          const dog = sorted[j];
+          const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
+          html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:12px 14px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;font-weight:600;color:#FCF9F4">${escHtml(fav.name.split(' ')[0])}</span>
+              <span style="padding:5px 10px;border-radius:6px;background:rgba(22,163,74,0.15);color:#16A34A;font-family:'SF Mono',monospace;font-size:14px;font-weight:800">-${spread}</span>
+              <span style="font-size:11px;color:rgba(252,249,244,0.4);font-weight:600">vs</span>
+              <span style="padding:5px 10px;border-radius:6px;background:rgba(220,38,38,0.1);color:#DC2626;font-family:'SF Mono',monospace;font-size:14px;font-weight:800">+${spread}</span>
+              <span style="font-size:14px;font-weight:600;color:#FCF9F4">${escHtml(dog.name.split(' ')[0])}</span>
+            </div>
+          </div>`;
+        }
+      }
+      html += `</div>`;
+
+      // ── Pre-game: Prop Bets ──
+      const bestPlayer = sorted[0];
+      const worstPlayer = sorted[sorted.length - 1];
+      const overUnder = Math.round(72 + (bestPlayer.handicapIndex || 10) + 0.5);
+      const propsList = [
+        `Over/Under ${overUnder}.5 \u2014 ${bestPlayer.name.split(' ')[0]}'s gross score`,
+        `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
+        `${worstPlayer.name.split(' ')[0]} makes a birdie: Yes/No`,
+      ];
+      html += `<div style="margin-top:8px">
+        <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;color:#C5A059;padding:0 2px 10px">Prop Bets</div>`;
+      propsList.forEach(prop => {
+        html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border:1px solid rgba(197,160,89,0.2);border-left:3px solid #C5A059;border-radius:10px;padding:12px 14px;margin-bottom:6px">
+          <div style="font-size:13px;color:#FCF9F4;font-style:italic">${escHtml(prop)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+
+      // ── Pre-game: Outright Winner Odds ──
+      const holesPerRound = config.holesPerRound || 18;
+      html += `<div style="margin-top:8px">
+        <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;color:#C5A059;padding:0 2px 10px">Outright Winner</div>`;
+      sorted.forEach((p, i) => {
+        const sortedForOdds = sorted.map(s => ({ hi: s.handicapIndex || 0, toPar: null }));
+        const odds = calculateLiveOdds(i, sorted.length, { hi: p.handicapIndex || 0, toPar: null }, 0, holesPerRound, sortedForOdds);
+        const isFav = i === 0;
+        html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border:1px solid rgba(197,160,89,${isFav ? '0.4' : '0.15'});border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;color:#FCF9F4">${escHtml(p.name)}</div>
+            <div style="font-size:11px;color:rgba(252,249,244,0.5);margin-top:1px">HI ${p.handicapIndex || 0}</div>
+          </div>
+          <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:8px 16px;border-radius:8px;border:1.5px solid ${isFav ? '#C5A059' : 'rgba(197,160,89,0.3)'};background:rgba(197,160,89,0.1);color:#C5A059;font-family:'SF Mono',monospace;font-size:16px;font-weight:800;cursor:pointer;min-width:70px;text-align:center">${odds}</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
   } else {
     // Mid-round: live odds from game state
     html += `<div class="mg-section-title" style="margin-top:16px">Live Odds <span style="font-size:11px;font-weight:400;color:var(--mg-text-muted)">${holesPlayed} hole${holesPlayed!==1?'s':''} played</span></div>`;
