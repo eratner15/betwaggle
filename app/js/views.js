@@ -919,20 +919,23 @@ export function computeRoundPnL(gameState, players, games, structure) {
 export function renderNamePickerModal(state) {
   const players = (state._allPlayers || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  return `<div style="position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--bg-secondary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:16px;padding:24px;max-width:340px;width:100%;box-sizing:border-box">
-      <div style="font-size:18px;font-weight:700;color:var(--text-primary,var(--mg-text));margin-bottom:4px">Who are you?</div>
-      <div style="font-size:13px;color:var(--text-secondary,var(--mg-text-muted));margin-bottom:16px">Pick your name to track your bets and P&amp;L</div>
-      <div style="max-height:300px;overflow-y:auto">
+  return `<div style="position:fixed;inset:0;z-index:500;background:rgba(13,31,21,0.92);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+    <div style="background:linear-gradient(180deg,#1B3022 0%,#0D1F15 100%);border:1px solid rgba(197,160,89,0.2);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-sizing:border-box;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:22px;font-weight:700;color:#FCF9F4;margin-bottom:6px">Who are you?</div>
+        <div style="font-size:13px;color:rgba(252,249,244,0.45)">Tap your name to track bets and P&L</div>
+      </div>
+      <div style="max-height:320px;overflow-y:auto">
         ${players.map(p => `
           <button onclick="window.MG.pickNameFromModal('${escHtml(p.name)}')"
-            style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg-tertiary,var(--mg-surface));border:1px solid var(--border,var(--mg-border));border-radius:10px;color:var(--text-primary,var(--mg-text));font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent">
-            <span>${escHtml(p.name)}</span>
-            <span style="font-size:12px;color:var(--text-secondary,var(--mg-text-muted))">HI ${p.handicapIndex ?? p.handicap ?? 0}</span>
+            style="width:100%;padding:16px 18px;margin-bottom:8px;background:rgba(252,249,244,0.05);border:1px solid rgba(197,160,89,0.15);border-radius:12px;color:#FCF9F4;font-size:16px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent;transition:background .15s,border-color .15s;min-height:56px"
+            onpointerdown="this.style.background='rgba(197,160,89,0.12)';this.style.borderColor='#C5A059'" onpointerup="this.style.background='rgba(252,249,244,0.05)';this.style.borderColor='rgba(197,160,89,0.15)'" onpointerleave="this.style.background='rgba(252,249,244,0.05)';this.style.borderColor='rgba(197,160,89,0.15)'">
+            <span style="font-family:'Playfair Display',var(--font-display),serif">${escHtml(p.name)}</span>
+            <span style="font-size:12px;font-weight:700;color:#C5A059;background:rgba(197,160,89,0.12);padding:3px 10px;border-radius:6px">HI ${p.handicapIndex ?? p.handicap ?? 0}</span>
           </button>
         `).join('')}
       </div>
-      <button onclick="window.MG.pickNameFromModal('')" style="width:100%;padding:12px;background:transparent;border:none;color:var(--text-tertiary,var(--mg-text-muted));font-size:13px;cursor:pointer;margin-top:4px">Just watching</button>
+      <button onclick="window.MG.pickNameFromModal('')" style="width:100%;padding:14px;background:transparent;border:1px solid rgba(252,249,244,0.1);border-radius:12px;color:rgba(252,249,244,0.4);font-size:13px;cursor:pointer;margin-top:8px;-webkit-tap-highlight-color:transparent">Just watching</button>
     </div>
   </div>`;
 }
