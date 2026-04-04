@@ -9067,6 +9067,38 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     }
   }
 
+  // ── Vegas Team Picker (shown when Vegas is active and teams not set) ──
+  if (games.vegas) {
+    const vegasState = state._gameState?.vegas || {};
+    const teamsSet = vegasState.teamA?.length > 0;
+    if (!teamsSet) {
+      const allNames = sorted.map(p => p.name);
+      const teamA = state._vegasTeamA || allNames.slice(0, Math.ceil(allNames.length / 2));
+      const teamB = state._vegasTeamB || allNames.slice(Math.ceil(allNames.length / 2));
+
+      html += `<div class="game-card dark" style="margin-bottom:10px">
+        <div class="game-card-title">Vegas — Set Your Teams</div>
+        <div style="font-size:12px;color:rgba(250,248,245,0.5);margin-bottom:12px">Tap a name to move between teams</div>
+        <div style="display:flex;gap:12px;margin-bottom:12px">
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:700;color:var(--gold-primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Team A</div>`;
+      teamA.forEach(name => {
+        html += `<button onclick="window.MG.vegasMovePlayer('${escHtml(name)}','B')" style="display:block;width:100%;padding:10px;margin-bottom:4px;background:rgba(250,248,245,0.05);border:1px solid rgba(250,248,245,0.15);border-radius:6px;color:#FAF8F5;font-size:13px;font-weight:600;cursor:pointer;text-align:left;min-height:44px">${escHtml(name.split(' ')[0])}</button>`;
+      });
+      html += `</div><div style="flex:1">
+            <div style="font-size:11px;font-weight:700;color:var(--gold-primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Team B</div>`;
+      teamB.forEach(name => {
+        html += `<button onclick="window.MG.vegasMovePlayer('${escHtml(name)}','A')" style="display:block;width:100%;padding:10px;margin-bottom:4px;background:rgba(250,248,245,0.05);border:1px solid rgba(250,248,245,0.15);border-radius:6px;color:#FAF8F5;font-size:13px;font-weight:600;cursor:pointer;text-align:left;min-height:44px">${escHtml(name.split(' ')[0])}</button>`;
+      });
+      html += `</div></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="window.MG.randomizeVegasTeams()" style="flex:1;padding:10px;border:1.5px solid rgba(196,163,90,0.3);border-radius:8px;background:transparent;color:var(--gold-primary);font-size:13px;font-weight:600;cursor:pointer;min-height:44px">Randomize</button>
+          <button onclick="window.MG.saveVegasTeams()" style="flex:1;padding:10px;background:var(--gold-primary);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">Lock Teams</button>
+        </div>
+      </div>`;
+    }
+  }
+
   // ── CTA: View Lines & Place Bets ──
   html += `<a href="#bet" style="display:block;text-align:center;padding:14px;background:linear-gradient(135deg,#1B2B4B,#2A3F66);border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;color:#C5A059;font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:10px;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>

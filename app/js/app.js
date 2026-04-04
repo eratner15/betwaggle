@@ -1887,6 +1887,20 @@ window.MG = {
     refresh();
   },
 
+  randomizeVegasTeams() {
+    const players = (state._config?.players || state._config?.roster || []).map(p => p.name).filter(Boolean);
+    // Fisher-Yates shuffle
+    const shuffled = [...players];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    state._vegasTeamA = shuffled.slice(0, Math.ceil(shuffled.length / 2));
+    state._vegasTeamB = shuffled.slice(Math.ceil(shuffled.length / 2));
+    if (navigator.vibrate) navigator.vibrate(25);
+    refresh();
+  },
+
   async autoPress(playerName) {
     if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
 
