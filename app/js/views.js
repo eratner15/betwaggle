@@ -6843,13 +6843,14 @@ export function renderSettlement(state) {
     </div>`;
   }
 
-  html += `<div class="mg-section-title" style="display:flex;justify-content:space-between;align-items:center">
-    <span>Settlement Card</span>
+  html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:0.75rem 0.75rem 0 0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+    <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">Settlement</span>
     <div style="display:flex;gap:8px">
-      ${isTrophy ? '' : `<button class="mg-btn" style="width:auto;padding:6px 14px;font-size:12px;background:var(--mg-surface);border:1px solid var(--mg-border);color:var(--mg-text)" onclick="window.MG.getRecap()">AI Recap</button>
+      ${isTrophy ? '' : `<button style="padding:6px 14px;font-size:12px;background:rgba(252,249,244,0.1);border:1px solid rgba(197,160,89,0.3);border-radius:8px;color:#C5A059;font-weight:600;cursor:pointer" onclick="window.MG.getRecap()">AI Recap</button>
       `}
     </div>
   </div>
+  <div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-top:none;border-radius:0 0 0.75rem 0.75rem;padding:12px 16px;margin-bottom:12px">
   <div id="mg-recap-card" style="display:none"></div>`;
 
   if (!gameState || holesPlayed === 0) {
@@ -7758,6 +7759,7 @@ function renderPlayerPicker(state) {
 
   html += `</div>`;
   html += `</div>`; // close Heritage scorecard container
+  html += `</div>`; // close Heritage settlement container
   return html;
 }
 
