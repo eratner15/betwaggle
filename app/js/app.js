@@ -4153,8 +4153,18 @@ window.MG = {
   // ── Missing score entry handlers (wired from views.js) ──
 
   inlineScoreInput(player, value) {
-    // Proxy to inlineScoreType — called from premium scorecard number inputs
-    this.inlineScoreType(player, value);
+    // Called from score picker tap buttons — immediate response, no debounce
+    const n = parseInt(value);
+    if (!state._inlineScore) state._inlineScore = { hole: 1, scores: {} };
+    if (isNaN(n) || n < 1 || n > 15) {
+      delete state._inlineScore.scores[player];
+    } else {
+      state._inlineScore.scores[player] = n;
+      // Haptic feedback on score tap
+      if (navigator.vibrate) navigator.vibrate(25);
+    }
+    // Immediate refresh (no 400ms debounce — tap buttons don't lose focus)
+    refresh();
   },
 
   inlineScoreSaveAttempt() {

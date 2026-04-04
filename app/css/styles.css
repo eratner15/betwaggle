@@ -667,6 +667,71 @@ body {
 .game-card .score-cell.bold { font-weight: 800; }
 
 /* Hole-by-hole result row (skins, wolf) */
+/* ── Score Picker (par-relative tap buttons) ── */
+.score-picker { margin-top: 8px; }
+.score-picker-player {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.score-picker-player:last-child { border-bottom: none; }
+.score-picker-player.active { background: rgba(196,163,90,0.04); border-radius: 8px; padding: 12px 8px; }
+.score-picker-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.score-picker-name .sp-hi { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.score-picker-name .sp-selected {
+  font-family: var(--font-data);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.score-picker-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.score-picker-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--card-bg);
+  font-family: var(--font-data);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 400px) {
+  .score-picker-btn { width: 52px; height: 52px; font-size: 17px; }
+}
+.score-picker-btn.par { border-color: var(--gold-primary); color: var(--gold-primary); background: rgba(196,163,90,0.08); }
+.score-picker-btn.selected { transform: scale(1.1); }
+.score-picker-btn.selected.eagle { background: var(--eagle); color: #fff; border-color: var(--eagle); }
+.score-picker-btn.selected.birdie { background: var(--birdie); color: #fff; border-color: var(--birdie); }
+.score-picker-btn.selected.par-score { background: var(--gold-primary); color: #fff; border-color: var(--gold-primary); }
+.score-picker-btn.selected.bogey { background: var(--loss-dim); color: #fff; border-color: var(--loss-dim); }
+.score-picker-btn.selected.double { background: var(--double-plus); color: #fff; border-color: var(--double-plus); }
+.score-picker-btn:active { transform: scale(0.92); }
+
+@keyframes birdie-flash { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); } 100% { box-shadow: 0 0 0 12px rgba(34,197,94,0); } }
+@keyframes eagle-flash { 0% { box-shadow: 0 0 0 0 rgba(196,163,90,0.6); } 100% { box-shadow: 0 0 0 16px rgba(196,163,90,0); } }
+.score-picker-btn.flash-birdie { animation: birdie-flash 0.5s ease-out; }
+.score-picker-btn.flash-eagle { animation: eagle-flash 0.6s ease-out; }
+
 .game-card .hole-row {
   display: flex;
   justify-content: space-between;

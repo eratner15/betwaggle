@@ -716,26 +716,12 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
       const currentHighlight = isCurrent ? 'background:rgba(184,150,46,0.1);border-left:2px solid #B8962E;border-right:2px solid #B8962E;' : 'border-right:1px solid #EEE;';
 
       if (isCurrent && !readOnly) {
-        // Input cell (editable mode)
-        const st = displayScore ? scoreStyle(displayScore, par) : null;
-        const inputBg = st && st.bg !== 'transparent' ? st.bg : '#FFFEF5';
-        const inputColor = st ? st.color : '#1A1A1A';
-        const inputBorder = displayScore ? (st && st.border !== 'none' ? st.border.split(' ').pop() : '#B8962E') : '#B8962E';
-        const inputRadius = st && st.shape === 'circle' ? 'border-radius:50%;' : 'border-radius:3px;';
-        const scoreInputId = `inline-score-${escHtml(entityName).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-        const isInvalid = !!inlineInvalid[entityName];
-        html += `<td style="padding:3px 2px;text-align:center;${currentHighlight}">
-          <input type="number" inputmode="numeric" pattern="[0-9]*"
-            id="${scoreInputId}"
-            data-inline-score-input="1"
-            style="width:36px;height:36px;text-align:center;border:2px solid ${isInvalid ? '#DC2626' : inputBorder};${inputRadius}background:${displayScore ? inputBg : '#FFFEF5'};font-family:'SF Mono','Menlo','Courier New',monospace;font-size:14px;font-weight:700;color:${inputColor};outline:none;-webkit-appearance:none;-moz-appearance:textfield;padding:0;margin:0 auto;display:block;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06)"
-            value="${displayScore || ''}"
-            onfocus="this.select()"
-            oninput="window.MG.inlineScoreInput('${escHtml(entityName)}',this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();window.MG.inlineScoreSaveAttempt();}"
-            placeholder="\u00b7">
-          ${isInvalid ? `<div style="font-size:10px;color:#DC2626;margin-top:4px;font-weight:700">Enter 1-15</div>` : ''}
-        </td>`;
+        // Current hole cell — display only (score picker is below the table)
+        if (displayScore) {
+          html += `<td style="padding:4px 2px;text-align:center;${currentHighlight}">${renderScoreSpan(displayScore, par)}</td>`;
+        } else {
+          html += `<td style="padding:4px 2px;text-align:center;${currentHighlight}"><span style="color:#B8962E;font-size:18px;line-height:28px">&bull;</span></td>`;
+        }
       } else if (isCurrent && readOnly) {
         // Current hole in read-only mode — highlight but no input
         if (displayScore) {
@@ -785,21 +771,56 @@ function renderPremiumScorecard({ currentHole, pars, hcpIndex, yardage, holes, e
 
   html += `</table></div>`;
 
-  // Save button (only in editable mode — not when readOnly with separate keypad below)
+  // Score Picker Panel — par-relative tap buttons per player
   if (!readOnly) {
+    const holePar = pars[currentHole - 1] || 4;
+    const minScore = Math.max(1, holePar - 2);
+    const maxScore = holePar + 4;
+    const activePlayer = entities.find(e => {
+      const n = e.name || e;
+      return !(inlScores[n] >= 1 && inlScores[n] <= 15);
+    });
+    const activePlayerName = activePlayer ? (activePlayer.name || activePlayer) : null;
+
+    html += `<div class="score-picker">`;
+    entities.forEach(entity => {
+      const name = entity.name || entity;
+      const firstName = name.split(' ')[0];
+      const hi = entity.handicapIndex || entity.hi || '';
+      const selectedScore = inlScores[name] || null;
+      const isActive = name === activePlayerName;
+
+      html += `<div class="score-picker-player${isActive ? ' active' : ''}">
+        <div class="score-picker-name">
+          <span>${escHtml(firstName)}${hi ? ` <span class="sp-hi">HI ${hi}</span>` : ''}</span>
+          ${selectedScore ? `<span class="sp-selected" style="background:${selectedScore < holePar ? 'rgba(34,197,94,0.12);color:var(--birdie)' : selectedScore > holePar ? 'rgba(239,68,68,0.12);color:var(--loss)' : 'rgba(196,163,90,0.12);color:var(--gold-primary)'}">${selectedScore}</span>` : ''}
+        </div>
+        <div class="score-picker-btns">`;
+      for (let s = minScore; s <= maxScore; s++) {
+        const diff = s - holePar;
+        let cls = '';
+        if (s === holePar) cls = 'par';
+        if (selectedScore === s) {
+          cls += ' selected';
+          if (diff <= -2) cls += ' eagle';
+          else if (diff === -1) cls += ' birdie';
+          else if (diff === 0) cls += ' par-score';
+          else if (diff === 1) cls += ' bogey';
+          else cls += ' double';
+        }
+        html += `<button class="score-picker-btn ${cls}" onclick="window.MG.inlineScoreInput('${escHtml(name)}',${s})">${s}</button>`;
+      }
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    // Save + Undo buttons
     html += `<div style="padding:12px 16px 14px">`;
     html += `<button onclick="window.MG.inlineScoreSaveAttempt()" ${allFilled ? '' : 'disabled'}
-      style="width:100%;padding:14px;background:${allFilled ? '#B8962E' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(184,150,46,0.3)' : 'none'}">
-      ${allFilled ? 'Save Hole ' + currentHole : 'Save Hole ' + currentHole}
+      style="width:100%;padding:16px;background:${allFilled ? 'var(--gold-primary)' : '#E5E7EB'};color:${allFilled ? '#fff' : '#9CA3AF'};border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:${allFilled ? 'pointer' : 'default'};letter-spacing:0.3px;box-shadow:${allFilled ? '0 3px 12px rgba(196,163,90,0.3)' : 'none'};min-height:56px">
+      ${allFilled ? 'Lock It In \u2014 Hole ' + currentHole : 'Hole ' + currentHole + ' \u2014 ' + missingEntities.length + ' scores left'}
     </button>`;
-    if (syncState) {
-      const syncLabel = syncState === 'queued' ? 'Queued' : syncState === 'syncing' ? 'Syncing' : syncState === 'synced' ? 'Synced' : '';
-      if (syncLabel) {
-        html += `<div style="margin-top:8px;display:flex;justify-content:center">
-          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${syncState === 'queued' ? 'rgba(180,83,9,0.12)' : 'rgba(22,163,74,0.12)'};color:${syncState === 'queued' ? '#B45309' : '#15803D'}">${syncLabel}</span>
-        </div>`;
-      }
-    }
+    html += `<button onclick="window.MG.undoLastHole()" style="width:100%;padding:12px;margin-top:8px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;min-height:44px">Undo Last Hole</button>`;
     html += `</div>`;
   }
 
@@ -5085,8 +5106,8 @@ function renderGameSummaryCards(gameState, games, holes, isAdmin = false, config
       <div class="player-grid-header" style="grid-template-columns:${cols}">
         <span>Player</span><span style="text-align:center">Front</span><span style="text-align:center">Back</span><span style="text-align:center">Total</span>${isAdmin?'<span></span>':''}
       </div>`;
-    players.sort((a, b) => (r[a].total||0) - (r[b].total||0)).forEach(name => {
-      const s = r[name];
+    nassauPlayers.sort((a, b) => ((r[a]?.total)||0) - ((r[b]?.total)||0)).forEach(name => {
+      const s = r[name] || { front: 0, back: 0, total: 0 };
       const frontDown = (s.front || 0) - bestFront;
       const backDown  = (s.back  || 0) - bestBack;
       const totalDown = (s.total || 0) - bestTotal;
