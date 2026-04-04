@@ -230,7 +230,6 @@ function withSyncHeaders(response, syncMeta) {
 
 const LIVE_DEMO_SLUGS = new Set([
   'demo-buddies',
-  'demo-scramble',
   'legends-trip',
   'stag-night',
   'augusta-scramble',

@@ -142,36 +142,47 @@ async function seedDemoScramble(env) {
     rounds: { '1': { course: 'TPC Sawgrass', tees: 'Blue' } },
     scrambleEntryFee: 200,
     scrambleTeams: teams,
+    scrambleSideGames: { closestToPin: [3, 7, 12, 17], longestDrive: [5, 14] },
+    scramblePrizePool: { total: 1600, payouts: { 1: 800, 2: 400, 3: 240 }, ctpPerHole: 40 },
     adminPin: randomPin()
   };
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
   // Pre-seed 9 holes — tight leaderboard with fun team names
   //                     Alpha Bravo Charlie Delta Eagle Falcon Grizzly Hawk
+  // Hand-crafted scores for 14 holes — tight race, 4 holes to go
+  //                Wolves Falc  Must  Viper Titan Panth Rockt Shark
   const holeScores = [
-    /*1 p4*/ [3, 4, 4, 3, 4, 3, 4, 4],
-    /*2 p5*/ [4, 4, 5, 4, 5, 4, 4, 5],
-    /*3 p3*/ [3, 2, 3, 3, 3, 2, 3, 3],
-    /*4 p4*/ [3, 4, 4, 4, 4, 3, 3, 4],
-    /*5 p4*/ [4, 3, 4, 4, 3, 4, 4, 3],
-    /*6 p4*/ [3, 4, 3, 4, 4, 3, 4, 4],
-    /*7 p3*/ [3, 3, 3, 2, 3, 3, 2, 3],
-    /*8 p5*/ [4, 5, 4, 4, 5, 4, 5, 4],
-    /*9 p4*/ [3, 4, 4, 3, 4, 4, 3, 4],
+    /*1  p4*/ [3, 4, 4, 3, 4, 3, 4, 4],
+    /*2  p5*/ [4, 4, 5, 4, 5, 4, 4, 5],
+    /*3  p3*/ [3, 2, 3, 3, 3, 2, 3, 3],  // CTP: Panthers (2' 8")
+    /*4  p4*/ [3, 4, 4, 4, 4, 3, 3, 4],
+    /*5  p4*/ [4, 3, 4, 4, 3, 4, 4, 3],  // LD: Wolves (312 yds)
+    /*6  p4*/ [3, 4, 3, 4, 4, 3, 4, 4],
+    /*7  p3*/ [3, 3, 3, 2, 3, 3, 2, 3],  // CTP: Vipers (4' 1")
+    /*8  p5*/ [4, 5, 4, 4, 5, 4, 5, 4],
+    /*9  p4*/ [3, 4, 4, 3, 4, 4, 3, 4],
+    /*10 p4*/ [3, 4, 3, 4, 4, 3, 4, 3],
+    /*11 p3*/ [3, 3, 3, 3, 2, 3, 3, 3],
+    /*12 p4*/ [4, 3, 4, 3, 4, 3, 4, 4],  // CTP: Rockets (6' 5") — note: hole 12 is par 4 but treat as CTP hole
+    /*13 p5*/ [4, 4, 4, 5, 4, 4, 4, 5],
+    /*14 p4*/ [3, 4, 3, 4, 4, 4, 3, 4],  // LD: Falcons (298 yds)
   ];
-  const completeHoleScores = buildFullScrambleScores(holeScores, teamNames.length, pars);
+  // Only use hand-crafted scores (14 holes) — do NOT auto-fill to 18
+  const completeHoleScores = holeScores;
 
   const holes = {};
   const totals = {};
   teamNames.forEach(t => { totals[t] = 0; });
 
-  for (let h = 1; h <= pars.length; h++) {
+  const holesScored = completeHoleScores.length; // 14
+  for (let h = 1; h <= holesScored; h++) {
     const s = {};
     teamNames.forEach((t, i) => {
       s[t] = completeHoleScores[h - 1][i];
       totals[t] += completeHoleScores[h - 1][i];
     });
-    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - h) * 600000 };
+    holes[h] = { scores: s, timestamp: Date.now() - (holesScored - h) * 600000 };
   }
   await env.MG_BOOK.put('demo-scramble:holes', JSON.stringify(holes));
 
@@ -182,7 +193,7 @@ async function seedDemoScramble(env) {
 
   // Build per-hole results for the scramble engine state
   const scrambleHoles = {};
-  for (let h = 1; h <= pars.length; h++) {
+  for (let h = 1; h <= holesScored; h++) {
     scrambleHoles[h] = {};
     teamNames.forEach((t, i) => { scrambleHoles[h][t] = completeHoleScores[h - 1][i]; });
   }
@@ -192,6 +203,17 @@ async function seedDemoScramble(env) {
       running: totals,
       holes: scrambleHoles,
       leaderboard: leaderboard
+    },
+    sideGames: {
+      ctp: {
+        3: 'The Panthers (2\' 8")',
+        7: 'The Vipers (4\' 1")',
+        12: 'The Rockets (6\' 5")'
+      },
+      ld: {
+        5: 'The Wolves (312 yds)',
+        14: 'The Falcons (298 yds)'
+      }
     }
   };
   await env.MG_BOOK.put('demo-scramble:game-state', JSON.stringify(gameState));
