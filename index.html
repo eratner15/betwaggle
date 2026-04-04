@@ -1522,7 +1522,7 @@
           <div class="mockup-footer" id="demo-nav">
             <button class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer;border:none;font:inherit">Lay Action</button>
             <button class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer;border:none;font:inherit">The Board</button>
-            <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" style="border:none;font-size:16px;cursor:pointer" title="Enable Sound">🔇</button>
+            <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" style="border:none;font-size:16px;cursor:pointer" title="Enable Sound">OFF</button>
           </div>
         </div>
       </div>
@@ -2047,7 +2047,7 @@
           // Update UI indicator if it exists
           var soundBtn = document.getElementById('sound-toggle');
           if (soundBtn) {
-            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+            soundBtn.textContent = soundEnabled ? 'ON' : 'OFF';
             soundBtn.title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
           }
 

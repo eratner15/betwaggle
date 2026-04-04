@@ -100,10 +100,8 @@
 
     /* Format selector */
     .format-bar { display: flex; gap: 0; background: var(--ivory-dark); border-radius: 10px; padding: 3px; margin-bottom: 20px; }
-    .format-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: all 0.2s; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: none; background: none; }
-    .format-tab.active { background: #fff; color: var(--navy); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .format-tab .ft-icon { font-size: 18px; }
-    .format-tab .ft-label { font-size: 11px; }
+    .format-tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: all 0.2s; min-height: 44px; display: flex; align-items: center; justify-content: center; border: none; background: none; letter-spacing: 0.3px; }
+    .format-tab.active { background: #fff; color: var(--navy); box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: 700; }
 
     /* Error */
     .error-msg { color: var(--coral); font-size: 13px; margin-top: 8px; font-weight: 600; }
@@ -128,18 +126,9 @@
   <!-- STEP 1: PLAYERS -->
   <div class="step" id="step-1">
     <div class="format-bar">
-      <button class="format-tab active" onclick="setFormat('round')" id="fmt-round">
-        <span class="ft-icon">&#9971;</span>
-        <span class="ft-label">Round</span>
-      </button>
-      <button class="format-tab" onclick="setFormat('scramble')" id="fmt-scramble">
-        <span class="ft-icon">&#127941;</span>
-        <span class="ft-label">Scramble</span>
-      </button>
-      <button class="format-tab" onclick="setFormat('tournament')" id="fmt-tournament">
-        <span class="ft-icon">&#127942;</span>
-        <span class="ft-label">Tournament</span>
-      </button>
+      <button class="format-tab active" onclick="setFormat('round')" id="fmt-round">Round</button>
+      <button class="format-tab" onclick="setFormat('scramble')" id="fmt-scramble">Scramble</button>
+      <button class="format-tab" onclick="setFormat('tournament')" id="fmt-tournament">Tournament</button>
     </div>
 
     <!-- Quick Start: GPS + AI suggestion -->
@@ -230,6 +219,7 @@ const GAMES = [
   { id: 'banker', name: 'Banker', desc: 'Rotating banker sets the stakes against the field.', defaultStake: 5, min: 3 },
   { id: 'bingo', name: 'Bingo Bango Bongo', desc: 'First on green, closest to pin, first to hole out.', defaultStake: 5 },
   { id: 'bloodsome', name: 'Bloodsome', desc: 'Your opponent picks which of your balls you play.', defaultStake: 5, min: 4 },
+  { id: 'nines', name: 'Nines (3-Player)', desc: '9 points split each hole. Lowest score gets 5, middle gets 3, highest gets 1.', defaultStake: 1, min: 3, max: 3 },
   { id: 'stroke_play', name: 'Stroke Play', desc: 'Lowest net score wins. The classic.', defaultStake: 0 },
 ];
 
@@ -550,7 +540,7 @@ function renderGames() {
     { id: 'stroke_play', name: 'Stroke Play', desc: 'Lowest total team score. The classic.', defaultStake: 0 },
   ];
   const gamesList = isScramble ? SCRAMBLE_GAMES : GAMES;
-  el.innerHTML = gamesList.filter(g => !g.min || playerCount >= g.min).map(g => {
+  el.innerHTML = gamesList.filter(g => (!g.min || playerCount >= g.min) && (!g.max || playerCount <= g.max)).map(g => {
     const selected = !!S.games[g.id];
     const stake = S.stakes[g.id] ?? g.defaultStake;
     return '<div class="game-pick' + (selected ? ' selected' : '') + '" onclick="toggleGame(\'' + g.id + '\', event)">' +
@@ -611,6 +601,7 @@ async function launch() {
       bankerBet: S.stakes.banker || 5,
       bbbBet: S.stakes.bingo || 5,
       bloodsomeBet: S.stakes.bloodsome || 5,
+      ninesBet: S.stakes.nines || 1,
     },
     flightOrder: [],
     flights: {},
@@ -660,7 +651,7 @@ function showInviteScreen(slug) {
 
   document.querySelector('.content').innerHTML = `
     <div style="max-width:480px;margin:0 auto;text-align:center;padding-top:20px">
-      <div style="font-size:48px;margin-bottom:12px">&#9971;</div>
+      <div style="font-family:'Playfair Display',serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">WAGGLE</div>
       <h2 style="font-family:'Playfair Display',serif;font-size:28px;color:var(--navy-dark);margin-bottom:8px">You're Live</h2>
       <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px">${esc(gameNames.join(' + '))} at ${esc(courseName)}</p>
 

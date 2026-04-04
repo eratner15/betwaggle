@@ -4255,7 +4255,7 @@ function incrementBetTally(amount) {
 
 function updateBetTallyDisplay() {
   if (betTallyElement) {
-    betTallyElement.innerHTML = `🎰 $${betTallyTotal.toLocaleString()} staked`;
+    betTallyElement.innerHTML = `$${betTallyTotal.toLocaleString()} staked`;
 
     // Hide if zero
     if (betTallyTotal === 0) {
@@ -4343,7 +4343,7 @@ function generateFakeBet(players, slug) {
     type: 'bet',
     player: player.name,
     text: `placed a $${amount} ${betType} bet`,
-    emoji: '💰',
+    emoji: '',
     timestamp: Date.now(),
     createdAt: new Date().toISOString()
   };
@@ -4402,7 +4402,7 @@ function generateScoreUpdate(players, slug) {
     type: 'score',
     player: player.name,
     text: scoreEvent,
-    emoji: '🏌️',
+    emoji: '',
     timestamp: Date.now(),
     createdAt: new Date().toISOString()
   };
@@ -4462,7 +4462,7 @@ function generateFakeChirp(players, slug) {
   ];
 
   const chirp = chirps[Math.floor(Math.random() * chirps.length)];
-  const emojis = ['🔥', '💪', '⛳', '❄️', '👑', '💎', '🎯'];
+  const emojis = ['*', '+', '-', '!', '#', '^', '~'];
   const emoji = emojis[Math.floor(Math.random() * emojis.length)];
 
   const feedItem = {
@@ -4493,7 +4493,7 @@ function generateOddsMovement(players, slug) {
   const movements = [
     { direction: 'up', text: 'odds lengthened', emoji: '📈', color: 'red' },
     { direction: 'down', text: 'odds shortened', emoji: '📉', color: 'green' },
-    { direction: 'hot', text: 'odds moving fast', emoji: '🔥', color: 'gold' }
+    { direction: 'hot', text: 'odds moving fast', emoji: '', color: 'gold' }
   ];
   const movement = movements[Math.floor(Math.random() * movements.length)];
 
@@ -4547,7 +4547,7 @@ function generatePressEvent(players, slug) {
     type: 'press',
     player: player.name,
     text: `initiated ${pressType} for $${amount}`,
-    emoji: '⚡',
+    emoji: '',
     timestamp: Date.now(),
     createdAt: new Date().toISOString(),
     amount: amount,
@@ -4577,7 +4577,7 @@ function initializeDemoFeed(slug) {
       type: 'score',
       player: players[0]?.name || 'Player 1',
       text: 'made birdie on hole 3',
-      emoji: '🏌️',
+      emoji: '',
       timestamp: Date.now() - 180000 // 3 minutes ago
     },
     {
@@ -4591,7 +4591,7 @@ function initializeDemoFeed(slug) {
       type: 'bet',
       player: players[2]?.name || 'Player 3',
       text: 'placed a $25 Skins bet',
-      emoji: '💰',
+      emoji: '',
       timestamp: Date.now() - 60000 // 1 minute ago
     }
   ];

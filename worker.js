@@ -6868,10 +6868,10 @@ async function serveEventHtml(slug, request, env) {
     ogTitle = `${eventName} \u2014 LIVE`;
     ogDesc = `${esc(leaderName)} leads at ${leaderToParStr}. ${remaining} hole${remaining !== 1 ? 's' : ''} remaining. ${gamesStr}.`;
   } else {
-    ogTitle = `${eventName}${stakesStr ? ' \u2014 Lines Are Set' : ''}`;
-    ogDesc = `${playerCount} player${playerCount !== 1 ? 's' : ''}. ${stakesStr || gamesStr || 'Live scores & side action'}. ${venue ? venue + '. ' : ''}Join the action.`;
+    ogTitle = `Waggle \u00b7 ${eventName}`;
+    ogDesc = `${stakesStr || gamesStr || 'Live odds & side action'} \u00b7 ${playerCount} players${venue ? ' at ' + venue : ''}. Tap in.`;
   }
-  const ogImageUrl = `https://betwaggle.com/${slug}/og-image.svg`;
+  const ogImageUrl = `https://betwaggle.com/og-card-logo.jpg`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -6952,10 +6952,10 @@ async function serveEventHtml(slug, request, env) {
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
-      <img src="/logo.jpg" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
+      <img src="/logo.jpg" style="height:32px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
     </a>
-    <h1>${shortName}</h1>
-    <div class="mg-subtitle">${venue}</div>
+    <h1 style="padding-left:48px;padding-right:80px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shortName}</h1>
+    <div class="mg-subtitle" style="padding-left:48px">${venue}</div>
     <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;align-items:center">
       <button onclick="window.WaggleTheme.toggle()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(197,160,89,0.3);color:#C4A35A;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" aria-label="Toggle theme" id="theme-icon-btn">
         <span id="theme-icon">${'\u2600'}</span>
@@ -6969,9 +6969,9 @@ async function serveEventHtml(slug, request, env) {
   <script>
   function waggleShare(){
     const url='${eventUrl}';
-    const text='${eventName} \u2014 live scores, odds & side action. Open on your phone:';
-    if(navigator.share){navigator.share({title:'${shortName}',text:text,url:url}).catch(()=>{});}
-    else{navigator.clipboard.writeText(url).then(()=>{const t=document.getElementById('mg-toast');t.textContent='Link copied!';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}).catch(()=>{});}
+    const text='The action is live at ${escHtml(venue || shortName)}. Tap in. \ud83c\udfcc\ufe0f';
+    if(navigator.share){navigator.share({title:'Waggle \u00b7 ${shortName}',text:text,url:url}).catch(()=>{});}
+    else{navigator.clipboard.writeText(text+' '+url).then(()=>{const t=document.getElementById('mg-toast');t.textContent='Link copied!';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}).catch(()=>{});}
   }
   </script>
   <div id="app">

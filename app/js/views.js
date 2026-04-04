@@ -218,7 +218,7 @@ export function renderDashboard(state) {
   // Player welcome / register card
   if (!state.bettorName && !state._spectatorMode) {
     html += `<div class="mg-card-light" style="text-align:center;padding:20px">
-      <div style="font-size:32px;margin-bottom:8px">&#9971;</div>
+      <div style="font-family:Playfair Display,serif;font-size:24px;font-weight:700;color:var(--gold-primary);margin-bottom:8px">W</div>
       <div style="font-size:18px;font-weight:700;color:#1B2B4B;margin-bottom:4px">Welcome to ${escHtml(_C?.event?.name || 'the Event')}</div>
       <p style="font-size:13px;color:#6B7280;margin-bottom:16px">Tap your name below to start betting</p>
       ${renderPlayerPicker(state)}
@@ -1437,18 +1437,17 @@ export function renderScrambleLeaderboard(state) {
         outlookEmoji = '🏁';
         outlookText = `Round Complete — ${escHtml(leader.team)} wins${leadMargin > 0 ? ` by ${leadMargin} stroke${leadMargin !== 1 ? 's' : ''}` : leadMargin === 0 ? ' in a tie' : ''}!`;
       } else if (leadMargin > 3) {
-        outlookEmoji = '🏆';
+        outlookEmoji = 'W';
         outlookText = `${escHtml(leader.team)} has a commanding ${leadMargin}-stroke lead with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} to play.`;
       } else if (leadMargin >= 1) {
         outlookEmoji = '⚔️';
         outlookText = `Tight race — only ${leadMargin} stroke${leadMargin !== 1 ? 's' : ''} separate the top two with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} left to play.`;
       } else {
-        outlookEmoji = '🔥';
+        outlookEmoji = '*';
         outlookText = `Deadlocked. ${holesRemaining > 0 ? `Back ${holesRemaining > 9 ? holesRemaining : 9} decides it all.` : 'Heading to a playoff.'}`;
       }
 
       html += `<div style="padding:20px 16px;background:#1a3a2a;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
-        <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:48px;opacity:0.07;pointer-events:none">⛳</div>
         <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.6);margin-bottom:12px;display:flex;align-items:center;gap:6px">
           <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
           BACK 9 OUTLOOK
@@ -1483,7 +1482,6 @@ export function renderScrambleLeaderboard(state) {
     }
 
     html += `<div style="padding:20px 16px;background:#1a3a2a;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden">
-      <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:48px;opacity:0.07;pointer-events:none">💰</div>
       <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(212,160,23,0.6);margin-bottom:12px;display:flex;align-items:center;gap:6px">
         <span style="width:3px;height:14px;background:var(--gold-bright);border-radius:2px;display:inline-block"></span>
         WHAT'S AT STAKE
@@ -4915,7 +4913,7 @@ export function renderScorecard(state) {
 
   if (Object.keys(holes).length === 0) {
     html += `<div class="mg-card" style="text-align:center;padding:32px 20px">
-      <div style="font-size:36px;margin-bottom:12px">&#9971;</div>
+      <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:700;color:var(--gold-primary);margin-bottom:12px">WAGGLE</div>
       <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">Round Not Started</div>
       <p class="text-sm text-muted">Scores will appear here once the admin enters hole results</p>
     </div>`;
@@ -5425,7 +5423,7 @@ function renderCashBetting(state) {
 
   if (!myName) {
     return `<div style="padding:40px 20px;text-align:center">
-      <div style="font-size:40px;margin-bottom:12px">&#9971;</div>
+      <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:700;color:var(--gold-primary);margin-bottom:12px">WAGGLE</div>
       <div style="font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Pick Your Name First</div>
       <p class="text-sm text-muted" style="margin-bottom:16px">So your bets are tracked to you</p>
       <a href="#dashboard" class="mg-btn mg-btn-primary" style="width:auto;padding:12px 32px;font-size:15px;text-decoration:none;display:inline-block">Go to Home</a>
@@ -5495,21 +5493,22 @@ function renderCashBetting(state) {
         for (let j = i + 1; j < sorted.length; j++) {
           const fav = sorted[i];
           const dog = sorted[j];
-          const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
+          const favHI = parseFloat(fav.handicapIndex) || 0;
+          const dogHI = parseFloat(dog.handicapIndex) || 0;
+          const strokesGiven = Math.round(dogHI - favHI);
           html += `<div class="game-card" style="padding:16px">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
               <div style="flex:1;text-align:left">
                 <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</div>
-                <div style="font-size:11px;color:var(--text-muted)">HI ${fav.handicapIndex || 0}</div>
+                <div style="font-size:11px;color:var(--text-muted)">HI ${favHI}</div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="padding:6px 12px;border-radius:6px;background:rgba(72,187,120,0.12);color:var(--win);font-family:var(--font-data);font-size:16px;font-weight:800">-${spread}</span>
-                <span style="font-size:12px;color:var(--text-muted);font-weight:600">vs</span>
-                <span style="padding:6px 12px;border-radius:6px;background:rgba(232,115,90,0.1);color:var(--loss);font-family:var(--font-data);font-size:16px;font-weight:800">+${spread}</span>
+              <div style="text-align:center;flex-shrink:0">
+                <div style="font-family:var(--font-data);font-size:20px;font-weight:800;color:var(--gold-primary)">${strokesGiven}</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:2px">strokes given</div>
               </div>
               <div style="flex:1;text-align:right">
                 <div style="font-size:16px;font-weight:700;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</div>
-                <div style="font-size:11px;color:var(--text-muted)">HI ${dog.handicapIndex || 0}</div>
+                <div style="font-size:11px;color:var(--text-muted)">HI ${dogHI}</div>
               </div>
             </div>
           </div>`;
@@ -5520,12 +5519,16 @@ function renderCashBetting(state) {
       // ── Pre-game: Prop Bets ──
       const bestPlayer = sorted[0];
       const worstPlayer = sorted[sorted.length - 1];
-      const totalPar = state._config?.coursePars?.reduce((a, b) => a + b, 0) || 72;
-      const overUnder = Math.round(totalPar + (bestPlayer.handicapIndex || 10) + 0.5);
+      const cpars = state._config?.coursePars;
+      const totalPar = (cpars && cpars.length >= 18) ? cpars.reduce((a, b) => a + b, 0) : 72;
+      const bestHI = parseFloat(bestPlayer.handicapIndex) || 15;
+      const worstHI = parseFloat(worstPlayer.handicapIndex) || 25;
+      const overUnder = Math.round(totalPar + bestHI);
       const propsList = [
-        `Over/Under ${overUnder}.5 \u2014 ${bestPlayer.name.split(' ')[0]}'s gross score`,
-        `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
-        `${worstPlayer.name.split(' ')[0]} makes a birdie: Yes/No`,
+        `${bestPlayer.name.split(' ')[0]} shoots under ${overUnder}`,
+        `${worstPlayer.name.split(' ')[0]} makes a birdie`,
+        `Someone makes an eagle`,
+        `A skin carries 3+ holes in a row`,
       ];
       html += `<div style="margin-top:8px">
         <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:12px">Prop Bets</div>`;
@@ -5729,7 +5732,7 @@ export function renderBetting(state) {
   // Name is REQUIRED — send to dashboard to pick from dropdown
   if (!state.bettorName) {
     html += `<div style="padding:40px 20px;text-align:center">
-      <div style="font-size:40px;margin-bottom:12px">&#9971;</div>
+      <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:700;color:var(--gold-primary);margin-bottom:12px">WAGGLE</div>
       <div style="font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Select Your Name First</div>
       <p class="text-sm text-muted mb-4">Go to the home page to pick your name</p>
       <a href="#dashboard" class="mg-btn mg-btn-primary" style="width:auto;padding:12px 32px;font-size:15px;text-decoration:none;display:inline-block">Go to Home</a>
@@ -5889,7 +5892,7 @@ function renderMatchBets(state) {
       text-align: center;
       margin-bottom: 16px;
     ">
-      <div style="font-size: 24px; margin-bottom: 8px;">🏌️</div>
+      <div style="font-size: 24px; margin-bottom: 8px;"></div>
       <p style="color: #9CA3AF; font-size: 14px; margin: 0;">No open matches available for betting</p>
     </div>`;
   }
@@ -6352,7 +6355,7 @@ function renderFutureBets(state) {
 
   if (!html) {
     html = `<div class="mg-card" style="text-align:center;padding:32px 20px">
-      <div style="font-size:36px;margin-bottom:12px">&#9971;</div>
+      <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:700;color:var(--gold-primary);margin-bottom:12px">WAGGLE</div>
       <div style="font-size:18px;font-weight:700;color:var(--mg-green);margin-bottom:4px">No Live Markets Yet</div>
       <p class="text-sm text-muted">Markets open once hole scores are entered</p>
     </div>`;
@@ -7888,6 +7891,49 @@ export function renderCasualScorecard(state) {
     html += `</div>`;
   }
 
+  // ── Score Entry (the engine — this goes FIRST) ──
+  const inlineScore = state._inlineScore;
+  const currentHole = inlineScore ? inlineScore.hole : null;
+  const scoredCount = Object.keys(holes).filter(h => {
+    const hd = holes[h];
+    const sc = hd?.scores || hd;
+    return sc && Object.values(sc).some(v => v >= 1);
+  }).length;
+
+  if (!inlineScore) {
+    const nextUnscoredHole = (() => {
+      for (let h = 1; h <= holesPerRound; h++) {
+        const hd = holes[h];
+        const sc = hd?.scores || hd;
+        if (!sc || !Object.values(sc).some(v => v >= 1)) return h;
+      }
+      return null;
+    })();
+    if (nextUnscoredHole && scoredCount < holesPerRound) {
+      html += `<button onclick="window.MG.openScoreComposer('scorecard')"
+        class="game-card" style="width:100%;cursor:pointer;border:2px solid var(--gold-primary);text-align:center;padding:20px;margin-bottom:12px">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--gold-primary);margin-bottom:4px">
+          ${scoredCount === 0 ? 'Open the Book' : 'Continue Scoring'}
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary)">
+          ${scoredCount === 0 ? 'Tap to enter scores for Hole 1' : 'Hole ' + nextUnscoredHole + ' of ' + holesPerRound + ' \u00b7 ' + scoredCount + ' holes scored'}
+        </div>
+      </button>`;
+    } else if (scoredCount >= holesPerRound) {
+      html += `<div class="game-card" style="text-align:center;padding:20px;margin-bottom:12px">
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--win)">Round Complete</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">All ${holesPerRound} holes scored. Check the Settle tab.</div>
+      </div>`;
+    }
+  } else {
+    html += renderPremiumScorecard({
+      currentHole, pars, hcpIndex: hcpIndex ? Array.from(hcpIndex) : null,
+      yardage: config?.courseYardage || null, holes, entities: players,
+      inlScores: inlineScore.scores || {}, holesPerRound, courseName,
+      isScramble: false, readOnly: false, inlineInvalid: {}, syncState: '',
+    });
+  }
+
   // Split players into groups of 4 for readability (8 players = 2 groups)
   const groupSize = 4;
   const playerGroups = [];
@@ -7969,68 +8015,7 @@ export function renderCasualScorecard(state) {
 
   }); // end playerGroups loop
 
-  // Legend
-  html += `<div style="display:flex;gap:12px;padding:8px 0;font-size:11px;color:var(--mg-text-muted);justify-content:center">
-    <span><span style="display:inline-block;width:14px;height:14px;background:var(--win);border-radius:50%;vertical-align:middle;margin-right:3px"></span>Birdie</span>
-    <span><span style="display:inline-block;width:14px;height:14px;background:var(--eagle,#C4A35A);border-radius:50%;vertical-align:middle;margin-right:3px"></span>Eagle</span>
-    <span><span style="display:inline-block;width:14px;height:14px;border:2px solid var(--loss);border-radius:2px;vertical-align:middle;margin-right:3px"></span>Bogey+</span>
-  </div>`;
-
-  // ── Score Entry Section ──
-  // This is the actual engine. Tap to enter scores hole by hole.
-  const inlineScore = state._inlineScore;
-  const currentHole = inlineScore ? inlineScore.hole : null;
-  const scoredCount = Object.keys(holes).filter(h => {
-    const hd = holes[h];
-    const sc = hd?.scores || hd;
-    return sc && Object.values(sc).some(v => v >= 1);
-  }).length;
-
-  if (!inlineScore) {
-    // Show prominent "Enter Scores" button
-    const nextUnscoredHole = (() => {
-      for (let h = 1; h <= holesPerRound; h++) {
-        const hd = holes[h];
-        const sc = hd?.scores || hd;
-        if (!sc || !Object.values(sc).some(v => v >= 1)) return h;
-      }
-      return null;
-    })();
-
-    if (nextUnscoredHole && scoredCount < holesPerRound) {
-      html += `<button onclick="window.MG.openScoreComposer('scorecard')"
-        class="game-card" style="width:100%;cursor:pointer;border:2px solid var(--gold-primary);text-align:center;padding:20px;margin-top:8px">
-        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--gold-primary);margin-bottom:4px">
-          ${scoredCount === 0 ? 'Open the Book' : 'Continue Scoring'}
-        </div>
-        <div style="font-size:13px;color:var(--text-secondary)">
-          ${scoredCount === 0 ? 'Tap to enter scores for Hole 1' : 'Hole ' + nextUnscoredHole + ' of ' + holesPerRound + ' \u00b7 ' + scoredCount + ' holes scored'}
-        </div>
-      </button>`;
-    } else if (scoredCount >= holesPerRound) {
-      html += `<div class="game-card" style="text-align:center;padding:20px">
-        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--win)">Round Complete</div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">All ${holesPerRound} holes scored. Check the Settle tab.</div>
-      </div>`;
-    }
-  } else {
-    // Inline score entry is active — render the premium scorecard with inputs
-    html += renderPremiumScorecard({
-      currentHole: currentHole,
-      pars: pars,
-      hcpIndex: hcpIndex ? Array.from(hcpIndex) : null,
-      yardage: config?.courseYardage || null,
-      holes: holes,
-      entities: players,
-      inlScores: inlineScore.scores || {},
-      holesPerRound: holesPerRound,
-      courseName: courseName,
-      isScramble: false,
-      readOnly: false,
-      inlineInvalid: {},
-      syncState: '',
-    });
-  }
+  // (Score entry already rendered above the display tables)
 
   // Game summary cards (show current game state below scorecard)
   if (state._gameState) {
@@ -9336,7 +9321,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
   html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1.5px solid var(--gold-primary,#B8962E);border-radius:12px;padding:32px 20px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(184,150,46,0.12)">
     <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-conic-gradient(rgba(184,150,46,0.03) 0% 25%,transparent 0% 50%) 0 0/40px 40px;pointer-events:none"></div>
     <div style="position:relative;z-index:1">
-      <div style="font-size:56px;margin-bottom:8px">&#127942;</div>
+      <div style="font-family:Playfair Display,serif;font-size:28px;font-weight:700;color:var(--gold-primary);letter-spacing:2px;margin-bottom:8px">TROPHY ROOM</div>
       <div style="font-size:26px;font-weight:700;color:#1A1A1A;margin-bottom:4px">${escHtml(eventName)}</div>
       <div style="display:inline-block;padding:4px 14px;background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.3);border-radius:4px;margin-bottom:10px">
         <span style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#B8962E">Final Results</span>
@@ -9381,7 +9366,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
     html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${isLeader ? '&#127942;' : i + 1}</span>
+          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
           <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:#1A1A1A">${escHtml(p.name)}</span>
         </div>
         <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor};flex-shrink:0;margin-left:8px">${toParStr}</span>
@@ -9511,7 +9496,7 @@ function renderTrophyRoom(state, config, players, pars, hcpIndex, holesPerRound,
     if (moments.length > 0) {
       html += `<div style="margin-bottom:10px">
         <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1B2B4B;padding:0 2px 10px">Memorable Moments</div>`;
-      const momentIcons = ['&#127942;', '&#127775;', '&#128165;', '&#128170;'];
+      const momentIcons = ['1st', '2nd', '3rd', '4th'];
       moments.forEach((m, mi) => {
         html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,#E5E0D8);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
           <div style="font-size:20px;flex-shrink:0">${momentIcons[mi % momentIcons.length]}</div>
