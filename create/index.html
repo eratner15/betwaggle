@@ -302,6 +302,7 @@
       scrambleTeams: [],
       scrambleFormat: 'best_ball',
       scrambleSideGames: { closestToPin: [], longestDrive: [] },
+      scrambleCTPPrize: 40,
       scrambleEntryFee: 0,
       scrambleTeamNameFormat: 'captain', // 'captain' or 'numbered'
       scrambleNumTeams: 20,
@@ -1752,7 +1753,20 @@
         games:W.games,
         holesPerRound: W.holesPerRound || 18,
         ...(W.games.scramble && W.scrambleTeams.length > 0 ? { scrambleTeams: W.scrambleTeams } : {}),
-        ...(W.type === 'scramble' ? { scrambleFormat: W.scrambleFormat, scrambleSideGames: W.scrambleSideGames, scrambleEntryFee: W.scrambleEntryFee } : {}),
+        ...(W.type === 'scramble' ? {
+          scrambleFormat: W.scrambleFormat,
+          scrambleSideGames: W.scrambleSideGames,
+          scrambleEntryFee: W.scrambleEntryFee,
+          scramblePrizePool: {
+            total: (W.scrambleEntryFee || 0) * (W.scrambleTeams?.length || 0),
+            payouts: {
+              1: Math.round((W.scrambleEntryFee || 0) * (W.scrambleTeams?.length || 0) * 0.50),
+              2: Math.round((W.scrambleEntryFee || 0) * (W.scrambleTeams?.length || 0) * 0.25),
+              3: Math.round((W.scrambleEntryFee || 0) * (W.scrambleTeams?.length || 0) * 0.15)
+            },
+            ctpPerHole: W.scrambleCTPPrize || 0
+          }
+        } : {}),
         wolfOrder: W.roster.map(r => r.name || r.member).filter(Boolean),
         players: W.roster.map(r => ({ name: r.name || r.member, handicapIndex: r.handicap ?? r.memberHI ?? 0, venmo: r.venmo || '' })).filter(p => p.name),
         roster: W.roster.map(r => isTeam
@@ -2573,14 +2587,42 @@
           </div>
         </div>
 
-        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Entry Fee <span style="font-weight:400;color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(for display only)</span></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <span style="font-size:20px;font-weight:700;color:var(--muted)">$</span>
-          <input type="number" min="0" max="5000" value="${W.scrambleEntryFee||''}" placeholder="0"
-            oninput="W.scrambleEntryFee=parseInt(this.value)||0"
-            style="width:100px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:18px;font-weight:700;text-align:center;font-family:inherit">
-          <span style="font-size:14px;color:var(--muted)">per team</span>
+        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Prize Pool</div>
+        <div style="padding:16px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:14px;font-weight:600;color:var(--text);min-width:80px">Entry Fee</span>
+            <span style="font-size:18px;font-weight:700;color:var(--muted)">$</span>
+            <input type="number" min="0" max="5000" value="${W.scrambleEntryFee||''}" placeholder="200"
+              oninput="W.scrambleEntryFee=parseInt(this.value)||0;updatePrizePool()"
+              style="width:80px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit">
+            <span style="font-size:12px;color:var(--muted)">per team</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:14px;font-weight:600;color:var(--text);min-width:80px">CTP Prize</span>
+            <span style="font-size:18px;font-weight:700;color:var(--muted)">$</span>
+            <input type="number" min="0" max="1000" value="${W.scrambleCTPPrize||''}" placeholder="40"
+              oninput="W.scrambleCTPPrize=parseInt(this.value)||0"
+              style="width:80px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit">
+            <span style="font-size:12px;color:var(--muted)">per hole</span>
+          </div>
+          <div id="prize-pool-preview" style="background:var(--ivory);border-radius:8px;padding:12px;margin-top:8px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Estimated Payout</div>
+            <div style="font-size:12px;color:var(--text);line-height:1.6" id="prize-preview-text">Configure entry fee and team count to see payouts</div>
+          </div>
         </div>`;
+    }
+
+    function updatePrizePool() {
+      const teams = W.scrambleTeams?.length || 0;
+      const fee = W.scrambleEntryFee || 0;
+      const total = teams * fee;
+      const el = document.getElementById('prize-preview-text');
+      if (!el || total === 0) { if (el) el.textContent = 'Configure entry fee and team count to see payouts'; return; }
+      const first = Math.round(total * 0.50);
+      const second = Math.round(total * 0.25);
+      const third = Math.round(total * 0.15);
+      el.innerHTML = '<strong>' + teams + ' teams &times; $' + fee + ' = $' + total.toLocaleString() + '</strong><br>' +
+        '1st: $' + first.toLocaleString() + ' &middot; 2nd: $' + second.toLocaleString() + ' &middot; 3rd: $' + third.toLocaleString();
     }
 
     function toggleScrambleSideGame(type, hole) {
