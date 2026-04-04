@@ -159,7 +159,7 @@
     .qs-ghin-btn{padding:14px 20px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:56px;transition:background 0.15s}
     .qs-ghin-btn:hover{background:#d4b068}
     .qs-ghin-btn:disabled{opacity:0.4;cursor:not-allowed}
-    .qs-or-divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:rgba(252,249,244,0.3);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+    .qs-or-divider{display:flex;align-items:center;gap:12px;margin:8px 0;color:rgba(252,249,244,0.3);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
     .qs-or-divider::before,.qs-or-divider::after{content:'';flex:1;height:1px;background:rgba(252,249,244,0.1)}
 
     /* Textarea */
@@ -775,11 +775,11 @@
             <input class="qs-ghin-input" id="qs-ghin-num" type="text" placeholder="GHIN # (optional)" style="flex:0.5" value="${esc(_qsGhinNum)}" onkeydown="if(event.key==='Enter'){event.preventDefault();qsGhinLookup()}">
             <button class="qs-ghin-btn" onclick="qsGhinLookup()" ${_qsGhinSearching ? 'disabled' : ''}>${_qsGhinSearching ? '...' : 'Search'}</button>
           </div>
-          <div id="qs-ghin-dropdown" style="max-height:240px;overflow-y:auto;border-radius:0 0 8px 8px;background:rgba(27,48,34,0.95)"></div>
+          <div id="qs-ghin-dropdown" style="max-height:200px;overflow-y:auto;border-radius:0 0 8px 8px;background:rgba(27,48,34,0.95)"></div>
           </div>
-          <div class="qs-or-divider">or type names below</div>
-          <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8" oninput="updateQsPreview()">${esc(curText)}</textarea>
-          <div style="font-size:11px;color:rgba(252,249,244,0.3);margin-top:4px">One per line \u2014 Name, Handicap (handicap optional)</div>
+          <div style="height:1px;background:rgba(197,160,89,0.15);margin:14px 0"></div>
+          <textarea class="qs-textarea" placeholder="Jake Sullivan, 8.2&#10;Ryan Costa, 14.6&#10;Mike Torres, 5.1&#10;Dan Keller, 11.8" oninput="updateQsPreview()" style="min-height:90px">${esc(curText)}</textarea>
+          <div style="font-size:11px;color:rgba(252,249,244,0.3);margin-top:4px">One per line. Handicap optional.</div>
 
           <div id="qs-preview-area">
           ${players.length > 0 ? `
