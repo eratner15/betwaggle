@@ -1079,7 +1079,7 @@
     <div class="calc-inner">
       <span class="section-label">Affiliate Calculator</span>
       <h2>See what your course could earn.</h2>
-      <p>Waggle charges $149/season for recurring scramble and outing groups. As an affiliate, you earn 25% on every season plan booked through your link. Drag the slider to estimate your annual revenue.</p>
+      <p>Waggle charges $149/season pass for recurring scramble and outing groups. As an affiliate, you earn 25% on every season plan booked through your link. Drag the slider to estimate your annual revenue.</p>
       <div class="calc-widget">
         <div class="calc-row">
           <label for="scramble-slider">Season passes per year</label>
@@ -1102,7 +1102,7 @@
             <div class="calc-result-label">Cost to You</div>
           </div>
         </div>
-        <div class="calc-formula" id="calc-formula">20 season plans/year x $149/season x 25% = <strong>$745/year</strong></div>
+        <div class="calc-formula" id="calc-formula">20 season plans/year x $149/season pass x 25% = <strong>$745/year</strong></div>
       </div>
     </div>
   </div>
@@ -1309,7 +1309,7 @@
         countEl.textContent = n;
         revenueEl.textContent = '$' + annual.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         perEventEl.textContent = '$' + perEvent.toFixed(2);
-        formulaEl.innerHTML = n + ' season plans/year &times; $149/season &times; 25% = <strong>$' + annual.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '/year</strong>';
+        formulaEl.innerHTML = n + ' season plans/year &times; $149/season pass &times; 25% = <strong>$' + annual.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '/year</strong>';
       }
 
       slider.addEventListener('input', update);

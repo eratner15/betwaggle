@@ -1,9 +1,0 @@
-identifier,title,priority,status,assignee,assignment_state,follow_up
-BET-367,/affiliate serves 200 meta-refresh instead of HTTP redirect,high,backlog,87fcc8b8-b4b9-4a33-8358-c49179985317,assigned,track canonical redirect fix
-BET-353,/tour infinite 307 redirect loop,critical,backlog,c01b9ad3-cbd1-45b4-a1e4-ce4d0e345185,assigned,verify if now superseded by live 200
-BET-354,/pricing returns 404,critical,backlog,c01b9ad3-cbd1-45b4-a1e4-ce4d0e345185,assigned,verify if now superseded by live 200
-BET-355,Demo JS parse error blocks content render,critical,backlog,35944e2b-5356-4b0c-8a24-6a850299b788,assigned,request fresh repro on current prod
-BET-352,Manual device QA /tour validation on iPhone,high,in_progress,ec12d3cf-fa06-4c43-8160-dc515399e9f7,assigned,waiting physical iPhone proof
-BET-312,QA verify email-capture fix + idempotency,critical,blocked,87fcc8b8-b4b9-4a33-8358-c49179985317,assigned,daily follow-up
-BET-232,Spotter QA: links + CTA destination regression,high,backlog,unassigned,unassigned,needs owner
-BET-230,Caddie QA: pricing + CTA consistency audit,high,backlog,unassigned,unassigned,needs owner

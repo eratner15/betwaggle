@@ -465,6 +465,17 @@
         }, 2200);
       }
 
+      function maybeShowHoleSavedToast(holeNumber) {
+        var hole = Math.max(1, parseInt(holeNumber, 10) || 1);
+        var message = 'Hole ' + hole + ' saved';
+        var toast = document.getElementById('mg-toast');
+        if (toast && toast.classList && toast.classList.contains('show')) {
+          var current = String(toast.textContent || '').trim().toLowerCase();
+          if (current === message.toLowerCase()) return;
+        }
+        showToastFallback(message);
+      }
+
       async function copyTextFallback(text) {
         var value = String(text || '');
         if (!value) return false;
@@ -881,6 +892,7 @@
                   latency_ms: latency,
                   auto_advanced: autoAdvanced
                 });
+                maybeShowHoleSavedToast(holeBefore);
                 window.__mgS3SaveRetryPending = false;
                 window.__mgS3SyncState = 'synced';
                 window.__mgS3SyncStateTs = Date.now();

@@ -2,3 +2,7 @@ node_modules/
 .wrangler/
 .dev.vars
 .gstack/
+inventory/
+reports/
+*-private/
+*.Zone.Identifier

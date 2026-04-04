@@ -9,7 +9,7 @@ Source spec: `docs/viral-ux-sprint-3-game-flow-spec.md`
 | 1) Scoring Cockpit canonical flow | Implemented | Inline score surface is canonical; FAB/modal paths are normalized to inline composer behavior via app runtime shim in `app/index.html`. |
 | 1.2 Persistent progress strip | Implemented | Progress strip copy/state (`Hole X of Y`, completed/remaining, waiting/missing, ready-to-save state) is now enforced by runtime shim fallback in `app/index.html` and remains present in protected core render path. |
 | 1.3 Validation + first-invalid focus | Implemented | Input validation/focus guard enforced by shim in `app/index.html`; save prevented until valid. |
-| 1.4 Save + auto-advance + queued/offline state | Implemented | Save/auto-advance behavior exists in protected core render/state paths; shim now also enforces a visible sync-state chip (`Queued` / `Syncing` / `Synced`) in `app/index.html`. |
+| 1.4 Save + auto-advance + queued/offline state | Implemented | Save/auto-advance behavior exists in protected core render/state paths; shim now enforces a visible sync-state chip (`Queued` / `Syncing` / `Synced`) and explicit success toast copy (`Hole {n} saved`) in `app/index.html`. |
 | 1.5 Mobile-first controls | Implemented | Sticky save bar behavior + minimum CTA height enforced by shim; mobile inline input target set to 56px in `app/css/styles.css`. |
 | 2.1 Round complete transition panel | Implemented | `Round Complete` + `Review Settlement` + `Edit Last Hole` panel already present in protected core render path (`app/js/views.js`). |
 | 2.2 Settle Round helper copy | Implemented | Helper copy is injected below `Settle Round` controls by shim (`app/index.html`). |

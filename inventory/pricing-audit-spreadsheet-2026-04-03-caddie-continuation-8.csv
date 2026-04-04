@@ -1,8 +1,0 @@
-page,element,current_price,correct_price,status,evidence,notes
-/,Primary pricing + CTA,$32/event and $149/season pass,$32/event and $149/season pass,correct,"live check 2026-04-03T20:39Z",No $199 found
-/tour/,Comparison table + CTA,$32/event and $149/season pass,$32/event and $149/season pass,correct,"live check 2026-04-03T20:39Z",No $199 found
-/pricing/,Season CTA and JS fallback text,$149/season,$149/season pass,incorrect,"live /pricing/ lines 790,967,968",Season wording regressed from canonical 'season pass'
-/demo/,Primary CTA,$32/event,$32/event,correct,"live check 2026-04-03T20:39Z",Demo pricing copy remains correct
-/pro/,Revenue copy and calculator,$149/season pass primary + $149/season calculator,$149/season pass,mixed,"live /pro lines 1082,1105,1312",No longer says '$149 per scramble event', but still mixed wording
-emails/templates,Drip + outreach,$32/event + $149/season pass references,$32/event + $149/season pass,mixed,"source scan /emails",Content mostly aligned; delivery verification separate
-worker.js + create/index.html,Hardcoded labels,$149/season variants,$149/season pass,mixed,"source scan",Amount constants correct, wording normalization pending

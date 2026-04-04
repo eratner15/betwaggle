@@ -2873,9 +2873,17 @@
       }
     })();
 
-    // Auto-select format from URL params (e.g., ?format=skins&tier=free)
+    // Auto-select flow from URL params (e.g., ?format=skins&tier=season)
     (function autoSelectFormat() {
       const params = new URLSearchParams(window.location.search);
+      const tier = (params.get('tier') || '').toLowerCase();
+      if (tier === 'season') {
+        W.type = 'scramble';
+        W.step = 0;
+      } else if (tier === 'event' || tier === 'buddies' || tier === 'trip') {
+        W.type = 'trip';
+        W.step = 0;
+      }
       const fmt = params.get('format');
       if (!fmt) return;
       const formatMap = { skins: 'quick', nassau: 'quick', wolf: 'quick', 'match-play': 'quick', scramble: 'scramble' };

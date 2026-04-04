@@ -88,26 +88,24 @@ function isCheckoutSuccessUiPath(pathname) {
   );
 }
 
-function getLegacyAffiliateCanonicalPath(pathname) {
-  const raw = String(pathname || '/');
-  const normalized = normalizeRoutePathname(raw);
-  if (!normalized.startsWith('/affiliate/')) return null;
-
+function isBlockedLegacyAffiliatePath(pathname) {
+  const normalized = normalizeRoutePathname(pathname);
+  if (!normalized.startsWith('/affiliate/')) return false;
   // Keep legacy utility endpoint stable.
-  if (normalized === '/affiliate/generate/' || normalized === '/affiliate/generate/index/' || normalized === '/affiliate/generate/index.html/') {
-    return null;
-  }
+  return !(
+    normalized === '/affiliate/generate/' ||
+    normalized === '/affiliate/generate/index/' ||
+    normalized === '/affiliate/generate/index.html/'
+  );
+}
 
-  if (normalized === '/affiliate/' || normalized === '/affiliate/index/' || normalized === '/affiliate/index.html/') {
-    return '/affiliates/';
-  }
-
-  if (normalized === '/affiliate/dashboard/' || normalized === '/affiliate/dashboard.html/' || normalized === '/affiliate/dashboard/index/' || normalized === '/affiliate/dashboard/index.html/') {
-    return '/affiliates/dashboard';
-  }
-
-  const suffix = normalized.slice('/affiliate/'.length);
-  return `/affiliates/${suffix}`.replace(/\/{2,}/g, '/').replace(/\/index\.html\/?$/i, '/').replace(/\/index\/?$/i, '/');
+function isAffiliateGeneratePath(pathname) {
+  const normalized = normalizeRoutePathname(pathname);
+  return (
+    normalized === '/affiliate/generate/' ||
+    normalized === '/affiliate/generate/index/' ||
+    normalized === '/affiliate/generate/index.html/'
+  );
 }
 
 function isPrivateRoutePath(pathname) {
@@ -559,7 +557,7 @@ export default {
 
     // ===== COURSE DETAIL PAGE =====
     // /courses/:id — dynamic course detail page (server-rendered)
-    const coursePageMatch = url.pathname.match(/^\/courses\/(\d+)\/?$/);
+    const coursePageMatch = url.pathname.match(/^\/courses\/([a-z0-9_-]+)\/?$/);
     if (coursePageMatch) {
       return handleCourseDetailPage(coursePageMatch[1], env);
     }
@@ -788,9 +786,7 @@ export default {
       '/setup': '/create/',
       '/guide': '/overview/',
       '/rules': '/games/',
-      '/games/stroke-play': '/games/match-play/',
       '/games/round-robin': '/games/nassau/',
-      '/games/chapman': '/games/best-ball/',
       '/help': '/overview/',
     };
     const redirectTarget = friendlyRedirects[url.pathname] || friendlyRedirects[url.pathname.replace(/\/$/, '')];
@@ -1223,15 +1219,13 @@ export default {
       return env.ASSETS.fetch(req);
     }
 
-    // /affiliate/* — legacy alias, permanently redirect to canonical /affiliates/*.
-    const canonicalAffiliatePath = getLegacyAffiliateCanonicalPath(url.pathname);
-    if (canonicalAffiliatePath) {
-      const canonicalAffiliateUrl = `${url.origin}${canonicalAffiliatePath}${url.search}`;
-      return Response.redirect(canonicalAffiliateUrl, 301);
+    // /affiliate/* — legacy alias paths are blocked to enforce a single canonical entrypoint.
+    if (isBlockedLegacyAffiliatePath(url.pathname)) {
+      return privateRouteNotFound();
     }
 
     // /affiliate/generate — generate a referral link
-    if (url.pathname === '/affiliate/generate' && request.method === 'GET') {
+    if (isAffiliateGeneratePath(url.pathname) && request.method === 'GET') {
       return handleAffiliateGenerate(url);
     }
 
@@ -2347,10 +2341,10 @@ document.getElementById('inp-email').addEventListener('keydown', e => { if (e.ke
 // ─── Stripe Payment Gate ───────────────────────────────────────────────
 
 const WAGGLE_PRICES = { member_guest: 14900, scramble: 14900, trip: 3200, outing: 3200 };
-const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149/season)', scramble: 'Waggle Scramble / Outing ($149/season)', trip: 'Waggle Buddies Trip ($32/event)', outing: 'Waggle Event ($32/event)' };
+const WAGGLE_LABELS = { member_guest: 'Waggle Member-Guest ($149/season pass)', scramble: 'Waggle Scramble / Outing ($149/season pass)', trip: 'Waggle Buddies Trip ($32/event)', outing: 'Waggle Event ($32/event)' };
 const CHECKOUT_TIERS = {
   event: { amount: 3200, label: 'Waggle Event ($32/event)' },
-  season: { amount: 14900, label: 'Waggle Season Pass ($149/season)' },
+  season: { amount: 14900, label: 'Waggle Season Pass ($149/season pass)' },
 };
 
 // Built-in promo codes — can move to KV later
@@ -4030,16 +4024,54 @@ async function handleWaggleSuccess(url, env) {
 async function handleCourseDetailPage(courseId, env) {
   const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   let course = null;
-  try {
-    const apiKey = env.GOLF_COURSE_API_KEY || '';
-    const res = await fetch(`https://api.golfcourseapi.com/v1/courses/${courseId}`, {
-      headers: { 'Authorization': `Key ${apiKey}` }
-    });
-    if (res.ok) {
-        const raw = await res.json();
-        course = raw.course || raw;
+  const isNumericCourseId = /^\d+$/.test(String(courseId));
+  if (isNumericCourseId) {
+    try {
+      const apiKey = env.GOLF_COURSE_API_KEY || '';
+      const res = await fetch(`https://api.golfcourseapi.com/v1/courses/${courseId}`, {
+        headers: { 'Authorization': `Key ${apiKey}` }
+      });
+      if (res.ok) {
+          const raw = await res.json();
+          course = raw.course || raw;
+        }
+    } catch {}
+  }
+
+  // Fallback for local/seed/custom course ids (e.g. "pebble-beach"), so /courses/:id links never dead-end.
+  if (!course) {
+    try {
+      const localRes = await handleCourseGet(String(courseId), env);
+      if (localRes.ok) {
+        const local = await localRes.json();
+        const pars = Array.isArray(local.par) ? local.par : [];
+        const strokeIndex = Array.isArray(local.strokeIndex) ? local.strokeIndex : [];
+        const seedHoles = pars.map((par, idx) => ({
+          hole_number: idx + 1,
+          par: Number(par) || 4,
+          handicap: Number(strokeIndex[idx]) || (idx + 1),
+          yardage: 0,
+        }));
+        course = {
+          id: local.id || courseId,
+          club_name: local.club_name || local.course_name || local.name || 'Golf Course',
+          course_name: local.course_name || '',
+          location: {
+            city: local.city || '',
+            state: local.state || '',
+          },
+          tees: {
+            male: seedHoles.length ? [{
+              tee_name: 'Default',
+              course_rating: local.rating || null,
+              slope_rating: local.slope || null,
+              holes: seedHoles,
+            }] : [],
+          },
+        };
       }
-  } catch {}
+    } catch {}
+  }
 
   if (!course) {
     return new Response(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Course Not Found</title></head><body style="font-family:Inter,sans-serif;text-align:center;padding:80px 20px"><h1>Course not found</h1><p><a href="/courses/">Back to search</a></p></body></html>`, {
@@ -4817,12 +4849,12 @@ async function handleAdsGenerate(request, env) {
 
   const segDesc = {
     trip: 'guys planning annual golf buddy trips who run Nassau/skins/wolf ($32/event)',
-    club: 'golf club members or staff running member-guests or charity outings ($149/season)',
+    club: 'golf club members or staff running member-guests or charity outings ($149/season pass)',
     pro: 'club professionals offering a live betting add-on to members',
   };
 
   const pts = (body.painPoints || []).slice(0, 6).map(p => `- "${p.text}"`).join('\n');
-  const prompt = `You write direct-response Google Search ads for Waggle, a ${body.segment === 'club' ? '$149/season' : '$32/event'} golf sportsbook that runs Nassau/skins/wolf from any phone with no app download and auto-settlement.
+  const prompt = `You write direct-response Google Search ads for Waggle, a ${body.segment === 'club' ? '$149/season pass' : '$32/event'} golf sportsbook that runs Nassau/skins/wolf from any phone with no app download and auto-settlement.
 
 Target: ${segDesc[body.segment] || segDesc.trip}
 
@@ -9820,7 +9852,8 @@ async function sha256Hex(value) {
 }
 
 async function persistEmailCaptureInD1(env, record) {
-  if (!env.WAGGLE_DB || emailCaptureD1Unavailable) return false;
+  if (!env.WAGGLE_DB) return { stored: false, reason: 'db_not_bound' };
+  if (emailCaptureD1Unavailable) return { stored: false, reason: 'table_missing' };
   const email = record.email;
   const source = record.source || '';
   const sourcePage = record.source_page || '';
@@ -9849,7 +9882,7 @@ async function persistEmailCaptureInD1(env, record) {
       optedIn,
       capturedAt
     ).run();
-    return true;
+    return { stored: true, reason: null };
   } catch (e) {
     const msg = String(e?.message || '').toLowerCase();
     if (msg.includes('on conflict clause does not match')) {
@@ -9882,17 +9915,32 @@ async function persistEmailCaptureInD1(env, record) {
             capturedAt
           ).run();
         }
-        return true;
+        return { stored: true, reason: null };
       } catch (fallbackErr) {
         console.error('email_capture_d1_fallback_error', fallbackErr?.message || fallbackErr);
+        return { stored: false, reason: 'upsert_conflict' };
       }
     }
     if (msg.includes('no such table')) {
       emailCaptureD1Unavailable = true;
+      return { stored: false, reason: 'table_missing' };
     }
     console.error('email_capture_d1_error', e?.message || e);
-    return false;
+    return { stored: false, reason: 'write_failed' };
   }
+}
+
+function buildEmailCaptureStoredState(d1Result) {
+  const d1Stored = Boolean(d1Result?.stored);
+  const d1Reason = d1Result?.reason || null;
+  const stored = {
+    kv: true,
+    d1: d1Stored,
+    canonical: true,
+    canonicalStore: d1Stored ? 'd1' : 'kv',
+  };
+  if (!d1Stored && d1Reason) stored.d1Reason = d1Reason;
+  return stored;
 }
 
 async function enforceEmailCaptureRateLimit(env, request) {
@@ -10036,13 +10084,16 @@ async function handleEmailCapture(request, env, ctx) {
         stage = 'kv_write_existing';
         await env.MG_BOOK.put(kvKey, JSON.stringify(updated));
         stage = 'd1_upsert_existing';
-        const d1Stored = await persistEmailCaptureInD1(env, updated);
-        if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
+        const d1Persist = await persistEmailCaptureInD1(env, updated);
+        const d1Stored = Boolean(d1Persist?.stored);
+        const storedState = buildEmailCaptureStoredState(d1Persist);
+        if (!d1Stored && env.WAGGLE_DB && d1Persist?.reason !== 'table_missing') {
           console.warn('email_capture_d1_degraded', JSON.stringify({
             requestId,
             emailHash,
             stage,
             mode: 'existing',
+            reason: d1Persist?.reason || 'unknown',
           }));
         }
 
@@ -10053,7 +10104,7 @@ async function handleEmailCapture(request, env, ctx) {
               code: 'RESEND_NOT_CONFIGURED',
               requestId,
               emailHash,
-              stored: { kv: true, d1: d1Stored },
+              stored: storedState,
             }), { status: 503, headers: EMAIL_CORS });
           }
           const suppressionKey = `email-drip:capture:${normalizedEmail}`;
@@ -10077,7 +10128,6 @@ async function handleEmailCapture(request, env, ctx) {
               emailHash,
               suppressionKey,
             }).catch(async (err) => {
-              await env.MG_BOOK.delete(suppressionKey).catch(() => {});
               console.error('email_capture_drip_failed', JSON.stringify({
                 emailCaptureId,
                 requestId,
@@ -10085,6 +10135,7 @@ async function handleEmailCapture(request, env, ctx) {
                 triggerOutcome: 'failed',
                 resendStatus: err?.resendStatus || null,
                 message: err?.message || String(err),
+                suppressionRetained: true,
               }));
             });
             if (ctx?.waitUntil) ctx.waitUntil(dripJob);
@@ -10093,7 +10144,7 @@ async function handleEmailCapture(request, env, ctx) {
             return new Response(JSON.stringify({
               ok: true,
               message: 'Already subscribed',
-              stored: { kv: true, d1: d1Stored },
+              stored: storedState,
               drip: {
                 queued: true,
                 suppressed: false,
@@ -10107,7 +10158,7 @@ async function handleEmailCapture(request, env, ctx) {
           return new Response(JSON.stringify({
             ok: true,
             message: 'Already subscribed',
-            stored: { kv: true, d1: d1Stored },
+            stored: storedState,
             drip: {
               queued: false,
               suppressed: true,
@@ -10122,7 +10173,7 @@ async function handleEmailCapture(request, env, ctx) {
         return new Response(JSON.stringify({
           ok: true,
           message: 'Already subscribed',
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
           drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
           emailCaptureId,
           requestId,
@@ -10150,20 +10201,23 @@ async function handleEmailCapture(request, env, ctx) {
       stage = 'kv_write_new';
       await env.MG_BOOK.put(kvKey, JSON.stringify(record));
       stage = 'd1_upsert_new';
-      const d1Stored = await persistEmailCaptureInD1(env, record);
-      if (!d1Stored && env.WAGGLE_DB && !emailCaptureD1Unavailable) {
+      const d1Persist = await persistEmailCaptureInD1(env, record);
+      const d1Stored = Boolean(d1Persist?.stored);
+      const storedState = buildEmailCaptureStoredState(d1Persist);
+      if (!d1Stored && env.WAGGLE_DB && d1Persist?.reason !== 'table_missing') {
         console.warn('email_capture_d1_degraded', JSON.stringify({
           requestId,
           emailHash,
           stage,
           mode: 'new',
+          reason: d1Persist?.reason || 'unknown',
         }));
       }
 
       if (!record.opted_in_newsletter) {
         return new Response(JSON.stringify({
           ok: true,
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
           drip: { queued: false, suppressed: true, reason: 'newsletter_opt_out' },
           emailCaptureId: record.email_capture_id,
           requestId,
@@ -10177,7 +10231,7 @@ async function handleEmailCapture(request, env, ctx) {
           code: 'RESEND_NOT_CONFIGURED',
           requestId,
           emailHash,
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
         }), { status: 503, headers: EMAIL_CORS });
       }
 
@@ -10187,7 +10241,7 @@ async function handleEmailCapture(request, env, ctx) {
       if (suppression) {
         return new Response(JSON.stringify({
           ok: true,
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
           drip: {
             queued: false,
             suppressed: true,
@@ -10218,7 +10272,6 @@ async function handleEmailCapture(request, env, ctx) {
             emailHash,
             suppressionKey,
           }).catch(async (err) => {
-            await env.MG_BOOK.delete(suppressionKey).catch(() => {});
             console.error('email_capture_drip_failed', JSON.stringify({
               emailCaptureId: record.email_capture_id,
               requestId,
@@ -10226,12 +10279,13 @@ async function handleEmailCapture(request, env, ctx) {
               triggerOutcome: 'failed',
               resendStatus: err?.resendStatus || null,
               message: err?.message || String(err),
+              suppressionRetained: true,
             }));
           })
         );
         return new Response(JSON.stringify({
           ok: true,
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
           drip: {
             queued: true,
             suppressed: false,
@@ -10263,13 +10317,13 @@ async function handleEmailCapture(request, env, ctx) {
           emailHash,
           emailCaptureId: record.email_capture_id,
           resendStatus: err?.resendStatus || null,
-          stored: { kv: true, d1: d1Stored },
+          stored: storedState,
         }), { status: 502, headers: EMAIL_CORS });
       }
 
       return new Response(JSON.stringify({
         ok: true,
-        stored: { kv: true, d1: d1Stored },
+        stored: storedState,
         drip: {
           queued: false,
           suppressed: false,
