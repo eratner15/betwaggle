@@ -8460,6 +8460,18 @@ async function handleEventApi(slug, path, request, env, ctx) {
           gameState.bloodsome = result;
           allEvents.push(...(result.events || []));
         }
+        // CTP / Longest Drive side game data (optional fields from score entry)
+        if (body.ctp || body.ld) {
+          if (!gameState.sideGames) gameState.sideGames = { ctp: {}, ld: {} };
+          if (body.ctp) {
+            gameState.sideGames.ctp[holeNum] = String(body.ctp);
+            allEvents.push({ type: 'ctp_winner', hole: holeNum, winner: body.ctp, text: `CTP Hole ${holeNum}: ${body.ctp}` });
+          }
+          if (body.ld) {
+            gameState.sideGames.ld[holeNum] = String(body.ld);
+            allEvents.push({ type: 'ld_winner', hole: holeNum, winner: body.ld, text: `Long Drive Hole ${holeNum}: ${body.ld}` });
+          }
+        }
         await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
         await bumpEventSyncMeta(env, K, { scope: 'hole', source: 'hole-score', actor: isAdmin ? 'admin' : 'public' });
       } catch (e) {

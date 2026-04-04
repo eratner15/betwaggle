@@ -6885,6 +6885,117 @@ export function renderSettlement(state) {
     return html;
   }
 
+  // ── Scramble Settlement (prize pool + CTP/LD winners) ──
+  if (games.scramble && gameState?.scramble) {
+    const scramble = gameState.scramble;
+    const leaderboard = scramble.leaderboard || [];
+    const pars = getCoursePars(config);
+    const parForPlayed = holesPlayed > 0 ? pars.slice(0, holesPlayed).reduce((s, p) => s + p, 0) : 0;
+    const prizePool = config?.scramblePrizePool;
+    const ppTotal = prizePool?.total || ((config?.scrambleEntryFee || 0) * leaderboard.length);
+    const ppPayouts = prizePool?.payouts || {};
+    const defaultSplit = [0.5, 0.25, 0.15, 0.10];
+    const ctpPrize = prizePool?.ctpPerHole || 0;
+    const sideGames = config?.scrambleSideGames;
+    const ctpWinners = gameState?.sideGames?.ctp || {};
+    const ldWinners = gameState?.sideGames?.ld || {};
+
+    if (holesPlayed < holesPerRound) {
+      // Incomplete — show progress
+      const pct = Math.round((holesPlayed / holesPerRound) * 100);
+      html += `<div style="padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:16px;font-weight:700;color:var(--text-primary)">Round in Progress</div>
+          <div style="font-size:22px;font-weight:900;color:#C5A059">${holesPlayed}/${holesPerRound}</div>
+        </div>
+        <div style="background:rgba(197,160,89,0.1);border-radius:8px;height:8px;overflow:hidden;margin-bottom:14px">
+          <div style="background:linear-gradient(90deg,#C5A059,#D4B76E);height:100%;width:${pct}%;border-radius:8px"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px">${holesPerRound - holesPlayed} holes remaining</div>
+        <a href="#dashboard" style="display:block;text-align:center;padding:14px;border-radius:10px;background:#C5A059;color:#1B3022;text-decoration:none;font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;min-height:48px">Continue Scoring</a>
+      </div>`;
+      html += `</div>`;
+      return html;
+    }
+
+    // Complete — full scramble settlement
+    html += `<div style="padding:16px">`;
+
+    // Event info
+    html += `<div style="text-align:center;margin-bottom:16px">
+      <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:20px;font-weight:700;color:#C5A059">${escHtml(config?.event?.name || 'Scramble')}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${escHtml(config?.event?.venue || '')} &middot; ${holesPlayed} holes &middot; ${leaderboard.length} teams</div>
+    </div>`;
+
+    // Final standings with prizes
+    html += `<div style="margin-bottom:16px">
+      <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:10px">Final Standings</div>`;
+
+    const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
+    leaderboard.forEach((entry, i) => {
+      const toPar = entry.total - parForPlayed;
+      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
+      const prize = ppPayouts[i + 1] || (ppTotal > 0 && i < 4 ? Math.round(ppTotal * defaultSplit[i]) : 0);
+      const isWinner = i === 0;
+      const medal = i < 3 ? medals[i] : '';
+
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;${i < leaderboard.length - 1 ? 'border-bottom:1px solid rgba(197,160,89,0.15);' : ''}${isWinner ? 'background:rgba(197,160,89,0.06);margin:0 -16px;padding:12px 16px;border-radius:8px;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;width:24px;text-align:center">${medal || `<span style="font-size:12px;color:var(--text-secondary)">${i + 1}</span>`}</span>
+          <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:${isWinner ? '16' : '14'}px;font-weight:700;color:var(--text-primary)">${escHtml(entry.team)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:${isWinner ? '22' : '16'}px;font-weight:700;color:${toPar <= 0 ? '#1B3022' : '#DC2626'}">${toParStr}</span>
+          ${prize > 0 ? `<span style="font-size:14px;font-weight:800;color:#C5A059">$${prize.toLocaleString()}</span>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+
+    // CTP Winners
+    if (sideGames?.closestToPin?.length > 0) {
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:10px;padding:16px;margin-bottom:10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:10px">Closest to Pin${ctpPrize > 0 ? ' &middot; $' + ctpPrize + '/hole' : ''}</div>`;
+      sideGames.closestToPin.forEach(hole => {
+        const winner = ctpWinners[hole];
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <span style="font-size:13px;color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
+          <span style="font-size:13px;font-weight:700;color:${winner ? '#C5A059' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner) : 'No winner'}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // LD Winners
+    if (sideGames?.longestDrive?.length > 0) {
+      html += `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:10px;padding:16px;margin-bottom:10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:10px">Longest Drive</div>`;
+      sideGames.longestDrive.forEach(hole => {
+        const winner = ldWinners[hole];
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <span style="font-size:13px;color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
+          <span style="font-size:13px;font-weight:700;color:${winner ? '#C5A059' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner) : 'No winner'}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Total prize pool summary
+    if (ppTotal > 0) {
+      html += `<div style="background:rgba(197,160,89,0.06);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px;text-align:center;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(27,48,34,0.5)">Total Prize Pool</div>
+        <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:28px;font-weight:700;color:#C5A059;margin-top:4px">$${ppTotal.toLocaleString()}</div>
+      </div>`;
+    }
+
+    // Share button
+    html += `<button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:#C5A059;color:#1B3022;border:none;border-radius:10px;font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;cursor:pointer;min-height:56px;margin-bottom:8px">Share Results</button>`;
+    html += `<a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}" style="display:block;text-align:center;padding:14px;background:rgba(27,48,34,0.06);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:#1B3022;text-decoration:none">Create Your Own Scramble &rarr;</a>`;
+
+    html += `</div></div>`;
+    return html;
+  }
+
   const eventName = config?.event?.name || 'Golf Event';
   const eventDate = config?.event?.dates?.day1 || '';
   const settlePlayers = getPlayersFromConfig(config);
