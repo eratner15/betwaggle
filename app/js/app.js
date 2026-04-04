@@ -1252,25 +1252,24 @@ window.MG = {
     let lines = [];
 
     // Header block
-    lines.push(`\u26F3 ${eventName}`);
-    if (eventDate) lines.push(`\u{1F4C5} ${eventDate}`);
-    if (stakeParts.length > 0) lines.push(`\u{1F3B0} ${stakeParts.join(' \u00b7 ')}`);
-    if (holesPlayed > 0) lines.push(`\u{1F3CC}\u{FE0F} ${holesPlayed} holes played`);
+    lines.push(`THE LEDGER`);
+    lines.push(`${eventName}`);
+    if (eventDate) lines.push(eventDate);
+    if (stakeParts.length > 0) lines.push(stakeParts.join(' . '));
+    if (holesPlayed > 0) lines.push(`${holesPlayed} holes`);
     lines.push('');
 
-    // Standings with medal emojis and bar chart
+    // Standings — clean, no emojis
     if (sorted.length > 0 && Object.values(pnl).some(v => v !== 0)) {
-      lines.push('\u{1F3C6} FINAL STANDINGS');
-      lines.push('\u2500'.repeat(24));
-      const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+      lines.push('FINAL STANDINGS');
+      lines.push('-'.repeat(24));
       const maxNameLen = Math.max(...sorted.map(p => p.name.length));
       sorted.forEach((p, i) => {
         const money = pnl[p.name] || 0;
         const moneyStr = money === 0 ? '  Even' : money > 0 ? ` +$${money}` : ` -$${Math.abs(money)}`;
-        const medal = i < 3 ? medals[i] : '  ';
-        const bar = money > 0 ? '\u{1F7E2}'.repeat(Math.min(Math.ceil(money / 10), 5)) : money < 0 ? '\u{1F534}'.repeat(Math.min(Math.ceil(Math.abs(money) / 10), 5)) : '\u26AA';
+        const pos = `${i + 1}.`;
         const name = p.name.padEnd(maxNameLen);
-        lines.push(`${medal} ${name} ${moneyStr}  ${bar}`);
+        lines.push(`${pos} ${name} ${moneyStr}`);
       });
       lines.push('');
     }
@@ -1279,7 +1278,7 @@ window.MG = {
     if (games.skins && gs?.skins?.holes) {
       const skinWinners = Object.entries(gs.skins.holes).filter(([, d]) => d.winner);
       if (skinWinners.length > 0) {
-        lines.push('\u{1F4B0} SKINS');
+        lines.push('SKINS');
         const tally = {};
         skinWinners.forEach(([h, d]) => {
           if (!tally[d.winner]) tally[d.winner] = { holes: [], total: 0 };
@@ -1302,7 +1301,7 @@ window.MG = {
     // Nassau results
     if (games.nassau && gs?.nassau) {
       const nas = gs.nassau;
-      lines.push('\u{1F3CC}\u{FE0F} NASSAU');
+      lines.push('NASSAU');
       if (nas.frontWinner) lines.push(`   Front 9: ${nas.frontWinner} \u2705`);
       if (nas.backWinner) lines.push(`   Back 9:  ${nas.backWinner} \u2705`);
       if (nas.totalWinner) lines.push(`   Overall: ${nas.totalWinner} \u2705`);
@@ -1370,7 +1369,7 @@ window.MG = {
 
     // Footer
     lines.push('\u2500'.repeat(24));
-    lines.push(`Powered by Waggle \u26F3`);
+    lines.push('Powered by Waggle');
     lines.push(`https://betwaggle.com`);
 
     const text = lines.join('\n');
@@ -1524,39 +1523,45 @@ window.MG = {
       const x = PAD - 8;
       const w = CONTENT_W + 16;
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.06)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 3;
       roundRect(x, y, w, h, 10);
-      ctx.fillStyle = opts.bg || '#FFFFFF';
+      ctx.fillStyle = opts.bg || 'rgba(250,248,245,0.06)';
       ctx.fill();
+      // Gold top border
+      ctx.fillStyle = '#C4A35A';
+      ctx.fillRect(x, y, w, 2);
       if (opts.border) {
         ctx.strokeStyle = opts.border;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
       ctx.restore();
-      return { x: x + 12, y: y + 14, w: w - 24 };
+      return { x: x + 12, y: y + 16, w: w - 24 };
     }
 
     function drawCardHeader(inner, text) {
-      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      ctx.fillStyle = '#8B8680';
+      ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#C4A35A';
       ctx.letterSpacing = '1.5px';
       ctx.fillText(text.toUpperCase(), inner.x, inner.y + 4);
       ctx.letterSpacing = '0px';
     }
 
-    // --- Background ---
+    // --- Background (dark navy — Trading Floor mode) ---
     roundRect(0, 0, W, totalH, 16);
-    ctx.fillStyle = '#F5F0E8';
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
+    bgGrad.addColorStop(0, '#1B2B4B');
+    bgGrad.addColorStop(1, '#0F1A2E');
+    ctx.fillStyle = bgGrad;
     ctx.fill();
 
     // --- Subtle watermark "W" ---
     ctx.save();
-    ctx.globalAlpha = 0.035;
+    ctx.globalAlpha = 0.04;
     ctx.font = 'bold 320px Georgia, serif';
-    ctx.fillStyle = '#1B2B4B';
+    ctx.fillStyle = '#C4A35A';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('W', W / 2, totalH / 2);
@@ -1576,10 +1581,10 @@ window.MG = {
     ctx.lineTo(0, 16);
     ctx.arcTo(0, 0, 16, 0, 16);
     ctx.closePath();
-    // Dark green gradient header
+    // Navy header (seamless with background)
     const hGrad = ctx.createLinearGradient(0, 0, W, 0);
-    hGrad.addColorStop(0, '#1B2B4B');
-    hGrad.addColorStop(1, '#245C38');
+    hGrad.addColorStop(0, '#0F1A2E');
+    hGrad.addColorStop(1, '#1B2B4B');
     ctx.fillStyle = hGrad;
     ctx.fill();
     ctx.restore();
@@ -1588,16 +1593,18 @@ window.MG = {
     ctx.fillStyle = '#D4AF37';
     ctx.fillRect(PAD, 100, CONTENT_W, 2);
 
-    // Event date
+    // "THE LEDGER" header
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.fillText(eventDate, W / 2, 18);
+    ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(196,163,90,0.6)';
+    ctx.letterSpacing = '3px';
+    ctx.fillText('THE LEDGER', W / 2, 16);
+    ctx.letterSpacing = '0px';
 
     // Event name
-    ctx.font = '700 24px Georgia, serif';
-    ctx.fillStyle = '#D4AF37';
+    ctx.font = '700 22px Georgia, serif';
+    ctx.fillStyle = '#C4A35A';
     ctx.fillText(eventName, W / 2, 38);
 
     // Stakes + holes
@@ -1788,19 +1795,19 @@ window.MG = {
     ctx.lineTo(W * 0.7, footY);
     ctx.stroke();
 
-    // "Powered by Waggle" text
+    // "Powered by Waggle" footer
     ctx.textAlign = 'center';
     ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = '#8B8680';
+    ctx.fillStyle = 'rgba(250,248,245,0.4)';
     ctx.fillText('Powered by', W / 2, footY + 18);
 
     ctx.font = 'bold 20px Georgia, serif';
-    ctx.fillStyle = '#1B2B4B';
+    ctx.fillStyle = '#C4A35A';
     ctx.fillText('Waggle', W / 2, footY + 40);
 
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillStyle = '#D4AF37';
-    ctx.fillText('betwaggle.com', W / 2, footY + 58);
+    ctx.fillStyle = 'rgba(250,248,245,0.3)';
+    ctx.fillText('betwaggle.com/create', W / 2, footY + 58);
 
     ctx.textAlign = 'left';
 
