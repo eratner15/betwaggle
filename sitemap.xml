@@ -71,6 +71,16 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://betwaggle.com/games/stroke-play/</loc>
+    <priority>0.9</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/games/chapman/</loc>
+    <priority>0.9</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://betwaggle.com/guides/</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>

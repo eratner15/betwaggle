@@ -2366,6 +2366,8 @@ hr.mg-divider {
   cursor: pointer;
   display: flex;
   align-items: center;
+  min-width: 56px;
+  min-height: 56px;
   gap: 8px;
   -webkit-tap-highlight-color: transparent;
   letter-spacing: .02em;
@@ -3269,6 +3271,17 @@ body.tv-mode #app {
   background: #0D2818;
   color: #D4AF37;
   box-shadow: 0 0 0 1px rgba(13, 40, 24, 0.45);
+}
+
+/* BET-553: hard guardrail for mobile odds touch targets. */
+.mg-odds-btn,
+.mg-odds-btn--compact,
+.mg-odds-btn--premium-chip,
+.heritage-odds-chip,
+.mg-bar-odds-chip {
+  min-width: var(--mg-touch-target) !important;
+  min-height: var(--mg-touch-target) !important;
+  touch-action: manipulation;
 }
 
 /* Fixed utility toggle for optional sound effects (muted by default) */

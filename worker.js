@@ -108,6 +108,16 @@ function isAffiliateGeneratePath(pathname) {
   );
 }
 
+function isLegacyAffiliateDashboardPath(pathname) {
+  const normalized = normalizeRoutePathname(pathname);
+  return (
+    normalized === '/affiliate/dashboard/' ||
+    normalized === '/affiliate/dashboard/index/' ||
+    normalized === '/affiliate/dashboard/index.html/' ||
+    normalized === '/affiliate/dashboard.html/'
+  );
+}
+
 function isPrivateRoutePath(pathname) {
   const normalized = normalizeRoutePathname(pathname);
   if (PRIVATE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return true;
@@ -1217,6 +1227,13 @@ export default {
     ) {
       const req = new Request(new URL('/affiliates/dashboard.html', request.url), request);
       return env.ASSETS.fetch(req);
+    }
+
+    // /affiliate/dashboard* — canonical redirect to /affiliates/dashboard
+    if (isLegacyAffiliateDashboardPath(url.pathname)) {
+      const dest = new URL('/affiliates/dashboard', request.url);
+      dest.search = url.search;
+      return Response.redirect(dest.toString(), 308);
     }
 
     // /affiliate/* — legacy alias paths are blocked to enforce a single canonical entrypoint.
@@ -6500,7 +6517,7 @@ async function serveEventHtml(slug, request, env) {
     return new Response(`<!DOCTYPE html><html><head><title>Event Not Found</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-block;margin-top:20px;background:#1A472A;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:20px;background:#1A472A;color:#fff;min-height:56px;min-width:160px;padding:0 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
 <body>
 <img src="/waggle_logo.jpg" alt="Waggle" class="logo">
 <h1>Event not found</h1>
@@ -6671,7 +6688,7 @@ async function serveEventHtml(slug, request, env) {
 </div>
 <script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
 ` : ''}
-  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || slug.startsWith('demo-') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
+  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || (slug.startsWith('demo-') && slug !== 'demo-buddies') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
@@ -6719,6 +6736,12 @@ async function serveEventHtml(slug, request, env) {
   <style>
     @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
     @keyframes flashOut { from { opacity:1; } to { opacity:0; transform:scale(0.95); } }
+    /* BET-553 fallback: preserve touch targets even if stylesheet ordering drifts. */
+    .mg-odds-btn,.mg-odds-btn--compact,.mg-odds-btn--premium-chip,.heritage-odds-chip,.mg-bar-odds-chip{
+      min-width:var(--mg-touch-target,56px) !important;
+      min-height:var(--mg-touch-target,56px) !important;
+      touch-action:manipulation;
+    }
   </style>
   <script type="module" src="/${slug}/js/app.js"></script>
 </body>

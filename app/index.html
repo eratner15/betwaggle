@@ -201,12 +201,63 @@
         health: true, go: true, demo: true, pricing: true, pro: true, walkthrough: true
       };
 
+      function normalizeSlugCandidate(value) {
+        var slug = String(value || '').trim().toLowerCase();
+        if (!slug) return '';
+        if (!/^[a-z0-9_-]{2,64}$/.test(slug)) return '';
+        if (reservedRoots[slug]) return '';
+        return slug;
+      }
+
+      function rememberSlug(slug) {
+        if (!slug) return '';
+        try { localStorage.setItem('waggle_last_slug', slug); } catch (_) {}
+        return slug;
+      }
+
       function getEventSlug() {
         try {
+          var qp = new URLSearchParams(location.search || '');
+          var qpSlug = normalizeSlugCandidate(qp.get('slug') || qp.get('eventSlug') || '');
+          if (qpSlug) return rememberSlug(qpSlug);
+
           var m = (location.pathname || '').match(/^\/([a-z0-9_-]+)(?:\/|$)/i);
-          if (!m) return '';
-          var slug = (m[1] || '').toLowerCase();
-          return reservedRoots[slug] ? '' : slug;
+          var pathSlug = normalizeSlugCandidate(m && m[1] ? m[1] : '');
+          if (pathSlug) return rememberSlug(pathSlug);
+
+          var remembered = normalizeSlugCandidate(localStorage.getItem('waggle_last_slug'));
+          if (remembered) return rememberSlug(remembered);
+
+          var stateKeyMatch = null;
+          var identityMatch = null;
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = String(localStorage.key(i) || '');
+            var km = key.match(/^event_([a-z0-9_-]{2,64})_state$/i);
+            if (km && normalizeSlugCandidate(km[1])) {
+              if (!stateKeyMatch) stateKeyMatch = km[1];
+              else stateKeyMatch = ''; // ambiguous
+            }
+            var im = key.match(/^waggle_identity_([a-z0-9_-]{2,64})$/i);
+            if (im && normalizeSlugCandidate(im[1])) {
+              if (!identityMatch) identityMatch = im[1];
+              else identityMatch = ''; // ambiguous
+            }
+          }
+          var keySlug = normalizeSlugCandidate(stateKeyMatch || '');
+          if (keySlug) return rememberSlug(keySlug);
+          var identitySlug = normalizeSlugCandidate(identityMatch || '');
+          if (identitySlug) return rememberSlug(identitySlug);
+
+          var ref = String(document.referrer || '');
+          if (ref) {
+            var refPath = '';
+            try { refPath = new URL(ref).pathname || ''; } catch (_) {}
+            var rm = refPath.match(/^\/([a-z0-9_-]+)(?:\/|$)/i);
+            var refSlug = normalizeSlugCandidate(rm && rm[1] ? rm[1] : '');
+            if (refSlug) return rememberSlug(refSlug);
+          }
+
+          return '';
         } catch (_) {
           return '';
         }
@@ -341,7 +392,12 @@
         var buttons = Array.prototype.slice.call(document.querySelectorAll('button'));
         for (var i = 0; i < buttons.length; i++) {
           var t = (buttons[i].textContent || '').trim();
-          if (/^Save Hole\s+\d+/i.test(t)) return buttons[i];
+          var onclick = String(buttons[i].getAttribute('onclick') || '');
+          var isScoreSaveAction = /inlineScoreSaveAttempt|submitHoleScores|submitScoreModal/.test(onclick);
+          var looksLikeScoreSaveLabel = /^Save Hole\s+\d+/i.test(t)
+            || /^Tap scores for Hole\s+\d+/i.test(t)
+            || /^Fill in all scores$/i.test(t);
+          if (isScoreSaveAction || looksLikeScoreSaveLabel) return buttons[i];
         }
         return null;
       }
@@ -508,19 +564,35 @@
         return copyTextFallback(target);
       }
 
-      function findSettlementBlockedNode() {
-        var nodes = Array.prototype.slice.call(document.querySelectorAll('div, p, h2, h3'));
-        for (var i = 0; i < nodes.length; i++) {
-          var txt = (nodes[i].textContent || '').trim();
-          if (/^Settlement available after all holes are scored\.?$/i.test(txt)) return nodes[i];
+      function findSettlementBlockedContext() {
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.mg-card, [class*="mg-card"]'));
+        var noScoresCard = null;
+        for (var c = 0; c < cards.length; c++) {
+          var cardText = String(cards[c].textContent || '').trim();
+          if (/Settlement available after all holes are scored\.?/i.test(cardText)) {
+            var nodes = Array.prototype.slice.call(cards[c].querySelectorAll('div, p, h2, h3'));
+            for (var n = 0; n < nodes.length; n++) {
+              var nodeText = (nodes[n].textContent || '').trim();
+              if (/^Settlement available after all holes are scored\.?$/i.test(nodeText)) {
+                return { anchor: nodes[n], card: cards[c], kind: 'scored_blocked' };
+              }
+            }
+            return { anchor: cards[c], card: cards[c], kind: 'scored_blocked' };
+          }
+          if (/NO SCORES YET/i.test(cardText) && /Settlement appears after holes are scored/i.test(cardText)) {
+            noScoresCard = cards[c];
+          }
+        }
+        if (noScoresCard) {
+          return { anchor: noScoresCard, card: noScoresCard, kind: 'no_scores' };
         }
         return null;
       }
 
       function ensureSettlementBlockerSummary() {
         if (!/^#settle\b/.test(location.hash || '')) return;
-        var blockedNode = findSettlementBlockedNode();
-        if (!blockedNode || !blockedNode.parentElement) return;
+        var blockedCtx = findSettlementBlockedContext();
+        if (!blockedCtx || !blockedCtx.card) return;
         var counts = completedAndRemainingFromDom();
         var hole = currentHoleFromDom();
         var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-inline-score-input="1"]'));
@@ -531,12 +603,26 @@
           var valid = /^\d+$/.test(raw) && !isNaN(n) && n >= 1 && n <= 15;
           if (!valid) missingPlayers++;
         }
-        var summary = blockedNode.parentElement.querySelector('[data-mg-s3-settlement-blocked-summary="1"]');
+        var host = blockedCtx.card;
+        var summary = host.querySelector('[data-mg-s3-settlement-blocked-summary="1"]');
+        if (blockedCtx.kind === 'no_scores') {
+          var canonical = host.querySelector('[data-mg-s3-settlement-blocked-copy="1"]');
+          if (!canonical) {
+            canonical = document.createElement('div');
+            canonical.setAttribute('data-mg-s3-settlement-blocked-copy', '1');
+            canonical.style.cssText = 'font-size:16px;font-weight:700;color:var(--text-primary);margin-top:8px';
+            canonical.textContent = 'Settlement available after all holes are scored.';
+            host.appendChild(canonical);
+          }
+          if (summary && summary.previousElementSibling !== canonical) {
+            host.insertBefore(canonical, summary);
+          }
+        }
         if (!summary) {
           summary = document.createElement('div');
           summary.setAttribute('data-mg-s3-settlement-blocked-summary', '1');
           summary.className = 'mg-s3-settlement-blocked-summary';
-          blockedNode.parentElement.appendChild(summary);
+          host.appendChild(summary);
         }
         var remainingCopy = '';
         if (missingPlayers > 0) {
@@ -705,6 +791,11 @@
 
         var allValid = validCount === inputs.length;
         ensureProgressStrip(inputs, allValid);
+        var holeNow = currentHoleFromDom();
+        var canonicalSaveLabel = 'Save Hole ' + holeNow;
+        if ((saveBtn.textContent || '').trim() !== canonicalSaveLabel) {
+          saveBtn.textContent = canonicalSaveLabel;
+        }
         saveBtn.disabled = !allValid;
         saveBtn.style.minHeight = '56px';
         saveBtn.style.touchAction = 'manipulation';

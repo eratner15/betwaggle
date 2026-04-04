@@ -6876,19 +6876,38 @@ export function renderSettlement(state) {
 
   if (holesPlayed < holesPerRound) {
     const settleNames = settlePlayers.map(p => p.name).filter(Boolean);
-    const remaining = [];
+    const completedHoles = [];
+    const remainingHoles = [];
     for (let h = 1; h <= holesPerRound; h++) {
       const hs = holes[h]?.scores || holes[h] || {};
       const missingCount = settleNames.filter(n => !(hs[n] >= 1 && hs[n] <= 15)).length;
       if (missingCount > 0) {
-        remaining.push(`Hole ${h} (${missingCount} player${missingCount === 1 ? '' : 's'})`);
+        remainingHoles.push(h);
+      } else {
+        completedHoles.push(h);
       }
     }
-    const blockerSummary = remaining.slice(0, 5).join(', ') + (remaining.length > 5 ? ', ...' : '');
-    html += `<div class="mg-card" style="border:1px solid var(--mg-border);padding:18px;margin-top:8px">
-      <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Settlement available after all holes are scored.</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5">Remaining: ${escHtml(blockerSummary || 'Scores still missing')}</div>
-      <a href="#dashboard" onclick="window.MG.setBoardTab&&window.MG.setBoardTab('score')" style="display:inline-block;margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:700">Return to Score Entry</a>
+    const pct = Math.round((completedHoles.length / holesPerRound) * 100);
+
+    // Visual progress bar + hole circles
+    const doneSet = new Set(completedHoles);
+    let holeCircles = '';
+    for (let h = 1; h <= holesPerRound; h++) {
+      const done = doneSet.has(h);
+      holeCircles += `<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;${done ? 'background:#C5A059;color:#1B3022' : 'background:rgba(197,160,89,0.1);color:var(--text-secondary);border:1.5px solid rgba(197,160,89,0.25)'}">${h}</div>`;
+    }
+
+    html += `<div class="mg-card" style="border:1px solid rgba(197,160,89,0.2);padding:20px;margin-top:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:16px;font-weight:700;color:var(--text-primary)">Round in Progress</div>
+        <div style="font-size:22px;font-weight:900;color:#C5A059">${completedHoles.length}/${holesPerRound}</div>
+      </div>
+      <div style="background:rgba(197,160,89,0.1);border-radius:8px;height:8px;overflow:hidden;margin-bottom:14px">
+        <div style="background:linear-gradient(90deg,#C5A059,#D4B76E);height:100%;width:${pct}%;border-radius:8px;transition:width 0.5s ease"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">${holeCircles}</div>
+      <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px">${remainingHoles.length} hole${remainingHoles.length !== 1 ? 's' : ''} remaining &middot; Settlement unlocks when all scores are in</div>
+      <a href="#dashboard" onclick="window.MG.setBoardTab&&window.MG.setBoardTab('score')" style="display:block;text-align:center;padding:14px;border-radius:10px;background:#C5A059;color:#1B3022;text-decoration:none;font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;min-height:48px;line-height:20px">Continue Scoring</a>
     </div>`;
     return html;
   }

@@ -26,7 +26,7 @@
     "state": "FL",
     "website": "https://www.trumpgolfdoral.com/",
     "contact_email": "golf@trumpgolfdoral.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Iconic Miami resort with 4 courses. Major corporate outing and charity gala destination."
   },
   {
@@ -36,7 +36,7 @@
     "state": "FL",
     "website": "https://www.pgaresort.com/",
     "contact_email": "golf@pgaresort.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Home of Honda Classic. 5 courses, dedicated group events coordinator. Palm Beach corporate market."
   },
   {
@@ -46,7 +46,7 @@
     "state": "FL",
     "website": "https://www.streamsongresort.com/",
     "contact_email": "events@streamsongresort.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Top-ranked destination resort with 3 courses. Popular for corporate retreats and buddy trips."
   },
   {
@@ -56,7 +56,7 @@
     "state": "FL",
     "website": "https://www.innisbrookgolfresort.com/",
     "contact_email": "golf@innisbrookgolfresort.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Home of Valspar Championship. 4 courses, huge corporate outing and charity event business."
   },
   {
@@ -76,7 +76,7 @@
     "state": "FL",
     "website": "https://www.grandcypress.com/",
     "contact_email": "golf@grandcypress.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "45 holes near Disney. Major corporate outing destination for Orlando convention market."
   },
   {
@@ -106,7 +106,7 @@
     "state": "FL",
     "website": "https://www.reunionresort.com/",
     "contact_email": "golf@reunionresort.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "3 signature courses (Watson, Nicklaus, Palmer). Disney-area resort popular for corporate groups."
   },
   {
@@ -126,7 +126,7 @@
     "state": "FL",
     "website": "https://www.ritzcarlton.com/en/hotels/rswnp-the-ritz-carlton-naples-tiburon/golf/",
     "contact_email": "golf@tiburongolfclub.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Home of LPGA CME Group Tour Championship. Premium Naples corporate event venue."
   },
   {
@@ -136,7 +136,7 @@
     "state": "FL",
     "website": "https://www.hammockbeach.com/",
     "contact_email": "golf@hammockbeach.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Jack Nicklaus ocean course. Popular for corporate retreats and charity events on the coast."
   },
   {
@@ -236,7 +236,7 @@
     "state": "FL",
     "website": "https://www.thebocaraton.com/",
     "contact_email": "golf@thebocaraton.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Iconic Palm Beach County resort. Two courses, strong corporate and charity event business."
   },
   {
@@ -256,7 +256,7 @@
     "state": "FL",
     "website": "https://www.thebreakers.com/golf/",
     "contact_email": "golf@thebreakers.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Legendary Palm Beach resort. Premium corporate outing and charity gala golf venue."
   },
   {
@@ -286,7 +286,7 @@
     "state": "FL",
     "website": "https://www.naplesbeachclub.com/",
     "contact_email": "golf@naplesbeachclub.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Newly renovated Naples resort. Corporate retreat and charity outing destination in SW FL."
   },
   {
@@ -416,7 +416,7 @@
     "state": "FL",
     "website": "https://www.pontevedra.com/",
     "contact_email": "golf@pontevedra.com",
-    "segment": "resort",
+    "segment": "corporate_outing",
     "notes": "Historic oceanfront resort with 36 holes. NE FL corporate retreat and member-guest destination."
   },
   {
@@ -498,16 +498,5 @@
     "contact_email": "events@emeraldbaygolfclub.com",
     "segment": "corporate_outing",
     "notes": "Robert Cupp design in the Panhandle. Popular for Destin-area corporate retreats and buddy trips."
-  },
-  {
-    "name": "Turnberry Isle Resort - Soffer Course",
-    "club": "Turnberry Isle Miami",
-    "city": "Aventura",
-    "state": "FL",
-    "website": "https://www.jwturnberry.com",
-    "contact_email": "solson@jwturnberry.com",
-    "pro_name": "Sean Olson",
-    "segment": "resort",
-    "notes": "Direct contact - Sean Olson. JW Marriott Turnberry Isle, two championship courses. Corporate events and member-guest tournaments."
   }
 ]

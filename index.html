@@ -62,6 +62,12 @@
       background-size: 256px 256px;
     }
 
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: clip;
+    }
+
     /* ──────────────────────────────────────────
        NAV
     ────────────────────────────────────────── */
@@ -80,6 +86,9 @@
       align-items: center;
       gap: 10px;
       text-decoration: none;
+      min-height: 56px;
+      padding: 8px 10px;
+      border-radius: 8px;
     }
     .nav-logo span {
       font-family: 'Playfair Display', serif;
@@ -97,7 +106,7 @@
       letter-spacing: .08em;
       text-transform: uppercase;
       padding: 12px 4px 12px;
-      min-height: 44px;
+      min-height: 56px;
       display: flex;
       align-items: center;
       transition: color .15s;
@@ -194,13 +203,16 @@
     }
 
     .btn-primary {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: var(--gold);
       color: var(--forest);
       font-size: 17px;
       font-weight: 700;
       letter-spacing: .04em;
       padding: 18px 40px;
+      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       transition: background .15s, transform .15s, box-shadow .2s;
@@ -209,13 +221,16 @@
     .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
 
     .btn-secondary {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: rgba(255,255,255,.05);
       color: rgba(255,255,255,.8);
       font-size: 15px;
       font-weight: 600;
       letter-spacing: .03em;
       padding: 14px 32px;
+      min-height: 56px;
       border-radius: 6px;
       text-decoration: none;
       border: 1.5px solid rgba(255,255,255,.3);
@@ -436,11 +451,32 @@
     .mockup-btn {
       flex: 1;
       padding: 10px;
+      min-height: 56px;
       border-radius: 5px;
       font-size: 12px;
       font-weight: 600;
       text-align: center;
       letter-spacing: .03em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sound-toggle {
+      min-height: 56px;
+      min-width: 56px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid rgba(26, 71, 42, 0.2);
+      background: rgba(26, 71, 42, 0.05);
+      padding: 0;
+      margin-left: 4px;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .sound-toggle:hover {
+      border-color: var(--gold-dk);
+      background: rgba(201, 168, 76, 0.12);
     }
     .mockup-btn-primary { background: var(--gold); color: var(--forest); font-weight: 700; }
     .mockup-btn-secondary { background: #fff; color: var(--forest); border: 1px solid var(--rule); font-weight: 600; }
@@ -694,7 +730,7 @@
       transition: color .12s;
       display: inline-block;
       padding: 12px 0;
-      min-height: 44px;
+      min-height: 56px;
     }
     .format-guide-link:hover {
       color: var(--gold-dk);
@@ -735,6 +771,7 @@
       position: relative;
       display: flex;
       flex-direction: column;
+      min-width: 0;
       border-radius: 8px;
       box-shadow: 0 2px 12px rgba(0,0,0,.06);
       transition: transform .12s, box-shadow .2s;
@@ -816,7 +853,7 @@
       color: #fff;
       text-align: center;
       padding: 14px;
-      min-height: 48px;
+      min-height: 56px;
       font-size: 13px;
       font-weight: 600;
       letter-spacing: .04em;
@@ -880,7 +917,7 @@
       letter-spacing: .04em;
       border-bottom: 1px solid rgba(255,255,255,.15);
       padding: 12px 4px;
-      min-height: 44px;
+      min-height: 56px;
       display: inline-flex;
       align-items: center;
       transition: color .12s;
@@ -900,7 +937,7 @@
       color: rgba(255,255,255,.25);
       letter-spacing: .04em;
     }
-    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 44px; display: inline-flex; align-items: center; }
+    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 56px; display: inline-flex; align-items: center; }
     footer a:hover { color: rgba(255,255,255,.6); }
 
     /* Entrance animations */
@@ -1259,9 +1296,31 @@
 
     /* Nav: hide secondary links on small screens */
     @media (max-width: 600px) {
-      nav { padding: 16px 16px; }
-      .nav-links { gap: 10px; }
-      .nav-demo { font-size: 11px; padding: 10px 2px; }
+      nav {
+        padding: 12px 12px;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .nav-logo {
+        justify-content: center;
+        width: 100%;
+      }
+      .nav-links {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .nav-demo {
+        font-size: 11px;
+        padding: 10px 8px;
+        text-align: center;
+        justify-content: center;
+        line-height: 1.2;
+        border: 1px solid rgba(255,255,255,.18);
+        border-radius: 8px;
+        background: rgba(255,255,255,.04);
+      }
     }
 
     /* Hero: tighter on mobile */
@@ -1321,6 +1380,15 @@
         grid-template-columns: 1fr !important;
         gap: 16px !important;
       }
+      div[style*="grid-template-columns:1fr 1fr;gap:24px"] {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      div[style*="display:flex;gap:20px;padding:20px 0;border-top:1px solid var(--rule);align-items:baseline"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+      }
     }
 
     /* Pricing: stack on mobile, featured card on top */
@@ -1342,6 +1410,14 @@
       .formats-table td { padding: 12px 8px; font-size: 13px; }
       .format-name { font-size: 14px; }
       .format-desc { font-size: 12px; line-height: 1.5; }
+      .format-card-header {
+        min-height: 56px;
+      }
+      .format-guide-link {
+        min-height: 56px;
+        display: inline-flex;
+        align-items: center;
+      }
     }
 
     /* How-it-works dark section: less padding on mobile */
@@ -1426,7 +1502,7 @@
           <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
           <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
           <div style="margin-top:10px;text-align:center">
-            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:44px">Already playing? Find your match &rarr;</a>
+            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:56px">Already playing? Find your match &rarr;</a>
           </div>
         </div>
       </div>
@@ -1443,7 +1519,7 @@
           <div class="mockup-footer" id="demo-nav">
             <button class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer;border:none;font:inherit">Lay Action</button>
             <button class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer;border:none;font:inherit">The Board</button>
-            <button id="sound-toggle" onclick="toggleSound()" style="background:none;border:none;font-size:16px;cursor:pointer;padding:8px;border-radius:4px;margin-left:4px" title="Enable Sound">🔇</button>
+            <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" style="border:none;font-size:16px;cursor:pointer" title="Enable Sound">🔇</button>
           </div>
         </div>
       </div>
@@ -2344,7 +2420,7 @@
             <span class="price-detail">Any phone, no app required</span>
           </div>
           <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
@@ -2359,7 +2435,7 @@
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
           <a href="/create/?tier=season" class="price-cta">Set Up Your Season &mdash; $149/season pass</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:44px">Try the Demo</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
         </div>
       </div>
 
