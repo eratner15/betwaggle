@@ -432,9 +432,9 @@ function route() {
   const hash = location.hash.slice(1) || "dashboard";
   const [view, param] = hash.split("/");
 
-  // Spectator mode: redirect restricted views to dashboard, show message for settle
+  // Spectator mode: redirect admin-only views to dashboard; allow bet (view-only) and settle
   if (state._spectatorMode) {
-    if (view === 'admin' || view === 'bet' || view === 'mybets') {
+    if (view === 'admin' || view === 'mybets') {
       location.hash = '#dashboard';
       return;
     }
@@ -586,7 +586,7 @@ function updateNav(view) {
   // Populate header tabs for round/scramble mode
   const headerTabsEl = document.getElementById('mg-header-tabs');
   if (headerTabsEl) {
-    if ((isRoundMode || isScrambleMode) && view === 'dashboard') {
+    if (isScrambleMode && view === 'dashboard') {
       const activeSubTab = state._boardSubTab || 'score';
       const tabs = [
         { key: 'score', label: 'SCORE' },
@@ -605,9 +605,9 @@ function updateNav(view) {
     const tab = a.dataset.tab;
     const label = a.querySelector('.nav-label');
 
-    // Spectator mode: hide betting and admin tabs
+    // Spectator mode: hide admin-only tabs, keep The Bar visible (view-only)
     if (state._spectatorMode) {
-      if (tab === 'bet' || tab === 'mybets' || tab === 'admin') {
+      if (tab === 'mybets' || tab === 'admin') {
         a.style.display = 'none';
       }
     }
@@ -646,14 +646,17 @@ function updateNav(view) {
       }
       if (tab === 'settle') a.style.display = '';
     } else if (isRoundMode) {
-      // Round mode: The Board · Settle only (everything else lives on The Board)
-      if (tab !== 'dashboard' && tab !== 'settle') {
+      // Round mode: Home · Score · The Bar · Settle
+      const roundTabs = ['dashboard', 'scorecard', 'bet', 'settle'];
+      if (!roundTabs.includes(tab)) {
         a.style.display = 'none';
       } else {
         a.style.display = '';
       }
       if (label) {
-        if (tab === 'dashboard') label.textContent = 'The Board';
+        if (tab === 'dashboard') label.textContent = 'Home';
+        if (tab === 'scorecard') label.textContent = 'Score';
+        if (tab === 'bet') label.textContent = 'The Bar';
         if (tab === 'settle') label.textContent = 'Settle';
       }
       // Show settle tab always (it was hidden before)

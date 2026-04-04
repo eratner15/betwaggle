@@ -3264,7 +3264,14 @@ async function handleCreateCheckout(request, env) {
     }
   }
 
-  const eventType = config.event?.eventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
+  // Weekend Warrior (quick) events are free — skip Stripe entirely
+  const rawEventType = config.event?.eventType || '';
+  if (rawEventType === 'quick') {
+    config.meta = { ...(config.meta || {}), paidVia: 'free_tier', tier: 'weekend_warrior' };
+    return handleCreateEventFromConfig(config, env);
+  }
+
+  const eventType = rawEventType === 'scramble' ? 'scramble' : config.event?.format === 'round_robin_match_play' ? 'member_guest' : (config.event?.format || 'trip');
   const originalAmount = WAGGLE_PRICES[eventType] ?? 3200;
   const label = WAGGLE_LABELS[eventType] ?? 'Waggle Event';
 
@@ -8764,6 +8771,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (body.name) config.event.name = body.name.trim();
     if (body.venue) config.event.venue = body.venue.trim();
     if (body.dates) config.event.dates = { ...config.event.dates, ...body.dates };
+    // Course + tee data (from tee picker)
+    if (Array.isArray(body.coursePars) && body.coursePars.length >= 9) config.coursePars = body.coursePars;
+    if (Array.isArray(body.courseYardage) && body.courseYardage.length >= 9) config.courseYardage = body.courseYardage;
+    if (Array.isArray(body.courseStrokeIndex) && body.courseStrokeIndex.length >= 9) config.courseStrokeIndex = body.courseStrokeIndex;
+    if (body.courseSlope) config.courseSlope = body.courseSlope;
+    if (body.courseRating) config.courseRating = body.courseRating;
+    if (body.courseTee) config.courseTee = body.courseTee;
     await env.MG_BOOK.put(`config:${slug}`, JSON.stringify(config));
     return new Response(JSON.stringify({ ok: true }), { headers: EVENT_CORS });
   }

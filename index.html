@@ -773,6 +773,7 @@
       flex-direction: column;
       min-width: 0;
       border-radius: 8px;
+      overflow: hidden;
       box-shadow: 0 2px 12px rgba(0,0,0,.06);
       transition: transform .12s, box-shadow .2s;
     }
@@ -860,6 +861,7 @@
       text-decoration: none;
       text-transform: uppercase;
       transition: background .15s;
+      border-radius: 0 0 6px 6px;
     }
     .price-cta:hover { background: var(--green-mid); }
 
@@ -2405,7 +2407,7 @@
             <span class="price-detail">Perfect for a spontaneous money match</span>
             <span class="price-detail">No payment, no account required</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
+          <a href="/create/" class="price-cta">Start Free</a>
         </div>
         <div class="price-card featured">
           <span class="price-type">Buddies Trip</span>
@@ -2424,7 +2426,7 @@
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
-          <div class="price-amount">$149/season pass</div>
+          <div class="price-amount" style="font-size:clamp(32px,8vw,56px)">$149<span style="font-size:0.45em;font-weight:500;opacity:0.7">/season</span></div>
           <span class="price-period">per season, unlimited events &amp; players</span>
           <div class="price-details">
             <span class="price-detail">Team scramble with live leaderboard</span>

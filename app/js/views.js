@@ -8582,13 +8582,7 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
     </div>`;
 
   sorted.forEach((p, i) => {
-    const sortedForOdds3 = sorted.map(s => ({ hi: s.handicapIndex || 0, toPar: null }));
-    const odds = calculateLiveOdds(i, sorted.length, { hi: p.handicapIndex || 0, toPar: null }, 0, holesPerRound, sortedForOdds3);
     const isFav = i === 0;
-    const oddsNum = parseFloat(odds.replace('+', ''));
-    const isFavorite = odds.startsWith('-');
-    const oddsColor = isFavorite ? 'white' : 'var(--text-secondary)';
-    const oddsBorderColor = isFavorite ? 'var(--gold-primary,var(--mg-gold))' : 'var(--border)';
 
     // Card styles — FAV gets gold gradient, others get standard card
     const cardBg = isFav
@@ -8600,80 +8594,17 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
 
     html += `<div style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;position:relative">
       ${isFav ? '<div style="position:absolute;top:10px;right:12px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--gold-bright);background:rgba(212,160,23,0.12);border:1px solid rgba(212,160,23,0.3);padding:2px 6px;border-radius:4px">FAV</div>' : ''}
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-          <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
-          <div style="min-width:0">
-            <div style="font-size:15px;font-weight:${isFav ? '700' : '500'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
-            <div style="font-size:11px;color:var(--text-secondary);font-family:'SF Mono',monospace;margin-top:1px">HI ${p.handicapIndex || 0}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-          <button onclick="window.MG.openOddsBetSlip('${escHtml(p.name)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${oddsBorderColor};background:var(--bg-tertiary);color:${oddsColor};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;box-sizing:border-box">${i + 1}</span>
+        <div style="min-width:0;flex:1">
+          <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:16px;font-weight:${isFav ? '700' : '600'};color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:1px">HI ${p.handicapIndex || 0}</div>
         </div>
       </div>
     </div>`;
   });
 
   html += `</div>`;
-
-  // ── d) Opening Lines Section (card-based, DraftKings-style) ──
-  html += `<div style="margin-bottom:10px">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0 2px 10px">
-    <span style="font-size:14px;font-weight:700;color:var(--gold-bright)">Opening Lines</span>
-    <span style="font-size:10px;color:var(--text-tertiary);font-style:italic">H2H spreads</span>
-  </div>`;
-
-  // All H2H matchups — each as a card
-  const MAX_H2H_VISIBLE = 6;
-  let h2hIdx = 0;
-  let h2hOverflow = '';
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      const fav = sorted[i];
-      const dog = sorted[j];
-      const spread = ((dog.handicapIndex || 0) - (fav.handicapIndex || 0)).toFixed(1);
-      const card = `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(fav.name.split(' ')[0])}</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-primary,var(--mg-gold));background:var(--bg-tertiary);color:var(--win);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">-${spread}</button>
-          <span style="font-size:11px;color:var(--text-tertiary);font-weight:600">vs</span>
-          <button style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-tertiary);color:var(--loss);font-family:'SF Mono',monospace;font-size:15px;font-weight:800;min-width:60px;text-align:center;cursor:default">+${spread}</button>
-          <span style="font-size:14px;font-weight:600;color:var(--text-primary)">${escHtml(dog.name.split(' ')[0])}</span>
-        </div>
-      </div>`;
-      if (h2hIdx < MAX_H2H_VISIBLE) {
-        html += card;
-      } else {
-        h2hOverflow += card;
-      }
-      h2hIdx++;
-    }
-  }
-  if (h2hOverflow) {
-    html += `<details style="margin-top:4px"><summary style="font-size:12px;color:var(--text-secondary);cursor:pointer;padding:8px 0;list-style:none;-webkit-appearance:none">+ ${h2hIdx - MAX_H2H_VISIBLE} more matchups</summary>${h2hOverflow}</details>`;
-  }
-  html += `</div>`;
-
-  // Props — card-based with gold accent
-  if (sorted.length >= 2) {
-    const bestPlayer = sorted[0];
-    const worstPlayer = sorted[sorted.length - 1];
-    const overUnder = Math.round(72 + (bestPlayer.handicapIndex || 10) + 0.5);
-    const propsList = [
-      `Over/Under ${overUnder}.5 \u2014 ${bestPlayer.name.split(' ')[0]}'s gross score`,
-      `Most skins won: ${bestPlayer.name.split(' ')[0]} vs Field`,
-      `${worstPlayer.name.split(' ')[0]} makes a birdie: Yes/No`,
-    ];
-    html += `<div style="margin-bottom:10px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(212,160,23,0.5);padding:0 2px 8px">Prop Bets</div>`;
-    propsList.forEach(prop => {
-      html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-left:3px solid var(--gold-primary,var(--mg-gold));border-radius:10px;padding:12px 14px;margin-bottom:6px">
-        <div style="font-size:13px;color:var(--text-primary);font-style:italic">${escHtml(prop)}</div>
-      </div>`;
-    });
-    html += `</div>`;
-  }
 
   // Active games — card-based
   const activeGamesList = [];
@@ -8687,6 +8618,12 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
       ${activeGamesList.map(g => `<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;background:var(--bg-tertiary);color:var(--text-primary);padding:4px 10px;border-radius:4px">${escHtml(g)}</span>`).join('')}
     </div>`;
   }
+
+  // ── CTA: View Lines & Place Bets ──
+  html += `<a href="#bet" style="display:block;text-align:center;padding:14px;background:linear-gradient(135deg,#1B3022,#2D4A35);border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;color:#C5A059;font-family:'Playfair Display',var(--font-display),serif;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:10px;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    View Lines &amp; Place Bets
+  </a>`;
 
   // ── e) Trash Talk Feed — dark card with gold left border ──
   {
@@ -8804,16 +8741,78 @@ function renderTripPage(state, config, players, pars, hcpIndex, holesPerRound, g
       const input = document.getElementById('trip-course-search');
       if (input) input.value = name;
       const results = document.getElementById('trip-course-results');
+      if (results) results.innerHTML = '<div style="padding:8px;color:var(--gold-bright);font-size:13px">Loading tees...</div>';
+
+      // If we have a numeric course ID, fetch full tee data
+      if (id && /^\d+$/.test(id)) {
+        fetch('/api/courses/' + id)
+          .then(function(r) { return r.json(); })
+          .then(function(courseData) {
+            if (!courseData || !courseData.tees || courseData.tees.length === 0) {
+              // No tee data — save venue name only
+              window._tripSaveCourse(name, null);
+              return;
+            }
+            // Show tee picker
+            var maleTees = courseData.tees.filter(function(t) { return t.gender === 'male'; });
+            if (maleTees.length === 0) maleTees = courseData.tees;
+            if (maleTees.length === 1) {
+              // Only one tee — auto-select
+              window._tripSaveCourse(name, courseData, maleTees[0]);
+              return;
+            }
+            var html = '<div style="margin-top:8px;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Select Tees</div>';
+            maleTees.forEach(function(tee, idx) {
+              var totalYds = tee.yardage || 0;
+              var slopeStr = tee.slope ? 'Slope ' + tee.slope : '';
+              var ratingStr = tee.rating ? 'Rating ' + tee.rating : '';
+              var info = [slopeStr, ratingStr].filter(Boolean).join(' / ');
+              html += '<button onclick="window._tripPickTee(' + idx + ')" style="display:block;width:100%;text-align:left;padding:14px;margin-top:6px;background:linear-gradient(135deg,#1B3022,#2D4A35);border:1.5px solid rgba(197,160,89,0.3);border-radius:10px;cursor:pointer;min-height:56px">' +
+                '<div style="font-family:Playfair Display,serif;font-size:16px;font-weight:700;color:#FCF9F4">' + (tee.name || 'Tee ' + (idx + 1)) + '</div>' +
+                '<div style="font-size:12px;color:rgba(252,249,244,0.6);margin-top:2px">Par ' + (tee.par || 72) + ' &middot; ' + (totalYds ? totalYds.toLocaleString() + ' yds' : '') + (info ? ' &middot; ' + info : '') + '</div>' +
+                '</button>';
+            });
+            if (results) results.innerHTML = html;
+            window._tripCourseData = courseData;
+            window._tripTeesAvailable = maleTees;
+          })
+          .catch(function() {
+            window._tripSaveCourse(name, null);
+          });
+      } else {
+        window._tripSaveCourse(name, null);
+      }
+    };
+
+    window._tripPickTee = function(idx) {
+      var tees = window._tripTeesAvailable;
+      var courseData = window._tripCourseData;
+      if (!tees || !tees[idx]) return;
+      var name = courseData ? (courseData.club_name || courseData.course_name || 'Course') : 'Course';
+      window._tripSaveCourse(name, courseData, tees[idx]);
+    };
+
+    window._tripSaveCourse = function(name, courseData, selectedTee) {
+      const results = document.getElementById('trip-course-results');
       if (results) results.innerHTML = '<div style="padding:8px;color:var(--gold-bright);font-size:13px">Saving...</div>';
       const pin = localStorage.getItem('mg_admin_pin_' + slug) || '';
+      var body = { venue: name };
+      if (selectedTee) {
+        body.coursePars = selectedTee.holes ? selectedTee.holes.map(function(h) { return h.par || 4; }) : [];
+        body.courseYardage = selectedTee.holes ? selectedTee.holes.map(function(h) { return h.yardage || 0; }) : [];
+        body.courseStrokeIndex = selectedTee.holes ? selectedTee.holes.map(function(h) { return h.handicap || 0; }) : [];
+        body.courseSlope = selectedTee.slope || null;
+        body.courseRating = selectedTee.rating || null;
+        body.courseTee = selectedTee.name || '';
+      }
       fetch('/' + slug + '/api/event/update-details', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Pin': pin },
-        body: JSON.stringify({ venue: name })
-      }).then(r => r.json()).then(r => {
+        body: JSON.stringify(body)
+      }).then(function(r) { return r.json(); }).then(function(r) {
         if (r && r.ok) { location.reload(); }
         else { if (results) results.innerHTML = '<div style="color:var(--loss);padding:8px;font-size:13px">' + (r.error || 'Failed to save') + '</div>'; }
-      }).catch(e => { if (results) results.innerHTML = '<div style="color:var(--loss);padding:8px;font-size:13px">Error: ' + e.message + '</div>'; });
+      }).catch(function(e) { if (results) results.innerHTML = '<div style="color:var(--loss);padding:8px;font-size:13px">Error: ' + e.message + '</div>'; });
     };
 
     // ── Schedule Tee Time ──
