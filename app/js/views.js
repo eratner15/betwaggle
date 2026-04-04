@@ -7538,10 +7538,11 @@ export function renderCasualScorecard(state) {
     </div>`;
   }
 
-  let html = `<div class="mg-section-title" style="display:flex;justify-content:space-between;align-items:center">
-    <span>Scorecard</span>
-    <span style="font-size:11px;font-weight:400;color:var(--mg-text-muted)">${escHtml(courseName)}</span>
-  </div>`;
+  let html = `<div style="background:linear-gradient(135deg,#1B3022,#2D4A35);border-radius:0.75rem 0.75rem 0 0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+    <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:17px;font-weight:700;color:#FCF9F4">Scorecard</span>
+    <span style="font-size:11px;font-weight:600;color:rgba(252,249,244,0.5)">${escHtml(courseName)}</span>
+  </div>
+  <div style="background:var(--card-bg,#FFFFFF);border:1px solid rgba(197,160,89,0.15);border-top:none;border-radius:0 0 0.75rem 0.75rem;padding:8px;margin-bottom:12px">`;
 
   // Running P&L summary cards
   if (Object.values(pnl).some(v => v !== 0)) {
@@ -7756,6 +7757,7 @@ function renderPlayerPicker(state) {
   }
 
   html += `</div>`;
+  html += `</div>`; // close Heritage scorecard container
   return html;
 }
 
