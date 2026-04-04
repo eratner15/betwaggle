@@ -127,7 +127,7 @@
       background: var(--forest);
       position: relative;
       overflow: hidden;
-      padding: 96px 20px 0;
+      padding: 72px 20px 0;
     }
 
     /* Subtle texture overlay */
@@ -136,8 +136,8 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(82,183,136,.12) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(201,168,76,.06) 0%, transparent 60%);
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(42,63,102,.3) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(196,163,90,.06) 0%, transparent 60%);
       pointer-events: none;
     }
 
@@ -148,7 +148,7 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 64px;
+      gap: 32px;
       align-items: end;
     }
 
@@ -257,13 +257,13 @@
 
     .mockup {
       background: #FAF8F5;
-      border: 1px solid rgba(255,255,255,.1);
+      border: 2px solid rgba(196,163,90,.3);
       border-bottom: none;
-      border-radius: 14px 14px 0 0;
+      border-radius: 16px 16px 0 0;
       width: 100%;
-      max-width: 340px;
+      max-width: 320px;
       overflow: hidden;
-      box-shadow: 0 -8px 48px rgba(0,0,0,.4), 0 0 0 1.5px var(--gold);
+      box-shadow: 0 -4px 32px rgba(0,0,0,.3), 0 0 48px rgba(196,163,90,.1);
     }
 
     .mockup-header {
@@ -1328,7 +1328,7 @@
 
     /* Hero: tighter on mobile */
     @media (max-width: 600px) {
-      .hero { padding: 80px 16px 0; }
+      .hero { padding: 56px 16px 0; }
       .hero-inner { gap: 32px; }
       .hero-copy { padding-bottom: 8px; }
       .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
