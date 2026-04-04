@@ -995,27 +995,42 @@ export function renderScrambleLeaderboard(state) {
     const venue = config?.event?.venue || config?.event?.course || '';
     const roundNum = config?.currentRound || state._currentRound || 1;
 
-    html += `<div style="background:var(--mg-green);color:var(--text-primary);border-radius:10px;padding:12px 16px;margin-bottom:8px">
+    // Prize pool from config or computed
+    const prizePool = config?.scramblePrizePool;
+    const ppFirst = prizePool?.payouts?.[1] || first;
+    const ppSecond = prizePool?.payouts?.[2] || second;
+    const ppThird = prizePool?.payouts?.[3] || third;
+    const ppTotal = prizePool?.total || totalPool;
+    const ctpPrize = prizePool?.ctpPerHole || 0;
+
+    html += `<div style="background:linear-gradient(135deg,#1B3022 0%,#2D4A35 100%);border-radius:12px;padding:20px;margin-bottom:10px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;right:0;width:40%;height:1px;background:rgba(197,160,89,0.3)"></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="min-width:0;flex:1">
-          <div style="font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(eventName)}</div>
-          <div style="font-size:11px;opacity:.6;margin-top:2px">${venue ? escHtml(venue) + ' &middot; ' : ''}R${roundNum}</div>
-          ${state.bettorName ? `<div style="margin-top:4px"><span onclick="window.MG.editBettorName()" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.3);border-radius:12px;font-size:10px;font-weight:600;color:var(--gold-bright);cursor:pointer"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold-bright)"></span>${escHtml(state.bettorName)}</span></div>` : ''}
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.5);margin-bottom:4px">Current Scramble</div>
+          <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:22px;font-weight:700;color:#FCF9F4;line-height:1.1">${escHtml(eventName)}</div>
+          <div style="font-size:11px;color:rgba(252,249,244,0.5);margin-top:4px">${venue ? escHtml(venue) + ' &middot; ' : ''}R${roundNum}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:12px">
-          ${totalPool > 0 ? `<div style="font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px">Prize Pool</div>
-          <div style="font-size:20px;font-weight:800;color:var(--gold-bright);font-family:'SF Mono',monospace">$${totalPool.toLocaleString()}</div>` : ''}
+          ${ppTotal > 0 ? `<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.5)">Prize Pool</div>
+          <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:28px;font-weight:700;color:#C5A059">$${ppTotal.toLocaleString()}</div>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
-        <span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${totalTeams} team${totalTeams !== 1 ? 's' : ''}</span>
-        <span style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:capitalize;background:var(--border);color:var(--text-primary);padding:3px 8px;border-radius:4px">${escHtml(formatLabel)}</span>
-        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--text-secondary)">Thru ${holesPlayed} of ${holesPerRound}</span>
-        <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:${freshnessColor};font-weight:700;letter-spacing:0.5px;margin-left:auto">
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">${totalTeams} teams</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">${escHtml(formatLabel)}</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:1px;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">Thru ${holesPlayed} of ${holesPerRound}</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:${freshnessColor};font-weight:700;letter-spacing:1px;margin-left:auto;background:rgba(${freshnessColor === 'var(--win)' ? '22,163,74' : '220,38,38'},0.1);padding:4px 10px;border-radius:4px">
           <span style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></span>
           ${freshnessLabel}
         </span>
       </div>
+      ${ppTotal > 0 ? `<div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(252,249,244,0.08);font-size:10px;font-family:'SF Mono',monospace">
+        <span style="color:#C5A059;font-weight:700">1st $${ppFirst.toLocaleString()}</span>
+        <span style="color:rgba(252,249,244,0.5)">2nd $${ppSecond.toLocaleString()}</span>
+        <span style="color:rgba(252,249,244,0.35)">3rd $${ppThird.toLocaleString()}</span>
+        ${ctpPrize > 0 ? `<span style="color:rgba(252,249,244,0.35)">CTP $${ctpPrize}/hole</span>` : ''}
+      </div>` : ''}
     </div>`;
   }
 
@@ -1078,31 +1093,18 @@ export function renderScrambleLeaderboard(state) {
     html += `<div style="margin-bottom:8px">`;
 
     // Header
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px">
-      <span style="font-size:16px;font-weight:800;color:#1B4332">Leaderboard</span>
-    </div>`;
+    html += `<div style="font-family:'Playfair Display',var(--font-display),serif;font-size:18px;font-weight:700;color:#1B3022;margin-bottom:10px;padding:0 2px">Leaderboard</div>`;
 
     // Team rows — light theme cards on cream background
+    const parForPlayedCalc = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
     leaderboard.forEach((entry, i) => {
-      const parForPlayed = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
-      const toPar = entry.total - parForPlayed;
+      const toPar = entry.total - parForPlayedCalc;
       const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
       const isLeader = i === 0;
       const isTop3 = i < 3;
-      const toParColor = toPar < 0 ? '#B8962E' : toPar > 0 ? '#DC2626' : '#374151';
-
-      // Implied odds based on position
-      const oddsArr = ['+150', '+225', '+350', '+500', '+700', '+900', '+1200', '+1500'];
-      const odds = oddsArr[i] || '+' + (1500 + (i - 7) * 500);
-      const oddsNum = parseFloat(odds.replace('+', ''));
-      const isFavorite = odds.startsWith('-');
-
-      // Projected payout
+      const toParColor = toPar < 0 ? '#1B3022' : toPar > 0 ? '#DC2626' : '#6B7280';
       const payout = payoutByPosition[i] || 0;
-
       const expanded = state._expandedPlayer === entry.team;
-      const cOwner = calcuttaTeams[entry.team];
-      const ownerStr = cOwner?.sold ? cOwner.winner : null;
 
       // Hole-by-hole scores for this team
       const teamHoleScores = [];
@@ -1116,95 +1118,51 @@ export function renderScrambleLeaderboard(state) {
         }
       }
 
-      // Card styles — light theme
-      const cardBg = isLeader
-        ? 'background:var(--bg-tertiary,#FFFFFF);border:1.5px solid var(--gold-primary,#B8962E)'
-        : 'background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,#E5E0D8)';
+      const borderColor = isLeader ? '#C5A059' : isTop3 ? 'rgba(197,160,89,0.3)' : 'rgba(0,0,0,0.08)';
+      const leftBorder = isTop3 ? `border-left:4px solid ${isLeader ? '#C5A059' : 'rgba(197,160,89,0.4)'}` : '';
+      const badgeBg = isLeader ? 'background:#C5A059;color:#1B3022' : isTop3 ? 'background:transparent;border:1.5px solid #C5A059;color:#C5A059' : 'background:rgba(0,0,0,0.04);color:#6B7280';
 
-      // Position badge
-      const badgeBg = isLeader ? 'background:#B8962E;color:#FFFFFF' : isTop3 ? 'background:transparent;border:1.5px solid #B8962E;color:#B8962E' : 'background:transparent;border:1.5px solid #D1D5DB;color:#6B7280';
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="background:#FCF9F4;border:1px solid ${borderColor};${leftBorder};border-radius:10px;padding:14px 16px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:${isLeader ? '0 4px 16px rgba(197,160,89,0.15)' : '0 1px 4px rgba(0,0,0,0.04)'}">`;
 
-      // To-par size — massive for leader
-      const toParSize = isLeader ? 'font-size:28px;font-weight:900' : 'font-size:20px;font-weight:800';
-
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="${cardBg};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,0.06)">`;
-
-      // Main row
       html += `<div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-            <span style="width:24px;height:24px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;box-sizing:border-box">${entry.position || (i + 1)}</span>
-            <span style="font-size:15px;font-weight:${isLeader ? '700' : '500'};color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</span>
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+            <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;box-sizing:border-box">${entry.position || (i + 1)}</span>
+            <div style="min-width:0">
+              <div style="font-family:'Playfair Display',var(--font-display),serif;font-size:${isLeader ? '17' : '15'}px;font-weight:700;color:#1B3022;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</div>
+              ${payout > 0 ? `<div style="font-size:10px;font-weight:700;color:#C5A059;margin-top:1px">$${payout.toLocaleString()}</div>` : ''}
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:8px">
-            <span style="font-family:'SF Mono',monospace;${toParSize};color:${toParColor}">${toParStr}</span>
-            ${payout > 0 ? `<span style="font-family:'SF Mono',monospace;font-size:13px;font-weight:800;color:#B8962E">$${payout.toLocaleString()}</span>` : ''}
-            <button onclick="event.stopPropagation();window.MG.openOddsBetSlip('${escHtml(entry.team)}','to_win','${odds}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${isFavorite ? '#B8962E' : '#D1D5DB'};background:${isFavorite ? 'rgba(184,150,46,0.08)' : '#F9FAFB'};color:${isFavorite ? '#1A1A1A' : '#6B7280'};font-family:'SF Mono',monospace;font-size:15px;font-weight:800;cursor:pointer;min-width:60px;text-align:center;-webkit-tap-highlight-color:transparent;transition:transform .1s" onpointerdown="this.style.transform='scale(0.95)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">${odds}</button>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <span style="font-family:'Playfair Display',var(--font-display),serif;font-size:${isLeader ? '32' : '24'}px;font-weight:700;color:${toParColor}">${toParStr}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C5A059" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s;transform:${expanded ? 'rotate(180deg)' : 'rotate(0)'}"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>`;
 
-      // Expanded detail
       if (expanded) {
-        html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #F0EDE6;margin-left:32px">`;
-
-        // Hole-by-hole
+        html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(197,160,89,0.15)">`;
         if (holesPlayed > 0) {
           const frontScores = teamHoleScores.slice(0, Math.min(9, holesPerRound));
           const backScores = holesPerRound > 9 ? teamHoleScores.slice(9, holesPerRound) : [];
-          const frontStr = frontScores.map(s => s !== null ? String(s) : '-').join(' ');
-          const backStr = backScores.map(s => s !== null ? String(s) : '-').join(' ');
-          html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#374151;margin-bottom:6px">
-            <span style="color:#9CA3AF;font-size:10px">OUT:</span> ${frontStr}${teamFront > 0 ? ` <span style="color:#6B7280">= ${teamFront}</span>` : ''}
+          html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#1B3022;margin-bottom:4px">
+            <span style="color:rgba(27,48,34,0.4);font-size:10px;font-weight:700">OUT:</span> ${frontScores.map(s => s !== null ? String(s) : '\u2013').join(' ')}${teamFront > 0 ? ` <span style="color:#C5A059;font-weight:700">= ${teamFront}</span>` : ''}
           </div>`;
           if (backScores.length > 0) {
-            html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#374151;margin-bottom:6px">
-              <span style="color:#9CA3AF;font-size:10px">IN:</span>&nbsp; ${backStr}${teamBack > 0 ? ` <span style="color:#6B7280">= ${teamBack}</span>` : ''}
+            html += `<div style="font-size:12px;font-family:'SF Mono',monospace;color:#1B3022;margin-bottom:4px">
+              <span style="color:rgba(27,48,34,0.4);font-size:10px;font-weight:700">IN:</span>&nbsp; ${backScores.map(s => s !== null ? String(s) : '\u2013').join(' ')}${teamBack > 0 ? ` <span style="color:#C5A059;font-weight:700">= ${teamBack}</span>` : ''}
             </div>`;
           }
         }
-
-        // Pace projection
         if (holesPlayed >= 3) {
           const pace = Math.round((entry.total / holesPlayed) * holesPerRound);
           const projPar = pace - totalPar;
           const projStr = projPar === 0 ? 'E' : projPar > 0 ? '+' + projPar : String(projPar);
-          html += `<div style="font-size:12px;color:#6B7280;margin-bottom:6px">Pace: ${pace} gross (proj final ${projStr})</div>`;
+          html += `<div style="font-size:12px;color:rgba(27,48,34,0.5)">Pace: ${pace} gross (proj final ${projStr})</div>`;
         }
-
-        // Calcutta owner
-        if (ownerStr) {
-          html += `<div style="font-size:12px;color:#B8962E;margin-bottom:6px">Calcutta: Owned by ${escHtml(ownerStr)} ($${cOwner.amount})</div>`;
-        }
-
-        // Lay action button
-        html += `<button onclick="event.stopPropagation();window.MG.layAction('${escHtml(entry.team)}')" style="width:100%;padding:10px;margin-top:4px;background:transparent;border:1.5px solid rgba(184,150,46,0.3);border-radius:6px;color:#B8962E;font-size:12px;font-weight:600;cursor:pointer;min-height:44px">Lay Action on ${escHtml(entry.team)}</button>`;
-
         html += `</div>`;
-      } else if (ownerStr) {
-        // Show Calcutta owner in collapsed view too
-        html += `<div style="margin-left:32px;margin-top:2px"><span style="font-size:10px;color:#B8962E;opacity:0.6">Calcutta: ${escHtml(ownerStr)} ($${cOwner.amount})</span></div>`;
       }
 
       html += `</div>`;
     });
-
-    // Prize pool footer
-    if (totalPool > 0) {
-      html += `<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-family:'SF Mono',monospace;color:#6B7280">
-        <span style="font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:10px">Prize Pool: $${totalPool.toLocaleString()}</span>
-        <div style="display:flex;gap:12px;font-size:10px">
-          <span style="color:#B8962E">1st $${first.toLocaleString()}</span>
-          <span style="color:#555">2nd $${second.toLocaleString()}</span>
-          <span style="color:#888">3rd $${third.toLocaleString()}</span>
-        </div>
-      </div>`;
-    }
-
-    // Footer
-    html += `<div style="padding:8px 14px;display:flex;justify-content:space-between;font-size:11px;font-family:'SF Mono',monospace;color:#6B7280">
-      <span>Thru ${holesPlayed}</span>
-      <span>${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remaining</span>
-    </div>`;
 
     html += `</div>`;
   } else if (scoredHoles.length === 0) {
@@ -1245,26 +1203,27 @@ export function renderScrambleLeaderboard(state) {
         html += `<div style="display:flex;gap:8px;margin-bottom:8px">`;
 
         if (ctpHoles.length > 0) {
-          html += `<div style="flex:1;background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-radius:10px;padding:12px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:6px">CTP</div>`;
+          html += `<div style="flex:1;background:linear-gradient(135deg,#1B3022,#2D4A35);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px">
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:8px">Closest to Pin</div>`;
           ctpHoles.forEach(hole => {
             const winner = gameState?.sideGames?.ctp?.[hole];
-            html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
-              <span style="color:var(--page-text-muted)">H${hole}</span>
-              <span style="font-weight:600;color:${winner ? 'var(--gold-primary)' : 'var(--page-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+            const ctpPrizeAmt = config?.scramblePrizePool?.ctpPerHole || 0;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0">
+              <span style="color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
+              <span style="font-weight:700;color:${winner ? '#C5A059' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner.split('(')[0].trim()) : 'TBD'}${winner && ctpPrizeAmt ? ' <span style="color:rgba(252,249,244,0.4);font-size:10px">$' + ctpPrizeAmt + '</span>' : ''}</span>
             </div>`;
           });
           html += `</div>`;
         }
 
         if (ldHoles.length > 0) {
-          html += `<div style="flex:1;background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border);border-radius:10px;padding:12px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--page-text-muted);margin-bottom:6px">Long Drive</div>`;
+          html += `<div style="flex:1;background:linear-gradient(135deg,#1B3022,#2D4A35);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px">
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#C5A059;margin-bottom:8px">Long Drive</div>`;
           ldHoles.forEach(hole => {
             const winner = gameState?.sideGames?.ld?.[hole];
-            html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
-              <span style="color:var(--page-text-muted)">H${hole}</span>
-              <span style="font-weight:600;color:${winner ? 'var(--gold-primary)' : 'var(--page-text-muted)'}">${winner ? escHtml(winner) : 'TBD'}</span>
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0">
+              <span style="color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
+              <span style="font-weight:700;color:${winner ? '#C5A059' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner.split('(')[0].trim()) : 'TBD'}</span>
             </div>`;
           });
           html += `</div>`;
