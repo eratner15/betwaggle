@@ -23,7 +23,7 @@
   <meta name="twitter:image" content="https://betwaggle.com/og-card-logo.jpg">
 
   <!-- PWA / Mobile -->
-  <meta name="theme-color" content="#0D2818">
+  <meta name="theme-color" content="#1B2B4B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Waggle">
   <link rel="apple-touch-icon" href="/favicon-180.jpg">
@@ -36,17 +36,18 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --forest:   #0D2818;
-      --green:    #1B4332;
-      --green-mid:#2D6A4F;
-      --sage:     #52B788;
-      --ivory:    #F5F0E8;
-      --ivory-dk: #EDE8DF;
-      --gold:     #C9A84C;
-      --gold-dk:  #9A7A2E;
-      --text:     #1A1A1A;
+      --forest:   #0F1A2E;
+      --green:    #1B2B4B;
+      --green-mid:#2A3F66;
+      --sage:     #7ECEC1;
+      --ivory:    #FAF8F5;
+      --ivory-dk: #F0EDE8;
+      --gold:     #C4A35A;
+      --gold-dk:  #A8894D;
+      --coral:    #E8735A;
+      --text:     #1A202C;
       --text-2:   #2D3748;
-      --muted:    #6B7280;
+      --muted:    #718096;
       --rule:     #D4CFC7;
     }
 
@@ -967,7 +968,7 @@
 
     /* Auto-playing demo styles */
     .auto-demo-section {
-      background: linear-gradient(135deg, #0D2818 0%, #1A472A 100%);
+      background: linear-gradient(135deg, #0F1A2E 0%, #1B2B4B 100%);
       padding: 80px 20px;
       position: relative;
       overflow: hidden;
@@ -1009,7 +1010,7 @@
     }
 
     .auto-demo-board {
-      background: #1A472A;
+      background: #1B2B4B;
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
@@ -1485,8 +1486,8 @@
       <span>Waggle</span>
     </a>
     <div class="nav-links">
-      <a class="nav-demo" href="/courses/">Find a Course</a>
-      <a class="nav-demo" href="/create/">Set Up Your Event &mdash; $32/event</a>
+      <a class="nav-demo" href="/demo/">See It Live</a>
+      <a class="nav-demo" href="/create/">Create Your Outing</a>
     </div>
   </nav>
 
@@ -1497,11 +1498,11 @@
       <div class="hero-copy">
         <span class="hero-kicker">Nassau &middot; Skins &middot; Wolf &middot; Vegas &middot; 12 Games</span>
         <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
-        <p class="hero-sub" style="margin-bottom:6px">The live sportsbook your foursome has been running manually for years.</p>
-        <p class="hero-sub">$32/event to never argue over math at the 18th hole again. Live odds on every phone, scores update hole by hole, settlement is automatic.</p>
+        <p class="hero-sub" style="margin-bottom:6px">Live odds on every phone. Scores update hole by hole. Settlement is automatic.</p>
+        <p class="hero-sub">The live sportsbook your foursome has been running manually for years.</p>
         <div class="hero-actions">
-          <a href="/create/" class="btn-primary" style="text-align:center">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" class="btn-secondary" style="text-align:center">Try the Demo</a>
+          <a href="/demo/" class="btn-primary" style="text-align:center">See It Live &rarr;</a>
+          <a href="/create/" class="btn-secondary" style="text-align:center">Create Your Outing</a>
           <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
           <div style="margin-top:10px;text-align:center">
             <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:56px">Already playing? Find your match &rarr;</a>
@@ -2346,7 +2347,7 @@
     <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch">
       <div style="background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:28px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)">
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:12px">Course Directory</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--forest);margin-bottom:10px;line-height:1.25">30,000+ courses.<br>Full scorecards.</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--forest);margin-bottom:10px;line-height:1.25">17,000+ courses.<br>Full scorecards.</div>
         <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:auto">Par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
           <div style="font-weight:700;color:var(--forest);margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
@@ -2361,7 +2362,7 @@
         <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
           <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
         </div>
-        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Create Your Outing</a>
       </div>
     </div>
   </div>
@@ -2421,8 +2422,8 @@
             <span class="price-detail">Shareable settlement card at round end</span>
             <span class="price-detail">Any phone, no app required</span>
           </div>
-          <a href="/create/" class="price-cta">Set Up Your Event &mdash; $32/event</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
+          <a href="/create/" class="price-cta">Create Your Outing</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">See It Live</a>
         </div>
         <div class="price-card">
           <span class="price-type">Season Pass</span>
@@ -2437,7 +2438,7 @@
             <span class="price-detail">Everything in the Buddies Trip tier</span>
           </div>
           <a href="/create/?tier=season" class="price-cta">Set Up Your Season &mdash; $149/season pass</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">Try the Demo</a>
+          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">See It Live</a>
         </div>
       </div>
 
@@ -2779,11 +2780,11 @@
       <h2>The trip is in six weeks.<br>Set it up today.</h2>
       <p>One link. Every format. Automatic settlement.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Set Up Your Event &mdash; $32/event</a>
+        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Create Your Outing</a>
         <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">Free for casual rounds &middot; No credit card required</span>
       </div>
       <div class="final-links">
-        <a href="/demo/">Try the Demo</a>
+        <a href="/demo/">See It Live</a>
         <a href="/overview/">Setup guide</a>
         <a href="/games/">Game rules</a>
       </div>
@@ -2808,7 +2809,7 @@
       document.getElementById('email-input').disabled = true;
       btn.textContent = 'Sent';
     } catch(err) {
-      btn.textContent = 'Set Up Your Event — $32/event';
+      btn.textContent = 'Create Your Outing';
       btn.disabled = false;
     }
   }
@@ -2820,12 +2821,15 @@
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
       <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
       <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/create/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Set Up Your Event &mdash; $32/event</a>
-        <a href="/courses/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
-        <a href="/overview/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:600">Setup Guide</a>
+        <a href="/demo/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">See It Live</a>
+        <a href="/create/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
+        <a href="/courses/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
+        <a href="/games/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Game Guides</a>
+        <a href="/overview/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">GM Guide</a>
+        <a href="/affiliates/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Affiliates</a>
       </div>
       <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
-      <p style="font-size:11px;color:var(--muted);margin:0">betwaggle.com</p>
+      <p style="font-size:11px;color:var(--muted);margin:0">Waggle by Cafecito AI</p>
     </div>
   </footer>
 

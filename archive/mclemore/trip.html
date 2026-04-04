@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>McLemore 2026 — BetWaggle</title>
+  <meta name="description" content="McLemore Buddies Trip · Apr 30 – May 2, 2026 · 8 players, 3 rounds, 2 courses. Live odds, groupings, and action.">
+  <meta property="og:title" content="McLemore 2026 — Buddies Trip">
+  <meta property="og:description" content="8 players. 3 rounds. 2 courses. Lookout Mountain, GA. Apr 30 – May 2. Skins, Nassau, Best Ball, Scramble, Stableford. Who's taking the money home?">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/mclemore/trip.html">
+  <meta property="og:image" content="https://betwaggle.com/og-card.jpg">
+  <meta property="og:site_name" content="BetWaggle">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="McLemore 2026 — Buddies Trip">
+  <meta name="twitter:description" content="8 players. 3 rounds. Lookout Mountain. Live odds and groupings.">
+  <meta name="theme-color" content="#1B3022">
+  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#1B3022;--green-mid:#304D39;--gold:#C5A059;--gold-dk:#9A7A2E;--gold-dim:rgba(197,160,89,0.15);--ivory:#FCF9F4;--white:#FAFAF7;--dark:#0D2818;--text:#1C1C19;--muted:#6B7280;--border:rgba(197,160,89,0.15);--win:#16A34A;--loss:#DC2626;--mono:'SF Mono','Fira Code',monospace;--serif:'Playfair Display',Georgia,serif;--sans:'Inter',-apple-system,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:var(--sans);background:var(--ivory);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.02'/%3E%3C/svg%3E");background-size:256px}
+
+    .header{background:var(--green);padding:20px 20px 24px;text-align:center;position:relative}
+    .header-logo{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--gold);font-weight:700;letter-spacing:0.5px;margin-bottom:4px}
+    .header h1{font-family:var(--serif);font-size:36px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:4px}
+    .header h1 em{color:var(--gold);font-style:italic}
+    .header-sub{font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.3px}
+    .countdown{display:inline-block;margin-top:10px;background:rgba(197,160,89,0.15);border:1px solid rgba(197,160,89,0.3);color:var(--gold);font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:6px 16px;border-radius:6px}
+    .gold-rule{height:1px;background:linear-gradient(90deg,transparent,#C5A059,transparent)}
+
+    .wrap{max-width:480px;margin:0 auto;padding:0 16px 100px}
+
+    /* Player roster */
+    .roster{display:flex;gap:10px;overflow-x:auto;padding:20px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .roster::-webkit-scrollbar{display:none}
+    .player-chip{flex-shrink:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;min-width:80px;position:relative;box-shadow:0 1px 4px rgba(27,48,34,0.04)}
+    .player-chip.leader{border-color:var(--gold);background:rgba(197,160,89,0.05)}
+    .player-chip .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:12px}
+    .player-chip .name{font-size:11px;font-weight:700;color:var(--dark);white-space:nowrap}
+    .player-chip .hcp{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);margin-top:1px}
+
+    /* Section headers */
+    .section-head{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 12px}
+    .section-head h2{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--dark)}
+    .section-head .badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:5px}
+    .badge-gold{background:rgba(197,160,89,0.12);color:var(--gold-dk)}
+    .badge-green{background:rgba(27,48,34,0.08);color:var(--green)}
+    .badge-blue{background:rgba(37,99,235,0.08);color:#2563EB}
+
+    /* Round cards */
+    .round-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:0;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 12px rgba(27,48,34,0.04)}
+    .round-top{padding:16px 18px 14px;border-bottom:1px solid var(--border)}
+    .round-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-dk);margin-bottom:4px}
+    .round-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--dark)}
+    .round-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .round-meta span{margin-right:10px}
+    .round-body{padding:14px 18px 16px}
+
+    /* Team cards */
+    .team-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;box-shadow:0 1px 4px rgba(27,48,34,0.04)}
+    .team-row.favored{border-top:2px solid var(--gold);background:rgba(197,160,89,0.03)}
+    .team-name{font-size:15px;font-weight:700;color:var(--dark)}
+    .team-players{font-size:12px;color:var(--text);margin-top:2px;opacity:0.7}
+    .team-odds{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:-0.5px}
+    .odds-fav{color:var(--green)}
+    .odds-dog{color:var(--dark)}
+    .team-hcp{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+    /* AI box */
+    .ai-box{background:linear-gradient(135deg,var(--green),var(--dark));border-radius:10px;padding:16px;color:#fff;margin-top:10px}
+    .ai-box .ai-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+    .ai-box p{font-size:13px;line-height:1.5;color:rgba(255,255,255,0.85)}
+
+    /* Betting summary */
+    .bet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .bet-item{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+    .bet-item .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)}
+    .bet-item .value{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--gold-dk);margin-top:2px}
+
+    /* Shuffle button */
+    .btn-shuffle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:var(--ivory);border:1.5px solid var(--gold);border-radius:8px;color:var(--gold-dk);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+    .btn-shuffle:active{transform:scale(0.97);background:rgba(197,160,89,0.08)}
+
+    /* Share CTA */
+    .btn-share{display:block;width:100%;padding:18px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;text-align:center;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:50;letter-spacing:0.3px}
+    .btn-share:active{transform:scale(0.98)}
+
+    /* Lodging */
+    .lodging{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:16px}
+    .lodging .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px}
+    .lodging .addr{font-size:14px;font-weight:600;color:var(--dark)}
+    .lodging .details{font-size:12px;color:var(--muted);margin-top:2px}
+
+    /* Wolf rotation */
+    .wolf-order{display:flex;gap:4px;margin-top:8px}
+    .wolf-slot{flex:1;text-align:center;padding:6px 2px;border-radius:6px;font-size:10px;font-weight:700;background:var(--ivory);color:var(--muted);border:1px solid var(--border)}
+    .wolf-slot:first-child{background:var(--green);color:#fff;border-color:var(--green)}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">betwaggle</div>
+    <h1>McLemore <em>2026</em></h1>
+    <div class="header-sub">Lookout Mountain, GA · Apr 30 – May 2</div>
+    <div class="countdown" id="countdown"></div>
+  </div>
+  <div class="gold-rule"></div>
+
+  <div class="wrap">
+    <!-- PLAYER ROSTER -->
+    <div id="roster" style="padding:16px 0 8px"></div>
+
+    <!-- ROUND 1: BEST BALL -->
+    <div class="section-head">
+      <h2>Round 1</h2>
+      <span class="badge badge-gold">Best Ball</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Thursday · Apr 30</div>
+        <div class="round-title">The Keep</div>
+        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>2:30 PM</span><span>8 players</span></div>
+      </div>
+      <div class="round-body" id="r1-teams"></div>
+    </div>
+
+    <!-- ROUND 2: SCRAMBLE -->
+    <div class="section-head">
+      <h2>Round 2</h2>
+      <span class="badge badge-green">Scramble</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Friday · May 1 · Colby departs</div>
+        <div class="round-title">The Highlands</div>
+        <div class="round-meta"><span>Par 71</span><span>6,238 yds</span><span>12:20 PM</span><span>7 players</span></div>
+      </div>
+      <div class="round-body" id="r2-teams"></div>
+    </div>
+
+    <!-- ROUND 3: AI PICK -->
+    <div class="section-head">
+      <h2>Round 3</h2>
+      <span class="badge badge-blue">Modified Stableford</span>
+    </div>
+    <div class="round-card">
+      <div class="round-top">
+        <div class="round-label">Saturday · May 2</div>
+        <div class="round-title">The Keep</div>
+        <div class="round-meta"><span>Par 72</span><span>6,343 yds</span><span>8:40 AM</span><span>7 players · 2 groups</span></div>
+      </div>
+      <div class="round-body" id="r3-format"></div>
+    </div>
+
+    <!-- BETTING SUMMARY — Day-by-Day Breakdown -->
+    <div class="section-head">
+      <h2>The Action</h2>
+    </div>
+
+    <!-- DAY 1 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 1 · Thursday · The Keep</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">8 players</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · Everyone antes $10. Win a hole outright, win the pot. Ties carry — a 3-hole carry is worth $30.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$80 pot</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. You're betting $20 on the front 9, $20 on the back 9, $20 on overall. Lose all 3 = you owe $60 to the winner.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div><div style="font-size:11px;color:var(--muted)">per matchup</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Auto-Press</div><div style="font-size:11px;color:var(--muted)">Down 2 holes in any Nassau bet? New $20 side bet starts automatically. Can stack — 2 presses = $60 more at risk.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-size:11px;font-weight:700;color:var(--loss)">+$20 each</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Best Ball Team Bet</div><div style="font-size:11px;color:var(--muted)">Your 2-man team vs the other pair in your foursome. Losing team pays winning team $20/person.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$20 risk</div><div style="font-size:11px;color:var(--muted)">$40/foursome</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 1 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$90 – $150+</span>
+      </div>
+    </div>
+
+    <!-- DAY 2 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 2 · Friday · Highlands</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">7 players (Colby out)</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · 7 players ante $10 each.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$70 pot</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. Same as Day 1 — individual matchups within your team.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Scramble Team Bet</div><div style="font-size:11px;color:var(--muted)">Team of 4 vs team of 3. Losing team pays $30/person to the winners. 3-man team gets 1 extra shot per hole.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$30 risk</div><div style="font-size:11px;color:var(--muted)">$210 pot</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 2 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$100 – $160+</span>
+      </div>
+    </div>
+
+    <!-- DAY 3 -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700">Day 3 · Saturday · The Keep</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.6)">7 players</div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Skins</div><div style="font-size:11px;color:var(--muted)">$10/skin · 7 players ante $10 each.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$10 ante</div><div style="font-size:11px;color:var(--muted)">$70 pot</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:700">Nassau</div><div style="font-size:11px;color:var(--muted)">$20/side × 3 sides. Individual matchups.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$60 risk</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <div><div style="font-size:13px;font-weight:700">Stableford Points</div><div style="font-size:11px;color:var(--muted)">$5/point. Eagle (+5) = $25. Birdie (+2) = $10. Bogey (−1) = lose $5. Highest total points wins the pot.</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold-dk)">$5/pt</div><div style="font-size:11px;color:var(--muted)">~$50–100</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:var(--ivory);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--dark)">Your Day 3 risk</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold-dk)">$120 – $200+</span>
+      </div>
+    </div>
+
+    <!-- TRIP TOTAL -->
+    <div style="background:linear-gradient(135deg,var(--green),var(--dark));border-radius:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:#fff">3-Day Total Risk</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">Before presses. Presses add $20 each.</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:24px;font-weight:800;color:var(--gold)">$310–$500+</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:8px;padding:4px 0">
+      Worst case with 3 presses per round: ~$680. Best case: you win it all back and then some.
+    </div>
+
+    <!-- LODGING -->
+    <div class="lodging">
+      <div class="label">Lodging · 2 Nights</div>
+      <div class="addr">856 Canyon Ridge Road</div>
+      <div class="details">Check-in Apr 30 · Check-out May 2 · Res #12133</div>
+    </div>
+
+    <!-- TRIP ITINERARY -->
+    <div class="section-head">
+      <h2>Trip Itinerary</h2>
+    </div>
+
+    <!-- Day 1 Timeline -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff">
+        <div style="font-size:14px;font-weight:700">Thursday · April 30</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5)">Arrival Day · The Keep</div>
+      </div>
+      <div style="padding:4px 16px 12px">
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">CHECK IN</div>
+          <div style="font-size:13px"><strong>856 Canyon Ridge Rd</strong> — drop bags, get settled</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">1:30 PM</div>
+          <div style="font-size:13px">Range session + warm up · Putting course</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green);min-width:55px">2:30 PM</div>
+          <div style="font-size:13px"><strong>⛳ Round 1 · The Keep</strong> — Best Ball, 8 players</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);min-width:55px">~7:00 PM</div>
+          <div style="font-size:13px">Round wraps · Settle up at the turn house 🍺</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">DINNER</div>
+          <div style="font-size:13px"><strong>The Creag</strong> — elevated comfort food, craft cocktails. Overlooks McLemore Cove at 2,300 ft. <a href="https://www.themclemore.com/dining/the-creag" target="_blank" style="color:var(--gold-dk);font-size:11px">Menu →</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 2 Timeline -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff">
+        <div style="font-size:14px;font-weight:700">Friday · May 1</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5)">Main Event · The Highlands · Colby departs</div>
+      </div>
+      <div style="padding:4px 16px 12px">
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">9:00 AM</div>
+          <div style="font-size:13px">Breakfast at <strong>Croft</strong> — American fare, high-country picnic vibe</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);min-width:55px">10:30 AM</div>
+          <div style="font-size:13px">Range + short game warm up</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green);min-width:55px">12:20 PM</div>
+          <div style="font-size:13px"><strong>⛳ Round 2 · The Highlands</strong> — Scramble, 7 players</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);min-width:55px">~5:30 PM</div>
+          <div style="font-size:13px">Round wraps · 19th hole beers · Pool + cliffside bar</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">DINNER</div>
+          <div style="font-size:13px"><strong>Auld Alliance</strong> — French-Scottish fusion. First of its kind in America. Reservations required. <a href="https://www.themclemore.com/dining/auld-alliance-1" target="_blank" style="color:var(--gold-dk);font-size:11px">Reserve →</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 3 Timeline -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px;background:var(--green);color:#fff">
+        <div style="font-size:14px;font-weight:700">Saturday · May 2</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5)">Final Round · The Keep · Checkout Day</div>
+      </div>
+      <div style="padding:4px 16px 12px">
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">7:00 AM</div>
+          <div style="font-size:13px">Early breakfast at <strong>The Pocket Café</strong> — grab and go</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green);min-width:55px">8:40 AM</div>
+          <div style="font-size:13px"><strong>⛳ Round 3 · The Keep</strong> — Stableford, 7 players</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);min-width:55px">~1:30 PM</div>
+          <div style="font-size:13px">Round wraps · <strong>Final settlement</strong> 💰 — who owes who?</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold-dk);min-width:55px">2:00 PM</div>
+          <div style="font-size:13px">Lunch at <strong>Skyside</strong> — victory drinks, Venmo settlements</div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--loss);min-width:55px">CHECK OUT</div>
+          <div style="font-size:13px">Pack up · Head home · Plan the next one</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THINGS TO DO (non-golf) -->
+    <div class="section-head">
+      <h2>Off the Course</h2>
+      <span class="badge badge-green">Between Rounds</span>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:12px 16px">
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">🏊</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Cliffside Infinity Pool + Bar</div><div style="font-size:11px;color:var(--muted)">On property. Overlooks the canyon. Cold beers after round 2.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">🥾</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Cloudland Canyon State Park</div><div style="font-size:11px;color:var(--muted)">15 min away. 1,000-ft deep canyons, waterfalls, overlook trails. <a href="https://gastateparks.org/CloudlandCanyon" target="_blank" style="color:var(--gold-dk)">Details →</a></div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">🎾</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Tennis + Pickleball Courts</div><div style="font-size:11px;color:var(--muted)">Included in resort fee. Side bets encouraged.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">🏔️</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Lula Lake Falls</div><div style="font-size:11px;color:var(--muted)">1,200-acre land trust. Upper + lower waterfalls, old railroad bed trail. Open weekends.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">🚴</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Five Points Trail System</div><div style="font-size:11px;color:var(--muted)">20 miles of mountain biking trails in Rising Fawn. Top-rated in the Chattanooga area.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px;flex-shrink:0">💆</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Selah Spa</div><div style="font-size:11px;color:var(--muted)">On property. For when the round beats you up.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 0">
+          <span style="font-size:18px;flex-shrink:0">🪂</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--dark)">Hang Gliding / Paragliding</div><div style="font-size:11px;color:var(--muted)">Lookout Mountain is an international hotspot. For the truly adventurous.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DINING GUIDE -->
+    <div class="section-head">
+      <h2>Dining</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(27,48,34,0.04)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:15px;font-weight:700;color:var(--dark)">The Creag</div>
+          <span style="font-size:11px;color:var(--gold-dk);font-weight:600">$$$</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Elevated comfort food · Craft cocktails · Mountaintop terrace</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">📍 Clubhouse · <a href="tel:7066200158" style="color:var(--gold-dk)">(706) 620-0158</a> · <a href="https://www.themclemore.com/dining/the-creag/dinner-menu-1" target="_blank" style="color:var(--gold-dk)">Dinner menu →</a></div>
+      </div>
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(27,48,34,0.04)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:15px;font-weight:700;color:var(--dark)">Auld Alliance</div>
+          <span style="font-size:11px;color:var(--gold-dk);font-weight:600">$$$$</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">French-Scottish fusion · First of its kind in America · Reservations required</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">📍 Cloudland Hotel · <a href="https://www.themclemore.com/dining/auld-alliance-1" target="_blank" style="color:var(--gold-dk)">Reserve →</a></div>
+      </div>
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(27,48,34,0.04)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:15px;font-weight:700;color:var(--dark)">Croft</div>
+          <span style="font-size:11px;color:var(--muted);font-weight:600">$$</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">American fare · Simple, fresh ingredients · High-country picnic vibe</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">📍 Cloudland Hotel</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(27,48,34,0.04)">
+          <div style="font-size:13px;font-weight:700;color:var(--dark)">The Pocket Café</div>
+          <div style="font-size:11px;color:var(--muted)">Coffee + grab & go</div>
+        </div>
+        <div style="flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(27,48,34,0.04)">
+          <div style="font-size:13px;font-weight:700;color:var(--dark)">Skyside</div>
+          <div style="font-size:11px;color:var(--muted)">Rooftop bar + bites</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT McLEMORE -->
+    <div class="section-head">
+      <h2>The Courses</h2>
+      <span class="badge badge-gold">Lookout Mountain</span>
+    </div>
+
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-family:var(--serif);font-size:20px;font-weight:700;color:var(--dark)">The Keep</div>
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dk);background:rgba(197,160,89,0.1);padding:3px 8px;border-radius:4px">#1 Best New 2025</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Bill Bergin & Rees Jones · Par 72 · Up to 7,800 yds</div>
+      </div>
+      <div style="padding:14px 18px;font-size:13px;color:var(--text);line-height:1.6">
+        <p>Sports Illustrated's <strong>#1 Best New Course of 2025</strong>. Strategic mountain golf at 2,300 feet with <strong>1.5 miles of cliff-edge play</strong> (holes 1, 9, 10, 11, 18). Ribbon tees let the pro shop move tees 100+ yards based on wind and conditions.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--green)">5 Cliff-Edge Holes</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--green)">Bentgrass Greens</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--green)">70+ Acres Fairway</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--green)">Ribbon Tees</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-family:var(--serif);font-size:20px;font-weight:700;color:var(--dark)">The Highlands</div>
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);background:rgba(27,48,34,0.06);padding:3px 8px;border-radius:4px">Top 100 Public</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Rees Jones & Bill Bergin · Par 71 · 7,055 yds</div>
+      </div>
+      <div style="padding:14px 18px;font-size:13px;color:var(--text);line-height:1.6">
+        <p>Golf Digest Top 100 Greatest Public Course. Three hole categories: <strong>Canyon Holes</strong> (2, 3, 6, 7, 9) play into canyon walls, <strong>Highland Holes</strong> (4, 5, 8, 10-16) sit on the plateau like an island in the sky, and <strong>Cliff Edge Holes</strong> (1, 17, 18) overlook historic McLemore Cove.</p>
+        <p style="margin-top:6px"><strong>Hole 18</strong> was named "Best finishing hole in America since 2000" by Golf Digest.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.08);color:var(--gold-dk)">Canyon Holes</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.08);color:var(--gold-dk)">Highland Holes</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.08);color:var(--gold-dk)">Cliff Edge Holes</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.08);color:var(--gold-dk)">Best #18 in America</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESORT & MAP -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+        <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">McLemore Resort</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">785 Canyon Ridge Road · Rising Fawn, GA 30738</div>
+      </div>
+      <div style="padding:14px 18px;font-size:13px;color:var(--text);line-height:1.6">
+        <p>Mountaintop resort at <strong>2,300 feet</strong> on the backside of Lookout Mountain. Two 18-hole championship courses, 6-hole short course, putting course, and full practice facilities.</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+          <a href="https://www.themclemore.com/interactive-property-map" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none">
+            🗺️ Interactive Property Map
+          </a>
+          <a href="https://www.themclemore.com/golf/golf-overview" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;color:var(--green);font-size:13px;font-weight:700;text-decoration:none">
+            ⛳ Full Course Details
+          </a>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);text-align:center">
+          Dining: The Creag · Auld Alliance · Croft · The Pocket Café · Skyside
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Map Embed -->
+    <div style="border-radius:12px;overflow:hidden;margin-bottom:16px;border:1.5px solid var(--border)">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3277.8!2d-85.4507!3d34.7428!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzTCsDQ0JzM0LjAiTiA4NcKwMjcnMDIuNSJX!5e0!3m2!1sen!2sus!4v1" width="100%" height="200" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+
+    <!-- PER-ROUND SCORECARDS (expandable) -->
+    <div class="section-head">
+      <h2>Scorecards</h2>
+    </div>
+
+    <!-- Day 1 Scorecard — The Keep -->
+    <details class="round-card" style="cursor:pointer">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dk)">Day 1 · Best Ball</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Keep</div>
+          <div style="font-size:11px;color:var(--muted)">Par 72 · 6,343 yds · White tees</div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
+        </div>
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r1"></div>
+    </details>
+
+    <!-- Day 2 Scorecard — Highlands -->
+    <details class="round-card" style="cursor:pointer;margin-top:10px">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green-mid)">Day 2 · Scramble</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Highlands</div>
+          <div style="font-size:11px;color:var(--muted)">Par 71 · 6,238 yds · White tees</div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
+        </div>
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r2"></div>
+    </details>
+
+    <!-- Day 3 Scorecard — The Keep -->
+    <details class="round-card" style="cursor:pointer;margin-top:10px">
+      <summary style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;list-style:none;-webkit-tap-highlight-color:transparent">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#2563EB">Day 3 · Wolf + Skins</div>
+          <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Keep</div>
+          <div style="font-size:11px;color:var(--muted)">Par 72 · 6,343 yds · White tees</div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:var(--green);color:#fff">Score</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(197,160,89,0.12);color:var(--gold-dk)">Board</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:rgba(27,48,34,0.06);color:var(--muted)">Bar</span>
+          <span style="font-size:14px;color:var(--muted);margin-left:4px">▾</span>
+        </div>
+      </summary>
+      <div style="padding:0 12px 16px;overflow-x:auto" id="scorecard-r3"></div>
+    </details>
+
+    <!-- TRASH TALK / PREDICTIONS -->
+    <div class="section-head">
+      <h2>Predictions</h2>
+      <span class="badge badge-gold">Who's taking the $?</span>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 6px rgba(27,48,34,0.04)">
+      <div style="padding:14px 16px;font-size:13px;color:var(--text);line-height:1.6">
+        <div style="font-weight:700;color:var(--dark);margin-bottom:8px">AI Power Rankings</div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>🥇 Most likely to win skins</span>
+          <span style="font-weight:700;color:var(--gold-dk)">Brian Kunis</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>🎯 Most consistent</span>
+          <span style="font-weight:700;color:var(--gold-dk)">Scott Bartlett</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>💣 Most likely to go nuclear</span>
+          <span style="font-weight:700;color:var(--gold-dk)">Colby Kittrell</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>📉 Most likely to press 3x</span>
+          <span style="font-weight:700;color:var(--loss)">Aaron Schue</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>🍺 First to the bar</span>
+          <span style="font-weight:700;color:var(--dark)">Ben Fund</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0">
+          <span>🏆 Overall trip winner</span>
+          <span style="font-weight:700;color:var(--gold-dk)">Brian Kunis</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVER/UNDER PROPS -->
+    <div style="background:linear-gradient(135deg,var(--green),var(--dark));border-radius:12px;padding:16px 18px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Over / Under Props</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px">
+          <span style="font-size:13px;color:#fff">Total skins won by Brian (3 rounds)</span>
+          <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold)">O/U 4.5</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px">
+          <span style="font-size:13px;color:#fff">Nassau presses by the group (per round)</span>
+          <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold)">O/U 3.5</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px">
+          <span style="font-size:13px;color:#fff">Total $ changing hands over 3 days</span>
+          <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold)">O/U $800</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px">
+          <span style="font-size:13px;color:#fff">Someone shoots under 80 (any round)</span>
+          <span style="font-family:var(--mono);font-size:16px;font-weight:800;color:var(--gold)">+150</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;text-align:center">
+      <a href="/mclemore-2026-5f5f17/#dashboard" style="display:inline-block;padding:12px 24px;background:var(--green);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">Open Live Board →</a>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">Live scoring starts Thursday at 2:30 · PIN: 2026</div>
+    </div>
+  </div>
+
+  <div style="position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:50;padding:8px 12px;background:linear-gradient(to top,var(--ivory) 80%,transparent);padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))">
+    <div style="display:flex;gap:8px">
+      <button onclick="shareTrip()" style="flex:1;padding:16px;background:linear-gradient(135deg,var(--green),var(--dark));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px;-webkit-tap-highlight-color:transparent" onpointerdown="this.style.transform='scale(0.97)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''">
+        Share with the Group
+      </button>
+      <button onclick="copyLink()" id="copy-btn" style="padding:16px 20px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;color:var(--dark);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">
+        📋 Copy
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Players ──
+    const ALL_PLAYERS = [
+      { name: 'Brian Kunis', hcp: 8.0 },
+      { name: 'Colby Kittrell', hcp: 8.8 },
+      { name: 'Scott Bartlett', hcp: 9.0 },
+      { name: 'Evan Ratner', hcp: 13.0 },
+      { name: 'David Becker', hcp: 14.3 },
+      { name: 'Ben Fund', hcp: 15.0 },
+      { name: 'Scott Kittrell', hcp: 15.0 },
+      { name: 'Aaron Schue', hcp: 15.1 }
+    ];
+    const R2_PLAYERS = ALL_PLAYERS.filter(p => p.name !== 'Colby Kittrell'); // 7 players
+
+    // ── Countdown ──
+    function updateCountdown() {
+      const trip = new Date('2026-04-30T14:30:00');
+      const now = new Date();
+      const days = Math.ceil((trip - now) / 86400000);
+      document.getElementById('countdown').textContent = days > 0 ? `${days} days away` : days === 0 ? 'TODAY' : 'IN PROGRESS';
+    }
+    updateCountdown();
+
+    // ── Roster ──
+    function renderRoster() {
+      let html = `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <span style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--dark)">The Field</span>
+        <span style="font-size:12px;color:var(--muted)">${ALL_PLAYERS.length} players</span>
+      </div>`;
+      html += `<div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(27,48,34,0.04)">`;
+      ALL_PLAYERS.forEach((p, i) => {
+        const isLeader = i === 0;
+        const firstName = p.name.split(' ')[0];
+        const lastName = p.name.split(' ').slice(1).join(' ');
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;${i < ALL_PLAYERS.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}${isLeader ? ';background:rgba(197,160,89,0.04)' : ''}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;${isLeader ? 'background:var(--gold);color:#fff' : 'background:var(--ivory);color:var(--muted);border:1px solid var(--border)'}">${i + 1}</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--dark)">${firstName} <span style="font-weight:500;color:var(--muted)">${lastName}</span></div>
+            </div>
+          </div>
+          <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:${isLeader ? 'var(--gold-dk)' : 'var(--dark)'}">${p.hcp}</div>
+        </div>`;
+      });
+      html += `</div>`;
+      document.getElementById('roster').innerHTML = html;
+    }
+    renderRoster();
+
+    // ── Head-to-Head Matchup with clear settlement ──
+    // The bet is $20/person. Odds determine WHO pays WHAT.
+    function renderMatchup(teamA, teamB) {
+      const avgA = teamA.players.reduce((s, p) => s + p.hcp, 0) / teamA.players.length;
+      const avgB = teamB.players.reduce((s, p) => s + p.hcp, 0) / teamB.players.length;
+      const diff = Math.abs(avgA - avgB);
+      const aIsFav = avgA <= avgB;
+      const fav = aIsFav ? { ...teamA, avgHcp: avgA } : { ...teamB, avgHcp: avgB };
+      const dog = aIsFav ? { ...teamB, avgHcp: avgB } : { ...teamA, avgHcp: avgA };
+
+      // $100 base bet per person
+      // Favorite pays MORE if they lose, dog pays LESS
+      let favPays, dogPays;
+      if (diff < 0.5) { favPays = 100; dogPays = 100; } // even
+      else if (diff < 1.5) { favPays = 130; dogPays = 100; }
+      else if (diff < 3) { favPays = 160; dogPays = 100; }
+      else if (diff < 5) { favPays = 200; dogPays = 100; }
+      else { favPays = 250; dogPays = 100; }
+
+      return `
+        <div class="team-row favored">
+          <div>
+            <div class="team-name">⭐ ${fav.name} <span style="font-size:11px;font-weight:500;color:var(--muted)">(favorite)</span></div>
+            <div class="team-players">${fav.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="team-hcp">avg ${fav.avgHcp.toFixed(1)}</div>
+          </div>
+        </div>
+        <div class="team-row">
+          <div>
+            <div class="team-name">${dog.name} <span style="font-size:11px;font-weight:500;color:var(--muted)">(underdog)</span></div>
+            <div class="team-players">${dog.players.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' + ')}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="team-hcp">avg ${dog.avgHcp.toFixed(1)}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:var(--ivory);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.6">
+          <div style="font-weight:700;color:var(--dark);margin-bottom:4px">💰 Settlement</div>
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>If <strong>${fav.name.split(' / ')[0]}'s team</strong> wins:</span>
+            <span style="font-family:var(--mono);font-weight:700;color:var(--win)">Dog pays $${dogPays}/person</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>If <strong>${dog.name.split(' / ')[0]}'s team</strong> wins:</span>
+            <span style="font-family:var(--mono);font-weight:700;color:var(--win)">Fav pays $${favPays}/person</span>
+          </div>
+          ${diff < 0.5 ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Pick\'em — even money, no edge.</div>' : `<div style="font-size:11px;color:var(--muted);margin-top:2px">Favorite risks more ($${favPays}) because they have the better team.</div>`}
+        </div>`;
+    }
+
+    // ── Round 1: Best Ball (shuffle-able) ──
+    // Balanced teams: pair low HCP with high HCP
+    // Kunis(8) + Schue(15.1) = 23.1, Colby(8.8) + Scott K(15) = 23.8
+    // Bartlett(9) + Fund(15) = 24, Ratner(13) + Becker(14.3) = 27.3
+    let r1Teams = [
+      { name: 'Kunis / Schue', players: [ALL_PLAYERS[0], ALL_PLAYERS[7]] },
+      { name: 'Colby / Scott K', players: [ALL_PLAYERS[1], ALL_PLAYERS[3]] },
+      { name: 'Bartlett / Fund', players: [ALL_PLAYERS[2], ALL_PLAYERS[6]] },
+      { name: 'Ratner / Becker', players: [ALL_PLAYERS[4], ALL_PLAYERS[5]] }
+    ];
+
+    function renderR1() {
+      let html = '<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">FOURSOME 1</div>';
+      html += renderMatchup(r1Teams[0], r1Teams[1]);
+      html += '<div style="font-size:11px;font-weight:600;color:var(--muted);margin:12px 0 8px">FOURSOME 2</div>';
+      html += renderMatchup(r1Teams[2], r1Teams[3]);
+      html += '<button class="btn-shuffle" onclick="shuffleR1()">🔀 Shuffle Teams — See New Odds</button>';
+      document.getElementById('r1-teams').innerHTML = html;
+    }
+
+    function shuffleR1() {
+      // Random 2-man teams from 8 players
+      const shuffled = [...ALL_PLAYERS].sort(() => Math.random() - 0.5);
+      const names = [
+        shuffled[0].name.split(' ')[1] + '/' + shuffled[1].name.split(' ')[1],
+        shuffled[2].name.split(' ')[1] + '/' + shuffled[3].name.split(' ')[1],
+        shuffled[4].name.split(' ')[1] + '/' + shuffled[5].name.split(' ')[1],
+        shuffled[6].name.split(' ')[1] + '/' + shuffled[7].name.split(' ')[1]
+      ];
+      r1Teams = [
+        { name: names[0], players: [shuffled[0], shuffled[1]] },
+        { name: names[1], players: [shuffled[2], shuffled[3]] },
+        { name: names[2], players: [shuffled[4], shuffled[5]] },
+        { name: names[3], players: [shuffled[6], shuffled[7]] }
+      ];
+      renderR1();
+    }
+    renderR1();
+
+    // ── Round 2: Scramble 4v3 ──
+    // R2: Scramble — shuffleable 4v3
+    let r2TeamA, r2TeamB;
+    function initR2Teams() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r2TeamA = shuffled.slice(0, 4);
+      r2TeamB = shuffled.slice(4, 7);
+    }
+    // Start with a balanced split
+    r2TeamA = [R2_PLAYERS[1], R2_PLAYERS[2], R2_PLAYERS[4], R2_PLAYERS[6]]; // Bartlett, Scott K, Becker, Schue
+    r2TeamB = [R2_PLAYERS[0], R2_PLAYERS[3], R2_PLAYERS[5]]; // Brian, Ratner, Fund
+
+    function renderR2() {
+      const avgA = r2TeamA.reduce((s, p) => s + p.hcp, 0) / r2TeamA.length;
+      const avgB = r2TeamB.reduce((s, p) => s + p.hcp, 0) / r2TeamB.length;
+      // Odds: 4-man team has inherent advantage, adjust by avg HCP diff
+      const diff = avgB - avgA;
+      const favA = diff >= 0; // If Team A has lower avg OR equal (4-man advantage)
+      const spread = Math.abs(diff);
+      const favMl = spread > 3 ? -220 : spread > 1.5 ? -180 : -140;
+      const dogMl = spread > 3 ? '+200' : spread > 1.5 ? '+160' : '+120';
+
+      document.getElementById('r2-teams').innerHTML = `
+        <div class="team-row ${favA ? 'favored' : ''}">
+          <div>
+            <div class="team-name">Team Alpha (4)</div>
+            <div class="team-players">${r2TeamA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds ${favA ? 'odds-fav' : 'odds-dog'}">${favA ? favMl : dogMl}</div>
+            <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
+          </div>
+        </div>
+        <div class="team-row ${!favA ? 'favored' : ''}">
+          <div>
+            <div class="team-name">Team Bravo (3)</div>
+            <div class="team-players">${r2TeamB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-odds ${!favA ? 'odds-fav' : 'odds-dog'}">${!favA ? favMl : dogMl}</div>
+            <div class="team-hcp">avg ${avgB.toFixed(1)} + extra shot</div>
+          </div>
+        </div>
+        <button class="btn-shuffle" onclick="shuffleR2()">🔀 Shuffle Scramble Teams</button>
+        <div style="margin-top:10px;padding:10px 12px;background:rgba(27,48,34,0.04);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5">
+          <strong style="color:var(--dark)">Scramble rules:</strong> 3-man team gets <strong>1 extra shot per hole</strong> (rotating who takes it). No handicap strokes — pure scramble, just an extra shot to compensate.
+        </div>`;
+    }
+    function shuffleR2() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r2TeamA = shuffled.slice(0, 4);
+      r2TeamB = shuffled.slice(4, 7);
+      renderR2();
+    }
+    renderR2();
+
+    // ── Round 3: Stableford — shuffleable groups ──
+    let r3GroupA, r3GroupB;
+    // Start balanced
+    const sorted3 = [...R2_PLAYERS].sort((a, b) => a.hcp - b.hcp);
+    r3GroupA = [sorted3[0], sorted3[3], sorted3[4], sorted3[6]];
+    r3GroupB = [sorted3[1], sorted3[2], sorted3[5]];
+
+    function renderR3() {
+      const avgA = r3GroupA.reduce((s, p) => s + p.hcp, 0) / r3GroupA.length;
+      const avgB = r3GroupB.reduce((s, p) => s + p.hcp, 0) / r3GroupB.length;
+
+      document.getElementById('r3-format').innerHTML = `
+        <div class="ai-box">
+          <div class="ai-label">Modified Stableford</div>
+          <p>Points-based scoring rewards aggressive play. You already know The Keep from Day 1 — now go for pins.</p>
+          <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(197,160,89,0.2);color:var(--gold)">Eagle +5</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(22,163,74,0.15);color:#16A34A">Birdie +2</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6)">Par 0</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(220,38,38,0.15);color:#FB7185">Bogey −1</span>
+            <span style="font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(220,38,38,0.25);color:#FB7185">Double −3</span>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:14px 0 8px">Two Groups</div>
+
+        <div class="team-row favored">
+          <div>
+            <div class="team-name">Group A (4)</div>
+            <div class="team-players">${r3GroupA.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-hcp">avg ${avgA.toFixed(1)}</div>
+          </div>
+        </div>
+        <div class="team-row">
+          <div>
+            <div class="team-name">Group B (3)</div>
+            <div class="team-players">${r3GroupB.map(p => p.name.split(' ')[0] + ' ' + p.hcp).join(' · ')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="team-hcp">avg ${avgB.toFixed(1)}</div>
+          </div>
+        </div>
+
+        <button class="btn-shuffle" onclick="shuffleR3()">🔀 Shuffle Stableford Groups</button>
+
+        <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5">
+          Individual Stableford — highest total points wins. Each player competes within their group. Skins + Nassau still running on top.
+        </div>`;
+    }
+    renderR3();
+
+    function shuffleR3() {
+      const shuffled = [...R2_PLAYERS].sort(() => Math.random() - 0.5);
+      r3GroupA = shuffled.slice(0, 4);
+      r3GroupB = shuffled.slice(4, 7);
+      renderR3();
+    }
+
+    // ── Scorecards (rendered on expand) ──
+    function renderScorecard(containerId, courseKey, teeKey) {
+      const el = document.getElementById(containerId);
+      if (el.dataset.rendered) return;
+      el.dataset.rendered = '1';
+
+      const course = COURSES[courseKey];
+      const tee = course.tees[teeKey] || course.tees['White'] || course.tees['Blue'];
+      const pars = course.pars;
+      const yards = tee.yardage;
+      const hcp = course.hcpIndex;
+
+      function parColor(p) { return p === 3 ? 'color:var(--loss)' : p === 5 ? 'color:var(--green)' : ''; }
+
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono);min-width:460px">`;
+
+      // Front 9
+      html += `<tr style="background:var(--green);color:#fff">
+        <td style="padding:6px 8px;font-weight:800;font-size:10px;letter-spacing:0.5px">HOLE</td>
+        ${pars.slice(0,9).map((_,i) => `<td style="padding:6px 4px;text-align:center;font-weight:700">${i+1}</td>`).join('')}
+        <td style="padding:6px 4px;text-align:center;font-weight:800;background:rgba(0,0,0,0.15)">OUT</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">PAR</td>
+        ${pars.slice(0,9).map(p => `<td style="padding:5px 4px;text-align:center;font-weight:700;${parColor(p)}">${p}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:800">${pars.slice(0,9).reduce((s,p)=>s+p,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--white)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">YDS</td>
+        ${yards.slice(0,9).map(y => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${y}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:700">${yards.slice(0,9).reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">HCP</td>
+        ${hcp.slice(0,9).map(h => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${h}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center"></td>
+      </tr>`;
+
+      // Back 9
+      html += `<tr style="background:var(--green);color:#fff;border-top:2px solid var(--gold)">
+        <td style="padding:6px 8px;font-weight:800;font-size:10px;letter-spacing:0.5px">HOLE</td>
+        ${pars.slice(9,18).map((_,i) => `<td style="padding:6px 4px;text-align:center;font-weight:700">${i+10}</td>`).join('')}
+        <td style="padding:6px 4px;text-align:center;font-weight:800;background:rgba(0,0,0,0.15)">IN</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">PAR</td>
+        ${pars.slice(9,18).map(p => `<td style="padding:5px 4px;text-align:center;font-weight:700;${parColor(p)}">${p}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:800">${pars.slice(9,18).reduce((s,p)=>s+p,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--white)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">YDS</td>
+        ${yards.slice(9,18).map(y => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${y}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center;font-weight:700">${yards.slice(9,18).reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+      html += `<tr style="background:var(--ivory)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--muted);font-size:10px">HCP</td>
+        ${hcp.slice(9,18).map(h => `<td style="padding:5px 4px;text-align:center;color:var(--muted)">${h}</td>`).join('')}
+        <td style="padding:5px 4px;text-align:center"></td>
+      </tr>`;
+
+      // Total row
+      html += `<tr style="background:var(--green);color:var(--gold)">
+        <td style="padding:8px;font-weight:800;font-size:11px">TOTAL</td>
+        <td colspan="9" style="text-align:right;padding:8px;font-weight:800;font-size:14px">Par ${pars.reduce((s,p)=>s+p,0)}</td>
+        <td style="text-align:center;padding:8px;font-weight:800;font-size:14px">${yards.reduce((s,y)=>s+y,0)}</td>
+      </tr>`;
+
+      html += '</table>';
+
+      // Course info
+      html += `<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted)">
+        <span>Rating: ${tee.rating} · Slope: ${tee.slope}</span>
+        <span>${teeKey} Tees</span>
+      </div>`;
+
+      el.innerHTML = html;
+    }
+
+    // Lazy-render scorecards on expand
+    document.querySelectorAll('details').forEach((d, i) => {
+      d.addEventListener('toggle', () => {
+        if (!d.open) return;
+        const map = [
+          ['scorecard-r1', 'keep', 'White'],
+          ['scorecard-r2', 'highlands', 'Member'],  // Highlands White = Member tees
+          ['scorecard-r3', 'keep', 'White']
+        ];
+        if (map[i]) renderScorecard(...map[i]);
+      });
+    });
+
+    // ── Share ──
+    function shareTrip() {
+      const url = 'https://betwaggle.com/mclemore/trip.html';
+      const text = 'McLemore 2026 🏌️ — 8 players, 3 rounds, Lookout Mountain. Check the odds, groupings, and scorecards. Who\'s taking the money home?';
+      if (navigator.share) {
+        navigator.share({ title: 'McLemore 2026 — Buddies Trip', text: text, url: url }).catch(() => {});
+      } else {
+        copyLink();
+      }
+    }
+
+    function copyLink() {
+      const url = 'https://betwaggle.com/mclemore/trip.html';
+      const btn = document.getElementById('copy-btn');
+      navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.style.background = 'rgba(22,163,74,0.08)';
+        btn.style.color = 'var(--win)';
+        btn.style.borderColor = 'var(--win)';
+        setTimeout(() => {
+          btn.textContent = '📋 Copy';
+          btn.style.background = 'var(--white)';
+          btn.style.color = 'var(--dark)';
+          btn.style.borderColor = 'var(--border)';
+        }, 2500);
+      }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2500);
+      });
+    }
+  </script>
+</body>
+</html>

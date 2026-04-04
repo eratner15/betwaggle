@@ -222,7 +222,7 @@ function renderSfxToggle() {
 }
 
 function createCanvasConfetti(options = {}) {
-  const colors = ['#D4AF37', '#1A472A', '#16A34A', '#F5F0E8'];
+  const colors = ['#D4AF37', '#1B2B4B', '#16A34A', '#F5F0E8'];
   const count = options.count || 120;
   const originX = typeof options.originX === 'number' ? options.originX : window.innerWidth * 0.5;
   const originY = typeof options.originY === 'number' ? options.originY : window.innerHeight * 0.26;

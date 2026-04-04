@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,700;0,800;1,400;1,700&amp;family=Manrope:wght@400;500;600;700&amp;family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container": "#f0ede9",
+            "background": "#fcf9f4",
+            "tertiary-fixed-dim": "#e9c176",
+            "error": "#ba1a1a",
+            "on-tertiary-container": "#b18d48",
+            "on-secondary-fixed": "#261900",
+            "primary-fixed-dim": "#b4cdb8",
+            "inverse-surface": "#31302d",
+            "outline": "#737973",
+            "secondary-fixed": "#ffdea5",
+            "on-secondary-fixed-variant": "#5d4201",
+            "on-error-container": "#93000a",
+            "surface-container-low": "#f6f3ee",
+            "on-tertiary": "#ffffff",
+            "tertiary": "#211500",
+            "on-secondary-container": "#785a1a",
+            "surface-bright": "#fcf9f4",
+            "surface-dim": "#dcdad5",
+            "secondary-container": "#fed488",
+            "surface": "#fcf9f4",
+            "primary-fixed": "#d0e9d4",
+            "surface-tint": "#4d6453",
+            "surface-container-high": "#ebe8e3",
+            "surface-container-highest": "#e5e2dd",
+            "on-primary-container": "#819986",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5d4201",
+            "on-primary-fixed": "#0b2013",
+            "on-surface-variant": "#434843",
+            "on-tertiary-fixed": "#261900",
+            "primary-container": "#1b3022",
+            "tertiary-container": "#3a2800",
+            "surface-container-lowest": "#ffffff",
+            "secondary": "#775a19",
+            "inverse-primary": "#b4cdb8",
+            "secondary-fixed-dim": "#e9c176",
+            "inverse-on-surface": "#f3f0eb",
+            "outline-variant": "#c3c8c1",
+            "on-primary": "#ffffff",
+            "surface-variant": "#e5e2dd",
+            "on-surface": "#1c1c19",
+            "on-primary-fixed-variant": "#364c3c",
+            "primary": "#061b0e",
+            "on-error": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-background": "#1c1c19",
+            "tertiary-fixed": "#ffdea5"
+          },
+          fontFamily: {
+            "headline": ["Newsreader"],
+            "body": ["Manrope"],
+            "label": ["Inter"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.linen-texture {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCv9NooUVaSmlTSZ036YmcEQ36697JjbE39ARyJL8lEWZ2aLQ-76lis7Yrkq84xTCHs_OfcCZ-PDWUq6Sij-kWDp4_BYIcTQDYof5f9pz51btzYaVoDu3xYghqCyYxAFmE5-P39WcmK1jOYAFiZ36bKBg5wG9Gh4fFnZsfeEiVcxGqLMufOMhxkGuAKFogCMST6ZFtOxQaKQhKzcFj---Hjku5dHtTGhkKP7WLbRKdzMJJ11EvwyORV5D0ru8TNLbFlByPIUXBw9WPX)
+    }
+.ghost-border {
+    border: 1px solid rgba(119, 90, 25, 0.15)
+    }
+.status-pulse {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: pulse 2s infinite
+    }
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        } 70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+        } 100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen linen-texture pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#FCF9F4] dark:bg-stone-950 opacity-85 backdrop-blur-md shadow-[0_12px_40px_rgba(27,48,34,0.06)]">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-secondary/20">
+<img alt="User Profile Portrait" class="w-full h-full object-cover" data-alt="Close-up portrait of a mature man with graying hair wearing a white golf polo shirt, bright outdoor lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIiIufuWFua4N93C86RxGKmc4JGh67qMQvyfqkx8lUhMU_T-kwbyjHLc6eLV4jTt5eyzlAt5usGZb6bdm-EXLSVGckBQ18tQ7azm07gwz7s_0KpXBK4yb4FuE3HlFi5fUKH5BHmdSVu3ZGKHsBM4yeNQQChmUSFsV3piMVB2jlhDsZqu1qmYizXbqS4ZT62RjBwMDEm2CgG9dhJZnhAVmDx0NzGzH4ZOyZ4w3rCyb4DDveNhVNJY9LbZ2SjvVyW9W-Dh8lyeSDPV8S"/>
+</div>
+<span class="text-2xl font-black text-[#061B0E] dark:text-emerald-50 tracking-[-0.02em] font-serif font-['Newsreader'] tracking-tighter italic">BETWAGGLE</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-3 py-1 bg-surface-container-high rounded-full">
+<div class="w-2 h-2 bg-green-500 rounded-full status-pulse"></div>
+<span class="font-label text-[10px] font-black uppercase tracking-widest text-primary">LIVE</span>
+</div>
+<span class="material-symbols-outlined text-[#061B0E] dark:text-emerald-500" data-icon="settings">settings</span>
+</div>
+</div>
+</header>
+<main class="pt-24 px-5 space-y-6">
+<!-- Hero: Current Hole Info -->
+<section class="relative overflow-hidden bg-primary-container rounded-lg p-6 text-on-primary shadow-xl">
+<div class="absolute top-0 right-0 p-8 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="sports_golf">sports_golf</span>
+</div>
+<div class="relative z-10 flex flex-col items-start gap-1">
+<h2 class="font-headline text-5xl font-extrabold italic tracking-tighter">HOLE 8</h2>
+<div class="flex gap-4 font-label text-sm font-bold uppercase tracking-widest text-on-primary-container">
+<span>PAR 4</span>
+<span>•</span>
+<span>412 YARDS</span>
+</div>
+</div>
+</section>
+<!-- Score Entry: Mike R -->
+<section class="bg-surface-container-lowest rounded-xl p-6 ghost-border shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<div>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] text-secondary font-black">CURRENT PLAYER</span>
+<h3 class="font-headline text-2xl font-bold text-primary italic">Mike R.</h3>
+</div>
+<div class="text-right">
+<span class="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">STROKES</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-4">
+<button aria-label="Decrease score" class="flex-1 h-20 flex items-center justify-center bg-surface-container-high rounded-lg text-primary active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-4xl" data-icon="remove">remove</span>
+</button>
+<div class="flex-[1.5] flex flex-col items-center justify-center">
+<span class="font-headline text-7xl font-black text-primary leading-none">4</span>
+</div>
+<button aria-label="Increase score" class="flex-1 h-20 flex items-center justify-center bg-primary rounded-lg text-on-primary active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-4xl" data-icon="add">add</span>
+</button>
+</div>
+</section>
+<!-- Live Betting Summary: Bento Grid Style -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Total Pot -->
+<div class="col-span-2 bg-gradient-to-br from-primary to-primary-container p-6 rounded-xl flex justify-between items-center shadow-lg">
+<div>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] text-on-primary-container font-black">ACTIVE POT</span>
+<p class="font-headline text-3xl font-bold text-secondary-fixed italic">$180.00</p>
+</div>
+<span class="material-symbols-outlined text-secondary-fixed text-4xl" data-icon="payments">payments</span>
+</div>
+<!-- Player States -->
+<div class="bg-surface-container-low p-4 rounded-xl ghost-border flex flex-col justify-between min-h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-headline text-xl font-bold text-primary italic">Mike R.</span>
+<span class="material-symbols-outlined text-secondary" data-icon="trending_up">trending_up</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 bg-secondary-container/20 text-secondary text-[10px] font-black rounded mb-1 uppercase tracking-tighter">2UP (Nassau)</span>
+<p class="text-on-surface-variant text-xs font-medium">Leading Match Play</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl ghost-border flex flex-col justify-between min-h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-headline text-xl font-bold text-primary italic">Danny T.</span>
+<span class="material-symbols-outlined text-secondary" data-icon="military_tech">military_tech</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 bg-secondary text-on-secondary text-[10px] font-black rounded mb-1 uppercase tracking-tighter">3 SKINS ($30)</span>
+<p class="text-on-surface-variant text-xs font-medium">Recent winner</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl ghost-border flex flex-col justify-between min-h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-headline text-xl font-bold text-primary italic">Jake W.</span>
+<span class="material-symbols-outlined text-outline-variant" data-icon="drag_handle">drag_handle</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 bg-outline-variant/20 text-on-surface-variant text-[10px] font-black rounded mb-1 uppercase tracking-tighter">ALL SQUARE</span>
+<p class="text-on-surface-variant text-xs font-medium">Holding steady</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl ghost-border flex flex-col justify-between min-h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-headline text-xl font-bold text-primary italic">Chris L.</span>
+<span class="material-symbols-outlined text-error" data-icon="trending_down">trending_down</span>
+</div>
+<div>
+<span class="inline-block px-2 py-0.5 bg-error/10 text-error text-[10px] font-black rounded mb-1 uppercase tracking-tighter">-2 (Nassau)</span>
+<p class="text-on-surface-variant text-xs font-medium">Down in match</p>
+</div>
+</div>
+</section>
+<!-- Detailed Scoreboard: Front 9 Grid -->
+<section class="bg-surface-container-lowest rounded-xl overflow-hidden ghost-border shadow-sm">
+<div class="px-6 py-4 bg-surface-container-high flex justify-between items-center">
+<h3 class="font-label text-xs font-black uppercase tracking-[0.2em] text-primary">Front 9 Scorecard</h3>
+<span class="material-symbols-outlined text-primary text-xl" data-icon="expand_more">expand_more</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="py-3 px-4 text-[10px] font-black uppercase text-secondary border-b border-outline-variant/10">HOLE</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">1</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">2</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">3</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">4</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">5</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">6</th>
+<th class="py-3 px-2 text-[10px] font-black uppercase text-center border-b border-outline-variant/10">7</th>
+</tr>
+</thead>
+<tbody class="font-body text-sm">
+<tr class="border-b border-outline-variant/5">
+<td class="py-3 px-4 font-bold text-primary">PAR</td>
+<td class="text-center text-on-surface-variant">4</td>
+<td class="text-center text-on-surface-variant">5</td>
+<td class="text-center text-on-surface-variant">3</td>
+<td class="text-center text-on-surface-variant">4</td>
+<td class="text-center text-on-surface-variant">4</td>
+<td class="text-center text-on-surface-variant">5</td>
+<td class="text-center text-on-surface-variant">3</td>
+</tr>
+<tr class="bg-surface-container-low/20">
+<td class="py-3 px-4 font-bold text-primary">Mike R.</td>
+<td class="text-center font-bold">4</td>
+<td class="text-center font-bold text-secondary">4</td>
+<td class="text-center font-bold">3</td>
+<td class="text-center font-bold">4</td>
+<td class="text-center font-bold text-error">5</td>
+<td class="text-center font-bold">5</td>
+<td class="text-center font-bold">3</td>
+</tr>
+<tr>
+<td class="py-3 px-4 font-bold text-primary">Danny T.</td>
+<td class="text-center font-bold">4</td>
+<td class="text-center font-bold">5</td>
+<td class="text-center font-bold">4</td>
+<td class="text-center font-bold text-secondary">3</td>
+<td class="text-center font-bold">4</td>
+<td class="text-center font-bold">5</td>
+<td class="text-center font-bold">3</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 flex justify-center">
+<button class="text-secondary font-label text-[10px] font-black uppercase tracking-widest hover:underline transition-all">View Back 9</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-6 pt-2 bg-[#FCF9F4] dark:bg-stone-950 opacity-95 backdrop-blur-xl z-50 border-t border-[#775A19]/10 shadow-[0_-4px_20px_rgba(27,48,34,0.04)]">
+<a class="flex flex-col items-center justify-center text-[#061B0E]/70 dark:text-emerald-100/70 px-4 py-1.5 transition-transform hover:text-[#775A19]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="sports_golf">sports_golf</span>
+<span class="font-['Inter'] text-[11px] uppercase tracking-widest font-bold">Lobby</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#061B0E] dark:bg-emerald-900 text-[#FCF9F4] rounded-[4px] px-4 py-1.5 translate-y-[-2px] transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="timer" style="font-variation-settings: 'FILL' 1;">timer</span>
+<span class="font-['Inter'] text-[11px] uppercase tracking-widest font-bold">Live Game</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#061B0E]/70 dark:text-emerald-100/70 px-4 py-1.5 transition-transform hover:text-[#775A19]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="font-['Inter'] text-[11px] uppercase tracking-widest font-bold">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#061B0E]/70 dark:text-emerald-100/70 px-4 py-1.5 transition-transform hover:text-[#775A19]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Inter'] text-[11px] uppercase tracking-widest font-bold">Profile</span>
+</a>
+</nav>
+</body></html>

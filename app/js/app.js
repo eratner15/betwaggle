@@ -924,8 +924,8 @@ window.MG = {
 
   async setAdminTab(tab) {
     state._adminTab = tab;
-    if (tab === "book" || tab === "takebet") syncFromServer();
-    if (tab === "scorecard") syncFromServer();
+    // Sync on any tab that shows live data
+    if (["dashboard", "book", "takebet", "scorecard", "settle", "flights"].includes(tab)) syncFromServer();
     if (tab === "players") {
       const players = await Sync.fetchPlayers();
       if (players) state._allPlayers = players;
@@ -1556,7 +1556,7 @@ window.MG = {
     ctx.save();
     ctx.globalAlpha = 0.035;
     ctx.font = 'bold 320px Georgia, serif';
-    ctx.fillStyle = '#1A472A';
+    ctx.fillStyle = '#1B2B4B';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('W', W / 2, totalH / 2);
@@ -1578,7 +1578,7 @@ window.MG = {
     ctx.closePath();
     // Dark green gradient header
     const hGrad = ctx.createLinearGradient(0, 0, W, 0);
-    hGrad.addColorStop(0, '#1A472A');
+    hGrad.addColorStop(0, '#1B2B4B');
     hGrad.addColorStop(1, '#245C38');
     ctx.fillStyle = hGrad;
     ctx.fill();
@@ -1795,7 +1795,7 @@ window.MG = {
     ctx.fillText('Powered by', W / 2, footY + 18);
 
     ctx.font = 'bold 20px Georgia, serif';
-    ctx.fillStyle = '#1A472A';
+    ctx.fillStyle = '#1B2B4B';
     ctx.fillText('Waggle', W / 2, footY + 40);
 
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
@@ -2507,7 +2507,8 @@ window.MG = {
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
       if (!state._holes) state._holes = {};
-      state._holes[hole] = { ...scores };
+      if (!state._holes[hole]) state._holes[hole] = {};
+      state._holes[hole].scores = { ...scores };
       state._scoreModal = null;
       toast('Saved offline — will sync when connected');
       persist();
@@ -2917,17 +2918,15 @@ window.MG = {
       // Offline or failed — queue mutation and update UI optimistically
       await queueMutation({ type: 'scores', payload: { holeNum: hole, scores: { ...scores } }, ts: Date.now() });
       if (!state._holes) state._holes = {};
-      state._holes[hole] = { ...scores };
+      if (!state._holes[hole]) state._holes[hole] = {};
+      state._holes[hole].scores = { ...scores };
       // Store stats locally even when offline
       if (holeStats) {
-        if (!state._holes[hole] || typeof state._holes[hole] !== 'object') {
-          state._holes[hole] = { scores: { ...scores } };
-        }
         state._holes[hole].stats = holeStats;
       }
       if (navigator.vibrate) navigator.vibrate(30);
       toast('Saved offline — will sync when connected');
-      // Auto-advance
+      // Auto-advance to next unscored hole
       const holesPerRound = state._config?.holesPerRound || 18;
       let nextHole = null;
       for (let h = 1; h <= holesPerRound; h++) {
@@ -2937,8 +2936,10 @@ window.MG = {
         }
       }
       if (nextHole) {
-        state._inlineScore = { hole: nextHole, scores: {} };
-        state._inlineScoreStats = {};
+        const existingNext = (state._holes || {})[nextHole]?.scores || {};
+        state._inlineScore = { hole: nextHole, scores: { ...existingNext } };
+        const nextStats = (state._holes || {})[nextHole]?.stats || {};
+        state._inlineScoreStats = Object.keys(nextStats).length > 0 ? JSON.parse(JSON.stringify(nextStats)) : {};
       } else {
         state._inlineScore = null;
         state._inlineScoreStats = {};
@@ -2958,7 +2959,7 @@ window.MG = {
     try {
       const emptyScores = {};
       const players = state._config?.players || state._config?.roster || [];
-      players.forEach(p => { emptyScores[p.name || p.member] = 0; });
+      players.forEach(p => { emptyScores[p.name || p.member] = null; });
       const result = await Sync.submitHoleScores(hole, emptyScores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
@@ -3370,7 +3371,7 @@ window.MG = {
     overlay.innerHTML = `
       <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px" onclick="this.remove()">
         <div onclick="event.stopPropagation()" style="width:100%;max-width:360px">
-          <div id="share-card" style="background:linear-gradient(135deg, #1A472A 0%, #2D6A3E 100%);border-radius:16px;padding:24px 20px;color:#fff;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+          <div id="share-card" style="background:linear-gradient(135deg, #1B2B4B 0%, #2A3F66 100%);border-radius:16px;padding:24px 20px;color:#fff;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
             <div style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:4px">${state._config.event.name}</div>
             <div style="font-family:'Inter',sans-serif;font-size:13px;letter-spacing:3px;color:rgba(255,255,255,0.4);text-transform:uppercase;margin:8px 0">${isWin ? 'Winner' : 'Active Bet'}</div>
             <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:700;letter-spacing:2px;color:#D4AF37">${headline}</div>
@@ -3394,7 +3395,7 @@ window.MG = {
             <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:12px">${state._config.event.url || location.hostname}</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button onclick="window.MG._doShare('text')" style="flex:1;padding:14px;border-radius:10px;border:none;background:#fff;color:#1A472A;font-size:14px;font-weight:700;cursor:pointer">Share</button>
+            <button onclick="window.MG._doShare('text')" style="flex:1;padding:14px;border-radius:10px;border:none;background:#fff;color:#1B2B4B;font-size:14px;font-weight:700;cursor:pointer">Share</button>
             <button onclick="document.getElementById('share-overlay').remove()" style="padding:14px 20px;border-radius:10px;border:2px solid rgba(255,255,255,0.3);background:transparent;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Close</button>
           </div>
         </div>
@@ -4147,6 +4148,45 @@ window.MG = {
     this.closeOddsBetSlip();
     persist();
     refresh();
+  },
+
+  // ── Missing score entry handlers (wired from views.js) ──
+
+  inlineScoreInput(player, value) {
+    // Proxy to inlineScoreType — called from premium scorecard number inputs
+    this.inlineScoreType(player, value);
+  },
+
+  inlineScoreSaveAttempt() {
+    // Proxy to inlineScoreSave — called from premium scorecard save button + Enter key
+    this.inlineScoreSave();
+  },
+
+  openScoreComposer(source) {
+    // Called from FAB button — open inline scorecard or fall back to modal
+    if (state._inlineScore) {
+      // Already in inline mode, just ensure scorecard tab is active
+      state._boardSubTab = 'scorecard';
+      refresh();
+    } else {
+      // Initialize inline score entry at next unscored hole
+      const holes = state._holes || {};
+      const holesPerRound = state._config?.holesPerRound || 18;
+      let nextHole = 1;
+      for (let h = 1; h <= holesPerRound; h++) {
+        if (!holes[h] || !holes[h].scores || Object.keys(holes[h].scores).length === 0) {
+          nextHole = h;
+          break;
+        }
+        if (h === holesPerRound) nextHole = holesPerRound;
+      }
+      const existing = holes[nextHole]?.scores || {};
+      state._inlineScore = { hole: nextHole, scores: { ...existing } };
+      const existingStats = holes[nextHole]?.stats || {};
+      state._inlineScoreStats = Object.keys(existingStats).length > 0 ? JSON.parse(JSON.stringify(existingStats)) : {};
+      state._boardSubTab = 'scorecard';
+      refresh();
+    }
   }
 };
 
@@ -4181,7 +4221,7 @@ function initializeBetTally() {
   if (!betTallyElement) {
     betTallyElement = document.createElement('div');
     betTallyElement.className = 'bet-tally-counter';
-    betTallyElement.innerHTML = '🎰 $0 staked';
+    betTallyElement.style.display = 'none';
     document.body.appendChild(betTallyElement);
   }
 
@@ -4189,8 +4229,8 @@ function initializeBetTally() {
   const saved = sessionStorage.getItem('mg_bet_tally');
   if (saved) {
     betTallyTotal = parseInt(saved) || 0;
-    updateBetTallyDisplay();
   }
+  updateBetTallyDisplay();
 }
 
 function incrementBetTally(amount) {

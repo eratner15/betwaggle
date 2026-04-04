@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cabot Citrus Invitational Settlement</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Manrope:wght@200..800&amp;family=Inter:wght@400;700;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1B3022", // Deep Forest Green
+                        secondary: "#C5A059", // Burnished Gold
+                        tertiary: "#39FF14", // Neon Betting Green
+                        surface: "#FCF9F4", // Ivory Linen
+                        error: "#BA1A1A",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Newsreader", "serif"],
+                        body: ["Manrope", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .diagonal-stripe {
+            background-image: repeating-linear-gradient(45deg, rgba(197, 160, 89, 0.05) 0px, rgba(197, 160, 89, 0.05) 1px, transparent 1px, transparent 10px);
+        }
+        .gold-border-gradient {
+            border-image: linear-gradient(to bottom, #C5A059, transparent) 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-zinc-100 flex items-center justify-center min-h-screen py-10">
+<!-- Shareable Card Container (1080x1920 aspect ratio simulated at 390px width) -->
+<div class="w-[390px] h-[693px] bg-surface shadow-2xl relative overflow-hidden flex flex-col rounded-lg">
+<!-- 1. Top Banner -->
+<div class="h-28 bg-primary relative flex flex-col items-center justify-center overflow-hidden">
+<!-- Subtle Diagonal Stripe Pattern Overlay -->
+<div class="absolute inset-0 diagonal-stripe"></div>
+<div class="relative z-10 flex flex-col items-center">
+<span class="font-headline italic text-3xl text-secondary tracking-tight">WAGGLE</span>
+<span class="font-label text-[10px] font-black tracking-[0.3em] text-white/90 mt-1">SETTLEMENT CARD</span>
+</div>
+<!-- Bottom Tonal Shift -->
+<div class="absolute bottom-0 w-full h-px bg-secondary/20"></div>
+</div>
+<!-- 2. Event Info Strip -->
+<div class="bg-surface px-6 py-5 border-b border-secondary/10 flex flex-col items-center text-center">
+<h1 class="font-headline italic text-xl text-primary leading-tight">Cabot Citrus Invitational</h1>
+<p class="font-body text-[11px] text-primary/60 mt-1 tracking-wide">March 15, 2026 · TPC Sawgrass · Par 72</p>
+<div class="flex gap-3 mt-3">
+<span class="font-label text-[9px] font-bold text-secondary px-2 py-1 bg-secondary/5 rounded-sm">4 PLAYERS</span>
+<span class="font-label text-[9px] font-bold text-secondary px-2 py-1 bg-secondary/5 rounded-sm">3 FORMATS</span>
+<span class="font-label text-[9px] font-bold text-secondary px-2 py-1 bg-secondary/5 rounded-sm">$480 POT</span>
+</div>
+</div>
+<!-- 3. Champion Spotlight -->
+<div class="flex-grow flex flex-col items-center justify-center px-6 relative">
+<!-- Decorative Laurel Wreath (Decorative CSS Elements) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[200px] text-secondary">workspace_premium</span>
+</div>
+<div class="relative z-10 flex flex-col items-center">
+<div class="flex items-center gap-2 mb-1">
+<div class="h-px w-6 bg-secondary/40"></div>
+<span class="font-label text-[10px] font-black text-secondary tracking-[0.2em]">CHAMPION</span>
+<div class="h-px w-6 bg-secondary/40"></div>
+</div>
+<h2 class="font-headline italic text-[64px] text-primary -mt-2 -mb-2">Mike R.</h2>
+<div class="flex items-center gap-1">
+<span class="font-headline text-3xl font-bold text-tertiary">+$185.00</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-primary/40 font-body text-[10px] font-bold uppercase tracking-widest">
+<span>HDCP 14.2</span>
+<span class="w-1 h-1 rounded-full bg-secondary/30"></span>
+<span>W-L: 8-4</span>
+</div>
+</div>
+<!-- Gold Top-Border Accent for Premium Feel -->
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-0.5 bg-gradient-to-r from-transparent via-secondary/40 to-transparent"></div>
+</div>
+<!-- 4. Leaderboard Strip -->
+<div class="bg-white/50 backdrop-blur-sm">
+<!-- Header Row -->
+<div class="px-6 py-2 bg-primary/5 flex justify-between items-center">
+<span class="font-label text-[9px] font-bold text-primary/40 tracking-widest uppercase">Leaderboard</span>
+<span class="font-label text-[9px] font-bold text-primary/40 tracking-widest uppercase">Settlement</span>
+</div>
+<!-- Rows -->
+<div class="flex flex-col">
+<!-- 1st -->
+<div class="px-6 py-3 flex justify-between items-center bg-secondary/5">
+<div class="flex items-center gap-3">
+<span class="text-sm">🏆</span>
+<span class="font-body font-bold text-primary text-sm">Mike R.</span>
+</div>
+<span class="font-headline text-tertiary font-bold">+$185.00</span>
+</div>
+<!-- 2nd -->
+<div class="px-6 py-3 flex justify-between items-center bg-transparent">
+<div class="flex items-center gap-3">
+<span class="text-sm">🥈</span>
+<span class="font-body font-bold text-primary text-sm">Danny T.</span>
+</div>
+<span class="font-headline text-tertiary font-bold">+$95.00</span>
+</div>
+<!-- 3rd -->
+<div class="px-6 py-3 flex justify-between items-center bg-secondary/5">
+<div class="flex items-center gap-3">
+<span class="w-4 ml-1"></span>
+<span class="font-body font-medium text-primary/80 text-sm">Jake W.</span>
+</div>
+<span class="font-headline text-tertiary font-bold">+$12.00</span>
+</div>
+<!-- 4th -->
+<div class="px-6 py-3 flex justify-between items-center bg-transparent">
+<div class="flex items-center gap-3">
+<span class="w-4 ml-1"></span>
+<span class="font-body font-medium text-primary/80 text-sm">Chris L.</span>
+</div>
+<span class="font-headline text-error font-bold">-$292.00</span>
+</div>
+</div>
+</div>
+<!-- 5. Game Format Summary -->
+<div class="px-6 py-6 flex justify-center gap-2">
+<div class="border border-secondary/20 rounded-sm px-2 py-1.5 bg-secondary/[0.03]">
+<p class="font-label text-[8px] font-black text-secondary leading-none uppercase">Nassau</p>
+<p class="font-body text-[10px] font-bold text-primary mt-0.5">$5/side</p>
+</div>
+<div class="border border-secondary/20 rounded-sm px-2 py-1.5 bg-secondary/[0.03]">
+<p class="font-label text-[8px] font-black text-secondary leading-none uppercase">Skins</p>
+<p class="font-body text-[10px] font-bold text-primary mt-0.5">$10/hole</p>
+</div>
+<div class="border border-secondary/20 rounded-sm px-2 py-1.5 bg-secondary/[0.03]">
+<p class="font-label text-[8px] font-black text-secondary leading-none uppercase">Wolf</p>
+<p class="font-body text-[10px] font-bold text-primary mt-0.5">$20/hole</p>
+</div>
+</div>
+<!-- 6. Footer -->
+<div class="mt-auto bg-primary p-6 flex justify-between items-end relative overflow-hidden">
+<!-- Pattern Overlay -->
+<div class="absolute inset-0 diagonal-stripe opacity-30"></div>
+<div class="relative z-10">
+<span class="font-headline italic text-lg text-secondary">betwaggle.com</span>
+<p class="font-body text-[9px] text-white/60 mt-1 leading-tight max-w-[150px]">Run Your Golf Trip Like a Vegas Sportsbook</p>
+</div>
+<!-- QR Placeholder -->
+<div class="relative z-10 w-12 h-12 bg-white/10 rounded border border-white/20 p-1 flex items-center justify-center">
+<div class="grid grid-cols-3 gap-1 opacity-40">
+<div class="w-2 h-2 bg-secondary"></div>
+<div class="w-2 h-2 bg-white"></div>
+<div class="w-2 h-2 bg-secondary"></div>
+<div class="w-2 h-2 bg-white"></div>
+<div class="w-2 h-2 bg-secondary"></div>
+<div class="w-2 h-2 bg-white"></div>
+<div class="w-2 h-2 bg-secondary"></div>
+<div class="w-2 h-2 bg-white"></div>
+<div class="w-2 h-2 bg-secondary"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Decoration for Presentation -->
+<div class="fixed inset-0 -z-10 bg-primary overflow-hidden pointer-events-none">
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/5 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-tertiary/5 blur-[120px] rounded-full"></div>
+</div>
+</body></html>

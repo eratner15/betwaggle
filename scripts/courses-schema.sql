@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS courses;
+CREATE TABLE courses (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  club_name TEXT,
+  city TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL DEFAULT '',

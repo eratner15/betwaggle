@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BetWaggle - Sunday Match</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#1b3022",
+                        "on-primary-container": "#819986",
+                        "primary-fixed-dim": "#b4cdb8",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#364c3c",
+                        "on-surface-variant": "#434843",
+                        "secondary": "#775a19",
+                        "outline-variant": "#c3c8c1",
+                        "surface-container-low": "#f6f3ee",
+                        "secondary-fixed": "#ffdea5",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e5e2dd",
+                        "on-error": "#ffffff",
+                        "surface-container": "#f0ede9",
+                        "secondary-fixed-dim": "#e9c176",
+                        "tertiary-container": "#13311e",
+                        "on-secondary-fixed": "#261900",
+                        "on-tertiary-fixed": "#03210f",
+                        "on-tertiary-container": "#7a9a81",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#785a1a",
+                        "surface-tint": "#4d6453",
+                        "surface-container-high": "#ebe8e3",
+                        "primary": "#061b0e",
+                        "background": "#fcf9f4",
+                        "tertiary-fixed-dim": "#adcfb3",
+                        "outline": "#737973",
+                        "secondary-container": "#fed488",
+                        "on-background": "#1c1c19",
+                        "surface": "#fcf9f4",
+                        "primary-fixed": "#d0e9d4",
+                        "tertiary-fixed": "#c8ebce",
+                        "surface-variant": "#e5e2dd",
+                        "inverse-on-surface": "#f3f0eb",
+                        "inverse-surface": "#31302d",
+                        "surface-bright": "#fcf9f4",
+                        "on-surface": "#1c1c19",
+                        "tertiary": "#001c0b",
+                        "on-tertiary-fixed-variant": "#2f4d38",
+                        "on-secondary-fixed-variant": "#5d4201",
+                        "inverse-primary": "#b4cdb8",
+                        "surface-dim": "#dcdad5",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#0b2013"
+                    },
+                    fontFamily: {
+                        "headline": ["Newsreader", "serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .ivory-gradient {
+            background: linear-gradient(180deg, #FCF9F4 0%, #F6F3EE 100%);
+        }
+        .forest-gradient {
+            background: linear-gradient(135deg, #1B3022 0%, #061B0E 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body max-w-[390px] mx-auto min-h-screen relative shadow-2xl">
+<!-- TopAppBar -->
+<header class="bg-[#1B3022] dark:bg-[#061B0E] text-[#C5A059] flex justify-between items-center px-4 h-16 w-full docked full-width top-0 z-50 shadow-[0_32px_64px_-12px_rgba(27,48,34,0.06)]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer" data-icon="menu">menu</span>
+<span class="italic font-serif text-[#C5A059] text-xl font-bold">BetWaggle</span>
+</div>
+<div class="flex items-center">
+<div class="w-8 h-8 rounded-full border border-[#C5A059]/30 overflow-hidden hover:opacity-80 transition-opacity cursor-pointer">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a professional man in a golf polo shirt with a clubhouse background in soft focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDufT7O_HBNBOrrVcgGD22zuVzYVERCBXNhe7xzuPknZBiMSasRuMbTyTgg4jjmo4IgqCPYqAXicWeVyrhIsC9H32n7DtKLclxiVPrtfj7_0VnLOaONDs4XHBg_INxcBTy7P3v3BQIIHlLFbxbsjkTB9jMtQZ0D6Y2W5wNaPD7SSIKVPu-CwdVbIPeNqdYwzwBA4Bdzd3Ks8KF-yk6Q5Pu9YUjFTRdhaF_gi77et1yCzLgS9PfmY7ISMg7g9yq6RLS47Yv2qwAPOEgF"/>
+</div>
+</div>
+</header>
+<main class="pb-32">
+<!-- Event Header -->
+<section class="px-5 pt-8 pb-4">
+<h1 class="font-headline text-3xl font-bold text-primary tracking-tight">Sunday Match</h1>
+<p class="font-label text-xs uppercase tracking-wider text-outline mt-1 font-semibold">Oakmont CC • Mar 30</p>
+<div class="flex gap-2 mt-4">
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[11px] font-bold uppercase tracking-widest rounded-lg">MATCH PLAY</span>
+<span class="px-3 py-1 bg-surface-container-high text-on-surface text-[11px] font-bold rounded-lg border border-outline-variant/30">$50/match</span>
+<span class="px-3 py-1 bg-surface-container-high text-on-surface text-[11px] font-bold rounded-lg border border-outline-variant/30">1v1</span>
+</div>
+</section>
+<!-- Match Status Hero -->
+<section class="mx-4 mb-6 relative overflow-hidden rounded-xl forest-gradient p-6 text-background shadow-lg border-b-4 border-secondary/40">
+<div class="flex justify-between items-center relative z-10">
+<div class="text-center w-1/3">
+<p class="font-headline text-lg font-medium text-on-primary-container">MIKE R.</p>
+<p class="text-[10px] uppercase tracking-tighter opacity-70">Handicap: 8</p>
+</div>
+<div class="text-center w-1/3 border-x border-background/10">
+<span class="block font-headline text-4xl font-extrabold text-[#C5A059]">2 UP</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-primary-container">Mike Leading</span>
+</div>
+<div class="text-center w-1/3">
+<p class="font-headline text-lg font-medium opacity-60">DANNY T.</p>
+<p class="text-[10px] uppercase tracking-tighter opacity-70">Handicap: 12</p>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-background/10 text-center">
+<p class="text-sm font-medium tracking-wide">thru 13 • <span class="text-secondary-fixed">5 holes remaining</span></p>
+<div class="mt-2 inline-flex items-center gap-2 bg-primary-fixed-dim/10 px-3 py-1.5 rounded-full border border-primary-fixed-dim/20">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+<p class="text-[11px] leading-tight text-primary-fixed-dim">Mike gives Danny 4 strokes (holes 1, 5, 9, 13)</p>
+</div>
+</div>
+</section>
+<!-- Match Tracker -->
+<section class="px-5 mb-8">
+<h3 class="font-label text-[10px] uppercase tracking-[0.2em] text-outline mb-4 font-bold">Match Tracker</h3>
+<div class="flex flex-wrap gap-1.5 justify-between">
+<!-- Holes 1-13 -->
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">1</span>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center relative">
+<span class="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+<span class="absolute -top-1 -right-1 text-[8px] text-secondary font-bold">•</span>
+</div>
+<span class="text-[8px] font-bold text-primary">1U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">2</span>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+</div>
+<span class="text-[8px] font-bold text-outline">AS</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">3</span>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+</div>
+<span class="text-[8px] font-bold text-primary">1U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">4</span>
+<div class="w-6 h-6 rounded-full bg-error/20 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+</div>
+<span class="text-[8px] font-bold text-outline">AS</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">5</span>
+<div class="w-6 h-6 rounded-full bg-error/20 flex items-center justify-center relative">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="absolute -top-1 -right-1 text-[8px] text-secondary font-bold">•</span>
+</div>
+<span class="text-[8px] font-bold text-outline">1D</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">6</span>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+</div>
+<span class="text-[8px] font-bold text-outline">1D</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">7</span>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+</div>
+<span class="text-[8px] font-bold text-outline">AS</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">8</span>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+</div>
+<span class="text-[8px] font-bold text-primary">1U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">9</span>
+<div class="w-6 h-6 rounded-full bg-error/20 flex items-center justify-center relative">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="absolute -top-1 -right-1 text-[8px] text-secondary font-bold">•</span>
+</div>
+<span class="text-[8px] font-bold text-primary">2U</span>
+</div>
+<!-- Row 2 for space -->
+<div class="w-full h-2"></div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">10</span>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+</div>
+<span class="text-[8px] font-bold text-primary">1U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">11</span>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+</div>
+<span class="text-[8px] font-bold text-primary">1U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">12</span>
+<div class="w-6 h-6 rounded-full bg-error/20 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+</div>
+<span class="text-[8px] font-bold text-primary">2U</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-bold text-outline">13</span>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center relative">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="absolute -top-1 -right-1 text-[8px] text-secondary font-bold">•</span>
+</div>
+<span class="text-[8px] font-bold text-primary">2U</span>
+</div>
+<!-- Highlighted Active Hole -->
+<div class="flex flex-col items-center gap-1">
+<span class="text-[9px] font-extrabold text-secondary">14</span>
+<div class="w-6 h-6 rounded bg-secondary-container border-2 border-secondary animate-pulse flex items-center justify-center">
+</div>
+<span class="text-[8px] font-bold text-secondary italic">NOW</span>
+</div>
+<!-- Remaining Holes -->
+<div class="flex flex-col items-center gap-1 opacity-40">
+<span class="text-[9px] font-bold text-outline">15</span>
+<div class="w-6 h-6 rounded bg-surface-container border border-outline-variant"></div>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-40">
+<span class="text-[9px] font-bold text-outline">16</span>
+<div class="w-6 h-6 rounded bg-surface-container border border-outline-variant"></div>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-40">
+<span class="text-[9px] font-bold text-outline">17</span>
+<div class="w-6 h-6 rounded bg-surface-container border border-outline-variant"></div>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-40">
+<span class="text-[9px] font-bold text-outline">18</span>
+<div class="w-6 h-6 rounded bg-surface-container border border-outline-variant"></div>
+</div>
+</div>
+</section>
+<!-- Match Scenarios -->
+<section class="mx-5 mb-8 bg-surface-container-low p-4 rounded-xl border border-secondary/10">
+<h4 class="font-headline text-lg font-bold text-primary flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-secondary" data-icon="insights">insights</span>
+                Projections
+            </h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Mike wins Hole 14</span>
+<span class="font-bold text-primary">3 UP with 4 to play</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Danny wins Hole 14</span>
+<span class="font-bold text-primary">1 UP with 4 to play</span>
+</div>
+<div class="pt-3 border-t border-outline-variant/30">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<p class="text-xs font-bold uppercase tracking-tighter text-secondary">DORMIE WATCH</p>
+<p class="text-[13px] leading-tight text-on-surface-variant mt-0.5">Mike needs 3 more wins to close out before 18.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Closing Holes Info -->
+<section class="px-5 mb-8">
+<div class="flex items-center gap-2 mb-3">
+<span class="h-px flex-1 bg-outline-variant/30"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline">Closing Holes</span>
+<span class="h-px flex-1 bg-outline-variant/30"></span>
+</div>
+<div class="grid grid-cols-5 gap-2">
+<div class="bg-surface-container-lowest p-2 rounded text-center border border-outline-variant/10 shadow-sm">
+<p class="text-[9px] text-outline font-bold">14</p>
+<p class="text-xs font-bold text-primary">P4</p>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded text-center border border-outline-variant/10 shadow-sm">
+<p class="text-[9px] text-outline font-bold">15</p>
+<p class="text-xs font-bold text-primary">P3</p>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded text-center border border-outline-variant/10 shadow-sm">
+<p class="text-[9px] text-outline font-bold">16</p>
+<p class="text-xs font-bold text-primary">P5</p>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded text-center border border-outline-variant/10 shadow-sm">
+<p class="text-[9px] text-outline font-bold">17</p>
+<p class="text-xs font-bold text-primary">P4</p>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded text-center border border-outline-variant/10 shadow-sm">
+<p class="text-[9px] text-outline font-bold">18</p>
+<p class="text-xs font-bold text-primary">P4</p>
+</div>
+</div>
+</section>
+<!-- Scorecard Table -->
+<section class="mx-4 overflow-hidden rounded-xl border border-secondary/20 shadow-sm bg-surface-container-lowest">
+<div class="bg-surface-container p-3 flex justify-between items-center">
+<h4 class="font-headline font-bold text-primary">Detailed Scorecard</h4>
+<span class="material-symbols-outlined text-outline" data-icon="expand_more">expand_more</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-secondary/10">
+<th class="p-2 text-[10px] font-bold uppercase text-outline">H</th>
+<th class="p-2 text-[10px] font-bold uppercase text-outline">PAR</th>
+<th class="p-2 text-[10px] font-bold uppercase text-outline">SI</th>
+<th class="p-2 text-[10px] font-bold uppercase text-primary">M</th>
+<th class="p-2 text-[10px] font-bold uppercase text-primary">D</th>
+<th class="p-2 text-[10px] font-bold uppercase text-outline">RES</th>
+</tr>
+</thead>
+<tbody class="text-[12px] font-medium font-body">
+<tr class="border-b border-outline-variant/10 bg-primary/5">
+<td class="p-2 text-outline">1</td>
+<td class="p-2">4</td>
+<td class="p-2">1</td>
+<td class="p-2 font-bold">4</td>
+<td class="p-2">5 <span class="text-[9px] align-top text-secondary font-bold">(-1)</span></td>
+<td class="p-2 text-[#C5A059] font-bold">M</td>
+</tr>
+<tr class="border-b border-outline-variant/10">
+<td class="p-2 text-outline">2</td>
+<td class="p-2">4</td>
+<td class="p-2">7</td>
+<td class="p-2">4</td>
+<td class="p-2">4</td>
+<td class="p-2 text-outline font-bold">H</td>
+</tr>
+<tr class="border-b border-outline-variant/10 bg-primary/5">
+<td class="p-2 text-outline">3</td>
+<td class="p-2">3</td>
+<td class="p-2">15</td>
+<td class="p-2 font-bold">3</td>
+<td class="p-2">4</td>
+<td class="p-2 text-[#C5A059] font-bold">M</td>
+</tr>
+<tr class="border-b border-outline-variant/10 bg-error/5">
+<td class="p-2 text-outline">4</td>
+<td class="p-2">5</td>
+<td class="p-2">3</td>
+<td class="p-2">6</td>
+<td class="p-2 font-bold">5</td>
+<td class="p-2 text-error font-bold">D</td>
+</tr>
+<!-- ... rest of holes ... -->
+<tr class="bg-surface-container-high/40 italic">
+<td class="p-2 text-[10px] text-center text-outline-variant" colspan="6">Showing holes 1-13</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- Bottom Actions -->
+<div class="fixed bottom-16 left-0 right-0 max-w-[390px] mx-auto p-4 pointer-events-none">
+<button class="w-full bg-primary text-on-primary py-4 rounded-xl font-headline text-lg font-bold shadow-2xl flex items-center justify-center gap-3 pointer-events-auto active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+            Enter Hole 14 Scores
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-[#F6F3EE] dark:bg-[#1B3022] z-50 rounded-t-lg border-t-[0.5px] border-[#C5A059]/20 max-w-[390px] mx-auto">
+<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-[#FCF9F4]/60 p-2 hover:text-[#C5A059] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-sans font-medium text-[11px] mt-1">Lobby</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#1B3022] text-[#C5A059] rounded-xl p-2 Active: scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="golf_course">golf_course</span>
+<span class="font-sans font-medium text-[11px] mt-1">Live Game</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-[#FCF9F4]/60 p-2 hover:text-[#C5A059] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-sans font-medium text-[11px] mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#1B3022]/60 dark:text-[#FCF9F4]/60 p-2 hover:text-[#C5A059] transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans font-medium text-[11px] mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

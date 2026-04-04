@@ -1,13 +1,13 @@
 {
   "name": "betwaggle",
   "compatibility_date": "2026-02-10",
-  "workers_dev": true,
+  "workers_dev": false,
   "main": "worker.js",
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
     "routing": {
-      "run_worker_first": true
+      "run_worker_first": false
     }
   },
   "routes": [

@@ -1,64 +1,68 @@
 # Waggle — Master TODO List
-## Updated: 2026-04-03
+## Updated: 2026-04-04
 
 ---
 
-## SESSION RECAP (Apr 2-3, 2026)
+## SESSION RECAP (Apr 4, 2026) — REBUILD SESSION
 
-### What Shipped (15 commits, 16,607 lines, 45 files)
+### What Shipped (1 session, ~15 deploys)
 
-**Product**
-- [x] Trip page overhaul — readable hero, Start Scoring button, course selector, GHIN lookup
-- [x] Quick Start redesign — dark sportsbook theme, GHIN name search, game format cards, course search, live odds preview, "OPEN THE BOOK" gold CTA
-- [x] Settlement viral loop — staggered ceremony reveal, shareable card, Venmo/CashApp deep links
-- [x] The Bar redesigned — Heritage betting interface with gold odds chips
-- [x] Score entry — premium circles (eagle gold, birdie green), haptic feedback, auto-advance
-- [x] Tappable odds — DraftKings-style odds-as-buttons pattern
-- [x] Odds movement animation — slide, flash, arrows on change
-- [x] 18-hole progress strip — color-coded, tap to jump
-- [x] Bet confirmation ceremony — gold pulse, haptic, ticket stamp
-- [x] 5 premium game cards — Skins, Nassau, Wolf, Match Play, Scramble (Heritage design)
-- [x] Demo auto-simulation engine (demo-simulation.js)
-- [x] All demo events reseeded with force-reseed endpoint
-- [x] Auto-advance on tournament type selection (no extra Continue tap)
-- [x] Added Bloodsome + 3-Player 9s to create wizard
-- [x] Scramble demo teams renamed (Wolves, Falcons, Mustangs, Vipers)
-- [x] 60-second walkthrough at /walkthrough/ for on-course demos
+**Core Workflow (the engine)**
+- [x] AUDIT.md — full codebase audit, all 17 Codex findings verified
+- [x] DESIGN.md — locked design system (navy/gold/ivory, Playfair/Georgia)
+- [x] WORKFLOW-SPEC.md — Players → Course → Games → Score → Calculate → Settle
+- [x] ROADMAP.md — 5-phase product roadmap
 
-**Marketing Engine**
-- [x] /pro/ landing page — course pro specific with affiliate signup, commission calculator
-- [x] /admin/outreach/ — campaign management dashboard (PIN protected)
-- [x] Course lead database API (import, query by state/segment, stats)
-- [x] Outreach email sending via Resend with template resolution
-- [x] Affiliate ref code tracking (?ref=ABC123 auto-credits)
-- [x] 5 email drip templates (welcome through last-chance)
-- [x] 4 outreach templates (scramble pitch, affiliate invite, follow-up, newsletter)
-- [x] Cold email sequences (FL charity scrambles, TX corporate outings)
-- [x] LinkedIn DM templates + cold call script + voicemail script
-- [x] Top 10 objection handling guide
-- [x] Master AI prompt for generating more outreach (AFFILIATE-ENGINE-PROMPT.md)
-- [x] GTM strategy doc, paid ads strategy, social calendar, ad creatives
+**Create Flow (rebuilt from scratch)**
+- [x] New 3-step create page (525 lines / 24KB, was 2,948 / 185KB)
+- [x] Format selector: Round | Scramble | Tournament
+- [x] GPS course detection ("Find My Course" uses geolocation + reverse geocode)
+- [x] GHIN name search with auto-populated handicaps
+- [x] Manual quick-add (name + HI + Enter)
+- [x] AI game suggestion based on player count + handicap spread
+- [x] Invite screen after launch (copy link, share, then start scoring)
 
-**Bug Fixes**
-- [x] P0: duplicate currentHole declaration broke ALL event pages (skeleton loading)
-- [x] Venue input loses focus on every keystroke
-- [x] GHIN lookup field mismatch (handicapIndex vs handicap)
-- [x] Course search returns empty (fallback to local DB when API key missing)
-- [x] GHIN now searches by last name (most users don't know their GHIN #)
-- [x] Calcutta 404 on non-member-guest events
-- [x] Stale Playfair Display v37 font preload 404
-- [x] AW-PLACEHOLDER / PIXEL_PLACEHOLDER disabled (wasted network requests)
-- [x] Tour page pricing fix ($199 to $32/$149)
-- [x] Homepage scramble team names (golf terms to mascots)
+**Course Database**
+- [x] 17,223 US courses imported to D1 from open dataset
+- [x] 34+ courses with full scorecards (par, stroke index per hole)
+- [x] GolfCourseAPI key set — 30K+ courses accessible via auto-enrichment
+- [x] Cache-through: search D1 → API fallback → save to D1 for next time
+- [x] Course enrichment endpoint: fetches scorecard from API when selecting unknown course
+- [x] GPS nearby search: reverse geocode + D1 city search
+- [x] Turnberry Isle manually corrected (now "JW Marriott Turnberry Isle", Soffer Course par 70)
+
+**Score Entry**
+- [x] 3 missing functions added: inlineScoreInput, inlineScoreSaveAttempt, openScoreComposer
+- [x] Offline state structure fixed (writes .scores correctly)
+- [x] Undo sends null instead of 0
+- [x] Casual scorecard now has "Open the Book" button → inline score entry
+- [x] Premium scorecard null-safe for courses without par data (defaults to par 72)
+
+**Game Engine**
+- [x] All 11 server engines verified working (Nassau, Skins, Wolf, Vegas, Stableford, Match Play, Banker, BBB, Bloodsome, Nines, Scramble)
+- [x] All 12 game cards render on dashboard (6 new cards added)
+- [x] Settlement handles all 11 games (added Vegas, Nines, Scramble PnL)
+- [x] Full 18-hole scoring test on Pebble Beach with real handicap calculations verified
+
+**Design**
+- [x] All old green (#1A472A, #0D2818, #1B3022) replaced with navy (#1B2B4B, #0F1A2E) across ALL files
+- [x] Game cards: dark "Trading Floor" mode with electric green +$ amounts
+- [x] Dark mode rolled out to all event pages (toggle button + localStorage persistence)
+- [x] Homepage: navy palette, "See It Live" / "Create Your Outing" CTAs
+- [x] The Bar redesigned: light readable cards, H2H spreads, dollar amounts
+- [x] Microcopy: "Open the Book", "The Ledger", "Lock It In"
+- [x] Electric green (#22C55E) for money amounts, bright red (#EF4444) for losses
 
 **Infrastructure**
-- [x] Paperclip AI: 14 agents, 87 of 154 issues completed
-- [x] Codex agents: switched from Claude, stale sessions cleared, running QA/audit
-- [x] Claude Code wrapper for Paperclip (--dangerously-skip-permissions on --print)
-
-**Other Projects**
-- [x] Bloop: host-jumps-ahead bug fixed, 5 stickiness features, Passover questions removed
-- [x] Lexington: GuidedDemo crash fixed, ESLint safety patch, ErrorBoundary deployed
+- [x] workers_dev: false in production (Codex Finding #16)
+- [x] run_worker_first: false — static assets served directly by CDN
+- [x] Asset URLs changed from /:slug/js/ to /app/js/ with cache busting
+- [x] CORS catch-all locked to origin whitelist
+- [x] 4 dead directories archived (b/, cards/, mclemore/, .stitch-cards/)
+- [x] 7 redundant logos deleted, references updated in all files
+- [x] Bet tally "$0 staked" flash eliminated
+- [x] Sync triggers on all data-showing tabs (dashboard, scorecard, settle)
+- [x] Zone.Identifier artifacts cleaned
 
 ---
 
@@ -68,7 +72,7 @@
 - [ ] Test Stripe checkout end-to-end (create, pay $32, event activates)
 - [ ] Test Stripe webhook fires on real payment (test mode)
 - [ ] Verify promo codes work: FIRSTTRIP, FREETRIAL, GOLF2026, BUDDIES
-- [ ] Test paid tier full flow: create, pay, success page, QR, player joins, score, settle
+- [ ] Switch Stripe from test to live mode (need sk_live_ key)
 
 ### Email Verification
 - [ ] Verify Resend domain is verified for betwaggle.com
@@ -76,116 +80,113 @@
 - [ ] Test drip sequence fires on correct schedule (Day 0/3/7/14/21)
 - [ ] Set up hello@betwaggle.com email routing in Cloudflare
 
-### Critical Bugs (found by Codex audit)
-- [ ] Vegas/Banker/Bloodsome bets never settle and remain active
-- [ ] Legacy $29 hardcodes in create/index.html and worker.js (should be $32)
+### Critical Bugs
+- [ ] Vegas team assignment: no way to set teams in the create flow
+- [ ] Wolf: no partner selection UI during play (only server-side engine exists)
 - [ ] Private docs still exposed at /marketing-private/, /gtm-private/, /ads-private/
+- [ ] Course data: 17K courses but most without scorecards — need batch enrichment cron
 
 ---
 
-## P1: HIGH PRIORITY (drives conversion and growth)
+## P1: HIGH PRIORITY (this week)
 
-### Course Pro Outreach (Revenue Engine)
-- [ ] Import first 500 course leads (FL, TX, AZ, CA, SC, NC, GA)
-- [ ] Get GOLF_COURSE_API_KEY to enable 30K+ course search
-- [ ] Send first outreach campaign targeting FL scramble season
-- [ ] Set WAGGLE_MARKETING_PIN (check Cloudflare dashboard)
-- [ ] Generate more state-specific email sequences (SC/NC, CA, GA, NY)
-- [ ] Write affiliate welcome email for new signups
-- [ ] Create affiliate one-pager PDF for board presentations
+### Score Entry Polish
+- [ ] Number picker: bigger buttons (56px), par highlighted in gold
+- [ ] Auto-advance to next player within a hole (not just next hole)
+- [ ] "Undo Last Hole" button visible and working from scorecard tab
+- [ ] Color flash animation on birdie/eagle entry
 
-### Create Flow Polish
-- [ ] GHIN name search: add state filter to narrow results
-- [ ] Course search: get Golf Course API key for full 30K+ courses
-- [ ] Verify all tournament types work on mobile
-- [ ] Improve Quick Start dark theme on real mobile device
-- [ ] Add course photo/map when selected
+### Game Cards During Play
+- [ ] Nassau: show "X UP thru Y" not just raw numbers
+- [ ] Wolf: show whose turn to be wolf, partner selection UI
+- [ ] All cards: show running P&L in dollars next to player names
+- [ ] Cards animate when state changes (new score entered)
 
-### Homepage A/B Test
-- [ ] Add Vegas Sportsbook headline to /b/ page
-- [ ] Improve colors/formatting on A variant
-- [ ] Add inline email capture
-- [ ] Set up split test infrastructure
+### Settlement Polish
+- [ ] Per-game dollar breakdown (not just totals)
+- [ ] Share settlement card as image (canvas render)
+- [ ] Verify net = $0 on screen with visual check mark
+
+### Course Data
+- [ ] Set up Cloudflare cron to batch-enrich 100 courses/day from GolfCourseAPI
+- [ ] User-entered pars save back to D1 for community benefit
+- [ ] "Report incorrect data" button on course selection
 
 ---
 
-## P2: MEDIUM PRIORITY (product polish)
+## P2: MEDIUM PRIORITY (next week)
 
-### Premium Game Card Integration
-- [ ] Apply Heritage card design to in-app Skins panel (views.js)
-- [ ] Apply Heritage card design to in-app Nassau panel
-- [ ] Apply Heritage card design to in-app Wolf panel
-- [ ] Apply Heritage card design to in-app Match Play panel
-- [ ] Apply Heritage card design to in-app Scramble panel
+### Viral Growth
+- [ ] Settlement card as shareable image with "Powered by Waggle" branding
+- [ ] Interactive homepage demo that uses real engine
+- [ ] "Invite a buddy" flow from within active event
 
-### SEO and Discovery
-- [ ] Add JSON-LD structured data to /games/ pages
+### SEO
+- [ ] JSON-LD structured data on /games/ pages (FAQPage + HowTo)
 - [ ] Submit sitemap to Google Search Console
-- [ ] Set up Google Ads with real ID
-- [ ] Set up Meta Pixel with real ID
+- [ ] Course directory pages with scorecard display + "Play here on Waggle" CTA
 
-### QA and Consistency
-- [ ] Consolidate /affiliate/ and /affiliates/ to one URL
-- [ ] Verify pricing $32/$149 on every page
-- [ ] Fix internal links pointing to 404s
-- [ ] Audit meta tags and OG images
-- [ ] Verify 44px+ touch targets
-- [ ] Test on real iPhone Safari and Android Chrome
+### Revenue
+- [ ] Stripe live mode ($32/outing checkout)
+- [ ] Affiliate signup flow at /affiliates/
+- [ ] Ref tracking: ?ref= parameter on /create/
 
 ---
 
 ## P3: FUTURE SPRINTS
 
 - [ ] WebSocket real-time push (replace 30s polling)
-- [ ] AI settlement narrative per player
+- [ ] AI settlement narrative ("Julian took the skin on 7 with a clutch birdie...")
 - [ ] Push notifications for score updates
 - [ ] Season/league standings across events
-- [ ] Google Analytics / GA4 funnel tracking
-- [ ] Stripe subscription for Season Pass
-- [ ] Affiliate payout automation
-- [ ] Sponsorship integration on leaderboard
+- [ ] Multi-round buddies trips (2-4 rounds over a weekend)
+- [ ] Member-Guest flighted match play
+- [ ] Calcutta auction
+- [ ] Live leaderboard TV mode
+- [ ] 4-level MLM affiliate program (spec in AFFILIATE-MLM section below)
 
 ---
 
-## PAPERCLIP/CODEX AGENT PROJECTS
+## AFFILIATE MLM (Multi-Level Referral Program)
 
-### Project 1: QA and Code Review (Spotter + Wedge)
-Read code, trace logic, report bugs. No code writing.
-- Audit settlement math for all 8 game formats
-- Audit Stripe checkout + webhook flow
-- Audit email pipeline + drip scheduling
-- Crawl all pages for broken links
-- Verify pricing consistency
-- Security review of recent changes
+Build a 4-level deep referral commission structure for course pro affiliates. When a pro refers another pro, the original pro earns commission on their referrals too, up to 4 levels deep.
 
-### Project 2: Outreach Content (Birdie)
-Generate marketing content using AFFILIATE-ENGINE-PROMPT.md.
-- State-specific cold emails (SC/NC, CA, GA, NY, CO)
-- Affiliate welcome email
-- One-pager PDF content
-- Social media posts for affiliate pros
-- Monthly newsletter template
+**Structure:**
+- Level 1 (direct referral): Full affiliate commission (25-37% depending on tier)
+- Level 2 (your referral's referral): 10% of the outing fee
+- Level 3: 5% of the outing fee
+- Level 4: 2% of the outing fee
 
-### Project 3: Course Lead Database (Shank)
-Build and populate the outreach lead database.
-- Scrape top 50 courses per state
-- Import via /api/admin/course-leads/import
-- Segment: private vs public vs resort
-- Build scramble season drip campaign
+**Schema changes needed:**
+- [ ] Add `referred_by` column to affiliates table (references parent affiliate ID)
+- [ ] Add `referral_depth` column (1-4, how deep in the chain)
+- [ ] Add `referral_chain` column (JSON array of affiliate IDs from root to this node)
+- [ ] Create `affiliate_commissions` table: affiliate_id, source_event_slug, level, amount_cents, status, created_at
 
-### Project 4: Operational Audits (Caddie)
-Ongoing consistency and quality checks.
-- Map every CTA and verify destinations
-- Audit mobile touch targets
-- Check meta tags and OG images
-- Create comprehensive sitemap
-- Monitor demo pages
+**Implementation:**
+- [ ] When a new affiliate signs up via `?ref=ABC123`, store `referred_by = ABC123`
+- [ ] On each paid outing, walk the referral chain up to 4 levels and create commission records
+- [ ] Affiliate dashboard shows: direct earnings + network earnings by level
+- [ ] "Your Network" view: tree visualization of downstream affiliates + their performance
+- [ ] Payout system: aggregate all commission levels into single payout requests
 
 ---
 
-## KEYS AND SECRETS NEEDED
+## TECHNICAL DEBT
 
-- [ ] GOLF_COURSE_API_KEY — enables 30K+ course search
+- [ ] Replace 4-digit admin PIN with proper auth (passphrase + crypto.subtle)
+- [ ] Add CSP headers to all responses
+- [ ] Eliminate remaining innerHTML (196 occurrences across 21 files)
+- [ ] Lock down 35 inline CORS * headers on individual endpoints
+- [ ] Add D1 migrations directory with numbered SQL files
+- [ ] Split worker.js into router + handler modules (10,715 lines)
+- [ ] Remove remaining "BetWaggle" references in email templates (~600 occurrences)
+
+---
+
+## KEYS AND SECRETS
+
+- [x] GOLF_COURSE_API_KEY — set ✓
 - [ ] WAGGLE_MARKETING_PIN — check Cloudflare Workers dashboard
 - [ ] Google Ads account ID (replace AW-PLACEHOLDER)
 - [ ] Meta Pixel ID (replace PIXEL_PLACEHOLDER)

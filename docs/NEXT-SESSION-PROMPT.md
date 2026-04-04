@@ -2,28 +2,47 @@
 
 ## Prompt:
 
-We are building betwaggle.com — a social golf betting platform. I need you to continue the Sprint 5 premium flow redesign.
+We are building betwaggle.com — a social golf betting platform. Continue the Scramble Product rebuild.
 
-Read the master plan at /home/eratner/betwaggle/docs/MASTER-PLAN.md and the sprint 5 plan at /home/eratner/betwaggle/docs/SPRINT-5-PREMIUM-FLOW.md for full context.
+Read the scramble plan at /home/eratner/betwaggle/docs/SCRAMBLE-PLAN.md (will be created) and the stitch card prototype at /home/eratner/betwaggle/.stitch-cards/scramble.html for the target design.
 
 ## What's Already Done:
-- Phase 1 (cleanup): 258 junk files deleted, all pages verified 200, core JS locked
-- Screen 1 (Trip Page): Dark green hero, gold Start Scoring button, Heritage course section
-- Screen 1b (Identity Picker): Dark overlay with blur, Playfair names, gold HI badges
-- Screen 2 (Quick Start): Gap fixed, tight spacing, GHIN dropdown hidden when empty
-- Screen 3 (Dashboard): Already has Heritage compact header, game panels, gold FAB
-- Screen 4 (Scorecard): Heritage dark header added
-- Screen 5 (Settlement): Heritage header partially added — needs verification across code paths
+- Phase 1 (demo seed): CTP on holes 3/7/12/17, LD on 5/14, prize pool $1,600, 14/18 holes scored
+- 4-tab nav: Home | Score | The Bar | Settle (working)
+- Lobby slimmed: no H2H spreads or props on home tab
+- The Bar: Opening Lines + Props + Outright Winner show pre-game
+- Course + tee selection wired with tee picker
+- Weekend Warrior free (bypasses Stripe)
+- Settlement with ceremony + progress bar
+- FL outreach: 50 emails sent
 
-## What's Left in Phase 2:
-1. Screen 5 (Settlement) — verify Heritage header renders in all modes, improve the "incomplete round" progress display
-2. Screen 6 (The Bar / Betting) — verify current state, add gold odds chips if needed
-3. Screen 7 (Walkthrough) — verify slides render correctly at 390px mobile
+## What's Left — Scramble Product:
 
-## What's Left After Phase 2:
-- Phase 3: Run /simplify, final cleanup
-- Phase 4: Launch FL outreach to 51 courses (email system works, drip automation deployed, leads ready)
-- Phase 5: Agent rules — Paperclip/Codex agents can do content and QA only, NO code writes
+### Phase 2: Premium Leaderboard Visual (HIGH PRIORITY)
+- Redesign `renderScrambleLeaderboard()` in views.js (line 948) to match .stitch-cards/scramble.html
+- Deep forest green (#1B3022) header with Playfair Display, team score in large type, LIVE badge
+- Team cards: ivory background, gold left-border for top 3, rank badge, expandable hole-by-hole
+- Prize pool visualization: "1st $800 / 2nd $400 / 3rd $240" in gold
+- CTP/LD panels: Heritage styling, green checkmark for won holes, gold "TBD" for upcoming
+- Remove fake odds/betting from scramble teams — scramble is prize-pool, not betting
+
+### Phase 3: CTP/LD Backend + Score Entry
+- Extend POST /hole endpoint to accept {ctp, ld} optional fields
+- CTP prompt on par 3 holes: "Who hit closest?" player picker
+- LD prompt on LD holes: "Who hit longest?" player picker
+- Save to gameState.sideGames
+
+### Phase 4: Scramble Settlement
+- Scramble-specific settlement branch in renderSettlement
+- Prize pool distribution by position
+- CTP/LD winners announced
+- Share card with team standings
+
+### Phase 5: Create Flow Polish
+- Prize pool config in create wizard
+- Payout structure selector
+- CTP/LD hole picker
+- QR code generation on event creation
 
 ## Critical Rules:
 - views.js, app.js, betting.js are chmod 444 — unlock before editing, lock after
@@ -33,15 +52,13 @@ Read the master plan at /home/eratner/betwaggle/docs/MASTER-PLAN.md and the spri
 - Deploy command: `source ~/.nvm/nvm.sh && nvm use 20 && NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt CLOUDFLARE_API_TOKEN=_aWVT9W6jGvJvfzdRER67eDxmGxrCxILZhqOCdHp CLOUDFLARE_ACCOUNT_ID=f7a9b24f679e1d3952921ee5e72e677e npx wrangler deploy`
 
 ## Key Files:
-- `app/js/views.js` — ALL rendering (9384 lines, locked chmod 444)
-- `app/js/app.js` — app logic (locked)
-- `app/js/betting.js` — odds/settlement (locked)
-- `worker.js` — API endpoints (~10K lines)
-- `create/index.html` — create flow + Quick Start
-- `app/index.html` — SPA shell with tab bar
-- `app/css/styles.css` — all CSS
-- `DESIGN.md` — Heritage Sporting Ethos design system
-- `.stitch-cards/` — premium card HTML prototypes
+- `app/js/views.js` — renderScrambleLeaderboard (line 948), CTP/LD panels (line 1323), renderSettlement (line 6813)
+- `app/js/app.js` — scramble mode routing, isScrambleMode
+- `worker.js` — POST /hole (line 8309), wggRunScramble (line 7056)
+- `worker-seeds.js` — seedDemoScramble (line 124)
+- `.stitch-cards/scramble.html` — premium design prototype (TARGET)
+- `create/index.html` — create flow
+- `emails/outreach/cold-sequence-charity-scramble.html` — what we're promising
 
 ## Heritage Design Tokens:
 - Deep Forest Green: #1B3022
@@ -51,17 +68,6 @@ Read the master plan at /home/eratner/betwaggle/docs/MASTER-PLAN.md and the spri
 - Font Display: 'Playfair Display', serif
 - Font Body: 'Inter', sans-serif
 - Font Mono: 'SF Mono', monospace
-- Border: rgba(197,160,89,0.15)
-- Card radius: 0.75rem
-- Touch targets: 56px minimum
-
-## Outreach Status:
-- 51 FL courses + 30 TX courses with emails in data/
-- 7 state email sequences in emails/outreach/
-- Email sends from evan@cafecito-ai.com via Resend (works, tested)
-- Drip automation: Day 4 + Day 10 follow-ups fire via cron
-- Admin dashboard: betwaggle.com/admin/outreach/ (PIN: 4321)
-- Marketing PIN: 4321
 
 ## Start with:
-"Continue Sprint 5 — pick up at Screen 5 Settlement verification"
+"Continue Scramble rebuild — Phase 2: Premium leaderboard visual upgrade"

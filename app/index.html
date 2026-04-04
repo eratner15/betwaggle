@@ -55,7 +55,7 @@
 <body>
   <header class="mg-header">
     <h1 class="mg-brand">
-      <img src="/logo-nav.jpg" alt="Waggle" class="mg-brand-logo" width="28" height="28">
+      <img src="/logo.jpg" alt="Waggle" class="mg-brand-logo" width="28" height="28">
       <span class="mg-brand-text">Waggle</span>
       <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;vertical-align:middle;margin-left:6px;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span>
     </h1>
@@ -151,7 +151,7 @@
         document.body.classList.toggle('dark-mode', dark);
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
         document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
-        if (metaTheme) metaTheme.setAttribute('content', dark ? '#1B3022' : '#FCF9F4');
+        if (metaTheme) metaTheme.setAttribute('content', dark ? '#1B2B4B' : '#FCF9F4');
         if (icon) icon.innerHTML = dark ? '&#9789;' : '&#9728;';
         if (label) label.textContent = dark ? 'Dark' : 'Light';
         if (btn) {
@@ -846,11 +846,11 @@
           '.mg-s3-settlement-blocked-summary{margin-top:8px;padding:9px 10px;border-radius:10px;background:rgba(180,83,9,.12);border:1px solid rgba(180,83,9,.35);color:#92400e;font-size:12px;font-weight:700;line-height:1.35}',
           '.mg-s3-save-bar-mobile{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(250,250,247,.0),rgba(250,250,247,.98) 24%,rgba(250,250,247,1));padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)!important;z-index:25}',
           '.mg-s3-save-bar-desktop{position:sticky;top:0;background:#FAFAF7;z-index:15}',
-          '.mg-s3-complete-panel{margin:0 0 12px 0;padding:14px;border-radius:12px;border:1px solid rgba(212,175,55,.45);background:linear-gradient(135deg,#0D2818,#1A472A);color:#F5F8F6}',
+          '.mg-s3-complete-panel{margin:0 0 12px 0;padding:14px;border-radius:12px;border:1px solid rgba(212,175,55,.45);background:linear-gradient(135deg,#0F1A2E,#1B2B4B);color:#F5F8F6}',
           '.mg-s3-complete-title{font-size:18px;line-height:1.2;font-weight:800}',
           '.mg-s3-complete-subtitle{font-size:13px;opacity:.92;margin-top:6px}',
           '.mg-s3-complete-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}',
-          '.mg-s3-complete-primary{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;min-height:56px;padding:12px 14px;border-radius:10px;background:#D4AF37;color:#0D2818;font-size:14px;font-weight:800;text-decoration:none}',
+          '.mg-s3-complete-primary{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;min-height:56px;padding:12px 14px;border-radius:10px;background:#D4AF37;color:#0F1A2E;font-size:14px;font-weight:800;text-decoration:none}',
           '.mg-s3-complete-secondary{flex:1;min-width:150px;display:flex;align-items:center;justify-content:center;min-height:56px;padding:12px 14px;border-radius:10px;border:1px solid rgba(212,175,55,.45);background:rgba(255,255,255,.08);color:#F5F8F6;font-size:14px;font-weight:700;cursor:pointer}'
         ].join('');
         document.head.appendChild(style);

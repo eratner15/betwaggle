@@ -195,11 +195,19 @@ function isApiLikePath(pathname) {
   return path === '/api' || path.startsWith('/api/') || /\/api(?:\/|$)/.test(path);
 }
 
-function applyApiCorsHeaders(pathname, response) {
+const ALLOWED_ORIGINS = new Set(['https://betwaggle.com', 'https://www.betwaggle.com', 'https://cafecito-ai.com', 'http://localhost:8787']);
+
+function getAllowedOrigin(request) {
+  const origin = request?.headers?.get('Origin') || '';
+  return ALLOWED_ORIGINS.has(origin) ? origin : 'https://betwaggle.com';
+}
+
+function applyApiCorsHeaders(pathname, response, request) {
   if (!isApiLikePath(pathname) || !response) return response;
   const headers = new Headers(response.headers || {});
   if (!headers.has('Access-Control-Allow-Origin')) {
-    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Origin', getAllowedOrigin(request));
+    headers.set('Vary', 'Origin');
   }
   if (!headers.has('Access-Control-Allow-Methods')) {
     headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -371,65 +379,104 @@ export default {
       return privateRouteNotFound();
     }
 
-    // ===== COURSE SEARCH (Golf Course API proxy) =====
-    // GET /api/courses/search?q=... — returns [{id,club_name,course_name,location}]
+    // ===== COURSE SEARCH (D1 first, external API fallback, cache-through) =====
+    // GET /api/courses/search?q=... — returns [{id,club_name,course_name,city,state,location,slope,rating}]
     if (url.pathname === '/api/courses/search' && request.method === 'GET') {
-      const q = url.searchParams.get('q') || '';
+      const q = (url.searchParams.get('q') || '').trim();
+      const JSON_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
       if (q.length < 2) {
-        return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        return new Response(JSON.stringify([]), { headers: JSON_CORS });
       }
       try {
-        // Hardcoded courses not in the Golf Course API (too new or missing)
-        const CUSTOM_COURSES = [
-          { id: 'pga-frisco-east', club_name: 'Fields Ranch East at PGA Frisco', course_name: 'Fields Ranch East', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 152, rating: 78.9, custom: true },
-          { id: 'pga-frisco-west', club_name: 'Fields Ranch West at PGA Frisco', course_name: 'Fields Ranch West', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 148, rating: 77.2, custom: true },
-        ];
-        const ql = q.toLowerCase();
-        const customMatches = CUSTOM_COURSES.filter(c =>
-          c.club_name.toLowerCase().includes(ql) || c.course_name.toLowerCase().includes(ql) || c.city.toLowerCase().includes(ql)
-        );
-
-        const apiKey = env.GOLF_COURSE_API_KEY || '';
-        const gcRes = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(q)}`, {
-          headers: { 'Authorization': `Key ${apiKey}` }
-        });
-        if (!gcRes.ok) {
-          // Fall through to local SEED_COURSES search
-          return handleCourseSearch(url, env);
-        }
-        const gcData = await gcRes.json();
-        const courses = (gcData.courses || []).slice(0, 20).map(c => {
-          const loc = c.location || {};
-          const city = loc.city || c.city || '';
-          const state = loc.state || c.state_name || '';
-          // Extract tee summaries from search results
-          const tees = c.tees || {};
-          const maleTees = Array.isArray(tees.male) ? tees.male : (Array.isArray(tees) ? tees : []);
-          const slope = maleTees[0]?.course_slope || '';
-          const rating = maleTees[0]?.course_rating || '';
-          return {
+        let courses = [];
+        if (env.WAGGLE_DB) {
+          // 1. Query D1 first — 17K+ courses, <10ms
+          const searchTerm = `%${q}%`;
+          const { results } = await env.WAGGLE_DB.prepare(
+            `SELECT id, name, club_name, city, state, slope, rating, par, scorecard IS NOT NULL as has_scorecard
+             FROM courses
+             WHERE name LIKE ?1 OR club_name LIKE ?1 OR city LIKE ?1 OR state LIKE ?1 OR zip LIKE ?1
+             ORDER BY
+               CASE WHEN scorecard IS NOT NULL THEN 0 ELSE 1 END,
+               CASE WHEN name LIKE ?2 THEN 0 WHEN club_name LIKE ?2 THEN 0 ELSE 1 END,
+               name
+             LIMIT 15`
+          ).bind(searchTerm, q + '%').all();
+          courses = (results || []).map(c => ({
             id: c.id,
-            club_name: c.club_name,
-            course_name: c.course_name,
-            city, state,
-            location: [city, state].filter(Boolean).join(', '),
-            slope, rating,
-          };
-        });
-        // Merge custom courses first, then API results
-        const allCourses = [...customMatches, ...courses];
-        return new Response(JSON.stringify(allCourses), {
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-        });
-      } catch {
-        // If API fails, still return custom matches
-        const ql2 = q.toLowerCase();
-        const CUSTOM_COURSES_FALLBACK = [
-          { id: 'pga-frisco-east', club_name: 'Fields Ranch East at PGA Frisco', course_name: 'Fields Ranch East', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 152, rating: 78.9, custom: true },
-          { id: 'pga-frisco-west', club_name: 'Fields Ranch West at PGA Frisco', course_name: 'Fields Ranch West', city: 'Frisco', state: 'TX', location: 'Frisco, TX', slope: 148, rating: 77.2, custom: true },
-        ];
-        const fallbackMatches = CUSTOM_COURSES_FALLBACK.filter(c => c.club_name.toLowerCase().includes(ql2) || c.city.toLowerCase().includes(ql2));
-        return new Response(JSON.stringify(fallbackMatches), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+            club_name: c.club_name || c.name,
+            course_name: '',
+            name: c.name,
+            city: c.city || '',
+            state: c.state || '',
+            location: [c.city, c.state].filter(Boolean).join(', '),
+            slope: c.slope || '',
+            rating: c.rating || '',
+            par: c.par || 72,
+            has_scorecard: !!c.has_scorecard,
+          }));
+        }
+
+        // 2. If D1 returned few results, try external API to find courses we don't have
+        if (courses.length < 3 && env.GOLF_COURSE_API_KEY) {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 3000);
+            const gcRes = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(q)}`, {
+              headers: { 'Authorization': `Key ${env.GOLF_COURSE_API_KEY}` },
+              signal: controller.signal,
+            });
+            clearTimeout(timeout);
+            if (gcRes.ok) {
+              const gcData = await gcRes.json();
+              const apiCourses = (gcData.courses || []).slice(0, 10).map(c => {
+                const loc = c.location || {};
+                const city = loc.city || c.city || '';
+                const state = loc.state || c.state_name || '';
+                return {
+                  id: String(c.id),
+                  club_name: c.club_name || '',
+                  course_name: c.course_name || '',
+                  name: c.club_name || c.course_name || '',
+                  city, state,
+                  location: [city, state].filter(Boolean).join(', '),
+                  slope: (c.tees?.male?.[0]?.course_slope) || '',
+                  rating: (c.tees?.male?.[0]?.course_rating) || '',
+                  par: 72,
+                  has_scorecard: false,
+                  source: 'api',
+                };
+              });
+              // Deduplicate: skip API results that match D1 results by name
+              const d1Names = new Set(courses.map(c => (c.name || '').toLowerCase()));
+              const newCourses = apiCourses.filter(c => !d1Names.has((c.name || '').toLowerCase()));
+              courses = [...courses, ...newCourses].slice(0, 15);
+
+              // 3. Cache-through: save new API courses to D1 for next time (fire-and-forget)
+              if (env.WAGGLE_DB && newCourses.length > 0) {
+                ctx.waitUntil((async () => {
+                  for (const c of newCourses) {
+                    const cid = (c.club_name + '-' + c.city + '-' + c.state).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+                    try {
+                      await env.WAGGLE_DB.prepare(
+                        `INSERT OR IGNORE INTO courses (id, name, club_name, city, state, slope, rating, source) VALUES (?, ?, ?, ?, ?, ?, ?, 'api-cache')`
+                      ).bind(cid, c.name, c.club_name, c.city, c.state, c.slope || null, c.rating || null).run();
+                    } catch {}
+                  }
+                })());
+              }
+            }
+          } catch { /* API timeout or error — D1 results are sufficient */ }
+        }
+
+        if (courses.length > 0) {
+          return new Response(JSON.stringify(courses), { headers: JSON_CORS });
+        }
+        // Fallback to in-memory SEED_COURSES if everything empty
+        return handleCourseSearch(url, env);
+      } catch (e) {
+        console.error('[course-search]', e.message);
+        return handleCourseSearch(url, env);
       }
     }
 
@@ -821,14 +868,14 @@ export default {
       if (subPath === '/manifest.json') {
         let eventName = 'Waggle';
         let shortName = 'Waggle';
-        let themeColor = '#1A472A';
+        let themeColor = '#1B2B4B';
         try {
           const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
           if (cfgRaw) {
             const cfg = JSON.parse(cfgRaw);
             eventName = cfg.event?.name || 'Waggle';
             shortName = cfg.event?.shortName || eventName;
-            themeColor = cfg.theme?.primary || '#1A472A';
+            themeColor = cfg.theme?.primary || '#1B2B4B';
           }
         } catch {}
         const manifest = {
@@ -846,7 +893,7 @@ export default {
       }
       // Dynamic icon SVG for this event
       if (subPath === '/icon-180.svg') {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="32" fill="#1A472A"/><text x="90" y="108" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="700" fill="#D4AF37">W</text></svg>`;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="32" fill="#1B2B4B"/><text x="90" y="108" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="700" fill="#D4AF37">W</text></svg>`;
         return new Response(svg, {
           headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' }
         });
@@ -1321,7 +1368,7 @@ export default {
       return new Response(null, { headers: EVENT_CORS });
     }
 
-    // /api/courses/search?q= — search courses by name (internal DB)
+    // /api/courses/search?q= — duplicate handler (primary is above, this is unreachable but kept for safety)
     if (url.pathname === '/api/courses/search' && request.method === 'GET') {
       return handleCourseSearch(url, env);
     }
@@ -1329,7 +1376,87 @@ export default {
       return new Response(null, { headers: EVENT_CORS });
     }
 
-    // /api/courses/:id — get course by ID (internal DB)
+    // /api/courses/nearby?lat=X&lng=Y — find courses near GPS coordinates (MUST be before /:id catch-all)
+    if (url.pathname === '/api/courses/nearby' && request.method === 'GET') {
+      const lat = parseFloat(url.searchParams.get('lat'));
+      const lng = parseFloat(url.searchParams.get('lng'));
+      const JSON_CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+      if (isNaN(lat) || isNaN(lng)) {
+        return new Response(JSON.stringify([]), { headers: JSON_CORS });
+      }
+      try {
+        // Reverse geocode to get city/state, then search D1
+        let city = '', state = '';
+        try {
+          const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            city = geoData.city || geoData.locality || '';
+            state = geoData.principalSubdivisionCode?.replace('US-', '') || '';
+          }
+        } catch {}
+
+        let courses = [];
+        const locality = city; // might be "Seaside-Monterey" for Pebble Beach area
+        // Search D1 by city, locality parts, and nearby areas
+        if (env.WAGGLE_DB && city) {
+          // Split compound city names and search each part
+          const searchTerms = [city, ...city.split(/[-\/]/).map(s => s.trim())].filter(s => s.length > 2);
+          let allResults = [];
+          for (const term of searchTerms.slice(0, 3)) {
+            const { results } = await env.WAGGLE_DB.prepare(
+              `SELECT id, name, club_name, city, state, slope, rating, par, scorecard IS NOT NULL as has_scorecard
+               FROM courses WHERE (city LIKE ? OR name LIKE ?) AND state = ?
+               ORDER BY CASE WHEN scorecard IS NOT NULL THEN 0 ELSE 1 END, name LIMIT 10`
+            ).bind('%' + term + '%', '%' + term + '%', state).all();
+            allResults.push(...(results || []));
+          }
+          // Deduplicate by id
+          const seen = new Set();
+          allResults = allResults.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
+          courses = allResults.slice(0, 10).map(c => ({
+            id: c.id, name: c.name, club_name: c.club_name || c.name, course_name: '',
+            city: c.city, state: c.state, location: [c.city, c.state].filter(Boolean).join(', '),
+            slope: c.slope || '', rating: c.rating || '', has_scorecard: !!c.has_scorecard,
+          }));
+        }
+        // If no city results, try GolfCourseAPI text search with city name
+        if (courses.length === 0 && city && env.GOLF_COURSE_API_KEY) {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 3000);
+            const res = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(city + ' ' + state + ' golf')}`, {
+              headers: { 'Authorization': `Key ${env.GOLF_COURSE_API_KEY}` }, signal: controller.signal,
+            });
+            clearTimeout(timeout);
+            if (res.ok) {
+              const data = await res.json();
+              courses = (data.courses || []).slice(0, 5).map(c => {
+                const loc = c.location || {};
+                return {
+                  id: String(c.id), name: c.club_name || c.course_name || '', club_name: c.club_name || '',
+                  course_name: c.course_name || '', city: loc.city || '', state: loc.state || '',
+                  location: [loc.city, loc.state].filter(Boolean).join(', '),
+                  slope: c.tees?.male?.[0]?.course_slope || '', rating: c.tees?.male?.[0]?.course_rating || '',
+                  has_scorecard: !!(c.tees?.male?.[0]?.holes?.length >= 18), source: 'geo-api',
+                };
+              });
+            }
+          } catch {}
+        }
+        return new Response(JSON.stringify(courses), { headers: JSON_CORS });
+      } catch {
+        return new Response(JSON.stringify([]), { headers: JSON_CORS });
+      }
+    }
+
+    // /api/courses/enrich/:id — try to fetch scorecard data from external sources and save to D1
+    const courseEnrichMatch = url.pathname.match(/^\/api\/courses\/enrich\/([a-z0-9_-]+)$/);
+    if (courseEnrichMatch && request.method === 'POST') {
+      return handleCourseEnrich(courseEnrichMatch[1], request, env, ctx);
+    }
+
+    // /api/courses/:id — get course by ID (AFTER nearby and enrich to avoid catch-all conflict)
     const courseGetMatch = url.pathname.match(/^\/api\/courses\/([a-z0-9_-]+)$/);
     if (courseGetMatch && request.method === 'GET') {
       return handleCourseGet(courseGetMatch[1], env);
@@ -1485,7 +1612,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
+          theme: { primary: '#1B2B4B', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
           coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
           courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
@@ -1571,7 +1698,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1A472A', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
+          theme: { primary: '#1B2B4B', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           // 3 rounds at PGA Frisco
           rounds: {
             1: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
@@ -1628,7 +1755,7 @@ export default {
     }
     };
     const response = await run();
-    return applyApiCorsHeaders(url.pathname, response);
+    return applyApiCorsHeaders(url.pathname, response, request);
   },
 
   // Cron handler: daily drip + cleanup, weekly digest (Mondays UTC), demo seed
@@ -1641,18 +1768,13 @@ export default {
     if (isMondayUtc) {
       ctx.waitUntil(sendWeeklyMarketingDigest(env));
     }
-    ctx.waitUntil(
-      processDripEmails(env).catch((err) => {
-        console.error('drip-cron-failed', err?.message || err);
-        return null;
-      })
-    );
-    ctx.waitUntil(
-      processOutreachDrip(env).catch((err) => {
-        console.error('outreach-drip-failed', err?.message || err);
-        return null;
-      })
-    );
+    // Drip emails — gated by kill switch (set via KV: outreach:drip-paused = "1" to pause)
+    ctx.waitUntil((async () => {
+      const paused = await env.MG_BOOK.get('outreach:drip-paused');
+      if (paused === '1') { console.log('drip-paused-by-killswitch'); return; }
+      await processDripEmails(env).catch((err) => { console.error('drip-cron-failed', err?.message || err); });
+      await processOutreachDrip(env).catch((err) => { console.error('outreach-drip-failed', err?.message || err); });
+    })());
     ctx.waitUntil(cleanupExpiredEvents(env));
   },
 };
@@ -2107,7 +2229,7 @@ async function handleCourseSearch(url, env) {
   const results = SEED_COURSES
     .filter(c => c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.state.toLowerCase().includes(q))
     .slice(0, 8)
-    .map(c => ({ id: c.id, name: c.name, city: c.city, state: c.state, slope: c.slope, rating: c.rating }));
+    .map(c => ({ id: c.id, name: c.name, club_name: c.name, course_name: '', city: c.city, state: c.state, location: [c.city, c.state].filter(Boolean).join(', '), slope: c.slope, rating: c.rating }));
 
   if (env.MG_BOOK) {
     try {
@@ -2124,15 +2246,122 @@ async function handleCourseSearch(url, env) {
 }
 
 async function handleCourseGet(courseId, env) {
+  // Try D1 first (17K+ courses, some with scorecards)
+  if (env.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare('SELECT * FROM courses WHERE id = ?').bind(courseId).first();
+      if (row) {
+        const result = {
+          id: row.id, name: row.name, club_name: row.club_name, city: row.city, state: row.state,
+          slope: row.slope, rating: row.rating, par: row.par, holes: row.holes || 18,
+          pars: null, strokeIndex: null, tees: null,
+        };
+        if (row.scorecard) {
+          try {
+            const sc = JSON.parse(row.scorecard);
+            result.pars = sc.map(h => h.par);
+            result.strokeIndex = sc.map(h => h.handicap || h.strokeIndex || null);
+          } catch {}
+        }
+        if (row.tees) { try { result.tees = JSON.parse(row.tees); } catch {} }
+        return new Response(JSON.stringify(result), { headers: EVENT_CORS });
+      }
+    } catch (e) { console.error('[course-get-d1]', e.message); }
+  }
+  // Fallback: seed courses
   const seed = SEED_COURSES.find(c => c.id === courseId);
   if (seed) {
     return new Response(JSON.stringify(seed), { headers: EVENT_CORS });
   }
+  // Fallback: KV custom courses
   if (env.MG_BOOK) {
     const course = await env.MG_BOOK.get(`course:${courseId}`, 'json');
     if (course) return new Response(JSON.stringify(course), { headers: EVENT_CORS });
   }
   return new Response(JSON.stringify({ error: 'Course not found' }), { status: 404, headers: EVENT_CORS });
+}
+
+async function handleCourseEnrich(courseId, request, env, ctx) {
+  const JSON_H = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+
+  // 1. Check if we already have scorecard data in D1
+  if (env.WAGGLE_DB) {
+    try {
+      const row = await env.WAGGLE_DB.prepare('SELECT scorecard FROM courses WHERE id = ?').bind(courseId).first();
+      if (row?.scorecard) {
+        const sc = JSON.parse(row.scorecard);
+        return new Response(JSON.stringify({ enriched: true, source: 'd1', pars: sc.map(h => h.par), strokeIndex: sc.map(h => h.handicap || h.strokeIndex || null) }), { headers: JSON_H });
+      }
+    } catch {}
+  }
+
+  // 2. Try GolfCourseAPI if key is configured
+  if (env.GOLF_COURSE_API_KEY) {
+    try {
+      // Get course name from D1 to search for it
+      let courseName = '';
+      if (env.WAGGLE_DB) {
+        const row = await env.WAGGLE_DB.prepare('SELECT name, club_name FROM courses WHERE id = ?').bind(courseId).first();
+        courseName = row?.name || row?.club_name || '';
+      }
+      if (courseName) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`https://api.golfcourseapi.com/v1/search?search_query=${encodeURIComponent(courseName)}`, {
+          headers: { 'Authorization': `Key ${env.GOLF_COURSE_API_KEY}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          const course = (data.courses || [])[0];
+          if (course) {
+            const tees = course.tees?.male || [];
+            const firstTee = tees[0];
+            if (firstTee?.holes?.length >= 18) {
+              const pars = firstTee.holes.map(h => h.par || 4);
+              const strokeIndex = firstTee.holes.map(h => h.handicap || null);
+              const slope = firstTee.course_slope || null;
+              const rating = firstTee.course_rating || null;
+              const scorecard = JSON.stringify(pars.map((p, i) => ({ hole: i + 1, par: p, handicap: strokeIndex[i] })));
+
+              // Save to D1
+              if (env.WAGGLE_DB) {
+                ctx.waitUntil(env.WAGGLE_DB.prepare(
+                  'UPDATE courses SET scorecard = ?, slope = COALESCE(?, slope), rating = COALESCE(?, rating), par = ?, source = ? WHERE id = ?'
+                ).bind(scorecard, slope, rating, pars.reduce((a, b) => a + b, 0), 'api-enriched', courseId).run().catch(() => {}));
+              }
+
+              return new Response(JSON.stringify({ enriched: true, source: 'api', pars, strokeIndex, slope, rating }), { headers: JSON_H });
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Try GHIN/public sources as last resort — use Cloudflare AI to extract from web
+  // (Future: scrape course website or use AI to find scorecard data)
+
+  // 4. Allow user to manually provide pars via POST body
+  try {
+    const body = await request.json().catch(() => null);
+    if (body?.pars && Array.isArray(body.pars) && body.pars.length === 18) {
+      const pars = body.pars.map(p => Math.min(Math.max(parseInt(p) || 4, 3), 6));
+      const strokeIndex = body.strokeIndex || Array.from({ length: 18 }, (_, i) => i + 1);
+      const scorecard = JSON.stringify(pars.map((p, i) => ({ hole: i + 1, par: p, handicap: strokeIndex[i] || i + 1 })));
+
+      if (env.WAGGLE_DB) {
+        await env.WAGGLE_DB.prepare(
+          'UPDATE courses SET scorecard = ?, par = ?, source = ? WHERE id = ?'
+        ).bind(scorecard, pars.reduce((a, b) => a + b, 0), 'user-entered', courseId).run();
+      }
+
+      return new Response(JSON.stringify({ enriched: true, source: 'user', pars, strokeIndex }), { headers: JSON_H });
+    }
+  } catch {}
+
+  return new Response(JSON.stringify({ enriched: false, message: 'No scorecard data found. You can enter pars manually.' }), { headers: JSON_H });
 }
 
 async function handleCourseSave(request, env) {
@@ -2250,22 +2479,22 @@ async function handleWaggleJoinPage(slug, env) {
 <title>Join ${eventName} | Waggle</title>
 <meta property="og:title" content="Join ${eventName}">
 <meta property="og:description" content="Register for ${eventName}${venue ? ' at ' + venue : ''}. Enter your name and handicap index.">
-<meta name="theme-color" content="#0D2818">
+<meta name="theme-color" content="#0F1A2E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0D2818;color:#F5F0E8;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+body{background:#0F1A2E;color:#F5F0E8;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
 .logo{width:48px;height:48px;border-radius:12px;margin-bottom:16px}
 .event-name{font-family:'Inter',sans-serif;font-size:26px;font-weight:700;color:#D4AF37;text-align:center;line-height:1.2}
 .event-sub{font-size:14px;color:#9BAF88;text-align:center;margin-top:6px}
-.card{background:#1A472A;border:1px solid rgba(212,175,55,0.25);border-radius:16px;padding:24px;width:100%;max-width:420px;margin-top:24px}
+.card{background:#1B2B4B;border:1px solid rgba(212,175,55,0.25);border-radius:16px;padding:24px;width:100%;max-width:420px;margin-top:24px}
 label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#9BAF88;margin-bottom:6px}
-input{width:100%;padding:14px 16px;background:#0D2818;border:2px solid rgba(212,175,55,0.25);border-radius:10px;font-size:17px;color:#F5F0E8;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
+input{width:100%;padding:14px 16px;background:#0F1A2E;border:2px solid rgba(212,175,55,0.25);border-radius:10px;font-size:17px;color:#F5F0E8;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
 input:focus{border-color:#D4AF37}
 .field{margin-bottom:20px}
 .hi-hint{font-size:12px;color:#9BAF88;margin-top:6px}
-.btn{width:100%;padding:16px;background:#D4AF37;color:#0D2818;border:none;border-radius:10px;font-size:17px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
+.btn{width:100%;padding:16px;background:#D4AF37;color:#0F1A2E;border:none;border-radius:10px;font-size:17px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
 .btn:active{opacity:0.85}
 .btn:disabled{opacity:0.4;cursor:default}
 .success{text-align:center;padding:32px 0}
@@ -2281,7 +2510,7 @@ input:focus{border-color:#D4AF37}
 </style>
 </head>
 <body>
-<img src="/waggle_logo.jpg" alt="Waggle" class="logo">
+<img src="/logo.jpg" alt="Waggle" class="logo">
 <div class="event-name">${eventName}</div>
 ${venue || dates ? `<div class="event-sub">${[venue, dates].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
 <div class="card" id="card">
@@ -3769,16 +3998,16 @@ async function handleCheckoutSuccess(url, env) {
         to: organizerEmail,
         subject: `Your Waggle event is live: ${eventName}`,
         html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;padding:32px 24px">
-  <img src="https://betwaggle.com/waggle_logo.jpg" alt="Waggle" style="height:36px;margin-bottom:24px">
-  <h2 style="color:#0D2818;font-size:22px;margin:0 0 8px">Your sportsbook is live.</h2>
+  <img src="https://betwaggle.com/logo.jpg" alt="Waggle" style="height:36px;margin-bottom:24px">
+  <h2 style="color:#0F1A2E;font-size:22px;margin:0 0 8px">Your sportsbook is live.</h2>
   <p style="color:#374151;font-size:15px;margin:0 0 24px">Share this link with your group. Everyone opens it on their phone.</p>
-  <a href="${eventUrl}" style="display:block;background:#2D6A4F;color:#fff;text-align:center;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:24px">${eventUrl}</a>
+  <a href="${eventUrl}" style="display:block;background:#2A3F66;color:#fff;text-align:center;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:24px">${eventUrl}</a>
   <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px 20px;margin-bottom:24px">
     <p style="margin:0 0 8px;font-size:13px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Admin Access</p>
-    <p style="margin:0 0 4px;font-size:15px;color:#111827"><strong>Admin link:</strong> <a href="${adminUrl}" style="color:#2D6A4F">${adminUrl}</a></p>
+    <p style="margin:0 0 4px;font-size:15px;color:#111827"><strong>Admin link:</strong> <a href="${adminUrl}" style="color:#2A3F66">${adminUrl}</a></p>
     <p style="margin:0;font-size:15px;color:#111827"><strong>PIN:</strong> ${adminPin}</p>
   </div>
-  <p style="color:#6B7280;font-size:14px;margin:0 0 4px">Need the full GM guide? <a href="https://betwaggle.com/overview/" style="color:#2D6A4F">betwaggle.com/overview/</a></p>
+  <p style="color:#6B7280;font-size:14px;margin:0 0 4px">Need the full GM guide? <a href="https://betwaggle.com/overview/" style="color:#2A3F66">betwaggle.com/overview/</a></p>
   <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0">Waggle by Waggle</p>
 </div>`,
       }));
@@ -3868,7 +4097,7 @@ async function handleWaggleSuccess(url, env) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>You're All Set -- Waggle</title>
   <meta name="robots" content="noindex">
-  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -3892,7 +4121,7 @@ async function handleWaggleSuccess(url, env) {
   </script>` : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --forest: #0D2818; --green: #1B4332; --green-mid: #2D6A4F; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
+    :root { --forest: #0F1A2E; --green: #1B2B4B; --green-mid: #2A3F66; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
     body { font-family: 'Inter', sans-serif; background: var(--ivory); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; -webkit-font-smoothing: antialiased; }
     .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 24px rgba(0,0,0,.08); padding: 48px 40px; width: 100%; max-width: 520px; text-align: center; }
     .check { width: 56px; height: 56px; background: var(--green-mid); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 28px; }
@@ -3943,7 +4172,7 @@ async function handleWaggleSuccess(url, env) {
       <button class="copy-link-btn" onclick="navigator.clipboard.writeText('${escEventUrl}').then(function(){this.textContent='Copied!';}.bind(this))">Copy Link</button>
     </div>
 
-    <button onclick="copyInvitation(this)" style="width:100%;padding:14px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#0D2818;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:.02em">
+    <button onclick="copyInvitation(this)" style="width:100%;padding:14px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#0F1A2E;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:.02em">
       Copy Formal Invitation
     </button>
     <button onclick="navigator.clipboard.writeText('${escEventUrl}?spectator=true').then(function(){this.textContent='Copied!';}.bind(this))" style="width:100%;padding:12px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#7A7A7A;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px">
@@ -3995,7 +4224,7 @@ async function handleWaggleSuccess(url, env) {
     ${adminPin ? `<div class="pin-box"><strong>Your admin PIN -- keep this safe</strong><div class="pin-code">${adminPin}</div><div style="font-size:12px;color:#6B7280;margin-top:6px">You'll need this to manage bets and settle the round.</div></div>` : ''}
 
     <div style="max-width:400px;margin:0 auto 32px;text-align:left">
-      <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#0D2818;margin-bottom:16px">Get Started</div>
+      <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#0F1A2E;margin-bottom:16px">Get Started</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="onboard-step">
           <div class="onboard-num">1</div>
@@ -4159,15 +4388,15 @@ async function handleCourseDetailPage(courseId, env) {
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${clubName} \u2014 Waggle</title>
   <meta name="description" content="View the full scorecard for ${clubName}${location ? ' in ' + location : ''}.">
-  <link rel="icon" type="image/jpeg" href="/waggle_logo.jpg">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0D2818;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Inter',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0D2818;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0F1A2E;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Inter',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0F1A2E;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
 </head><body>
   <header class="header">
-    <a href="/" class="header-logo"><img src="/waggle_logo.jpg" alt="Waggle"><span>Waggle</span></a>
+    <a href="/" class="header-logo"><img src="/logo.jpg" alt="Waggle"><span>Waggle</span></a>
     <nav class="header-nav"><a href="/courses/">Courses</a><a href="/create/?course=${courseId}" class="cta">Play Here</a></nav>
   </header>
-  <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#2D6A4F;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#2D6A4F;font-weight:600">Courses</a> / ${clubName}</div>
+  <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#2A3F66;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#2A3F66;font-weight:600">Courses</a> / ${clubName}</div>
   <div style="max-width:960px;margin:16px auto 0;padding:0 20px">
     <div style="background:linear-gradient(135deg,#00261b,#0b3d2e);border-radius:16px;padding:40px 36px;color:#fff">
       <h1 style="font-family:'Inter',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.15;margin-bottom:12px">${clubName}</h1>
@@ -4179,7 +4408,7 @@ async function handleCourseDetailPage(courseId, env) {
     </div>
   </div>
   <div style="max-width:960px;margin:32px auto 0;padding:0 20px">
-    <h2 style="font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#0D2818;margin-bottom:20px">Scorecard</h2>
+    <h2 style="font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#0F1A2E;margin-bottom:20px">Scorecard</h2>
     ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : (() => {
       const totalPar = refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0);
       const is18 = refTee.is18;
@@ -4187,20 +4416,20 @@ async function handleCourseDetailPage(courseId, env) {
       sc += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px">';
       sc += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:&quot;SF Mono&quot;,&quot;Fira Code&quot;,monospace;min-width:' + (is18 ? '720' : '420') + 'px">';
       // FRONT 9 header
-      sc += '<thead><tr style="background:#0D2818;color:#fff">';
-      sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#0D2818;z-index:1">Hole</th>';
+      sc += '<thead><tr style="background:#0F1A2E;color:#fff">';
+      sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#0F1A2E;z-index:1">Hole</th>';
       for (let h = 1; h <= 9; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
-      sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B4332">OUT</th>';
+      sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B2B4B">OUT</th>';
       if (is18) {
         for (let h = 10; h <= 18; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
-        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B4332">IN</th>';
-        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#C9A84C;color:#0D2818">TOT</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B2B4B">IN</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#C9A84C;color:#0F1A2E">TOT</th>';
       }
       sc += '</tr></thead><tbody>';
       // Par row
       const frontPar = refTee.front9.reduce((s,h)=>s+(h.par||0),0);
       const backPar = refTee.back9.reduce((s,h)=>s+(h.par||0),0);
-      sc += '<tr style="background:#f8f6f0;font-weight:700;color:#1B4332">';
+      sc += '<tr style="background:#f8f6f0;font-weight:700;color:#1B2B4B">';
       sc += '<td style="padding:7px 6px;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#f8f6f0;z-index:1">Par</td>';
       refTee.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center">' + (h.par||'') + '</td>'; });
       sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#eae6da">' + frontPar + '</td>';
@@ -4226,11 +4455,11 @@ async function handleCourseDetailPage(courseId, env) {
         sc += '<tr style="background:' + bg + ';border-top:1px solid #E8E4DC">';
         sc += '<td style="padding:7px 6px;position:sticky;left:0;background:' + bg + ';z-index:1;white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + t.color + ';border:' + t.dotBorder + ';vertical-align:middle;margin-right:6px"></span><span style="font-size:11px;font-weight:600;color:#3D3D3D">' + t.name + '</span>' + (t.gender === 'female' ? '<span style="font-size:9px;color:#999;margin-left:3px">W</span>' : '') + '</td>';
         t.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
-        sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B4332">' + t.frontYds + '</td>';
+        sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B2B4B">' + t.frontYds + '</td>';
         if (is18) {
           t.back9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
-          sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B4332">' + t.backYds + '</td>';
-          sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#f5f3ed;color:#0D2818">' + t.yds + '</td>';
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B2B4B">' + t.backYds + '</td>';
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#f5f3ed;color:#0F1A2E">' + t.yds + '</td>';
         }
         sc += '</tr>';
         // Rating/slope sub-row
@@ -4244,7 +4473,7 @@ async function handleCourseDetailPage(courseId, env) {
     })()}
   </div>
   <footer style="text-align:center;padding:48px 20px 32px;color:#7A7A7A;font-size:13px">
-    <p>Waggle by <a href="https://betwaggle.com/" style="color:#2D6A4F;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#2D6A4F;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2D6A4F;font-weight:600">Create Event</a></p>
+    <p>Waggle by <a href="https://betwaggle.com/" style="color:#2A3F66;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#2A3F66;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2A3F66;font-weight:600">Create Event</a></p>
   </footer>
 </body></html>`;
 
@@ -6523,9 +6752,9 @@ async function serveEventHtml(slug, request, env) {
     return new Response(`<!DOCTYPE html><html><head><title>Event Not Found</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1A472A;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:20px;background:#1A472A;color:#fff;min-height:56px;min-width:160px;padding:0 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2D6A3E}</style></head>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1B2B4B;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:20px;background:#1B2B4B;color:#fff;min-height:56px;min-width:160px;padding:0 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2A3F66}</style></head>
 <body>
-<img src="/waggle_logo.jpg" alt="Waggle" class="logo">
+<img src="/logo.jpg" alt="Waggle" class="logo">
 <h1>Event not found</h1>
 <p>No event exists at <span class="slug">/${slug}</span></p>
 <p>It may have ended or the link might be wrong.</p>
@@ -6544,9 +6773,9 @@ async function serveEventHtml(slug, request, env) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has ended</h1>
+  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0F1A2E">This event has ended</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The sportsbook for this outing has been archived.</p>
-  <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+  <a href="/create/" style="background:#C9A84C;color:#0F1A2E;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
@@ -6556,9 +6785,9 @@ async function serveEventHtml(slug, request, env) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0D2818">This event has been cancelled</h1>
+  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0F1A2E">This event has been cancelled</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The organizer cancelled this event and a refund was issued.</p>
-  <a href="/create/" style="background:#C9A84C;color:#0D2818;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+  <a href="/create/" style="background:#C9A84C;color:#0F1A2E;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
@@ -6582,7 +6811,7 @@ async function serveEventHtml(slug, request, env) {
   const shortName = esc(config.event?.shortName || config.event?.name || 'Golf Event');
   const venue = esc(config.event?.venue || '');
   const eventUrl = `https://betwaggle.com/${slug}/`;
-  const themeColor = esc(config.theme?.primary || '#1A472A');
+  const themeColor = esc(config.theme?.primary || '#1B2B4B');
 
   // ── Dynamic OG tags based on event state ──
   const players = config.players || config.roster || [];
@@ -6672,7 +6901,7 @@ async function serveEventHtml(slug, request, env) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/${slug}/css/styles.css">
+  <link rel="stylesheet" href="/app/css/styles.css?v=${Date.now()}">
   ${isPaid && gadsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${gadsId}"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -6686,25 +6915,55 @@ async function serveEventHtml(slug, request, env) {
       transaction_id: '${slug}'
     });
   </script>` : ''}
+<script>
+(function(){
+  var key='waggle-theme';
+  var mql=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+  function stored(){var v=localStorage.getItem(key);return v==='dark'||v==='light'?v:null}
+  function preferred(){var s=stored();return s||(mql&&mql.matches?'dark':'light')}
+  function apply(t){
+    var d=t==='dark';
+    document.documentElement.classList.toggle('dark-mode',d);
+    document.body&&document.body.classList.toggle('dark-mode',d);
+    var m=document.querySelector('meta[name="theme-color"]');
+    if(m)m.setAttribute('content',d?'#0F1A2E':'#1B2B4B');
+  }
+  window.WaggleTheme={toggle:function(){var n=document.documentElement.classList.contains('dark-mode')?'light':'dark';localStorage.setItem(key,n);apply(n);var i=document.getElementById('theme-icon');if(i)i.innerHTML=n==='dark'?'\\u263D':'\\u2600'}};
+  // Apply to <html> immediately (before body renders) to prevent flash
+  apply(preferred());
+  // Re-apply after body exists to ensure body gets the class + update icon
+  document.addEventListener('DOMContentLoaded',function(){
+    apply(preferred());
+    var i=document.getElementById('theme-icon');
+    if(i)i.innerHTML=preferred()==='dark'?'\\u263D':'\\u2600';
+  });
+  if(mql&&mql.addEventListener)mql.addEventListener('change',function(e){if(!stored())apply(e.matches?'dark':'light')});
+})();
+</script>
 </head>
 <body>
   ${config.event?.status === 'complete' ? `
-<div style="background:linear-gradient(135deg,#C9A84C,#9A7A2E);color:#0D2818;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
+<div style="background:linear-gradient(135deg,#C9A84C,#9A7A2E);color:#0F1A2E;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
   Trophy Room &mdash; ${eventName} &mdash; Final Results
 </div>
 <script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
 ` : ''}
-  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || (slug.startsWith('demo-') && slug !== 'demo-buddies') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0D2818;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0D2818;text-decoration:underline">Create your own event \u2192</a></div>
+  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || (slug.startsWith('demo-') && slug !== 'demo-buddies') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0F1A2E;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0F1A2E;text-decoration:underline">Create your own event \u2192</a></div>
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
   <header class="mg-header">
     <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
-      <img src="/waggle_logo.jpg" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
+      <img src="/logo.jpg" style="height:44px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
     </a>
     <h1>${shortName}</h1>
     <div class="mg-subtitle">${venue}</div>
-    <button onclick="waggleShare()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center" aria-label="Share event">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-    </button>
+    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;align-items:center">
+      <button onclick="window.WaggleTheme.toggle()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(197,160,89,0.3);color:#C4A35A;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" aria-label="Toggle theme" id="theme-icon-btn">
+        <span id="theme-icon">${'\u2600'}</span>
+      </button>
+      <button onclick="waggleShare()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center" aria-label="Share event">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+    </div>
   </header>
   <style>.mg-header{position:relative}</style>
   <script>
@@ -6749,7 +7008,7 @@ async function serveEventHtml(slug, request, env) {
       touch-action:manipulation;
     }
   </style>
-  <script type="module" src="/${slug}/js/app.js"></script>
+  <script type="module" src="/app/js/app.js?v=${Date.now()}"></script>
 </body>
 </html>`;
 
@@ -7735,13 +7994,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
                 to: req.email,
                 subject: `You're in! Join ${config?.event?.name || 'the event'}`,
                 html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
-                  <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+                  <div style="background:#0F1A2E;padding:24px;text-align:center;border-radius:8px 8px 0 0">
                     <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
                   </div>
                   <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
-                    <p style="font-size:16px;font-weight:600;color:#0D2818">You've been approved!</p>
+                    <p style="font-size:16px;font-weight:600;color:#0F1A2E">You've been approved!</p>
                     <p style="font-size:14px;color:#3D3D3D;line-height:1.6">Open the sportsbook to see live odds, place bets, and follow the action:</p>
-                    <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
+                    <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0F1A2E;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
                   </div>
                 </div>`
               })
@@ -8864,13 +9123,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
             to: normalizedEmail,
             subject: `You've been added as co-organizer: ${config2.event?.name || 'Event'}`,
             html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
-              <div style="background:#0D2818;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+              <div style="background:#0F1A2E;padding:24px;text-align:center;border-radius:8px 8px 0 0">
                 <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
               </div>
               <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
-                <p style="font-size:16px;font-weight:600;color:#0D2818">You're now a co-organizer</p>
+                <p style="font-size:16px;font-weight:600;color:#0F1A2E">You're now a co-organizer</p>
                 <p style="font-size:14px;color:#3D3D3D;line-height:1.6">You've been invited to help manage <strong>${config2.event?.name || 'an event'}</strong>. You can enter scores, manage bets, and run the settlement.</p>
-                <a href="https://betwaggle.com/${slug}/#admin" style="display:block;text-align:center;background:#C9A84C;color:#0D2818;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open Admin Panel</a>
+                <a href="https://betwaggle.com/${slug}/#admin" style="display:block;text-align:center;background:#C9A84C;color:#0F1A2E;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open Admin Panel</a>
               </div>
             </div>`
           })
@@ -9740,7 +9999,7 @@ async function getGhinSessionToken(env) {
   }
   const res = await fetch('https://firebaseinstallations.googleapis.com/v1/projects/ghin-mobile-app/installations', {
     method: 'POST',
-    headers: { ...GHIN_HEADERS, 'x-goog-api-key': 'AIzaSyBxgTOAWxiud0HuaE5tN-5NTlzFnrtyz-I' },
+    headers: { ...GHIN_HEADERS, 'x-goog-api-key': env.GHIN_FIREBASE_KEY || 'AIzaSyBxgTOAWxiud0HuaE5tN-5NTlzFnrtyz-I' },
     body: JSON.stringify({ appId: '1:884417644529:web:47fb315bc6c70242f72650', authVersion: 'FIS_v2', fid: 'fg6JfS0U01YmrelthLX9Iz', sdkVersion: 'w:0.5.7' })
   });
   if (!res.ok) return null;
@@ -10412,7 +10671,7 @@ async function handleUnsubscribe(url, env) {
 }
 
 function unsubscribeHtml(success) {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribed — Waggle</title><style>body{font-family:'Inter',system-ui,sans-serif;background:#0D2818;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px}h1{font-size:28px;margin-bottom:12px}.msg{color:rgba(255,255,255,.6);font-size:15px}a{color:#C9A84C}</style></head><body><div><h1>${success ? 'You have been unsubscribed.' : 'Something went wrong.'}</h1><p class="msg">${success ? 'Sorry to see you go. You will not receive any more emails from Waggle.' : 'We could not process your request. Please try again.'}</p><p style="margin-top:24px"><a href="https://betwaggle.com">Back to betwaggle.com</a></p></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribed — Waggle</title><style>body{font-family:'Inter',system-ui,sans-serif;background:#0F1A2E;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px}h1{font-size:28px;margin-bottom:12px}.msg{color:rgba(255,255,255,.6);font-size:15px}a{color:#C9A84C}</style></head><body><div><h1>${success ? 'You have been unsubscribed.' : 'Something went wrong.'}</h1><p class="msg">${success ? 'Sorry to see you go. You will not receive any more emails from Waggle.' : 'We could not process your request. Please try again.'}</p><p style="margin-top:24px"><a href="https://betwaggle.com">Back to betwaggle.com</a></p></div></body></html>`;
 }
 
 // Drip email sequence definitions - updated to use HTML template files
