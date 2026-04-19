@@ -9,7 +9,7 @@ import {
   renderShootout, renderScorecard, renderCasualScorecard, renderNamePickerModal,
   renderScoreEntryOverlay, renderSettlement, renderScenarios, calcStandings, initViews,
   getPlayersFromConfig, computeRoundPnL, renderTVLeaderboard
-} from './views.js';
+} from './views.js?v=ledger8';
 import * as Sync from './sync.js';
 // Sync exports: initSync, adminAuth, adminLogout, isAdminAuthed, requestMagicLink, verifyMagicLink,
 // submitBet, fetchBets, fetchBook, updateBet, pushScores, fetchScores, pushSettings, fetchSettings,
@@ -30,7 +30,7 @@ function getEventInfo() {
   if (waggleMatch) {
     return { slug: waggleMatch[1], basePath: `/${waggleMatch[1]}` };
   }
-  return { slug: 'mg', basePath: '/app' };
+  return { slug: 'demo-buddies', basePath: '/demo-buddies' };
 }
 
 // State
@@ -53,9 +53,17 @@ async function bootstrap() {
   try {
     config = await loadConfig(slug, basePath);
   } catch (e) {
-    app.innerHTML = `<div style="padding:40px;text-align:center;color:#c00">
-      <p>Could not load event config for <strong>${slug}</strong>.</p>
-      <p style="font-size:13px;color:#999;margin-top:8px">${e.message}</p>
+    app.innerHTML = `<div style="padding:24px 20px 40px">
+      <div style="max-width:420px;margin:0 auto;background:linear-gradient(180deg,rgba(255,255,255,0.98) 0%,rgba(252,249,244,0.98) 100%),url('/app/assets/ledger-paper-texture.png');background-size:auto,420px 420px;background-repeat:repeat;border:1px solid rgba(197,160,89,0.16);border-radius:20px;padding:28px 22px;text-align:center;box-shadow:0 20px 40px rgba(27,28,26,0.04)">
+        <img src="/app/assets/empty-state-waiting-v1.png" alt="" aria-hidden="true" style="display:block;width:min(240px,78%);margin:0 auto 18px;mix-blend-mode:multiply">
+        <div style="font-family:'Noto Serif',Georgia,serif;font-size:22px;font-weight:700;color:#002046;line-height:1.2;margin-bottom:8px">This outing is not ready yet</div>
+        <p style="font-size:14px;color:#6B7280;line-height:1.55;margin-bottom:14px">Waggle could not load the event configuration for <strong>${slug}</strong>.</p>
+        <p style="font-size:12px;color:#9CA3AF;line-height:1.5;margin-bottom:18px">${e.message}</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="window.location.reload()" style="width:100%;padding:14px;background:linear-gradient(135deg,#775A19,#FED488);color:#261900;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;min-height:48px">Try Again</button>
+          <a href="/create/" style="display:flex;align-items:center;justify-content:center;width:100%;padding:14px;background:#002046;color:#FFFFFF;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;min-height:48px;letter-spacing:0.4px">Create a New Outing</a>
+        </div>
+      </div>
     </div>`;
     return;
   }
@@ -577,6 +585,28 @@ function route() {
   } else if (fab) {
     fab.style.display = 'none';
   }
+
+  maybeAutoOpenScoreComposer(view);
+}
+
+function maybeAutoOpenScoreComposer(view) {
+  if (!isRoundMode || state?._spectatorMode || state?._trophyMode) return;
+  if (view !== 'scorecard') return;
+  if (state._autoComposerOpened) return;
+  const params = new URLSearchParams(location.search);
+  if (params.get('composer') !== '1') return;
+
+  state._autoComposerOpened = true;
+  params.delete('composer');
+  const nextSearch = params.toString();
+  const nextUrl = `${location.pathname}${nextSearch ? `?${nextSearch}` : ''}${location.hash || '#scorecard'}`;
+  history.replaceState({}, '', nextUrl);
+
+  setTimeout(() => {
+    if (window.MG && typeof window.MG.openScoreComposer === 'function') {
+      window.MG.openScoreComposer('deep-link');
+    }
+  }, 0);
 }
 
 function updateNav(view) {
@@ -684,9 +714,37 @@ function updateNav(view) {
 // Toast
 function toast(msg, duration) {
   const el = document.getElementById("mg-toast");
+  if (!el) return;
+  const tone = /offline|pending sync/i.test(msg) ? 'offline' : /saved|posted|updated|synced|complete/i.test(msg) ? 'success' : 'default';
+  el.dataset.tone = tone;
   el.textContent = msg;
   el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), duration || 2500);
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => {
+    el.classList.remove("show");
+    delete el.dataset.tone;
+  }, duration || 2500);
+}
+
+function flashSaveIndicator(message, tone) {
+  const ind = document.getElementById('save-indicator');
+  if (!ind) return;
+  const resolvedTone = tone || 'success';
+  ind.textContent = message || 'Board Updated';
+  if (resolvedTone === 'offline') {
+    ind.style.background = 'rgba(119,90,25,0.94)';
+    ind.style.color = '#FCF9F4';
+  } else {
+    ind.style.background = 'rgba(0,32,70,0.92)';
+    ind.style.color = '#FCF9F4';
+  }
+  ind.style.opacity = '1';
+  ind.style.transform = 'translateY(0) scale(1)';
+  clearTimeout(ind._timer);
+  ind._timer = setTimeout(() => {
+    ind.style.opacity = '0';
+    ind.style.transform = 'translateY(-6px) scale(.98)';
+  }, resolvedTone === 'offline' ? 2200 : 1600);
 }
 
 // Save and re-render — auto-saves to localStorage + shows save indicator
@@ -738,13 +796,7 @@ function persist() {
 
   // Flash save indicator if admin is authed
   if (state.adminAuthed) {
-    const ind = document.getElementById('save-indicator');
-    if (ind) {
-      ind.textContent = 'Saved';
-      ind.style.opacity = '1';
-      clearTimeout(ind._timer);
-      ind._timer = setTimeout(() => { ind.style.opacity = '0'; }, 1500);
-    }
+    flashSaveIndicator('Board Updated', 'success');
   }
 }
 
@@ -969,7 +1021,8 @@ window.MG = {
       const result = await Sync.submitHoleScores(holeNum, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
-        toast(`Hole ${holeNum} scores saved!`);
+        toast(`Hole ${holeNum} posted`);
+        flashSaveIndicator(`Hole ${holeNum} posted`, 'success');
         await syncFromServer();
         // Advance to next hole
         if (holeNum < 18) {
@@ -990,6 +1043,7 @@ window.MG = {
       if (!state._holes) state._holes = {};
       state._holes[holeNum] = { ...scores };
       toast('Saved offline — will sync when connected');
+      flashSaveIndicator('Queued Offline', 'offline');
       // Advance to next hole
       if (holeNum < 18) {
         state._scorecardHole = holeNum + 1;
@@ -1141,8 +1195,9 @@ window.MG = {
     const safeName = eventName.length > 30 ? `${eventName.slice(0, 27)}...` : eventName;
     const url = joinUrl || `${location.origin}/join/${encodeURIComponent(state._slug || '')}`;
     const text = [
-      `You're in: ${safeName}`,
+      `The ledger is live: ${safeName}`,
       `Stakes: ${window.MG.getInviteStakeSummary()}`,
+      'Open the board, track the action, settle in one place.',
       'Join in 30 sec. No app needed.',
       url
     ].join('\n');
@@ -1157,18 +1212,18 @@ window.MG = {
   async shareReplayInvite() {
     const eventName = state._config?.event?.name || 'this event';
     const slug = state._slug || '';
-    const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(slug)}`;
+    const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(slug)}&mode=weekly`;
     const text = [
-      `Run it back at ${eventName}?`,
-      'Same group, same format, new round.',
-      'Tap to join the replay:',
+      `Keep the money game going after ${eventName}.`,
+      'Same crew, same games, faster weekly setup.',
+      'Start next week from this group:',
       replayUrl
     ].join('\n');
 
     if (navigator.share) {
-      navigator.share({ title: `${eventName} - Replay`, text, url: replayUrl }).catch(() => {});
+      navigator.share({ title: `${eventName} - Weekly Game`, text, url: replayUrl }).catch(() => {});
     } else {
-      navigator.clipboard?.writeText(text).then(() => toast('Replay invite copied!')).catch(() => {});
+      navigator.clipboard?.writeText(text).then(() => toast('Weekly invite copied!')).catch(() => {});
     }
   },
 
@@ -1236,6 +1291,8 @@ window.MG = {
     const pairs = computePayablePairsShare;
     const players = getPlayersShare;
     const sorted = [...players].sort((a,b) => (pnl[b.name]||0) - (pnl[a.name]||0));
+    const winner = sorted[0];
+    const winnerMoney = winner ? (pnl[winner.name] || 0) : 0;
 
     const stakeParts = [];
     if (games.nassau && structure.nassauBet > 0) stakeParts.push(`Nassau $${structure.nassauBet}`);
@@ -1257,6 +1314,7 @@ window.MG = {
     if (eventDate) lines.push(eventDate);
     if (stakeParts.length > 0) lines.push(stakeParts.join(' . '));
     if (holesPlayed > 0) lines.push(`${holesPlayed} holes`);
+    if (winner && winnerMoney > 0) lines.push(`${winner.name} takes +$${winnerMoney}`);
     lines.push('');
 
     // Standings — clean, no emojis
@@ -1342,6 +1400,7 @@ window.MG = {
         lines.push(`   ${from} \u2192 ${to}:  $${amount}`);
         lines.push(`   Pay now: ${venmoLink}`);
       });
+      lines.push(`   ${pairs.length} payment${pairs.length === 1 ? '' : 's'} close the board.`);
       lines.push('');
     }
 
@@ -1361,9 +1420,11 @@ window.MG = {
     } catch {} // Non-blocking — share works without recap
 
     if (state._slug) {
-      const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(state._slug)}`;
-      lines.push('Round complete. Replay open.');
-      lines.push(`Replay: ${replayUrl}`);
+      const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(state._slug)}&mode=weekly`;
+      lines.push('Round complete. Weekly game ready.');
+      lines.push('Start next week from this group:');
+      lines.push(`Weekly game: ${replayUrl}`);
+      lines.push(`Board: ${url}`);
       lines.push('');
     }
 
@@ -1378,7 +1439,7 @@ window.MG = {
       navigator.share({
         title: `${eventName} \u2014 Settlement`,
         text: text,
-        url: 'https://betwaggle.com'
+        url
       }).catch(() => {
         navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
       });
@@ -1448,6 +1509,9 @@ window.MG = {
     const eventName = config?.event?.name || 'Golf Event';
     const eventDate = config?.event?.dates?.day1 || '';
     const holesPlayed = Object.keys(state._holes || {}).length;
+    const winner = sortedPlayers[0];
+    const winnerMoney = winner ? (pnl[winner.name] || 0) : 0;
+    const cloneUrlText = state._slug ? `betwaggle.com/create?clone=${state._slug}` : 'betwaggle.com/create';
 
     // --- Skins summary ---
     const skinsSummary = [];
@@ -1488,6 +1552,7 @@ window.MG = {
     // Pre-calculate height
     let totalH = 0;
     totalH += 120; // header
+    totalH += hasPnL ? 72 : 0; // winner callout
     totalH += 20;  // spacing
     if (hasPnL) {
       totalH += 44 + sortedPlayers.length * 48 + 20; // standings card
@@ -1615,8 +1680,26 @@ window.MG = {
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fillText(subParts.join('  |  '), W / 2, 72);
 
-    ctx.textAlign = 'left';
     let curY = 130;
+
+    if (hasPnL && winner) {
+      const heroInner = drawCard(curY, 60, { border: 'rgba(212,175,55,0.28)' });
+      ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#C4A35A';
+      ctx.fillText('GROUP CHAT MOMENT', heroInner.x, heroInner.y + 2);
+      ctx.font = '700 20px Georgia, serif';
+      ctx.fillStyle = '#1C1917';
+      const heroLine = winnerMoney > 0
+        ? `${winner.name} takes +$${winnerMoney}`
+        : `${winner.name} closes out the board`;
+      ctx.fillText(heroLine, heroInner.x, heroInner.y + 20);
+      ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#8B8680';
+      ctx.fillText('Share this card, settle up, then run the same group back next week.', heroInner.x, heroInner.y + 42);
+      curY += 76;
+    }
+
+    ctx.textAlign = 'left';
 
     // --- Final Standings ---
     if (hasPnL) {
@@ -1807,7 +1890,7 @@ window.MG = {
 
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillStyle = 'rgba(250,248,245,0.3)';
-    ctx.fillText('betwaggle.com/create', W / 2, footY + 58);
+    ctx.fillText(cloneUrlText, W / 2, footY + 58);
 
     ctx.textAlign = 'left';
 
@@ -1820,11 +1903,14 @@ window.MG = {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           const eventName = state._config?.event?.name || 'Golf Event';
-          const shareUrl = 'https://betwaggle.com';
+          const shareUrl = location.href.replace(/#.*$/, '');
+          const winnerLine = winner && winnerMoney > 0
+            ? `${winner.name} takes +$${winnerMoney}.`
+            : 'Final standings and settlement are in.';
           await navigator.share({
             files: [file],
             title: eventName + ' \u2014 Settlement',
-            text: eventName + ' \u2014 Final standings and settlement. Powered by Waggle.',
+            text: `${eventName} — ${winnerLine} Same crew can run it back next week.`,
             url: shareUrl
           });
           return;
@@ -2502,7 +2588,8 @@ window.MG = {
       const result = await Sync.submitHoleScores(hole, scores);
       if (result && result.ok) {
         if (navigator.vibrate) navigator.vibrate(30);
-        toast(`Hole ${hole} saved!`);
+        toast(`Hole ${hole} posted`);
+        flashSaveIndicator(`Hole ${hole} posted`, 'success');
         state._scoreModal = null;
         await syncFromServer();
         refresh();
@@ -2532,6 +2619,7 @@ window.MG = {
       state._holes[hole].scores = { ...scores };
       state._scoreModal = null;
       toast('Saved offline — will sync when connected');
+      flashSaveIndicator('Queued Offline', 'offline');
       persist();
       updateConnectivityIndicator();
       refresh();
@@ -2895,7 +2983,8 @@ window.MG = {
 
         // Store undo data before advancing
         state._lastScoredHole = { hole, scores: { ...scores }, stats: holeStats ? JSON.parse(JSON.stringify(holeStats)) : null };
-        toast(`Hole ${hole} saved`);
+        toast(`Hole ${hole} posted`);
+        flashSaveIndicator(`Hole ${hole} posted`, 'success');
 
         // Store stats locally alongside hole data
         if (!state._holes) state._holes = {};
@@ -2947,6 +3036,7 @@ window.MG = {
       }
       if (navigator.vibrate) navigator.vibrate(30);
       toast('Saved offline — will sync when connected');
+      flashSaveIndicator('Queued Offline', 'offline');
       // Auto-advance to next unscored hole
       const holesPerRound = state._config?.holesPerRound || 18;
       let nextHole = null;

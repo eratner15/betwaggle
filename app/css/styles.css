@@ -8,22 +8,22 @@
      Clubhouse authority + sportsbook energy
      ============================================================ */
 
-  /* Backgrounds */
-  --bg-primary: #FAF8F5;           /* Ivory — base of everything */
-  --bg-secondary: #FFFFFF;         /* Card surfaces */
-  --bg-tertiary: #F0EDE8;          /* Alternate rows, chips */
-  --bg-hover: #F0EDE8;             /* Hover state */
+  /* Backgrounds — The Ledger warm ivory palette */
+  --bg-primary: #FAF9F5;           /* Surface — warm ivory base */
+  --bg-secondary: #FFFFFF;         /* Surface container lowest */
+  --bg-tertiary: #F4F4F0;          /* Surface container low */
+  --bg-hover: #EFEEEA;             /* Surface container */
   --card-bg: #FFFFFF;
 
-  /* Navy — headers, primary CTAs, dark sections */
-  --green-primary: #1B2B4B;        /* Navy (aliased for compat) */
-  --green-muted: #2A3F66;          /* Navy mid */
-  --green-bright: #7ECEC1;         /* Seafoam — positive indicators */
+  /* Navy — The Ledger primary palette */
+  --green-primary: #002046;        /* Primary (deep navy) */
+  --green-muted: #1B365D;          /* Primary container */
+  --green-bright: #775A19;         /* Secondary (heritage gold) */
 
-  /* Gold — accents, borders, selected states */
-  --gold-primary: #C4A35A;
-  --gold-bright: #D4B96A;
-  --gold-muted: rgba(196,163,90,0.15);
+  /* Gold — Heritage champagne accents */
+  --gold-primary: #775A19;
+  --gold-bright: #FED488;
+  --gold-muted: rgba(119,90,25,0.12);
 
   /* Text — near-black on ivory, never pure black */
   --text-primary: #1A202C;
@@ -49,13 +49,13 @@
   --money-green: #22C55E;          /* THE money color — +$203 should glow */
   --money-red: #EF4444;            /* -$45 — unmistakable loss */
 
-  /* Borders — subtle gold ghost borders */
-  --border: rgba(196,163,90,0.15);
-  --border-strong: rgba(196,163,90,0.3);
+  /* Borders — ghost borders per DESIGN.md "No-Line Rule" */
+  --border: rgba(196,198,207,0.15);
+  --border-strong: rgba(196,198,207,0.3);
 
-  /* Fonts — per DESIGN.md */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Fonts — The Ledger design system */
+  --font-display: 'Noto Serif', Georgia, serif;
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', monospace;
   --font-data: 'SF Mono', 'Fira Code', monospace;
 
@@ -109,23 +109,27 @@
   --mg-radius: 10px;
   --mg-nav-height: 64px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --waggle-asset-trip-shell-hero: url('/app/assets/trip-shell-hero-plate-v2.png');
+  --waggle-asset-scorecard-plate: url('/app/assets/scorecard-atmosphere-plate-v2.png');
+  --waggle-asset-settlement-plate: url('/app/assets/settlement-lounge-plate.png');
+  --waggle-asset-ledger-paper: url('/app/assets/ledger-paper-texture.png');
 }
 
 body.dark-mode,
 :root.dark-mode {
-  --bg-primary: #0F1A2E;
-  --bg-secondary: #152238;
-  --bg-tertiary: #1B2B4B;
-  --bg-hover: #2A3F66;
-  --card-bg: #152238;
-  --text-primary: #FCF9F4;
-  --text-secondary: rgba(252,249,244,0.6);
-  --text-tertiary: rgba(252,249,244,0.5);
-  --page-text: #FCF9F4;
-  --page-text-secondary: rgba(252,249,244,0.76);
-  --page-text-muted: rgba(252,249,244,0.6);
-  --border: rgba(197,160,89,0.2);
-  --border-strong: rgba(197,160,89,0.34);
+  --bg-primary: #002046;
+  --bg-secondary: #1B365D;
+  --bg-tertiary: #1B365D;
+  --bg-hover: #2E476F;
+  --card-bg: #1B365D;
+  --text-primary: #FAF9F5;
+  --text-secondary: rgba(250,249,245,0.6);
+  --text-tertiary: rgba(250,249,245,0.5);
+  --page-text: #FAF9F5;
+  --page-text-secondary: rgba(250,249,245,0.76);
+  --page-text-muted: rgba(250,249,245,0.6);
+  --border: rgba(196,198,207,0.2);
+  --border-strong: rgba(196,198,207,0.34);
   --mg-bg: var(--bg-primary);
   --mg-card-bg: var(--card-bg);
   --mg-surface: var(--card-bg);
@@ -164,6 +168,20 @@ body.dark-mode .theme-toggle {
   background: rgba(197,160,89,0.16);
   border-color: rgba(197,160,89,0.64);
 }
+/* Dark mode header */
+body.dark-mode header[style*="sticky"] {
+  background: #002046 !important;
+}
+body.dark-mode header[style*="sticky"] a[style*="Playfair"] {
+  color: #fff !important;
+}
+body.dark-mode header[style*="sticky"] button { color: rgba(255,255,255,.7) !important; }
+body.dark-mode nav[style*="backdrop-filter"] {
+  background: rgba(15,26,46,.85) !important;
+  border-color: rgba(197,160,89,.15) !important;
+}
+body.dark-mode nav[style*="backdrop-filter"] a { color: rgba(255,255,255,.4) !important; }
+body.dark-mode nav[style*="backdrop-filter"] a.active { color: var(--gold-primary) !important; background: rgba(197,160,89,.1) !important; }
 
 /* Score change animations */
 @keyframes score-flash-green {
@@ -212,7 +230,7 @@ body.dark-mode .theme-toggle {
   max-width: 380px;
   border-radius: 12px;
   padding: 20px 16px 16px;
-  background: #1B2B4B;
+  background: #002046;
   border: 1px solid rgba(197, 160, 89, 0.32);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
   color: #F4F8F5;
@@ -230,7 +248,7 @@ body.dark-mode .theme-toggle {
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 8px;
-  color: #C5A059;
+  color: #775A19;
 }
 .wg-identity-subtitle {
   font-size: 13px;
@@ -265,7 +283,7 @@ body.dark-mode .theme-toggle {
 }
 .wg-identity-option:hover,
 .wg-identity-option:focus-visible {
-  border-color: #C5A059;
+  border-color: #775A19;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   outline: none;
@@ -292,7 +310,7 @@ body.dark-mode .theme-toggle {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #C5A059;
+  color: #775A19;
   background: rgba(197, 160, 89, 0.13);
   border: 1px solid rgba(197, 160, 89, 0.35);
   border-radius: 999px;
@@ -315,8 +333,8 @@ body.dark-mode .theme-toggle {
 }
 .wg-identity-skip:hover,
 .wg-identity-skip:focus-visible {
-  border-color: #C5A059;
-  color: #C5A059;
+  border-color: #775A19;
+  color: #775A19;
   outline: none;
 }
 @keyframes wgIdentityOverlayIn {
@@ -336,6 +354,9 @@ body.dark-mode .theme-toggle {
   }
 }
 
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
@@ -353,8 +374,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
   /* Subtle paper grain — country club scorecard texture */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
+  background-image:
+    var(--waggle-asset-ledger-paper),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  background-size: 512px 512px, 256px 256px;
+  background-repeat: repeat, repeat;
 }
 
 #app {
@@ -365,18 +389,32 @@ body {
   min-height: 100dvh;
 }
 
-/* Header — Deep Forest Green */
+/* Header — The Ledger warm ivory with serif branding */
 .mg-header {
-  background: var(--green-primary);
+  background: var(--bg-primary);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  flex-direction: column;
+  padding: 14px 20px 12px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
   position: sticky;
   top: 0;
   z-index: 100;
   border-bottom: none;
+}
+.mg-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: rgba(27,54,93,0.08);
+}
+.mg-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 .mg-brand {
   display: inline-flex;
@@ -395,15 +433,19 @@ body {
   line-height: 1;
 }
 .mg-header h1 {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 20px;
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 22px;
   color: var(--gold-primary);
   font-weight: 700;
   letter-spacing: 0.4px;
   margin: 0;
 }
 .mg-header .mg-subtitle {
-  display: none;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: rgba(252,249,244,0.5);
+  letter-spacing: 0.3px;
+  margin-top: 2px;
 }
 .mg-header-tabs {
   display: flex;
@@ -433,96 +475,105 @@ body {
   text-shadow: 0 0 10px rgba(197,160,89,0.35);
 }
 
-/* Bottom Nav */
-.mg-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--green-primary);
-  display: flex;
-  justify-content: center;
-  z-index: 100;
-  padding-bottom: var(--safe-bottom);
-  border-top: none;
+/* Bottom Nav — Glassmorphic "The Ledger" style */
+.mg-nav { display: none; /* replaced by inline nav in worker.js */ }
+nav[style*="backdrop-filter"] a.active {
+  color: #FFFFFF !important;
+  background: #002046;
+  border-radius: 12px;
 }
-.mg-nav::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+nav[style*="backdrop-filter"] a.active .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
 }
-.mg-nav-inner {
-  display: flex;
-  max-width: 480px;
-  width: 100%;
-}
-.mg-nav a {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--mg-touch-target);
-  padding: 8px 4px 10px;
-  color: rgba(252,249,244,0.62);
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
-  gap: 3px;
-  border-top: 2px solid transparent;
-  transition: color .12s, background-color .18s ease, border-color .18s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.mg-nav a.active {
-  color: var(--mg-gold);
-  font-weight: 700;
-  border-top-color: var(--gold-primary);
-  background: linear-gradient(180deg, rgba(197,160,89,0.26) 0%, rgba(197,160,89,0.06) 100%);
-}
-.mg-nav a svg { width: 22px; height: 22px; }
 
-/* Content area */
-.mg-content { background: var(--bg-primary); padding: 16px; }
-
-/* Cards — ivory paper with gold ghost border */
-.mg-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--mg-shadow);
+/* Content area — generous padding for premium feel */
+.mg-content {
+  background:
+    linear-gradient(180deg, rgba(250,248,245,0.98) 0%, rgba(250,248,245,0.94) 100%),
+    url('/app/assets/ledger-paper-texture.png');
+  background-size: auto, 480px 480px;
+  background-repeat: repeat;
   padding: 20px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
+}
+
+.mg-trip-shell-hero {
+  background:
+    linear-gradient(180deg, rgba(0, 17, 40, 0.38) 0%, rgba(0, 24, 48, 0.78) 100%),
+    radial-gradient(circle at top right, rgba(212,183,106,0.16), transparent 32%),
+    var(--waggle-asset-trip-shell-hero) center/cover no-repeat;
+  border-radius: 22px;
+  box-shadow: 0 18px 42px rgba(0,15,36,0.32);
+}
+
+.mg-scorecard-surface {
+  background:
+    linear-gradient(180deg, rgba(250,249,245,0.82) 0%, rgba(250,249,245,0.95) 100%),
+    var(--waggle-asset-scorecard-plate) center/cover no-repeat;
+  border-radius: 24px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 12px 34px rgba(27,28,26,0.06);
+}
+
+.mg-settlement-share-plate {
+  background:
+    linear-gradient(180deg, rgba(252,249,244,0.9) 0%, rgba(252,249,244,0.98) 100%),
+    var(--waggle-asset-settlement-plate) center/cover no-repeat;
+  border: 1px solid rgba(197,160,89,0.22);
+  box-shadow: 0 16px 44px rgba(27,48,34,0.12);
+}
+
+.mg-settlement-ornament-card {
+  background:
+    linear-gradient(180deg, rgba(252,249,244,0.94) 0%, rgba(252,249,244,0.98) 100%),
+    url('/app/assets/settlement-ornament-v2.png') center/cover no-repeat;
+  border: 1px solid rgba(197,160,89,0.18);
+  box-shadow: 0 10px 28px rgba(27,48,34,0.08);
+}
+
+/* Cards — The Ledger tonal layering (no borders, surface shifts) */
+.mg-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,244,240,0.96) 100%),
+    url('/app/assets/ledger-paper-texture.png');
+  background-size: auto, 420px 420px;
+  background-repeat: repeat;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(27,28,26,0.03);
+  padding: 20px 22px;
+  margin-bottom: 14px;
 }
 .mg-card-header {
-  font-family: var(--font-sans);
+  font-family: 'Noto Serif', Georgia, serif;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 14px;
   color: var(--text-primary);
   letter-spacing: 0.2px;
 }
 
-/* Light theme cards — cream/white cards on cream background */
+/* Light theme cards — cream/white with gold top accent */
 .mg-card-light {
-  background: var(--card-bg);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(252,249,244,0.98) 100%),
+    url('/app/assets/ledger-paper-texture.png');
+  background-size: auto, 420px 420px;
+  background-repeat: repeat;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  padding: 16px 18px;
-  margin-bottom: 10px;
+  padding: 20px 22px;
+  margin-bottom: 14px;
   border: 1px solid var(--border);
+  border-top: 2px solid var(--gold-primary);
 }
 .mg-card-light .mg-card-header-light {
-  font-family: var(--font-sans);
-  font-size: 11px;
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--mg-green);
+  letter-spacing: 0.2px;
+  text-transform: none;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 .mg-card-light .light-label {
@@ -575,11 +626,11 @@ body {
 /* Gold top accent per DESIGN.md — the Waggle card signature */
 .game-card {
   background: var(--card-bg);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  border-top: 2px solid var(--gold-primary);
-  padding: 16px 18px;
-  margin-bottom: 12px;
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 20px 40px rgba(27,28,26,0.03);
+  padding: 18px 20px;
+  margin-bottom: 14px;
 }
 .game-card-title {
   font-family: var(--font-display);
@@ -792,34 +843,34 @@ body {
 
 /* ── TRADING FLOOR MODE ── */
 /* Dark cards for live action — odds, money, scores that POP */
+/* Game cards dark variant — Ledger primary container style */
 .game-card.dark {
-  background: linear-gradient(135deg, #1B2B4B, #0F1A2E);
-  border-color: rgba(196,163,90,0.2);
-  border-top-color: var(--gold-primary);
-  color: #FAF8F5;
+  background: #1B365D;
+  border: none;
+  color: #FAF9F5;
 }
-.game-card.dark .game-card-title { color: var(--gold-primary); }
-.game-card.dark .stat-label { color: rgba(250,248,245,0.5); }
-.game-card.dark .stat-value { color: #FAF8F5; }
-.game-card.dark .stat-value.gold { color: var(--gold-primary); }
-.game-card.dark .stat-value.win { color: var(--money-green); text-shadow: 0 0 8px rgba(34,197,94,0.3); }
+.game-card.dark .game-card-title { color: #FED488; }
+.game-card.dark .stat-label { color: rgba(250,249,245,0.5); }
+.game-card.dark .stat-value { color: #FAF9F5; }
+.game-card.dark .stat-value.gold { color: #FED488; }
+.game-card.dark .stat-value.win { color: var(--money-green); }
 .game-card.dark .stat-value.loss { color: var(--money-red); }
-.game-card.dark .player-name { color: #FAF8F5; }
+.game-card.dark .player-name { color: #FAF9F5; }
 .game-card.dark .score-cell.winning { color: var(--money-green); }
 .game-card.dark .score-cell.losing { color: var(--money-red); }
-.game-card.dark .hole-row { border-bottom-color: rgba(250,248,245,0.08); }
-.game-card.dark .hole-count { color: rgba(250,248,245,0.4); }
+.game-card.dark .hole-row { border-bottom-color: rgba(250,249,245,0.08); }
+.game-card.dark .hole-count { color: rgba(250,249,245,0.4); }
 
 /* Money amounts — always high contrast */
 .money-pos { color: var(--money-green); font-family: var(--font-data); font-weight: 800; }
 .money-neg { color: var(--money-red); font-family: var(--font-data); font-weight: 800; }
 .money-even { color: var(--text-secondary); font-family: var(--font-data); font-weight: 600; }
 
-/* Betting slip — tactile, pressable feel */
+/* Betting slip — Ledger style */
 .bet-slip {
-  background: linear-gradient(135deg, #1B2B4B 0%, #152238 100%);
-  border: 1px solid rgba(196,163,90,0.25);
-  border-radius: var(--radius-md);
+  background: #1B365D;
+  border: none;
+  border-radius: 16px;
   padding: 14px 16px;
   margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03);
@@ -858,7 +909,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 12px 8px;
-  background: linear-gradient(135deg, #1B2B4B, #2A3F66);
+  background: linear-gradient(135deg, #002046, #1B365D);
   border: 1.5px solid rgba(196,163,90,0.2);
   border-radius: 8px;
   color: #FAF8F5;
@@ -870,7 +921,7 @@ body {
 }
 .odds-btn:active {
   background: var(--gold-primary);
-  color: #1B2B4B;
+  color: #002046;
   border-color: var(--gold-primary);
   transform: scale(0.96);
 }
@@ -1320,22 +1371,22 @@ body {
 .mg-odds-btn--premium-chip {
   background: rgba(212, 175, 55, 0.1);
   border-color: rgba(212, 175, 55, 0.5);
-  color: #D4AF37;
+  color: #775A19;
   min-height: 56px;
 }
 .mg-odds-btn--premium-chip:hover {
-  border-color: #D4AF37;
+  border-color: #775A19;
   background: rgba(212, 175, 55, 0.18);
 }
 .mg-odds-btn--premium-chip.selected {
-  background: #D4AF37;
-  border-color: #D4AF37;
-  color: #0F1A2E;
+  background: #775A19;
+  border-color: #775A19;
+  color: #002046;
 }
 .mg-odds-btn--premium-chip.selected .odds-line,
 .mg-odds-btn--premium-chip.selected .odds-label,
 .mg-odds-btn--premium-chip.selected .odds-pays {
-  color: #0F1A2E;
+  color: #002046;
 }
 
 .mg-bar-match-card {
@@ -1354,7 +1405,7 @@ body {
 }
 
 .mg-bar-match-meta {
-  color: #D4AF37;
+  color: #775A19;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1408,7 +1459,7 @@ body {
 }
 
 .mg-bar-odds-chip:hover {
-  border-color: #D4AF37;
+  border-color: #775A19;
   background: rgba(212, 175, 55, 0.18);
 }
 
@@ -1419,18 +1470,18 @@ body {
 }
 
 .mg-bar-odds-chip.selected {
-  background: #D4AF37;
-  border-color: #D4AF37;
+  background: #775A19;
+  border-color: #775A19;
 }
 
 .mg-bar-odds-chip.selected .odds-label,
 .mg-bar-odds-chip.selected .odds-line,
 .mg-bar-odds-chip.selected .odds-pays {
-  color: #0F1A2E;
+  color: #002046;
 }
 
 .mg-premium-player-row {
-  background: #1B2B4B;
+  background: #002046;
   border: 1px solid rgba(197, 160, 89, 0.15);
   border-radius: 12px;
   padding: 14px;
@@ -1439,7 +1490,7 @@ body {
   will-change: transform;
 }
 .mg-premium-player-row.is-favorite {
-  border-top: 2px solid #D4AF37;
+  border-top: 2px solid #775A19;
 }
 .mg-premium-player-head {
   display: flex;
@@ -1462,7 +1513,7 @@ body {
   flex-shrink: 0;
 }
 .mg-premium-player-row.is-favorite .mg-premium-player-dot {
-  background: #D4AF37;
+  background: #775A19;
 }
 .mg-premium-player-name {
   font-size: 16px;
@@ -1484,7 +1535,7 @@ body {
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #D4AF37;
+  color: #775A19;
   flex-shrink: 0;
 }
 .mg-premium-fav-badge {
@@ -1493,8 +1544,8 @@ body {
   justify-content: center;
   padding: 5px 9px;
   border-radius: 999px;
-  background: #D4AF37;
-  color: #0F1A2E;
+  background: #775A19;
+  color: #002046;
   font-size: 12px;
   line-height: 1;
   font-weight: 800;
@@ -1619,7 +1670,7 @@ body {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #D4AF37, #1B2B4B, #D4AF37);
+  background: linear-gradient(45deg, #775A19, #002046, #775A19);
   border-radius: 14px;
   z-index: -1;
   opacity: 0.6;
@@ -1961,10 +2012,10 @@ body {
 
 /* Section headers */
 .mg-section-title {
-  font-family: var(--font-sans);
+  font-family: 'Noto Serif', Georgia, serif;
   font-size: 20px;
-  font-weight: 600;
-  color: #1B2B4B;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 16px;
   text-wrap: balance;
 }
@@ -2014,22 +2065,32 @@ body {
   top: 80px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  padding: 10px 20px;
-  border-radius: var(--mg-radius);
-  font-size: 13px;
-  font-weight: 700;
+  background: rgba(255,255,255,0.94);
+  color: #002046;
+  border: 1px solid rgba(27,54,93,0.08);
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
   z-index: 200;
   opacity: 0;
   transition: all .15s;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 14px 28px rgba(27,54,93,0.12);
   max-width: 90%;
   text-align: center;
   pointer-events: none;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 .mg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.mg-toast[data-tone="success"] {
+  background: rgba(0,32,70,0.94);
+  color: #FCF9F4;
+}
+.mg-toast[data-tone="offline"] {
+  background: rgba(119,90,25,0.94);
+  color: #FCF9F4;
+}
 
 /* Team detail */
 .mg-team-header {
@@ -2268,11 +2329,11 @@ textarea::placeholder {
 
 body.dark-mode .mg-header,
 :root.dark-mode .mg-header {
-  background: #0F1A2E;
+  background: #002046;
 }
 body.dark-mode .mg-nav,
 :root.dark-mode .mg-nav {
-  background: #0F1A2E;
+  background: #002046;
   border-top-color: rgba(196,163,90,0.15);
 }
 body.dark-mode .mg-content,
@@ -2868,9 +2929,9 @@ hr.mg-divider {
 }
 
 .mg-inline-score-pill--eagle {
-  background: #D4AF37;
-  border-color: #C5A059;
-  color: #0F1A2E;
+  background: #775A19;
+  border-color: #775A19;
+  color: #002046;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(197,160,89,0.55), 0 0 12px rgba(212,175,55,0.28);
 }
 
@@ -2913,9 +2974,9 @@ hr.mg-divider {
 }
 
 .mg-inline-score-pill--other.selected {
-  background: #D4AF37;
-  border-color: #D4AF37;
-  color: #0F1A2E;
+  background: #775A19;
+  border-color: #775A19;
+  color: #002046;
 }
 
 .score-btn {
@@ -3425,7 +3486,7 @@ body.tv-mode #app {
 /* Background flash animations for odds improvement/deterioration */
 @keyframes oddsFlashGreen {
   0% {
-    background: #1B2B4B;
+    background: #002046;
     border-color: #2D5A3D;
   }
   30% {
@@ -3434,7 +3495,7 @@ body.tv-mode #app {
     box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
   }
   100% {
-    background: #1B2B4B;
+    background: #002046;
     border-color: #2D5A3D;
     box-shadow: none;
   }
@@ -3442,7 +3503,7 @@ body.tv-mode #app {
 
 @keyframes oddsFlashRed {
   0% {
-    background: #1B2B4B;
+    background: #002046;
     border-color: #2D5A3D;
   }
   30% {
@@ -3451,7 +3512,7 @@ body.tv-mode #app {
     box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
   }
   100% {
-    background: #1B2B4B;
+    background: #002046;
     border-color: #2D5A3D;
     box-shadow: none;
   }
@@ -3585,7 +3646,7 @@ body.tv-mode #app {
 }
 
 .mg-odds-btn {
-  background: #1B2B4B;
+  background: #002046;
   border-color: rgba(212, 175, 55, 0.34);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
   transition: transform 120ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out, box-shadow 150ms ease-out;
@@ -3593,7 +3654,7 @@ body.tv-mode #app {
 
 .mg-odds-btn:hover:not(:active) {
   background: rgba(212, 175, 55, 0.14);
-  border-color: #D4AF37;
+  border-color: #775A19;
   box-shadow: 0 9px 18px rgba(0, 0, 0, 0.32);
   transform: translateY(-1px);
 }
@@ -3606,13 +3667,13 @@ body.tv-mode #app {
 }
 
 .mg-odds-btn:focus-visible {
-  outline: 2px solid #D4AF37;
+  outline: 2px solid #775A19;
   outline-offset: 2px;
 }
 
 .mg-odds-btn.selected {
-  background: #D4AF37;
-  border-color: #D4AF37;
+  background: #775A19;
+  border-color: #775A19;
   box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.45), 0 10px 22px rgba(0, 0, 0, 0.34);
   transform: translateY(-1px);
 }
@@ -3620,12 +3681,12 @@ body.tv-mode #app {
 .mg-odds-btn.selected .odds-line,
 .mg-odds-btn.selected .odds-label,
 .mg-odds-btn.selected .odds-pays {
-  color: #0F1A2E;
+  color: #002046;
 }
 
 .mg-odds-btn.selected::after {
-  background: #0F1A2E;
-  color: #D4AF37;
+  background: #002046;
+  color: #775A19;
   box-shadow: 0 0 0 1px rgba(13, 40, 24, 0.45);
 }
 
@@ -3651,7 +3712,7 @@ body.tv-mode #app {
   border-radius: 12px;
   border: 2px solid rgba(212,175,55,0.55);
   background: rgba(26,71,42,0.9);
-  color: #D4AF37;
+  color: #775A19;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.4px;
@@ -3663,15 +3724,15 @@ body.tv-mode #app {
 }
 
 .waggle-sfx-toggle.is-on {
-  background: #D4AF37;
-  color: #0F1A2E;
-  border-color: #D4AF37;
+  background: #775A19;
+  color: #002046;
+  border-color: #775A19;
 }
 
 /* Score Entry UX Animations */
 @keyframes scoreFlashEagle {
   0% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
-  30% { background: #D4AF37; border-color: #D4AF37; color: #1C1C19; transform: scale(1.05); }
+  30% { background: #775A19; border-color: #775A19; color: #1C1C19; transform: scale(1.05); }
   100% { background: var(--mg-surface); border-color: var(--mg-border); transform: scale(1); }
 }
 

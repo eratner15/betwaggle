@@ -40,6 +40,17 @@
     .step-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
     .step h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--navy-dark); margin-bottom: 6px; }
     .step .desc { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+    .journey-banner { display:none; max-width:480px; margin:0 auto 18px; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg, rgba(27,43,75,0.95), rgba(42,63,102,0.95)); color:#FAF8F5; box-shadow:0 12px 28px rgba(15,26,46,0.12); }
+    .journey-banner.show { display:block; }
+    .journey-banner .eyebrow { font-size:10px; font-weight:800; letter-spacing:1.7px; text-transform:uppercase; color:#D4B96A; margin-bottom:6px; }
+    .journey-banner .headline { font-family:'Playfair Display', serif; font-size:22px; font-weight:700; line-height:1.1; margin-bottom:6px; }
+    .journey-banner .copy { font-size:13px; line-height:1.55; color:rgba(250,248,245,0.82); }
+    .setup-preview { max-width:480px; margin:0 auto 18px; padding:16px; border-radius:16px; background:linear-gradient(180deg,#FFFFFF 0%, #F6F2EB 100%); border:1px solid rgba(27,43,75,0.08); box-shadow:0 12px 28px rgba(15,26,46,0.06); }
+    .setup-preview .eyebrow { font-size:10px; font-weight:800; letter-spacing:1.7px; text-transform:uppercase; color:#775A19; margin-bottom:6px; }
+    .setup-preview .headline { font-family:'Playfair Display', serif; font-size:22px; font-weight:700; line-height:1.1; color:var(--navy-dark); margin-bottom:8px; }
+    .setup-preview .copy { font-size:13px; line-height:1.55; color:#4A5568; margin-bottom:12px; }
+    .setup-preview .chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .setup-preview .chip { display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px; background:rgba(27,43,75,0.05); border:1px solid rgba(27,43,75,0.06); font-size:11px; font-weight:700; color:var(--navy-dark); }
 
     /* Inputs */
     input, select { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; font-family: inherit; background: #fff; color: var(--text); transition: border 0.2s; }
@@ -122,6 +133,8 @@
 </div>
 
 <div class="content">
+  <div id="journey-banner" class="journey-banner" aria-live="polite"></div>
+  <div id="setup-preview" class="setup-preview" aria-live="polite"></div>
 
   <!-- STEP 1: PLAYERS -->
   <div class="step" id="step-1">
@@ -163,8 +176,8 @@
   <!-- STEP 2: COURSE -->
   <div class="step" id="step-2">
     <div class="step-label">Step 2 of 3</div>
-    <h2>Where are you playing?</h2>
-    <p class="desc">Search 17,000+ US courses. Scorecard data loads automatically.</p>
+    <h2 id="step2-title">Where are you playing?</h2>
+    <p class="desc" id="step2-desc">Search 17,000+ US courses. Scorecard data loads automatically.</p>
 
     <div style="position:relative;margin-bottom:16px">
       <input type="text" id="course-search" placeholder="Search by course name or city" oninput="searchCourses(this.value)" autocomplete="off">
@@ -181,8 +194,8 @@
   <!-- STEP 3: GAMES -->
   <div class="step" id="step-3">
     <div class="step-label">Step 3 of 3</div>
-    <h2>What are you playing?</h2>
-    <p class="desc">Pick your games and set the stakes. You can change this later.</p>
+    <h2 id="step3-title">What are you playing?</h2>
+    <p class="desc" id="step3-desc">Pick your games and set the stakes. You can change this later.</p>
 
     <div id="game-list"></div>
 
@@ -207,6 +220,12 @@ const S = {
   courseHcpIndex: null,
   games: {},
   stakes: {},
+};
+
+const JOURNEY = {
+  mode: 'default',
+  sourceSlug: '',
+  sourceName: '',
 };
 
 const GAMES = [
@@ -241,16 +260,20 @@ async function quickStart() {
     const courses = await res.json();
 
     if (courses.length > 0) {
-      const c = courses[0];
-      statusEl.innerHTML = '<span style="color:var(--win)">&#10003;</span> Found <strong>' + esc(c.name || c.club_name) + '</strong>';
+      statusEl.innerHTML = '<span style="color:var(--win)">&#10003;</span> ' + courses.length + ' courses nearby';
 
-      // Auto-select the course
-      await selectCourse(c);
-
-      // Suggest games based on player count
-      if (S.players.length >= 2) {
-        suggestGames();
-      }
+      // Show dropdown of nearby courses
+      const el = document.getElementById('course-results');
+      el.innerHTML = courses.map(c =>
+        '<div class="course-result" onclick=\'selectCourse(' + JSON.stringify(c).replace(/'/g, '&#39;') + ')\'>' +
+          '<div style="font-weight:600;font-size:14px">' + esc(c.name || c.club_name) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted)">' + esc(c.location || ((c.city || '') + (c.state ? ', ' + c.state : ''))) +
+            (c.distance_miles ? ' &middot; ' + c.distance_miles.toFixed(1) + ' mi' : '') +
+            (c.has_scorecard ? ' &middot; <span style="color:var(--seafoam)">Scorecard loaded</span>' : '') +
+          '</div>' +
+        '</div>'
+      ).join('');
+      el.style.display = 'block';
     } else {
       statusEl.textContent = 'No courses found nearby. Search manually below.';
     }
@@ -308,17 +331,22 @@ function setFormat(fmt) {
 
   if (fmt === 'round') {
     S.eventType = 'quick';
-    title.textContent = "Who's playing?";
-    desc.textContent = 'Search by name to auto-pull GHIN handicaps, or enter manually.';
+    title.textContent = isWeeklyJourney() ? "Who's back in the game?" : "Who's playing?";
+    desc.textContent = isWeeklyJourney()
+      ? 'We pulled the old group forward. Trim the field, add a ringer, or keep it moving.'
+      : 'Search by name to auto-pull GHIN handicaps, or enter manually.';
   } else if (fmt === 'scramble') {
     S.eventType = 'scramble';
-    title.textContent = "Who's in the scramble?";
-    desc.textContent = 'Add all players. You\'ll assign teams after selecting a course.';
+    title.textContent = isWeeklyJourney() ? "Who's back for the next scramble?" : "Who's in the scramble?";
+    desc.textContent = isWeeklyJourney()
+      ? 'Start from the same roster and tighten the teams once the crew commits.'
+      : 'Add all players. You\'ll assign teams after selecting a course.';
   } else if (fmt === 'tournament') {
     S.eventType = 'member_guest';
     title.textContent = "Who's in the tournament?";
     desc.textContent = 'Add member-guest pairs. Flights and matchups come next.';
   }
+  updateJourneyCopy();
 }
 
 // ── Navigation ──
@@ -331,7 +359,7 @@ function goToStep(n) {
     dot.className = 'prog-dot' + (i < n ? ' done' : i === n ? ' active' : '');
   }
   const btn = document.getElementById('next-btn');
-  if (n === 3) btn.textContent = 'Open the Book';
+  if (n === 3) btn.textContent = isWeeklyJourney() ? 'Open the Weekly Book' : 'Open the Book';
   else if (n === 2) btn.textContent = 'Next — Pick Games';
   else btn.textContent = 'Next — Select Course';
   window.scrollTo(0, 0);
@@ -411,6 +439,7 @@ function renderPlayers() {
   const el = document.getElementById('player-list');
   if (S.players.length === 0) {
     el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No players added yet</div>';
+    renderSetupPreview();
     return;
   }
   el.innerHTML = S.players.map((p, i) =>
@@ -421,6 +450,7 @@ function renderPlayers() {
     '</div>'
   ).join('');
   document.getElementById('step1-error').textContent = '';
+  renderSetupPreview();
 }
 
 // ── Step 2: Course ──
@@ -505,7 +535,7 @@ function skipCourse() {
 
 function renderSelectedCourse() {
   const el = document.getElementById('selected-course');
-  if (!S.course) { el.innerHTML = ''; return; }
+  if (!S.course) { el.innerHTML = ''; renderSetupPreview(); return; }
   const c = S.course;
   const totalPar = S.coursePars ? S.coursePars.reduce((a, b) => a + b, 0) : 72;
   const hasScorecard = S.coursePars && S.coursePars.some(p => p !== 4);
@@ -518,6 +548,7 @@ function renderSelectedCourse() {
       '<div class="cscorecard">' + (hasScorecard ? '&#10003; Full scorecard loaded' : 'Default par 72 — you can edit pars on the scorecard') + '</div>' +
     '</div>' +
     '<button class="btn-sm" onclick="changeCourse()" style="width:100%">Change Course</button>';
+  renderSetupPreview();
 }
 
 function changeCourse() {
@@ -527,6 +558,50 @@ function changeCourse() {
   document.getElementById('selected-course').innerHTML = '';
   document.getElementById('course-search').value = '';
   document.getElementById('course-search').focus();
+  renderSetupPreview();
+}
+
+// Pick CTP holes based on mode
+function pickCtpHoles(pars, mode) {
+  const par3Front = []; // holes 1-9
+  const par3Back = [];  // holes 10-18
+  pars.forEach((p, i) => {
+    if (p === 3) {
+      if (i < 9) par3Front.push(i + 1);
+      else par3Back.push(i + 1);
+    }
+  });
+  if (mode === 'overall') {
+    // Pick 1 par 3 from the whole course (prefer middle of round)
+    const all = [...par3Front, ...par3Back];
+    if (all.length === 0) return [4]; // fallback
+    // Pick the one closest to hole 9 for drama
+    all.sort((a, b) => Math.abs(a - 9) - Math.abs(b - 9));
+    return [all[0]];
+  }
+  // per-side: 1 from front, 1 from back
+  const picks = [];
+  if (par3Front.length > 0) picks.push(par3Front[0]);
+  if (par3Back.length > 0) picks.push(par3Back[0]);
+  if (picks.length === 0) picks.push(4, 13); // fallback
+  return picks;
+}
+
+// Pick LD hole: 1 par 5, not a starting hole (1 or 10)
+function pickLdHole(pars) {
+  const candidates = [];
+  pars.forEach((p, i) => {
+    const holeNum = i + 1;
+    if (p === 5 && holeNum !== 1 && holeNum !== 10) {
+      candidates.push(holeNum);
+    }
+  });
+  if (candidates.length > 0) return [candidates[0]];
+  // Fallback: any par 5
+  const anyPar5 = pars.findIndex(p => p === 5);
+  if (anyPar5 >= 0) return [anyPar5 + 1];
+  // No par 5s: pick a long par 4 (hole 5 as default)
+  return [5];
 }
 
 // ── Step 3: Games ──
@@ -538,21 +613,42 @@ function renderGames() {
     { id: 'scramble', name: 'Team Scramble', desc: 'Best ball from each team. Lowest team score wins.', defaultStake: 10 },
     { id: 'skins', name: 'Team Skins', desc: 'Best team score wins the hole. Ties carry.', defaultStake: 5 },
     { id: 'stroke_play', name: 'Stroke Play', desc: 'Lowest total team score. The classic.', defaultStake: 0 },
+    { id: 'ctp', name: 'Closest to Pin', desc: 'Par 3 holes. Choose 1 per side or 1 overall.', defaultStake: 5, hasMode: true },
+    { id: 'ld', name: 'Longest Drive', desc: 'One par 5 hole (not a starting hole).', defaultStake: 5 },
   ];
   const gamesList = isScramble ? SCRAMBLE_GAMES : GAMES;
-  el.innerHTML = gamesList.filter(g => (!g.min || playerCount >= g.min) && (!g.max || playerCount <= g.max)).map(g => {
+  const eligibleGames = gamesList.filter(g => (!g.min || playerCount >= g.min) && (!g.max || playerCount <= g.max));
+  const selectedCount = Object.keys(S.games).filter(k => S.games[k]).length;
+  if (!selectedCount && eligibleGames.length > 0) {
+    const defaultGame = eligibleGames.find(g => g.id === (isScramble ? 'scramble' : 'nassau')) || eligibleGames[0];
+    S.games[defaultGame.id] = true;
+    if (!S.stakes[defaultGame.id]) {
+      S.stakes[defaultGame.id] = defaultGame.defaultStake || 5;
+    }
+  }
+  if (!S.ctpMode) S.ctpMode = 'per-side'; // default: 1 CTP per side (front + back)
+  el.innerHTML = eligibleGames.map(g => {
     const selected = !!S.games[g.id];
     const stake = S.stakes[g.id] ?? g.defaultStake;
+    let extra = '';
+    if (selected && g.id === 'ctp') {
+      extra = '<div style="margin-top:8px;display:flex;gap:6px" onclick="event.stopPropagation()">' +
+        '<button style="flex:1;padding:8px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ' + (S.ctpMode === 'per-side' ? 'var(--gold-primary,#C4A35A)' : '#ccc') + ';background:' + (S.ctpMode === 'per-side' ? 'rgba(196,163,90,0.1)' : '#fff') + ';color:#1B2B4B" onclick="S.ctpMode=\'per-side\';renderGames()">1 Per Side</button>' +
+        '<button style="flex:1;padding:8px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ' + (S.ctpMode === 'overall' ? 'var(--gold-primary,#C4A35A)' : '#ccc') + ';background:' + (S.ctpMode === 'overall' ? 'rgba(196,163,90,0.1)' : '#fff') + ';color:#1B2B4B" onclick="S.ctpMode=\'overall\';renderGames()">1 Overall</button>' +
+      '</div>';
+    }
     return '<div class="game-pick' + (selected ? ' selected' : '') + '" onclick="toggleGame(\'' + g.id + '\', event)">' +
       '<div style="flex:1">' +
         '<div class="gp-name">' + esc(g.name) + '</div>' +
         '<div class="gp-desc">' + esc(g.desc) + '</div>' +
+        extra +
       '</div>' +
       (selected && g.defaultStake > 0 ?
         '<input type="number" class="stake-input" value="' + stake + '" min="0" max="500" onclick="event.stopPropagation()" oninput="setStake(\'' + g.id + '\', this.value)">' : '') +
       '<div class="gp-check">' + (selected ? '&#10003;' : '') + '</div>' +
     '</div>';
   }).join('');
+  renderSetupPreview();
 }
 
 function toggleGame(id, e) {
@@ -567,6 +663,7 @@ function toggleGame(id, e) {
 
 function setStake(id, val) {
   S.stakes[id] = Math.max(0, parseInt(val) || 0);
+  renderSetupPreview();
 }
 
 // ── Launch ──
@@ -609,6 +706,13 @@ async function launch() {
     pairings: {},
     theme: { primary: '#1B2B4B', accent: '#C4A35A', bg: '#FAF8F5', headerFont: 'Playfair Display', bodyFont: 'system-ui' },
     games: S.games,
+    // CTP/LD hole selection
+    ...((S.games.ctp || S.games.ld) ? { scrambleSideGames: Object.assign({},
+      S.games.ctp ? { closestToPin: pickCtpHoles(S.coursePars || [], S.ctpMode || 'per-side') } : {},
+      S.games.ld ? { longestDrive: pickLdHole(S.coursePars || []) } : {}
+    )} : {}),
+    ...(S.games.ctp ? { ctpPerHole: S.stakes.ctp || 5 } : {}),
+    ...(S.games.ld ? { ldPerHole: S.stakes.ld || 5 } : {}),
     holesPerRound: 18,
     coursePars: S.coursePars || [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4],
     courseHcpIndex: S.courseHcpIndex || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],
@@ -643,46 +747,79 @@ async function launch() {
 function showInviteScreen(slug) {
   const url = window.location.origin + '/' + slug + '/';
   const gameNames = Object.keys(S.games).filter(k => S.games[k]).map(k => {
-    const g = GAMES.find(x => x.id === k);
+    const g = GAMES.find(x => x.id === k) || (S.eventType === 'scramble' ? { name: k } : null);
     return g ? g.name : k;
   });
   const courseName = S.course?.name || S.course?.club_name || 'the course';
-  const shareText = S.players.map(p => p.name).join(', ') + ' — ' + gameNames.join(' + ') + ' at ' + courseName + '. Open on your phone: ' + url;
+  const weeklyMode = isWeeklyJourney();
+  const shareText = weeklyMode
+    ? ('Weekly game is live for ' + S.players.map(p => p.name).join(', ') + ' — ' + gameNames.join(' + ') + ' at ' + courseName + '. Open on your phone: ' + url)
+    : (S.players.map(p => p.name).join(', ') + ' — ' + gameNames.join(' + ') + ' at ' + courseName + '. Open on your phone: ' + url);
+
+  // Generate initials and a consistent color for each player
+  const colors = ['#1B2B4B','#2A3F66','#4A5568','#5B4300'];
 
   document.querySelector('.content').innerHTML = `
-    <div style="max-width:480px;margin:0 auto;text-align:center;padding-top:20px">
-      <div style="font-family:'Playfair Display',serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">WAGGLE</div>
-      <h2 style="font-family:'Playfair Display',serif;font-size:28px;color:var(--navy-dark);margin-bottom:8px">You're Live</h2>
-      <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px">${esc(gameNames.join(' + '))} at ${esc(courseName)}</p>
+    <div style="max-width:480px;margin:0 auto;text-align:center;padding:40px 0 20px">
 
-      <div style="background:#fff;border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:8px;padding:16px;margin-bottom:16px;text-align:left">
-        <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Share with your group</div>
-        <div style="background:var(--ivory-dark);border-radius:6px;padding:10px 12px;font-size:13px;font-family:monospace;word-break:break-all;margin-bottom:12px">${esc(url)}</div>
-        <div style="display:flex;gap:8px">
+      <h1 style="font-family:'Playfair Display',serif;font-size:clamp(36px,8vw,48px);font-weight:700;color:#1A202C;margin-bottom:12px;line-height:1.1">You're Live</h1>
+      <p style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#718096;font-size:15px;font-weight:500;max-width:360px;margin:0 auto 32px;line-height:1.5">
+        ${weeklyMode ? 'Weekly game ready: ' : ''}${esc(gameNames.join(' + '))} at ${esc(courseName)}
+      </p>
+
+      <div style="background:linear-gradient(180deg,#F5F3F0 0%,#F0ECE4 100%);border-radius:16px;padding:28px 24px;margin-bottom:18px;box-shadow:0 16px 30px rgba(15,26,46,0.06)">
+        <div style="font-family:-apple-system,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#718096;margin-bottom:12px">${weeklyMode ? 'Send next week\'s link' : 'Share with your group'}</div>
+        <div style="background:#fff;border-radius:8px;padding:12px 14px;font-family:'SF Mono','Menlo',monospace;font-size:13px;color:#4A5568;word-break:break-all;margin-bottom:16px;border:1px solid rgba(196,163,90,0.12)">${esc(url)}</div>
+        <div style="display:flex;gap:10px">
           <button onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Link',2000)})"
-            style="flex:1;padding:12px;background:var(--gold);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px">
+            style="flex:1;padding:14px;background:linear-gradient(135deg,#755b18,#C4A35A);color:#fff;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:700;cursor:pointer;min-height:52px;box-shadow:0 4px 16px rgba(196,163,90,0.25)">
             Copy Link
           </button>
           <button onclick="navigator.share?.({title:'${esc(courseName)}',text:'${esc(shareText).replace(/'/g,"\\'")}',url:'${url}'}).catch(()=>{})"
-            style="flex:1;padding:12px;background:var(--navy);color:#FAF8F5;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;min-height:48px">
+            style="flex:1;padding:14px;background:#4F5E81;color:#fff;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:700;cursor:pointer;min-height:52px">
             Share
           </button>
         </div>
       </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        ${S.players.map(p => `<div style="flex:1;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-weight:700;font-size:13px">${esc(p.name)}</div>
-          <div style="font-size:11px;color:var(--gold)">HI ${p.handicapIndex}</div>
-        </div>`).join('')}
+      <div style="background:#FFFFFF;border:1px solid rgba(27,43,75,0.08);border-radius:16px;padding:18px 16px;margin-bottom:24px;box-shadow:0 12px 28px rgba(15,26,46,0.04);text-align:left">
+        <div style="font-family:-apple-system,sans-serif;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#775A19;margin-bottom:6px">What Happens Next</div>
+        <div style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#1A202C;line-height:1.1;margin-bottom:8px">${weeklyMode ? 'Get the group back on the card.' : 'Get everyone into the game.'}</div>
+        <div style="font-size:13px;line-height:1.55;color:#4A5568;margin-bottom:12px">${weeklyMode ? 'Share the link now. The same crew can jump straight into scoring, then this turns into the weekly habit loop once the round is done.' : 'Once the link lands in the chat, the group can open the board, see the games, and start scoring without an app install.'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">1. Send link</span>
+          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">2. Open scorecard</span>
+          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">3. Share settlement</span>
+          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(212,163,90,0.10);border:1px solid rgba(212,163,90,0.18);font-size:11px;font-weight:700;color:#775A19">${weeklyMode ? '4. Rebook next week' : '4. Reuse the crew next week'}</span>
+        </div>
       </div>
 
-      <a href="/${slug}/#scorecard" style="display:block;width:100%;padding:18px;background:var(--gold);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;text-decoration:none;text-align:center;min-height:56px;margin-bottom:12px">
-        Start Scoring &rarr;
+      <div style="text-align:left;margin-bottom:32px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+          <h3 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:#1A202C">The Field</h3>
+          <span style="font-family:-apple-system,sans-serif;font-size:11px;color:#718096;letter-spacing:0.5px">${S.players.length} PLAYERS JOINED</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(${Math.min(S.players.length, 4)},1fr);gap:12px">
+          ${S.players.map((p, i) => {
+            const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+            const bg = colors[i % colors.length];
+            return `<div style="background:#fff;padding:16px 12px;border-radius:12px;text-align:center;box-shadow:0 4px 16px rgba(27,28,26,0.05)">
+              <div style="width:48px;height:48px;border-radius:50%;background:${bg};margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:-apple-system,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.5px">${initials}</div>
+              <div style="font-family:-apple-system,sans-serif;font-weight:700;font-size:14px;color:#1A202C">${esc(p.name.split(' ').pop())}</div>
+              <div style="font-family:-apple-system,sans-serif;font-size:11px;color:#755b18;font-weight:700;text-transform:uppercase;margin-top:4px">HI ${p.handicapIndex || 0}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <a href="/${slug}/?composer=1#scorecard" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:20px;background:linear-gradient(135deg,#755b18,#C4A35A);color:#fff;border:none;border-radius:12px;font-family:-apple-system,sans-serif;font-size:18px;font-weight:700;text-decoration:none;min-height:56px;margin-bottom:16px;box-shadow:0 8px 24px rgba(196,163,90,0.3)">
+        ${weeklyMode ? 'Open Weekly Scoring' : 'Start Scoring'}
+        <span style="font-size:20px">&rarr;</span>
       </a>
-      <a href="/${slug}/#dashboard" style="display:block;font-size:13px;color:var(--text-muted);text-decoration:none;padding:12px">
-        Go to Dashboard
-      </a>
+      <a href="/${slug}/#dashboard" style="display:flex;align-items:center;justify-content:center;gap:6px;font-family:-apple-system,sans-serif;font-size:14px;color:#755b18;font-weight:600;text-decoration:none;padding:14px;min-height:56px;margin-bottom:10px">
+        Preview Dashboard
+        </a>
+      <div style="font-size:12px;line-height:1.5;color:#718096;max-width:360px;margin:0 auto">${weeklyMode ? 'Next pass: make the group chat share card even tighter so one screenshot sells the recurring game.' : 'Next pass: tighten the share card so the first screenshot sells the product before anyone even taps.'}</div>
     </div>`;
   document.querySelector('.bottom-bar').style.display = 'none';
   document.querySelector('.progress').style.display = 'none';
@@ -691,9 +828,171 @@ function showInviteScreen(slug) {
 // ── Helpers ──
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function isWeeklyJourney() {
+  return JOURNEY.mode === 'weekly' || !!JOURNEY.sourceSlug;
+}
+
+function updateJourneyCopy() {
+  const headerTitle = document.querySelector('.header .title');
+  const banner = document.getElementById('journey-banner');
+  const step2Title = document.getElementById('step2-title');
+  const step2Desc = document.getElementById('step2-desc');
+  const step3Title = document.getElementById('step3-title');
+  const step3Desc = document.getElementById('step3-desc');
+
+  if (!isWeeklyJourney()) {
+    document.title = 'Create Your Outing — Waggle';
+    if (headerTitle) headerTitle.textContent = 'Create Your Outing';
+    if (banner) {
+      banner.className = 'journey-banner';
+      banner.innerHTML = '';
+    }
+    if (step2Title) step2Title.textContent = 'Where are you playing?';
+    if (step2Desc) step2Desc.textContent = 'Search 17,000+ US courses. Scorecard data loads automatically.';
+    if (step3Title) step3Title.textContent = 'What are you playing?';
+    if (step3Desc) step3Desc.textContent = 'Pick your games and set the stakes. You can change this later.';
+    renderSetupPreview();
+    return;
+  }
+
+  document.title = 'Start the Next Game — Waggle';
+  if (headerTitle) headerTitle.textContent = 'Start the Next Game';
+  if (step2Title) step2Title.textContent = 'Where is next week happening?';
+  if (step2Desc) step2Desc.textContent = 'Keep the usual course or switch venues. The scorecard and setup stay fast.';
+  if (step3Title) step3Title.textContent = 'What stays on the card?';
+  if (step3Desc) step3Desc.textContent = 'Keep the best games from the trip, trim the fluff, and lock next week\'s stakes.';
+  if (banner) {
+    const sourceLine = JOURNEY.sourceName ? `Built from ${esc(JOURNEY.sourceName)}.` : 'Built from your last group.';
+    banner.className = 'journey-banner show';
+    banner.innerHTML = `
+      <div class="eyebrow">Weekly Money Game</div>
+      <div class="headline">Turn the trip into a habit.</div>
+      <div class="copy">${sourceLine} Same players, same formats, faster setup so the group wants to come back next week.</div>
+    `;
+  }
+  renderSetupPreview();
+}
+
+function renderSetupPreview() {
+  const preview = document.getElementById('setup-preview');
+  if (!preview) return;
+
+  const selectedGames = Object.keys(S.games).filter((k) => S.games[k]);
+  const formatLabel = S.eventType === 'scramble'
+    ? 'Scramble Card'
+    : S.eventType === 'member_guest'
+      ? 'Tournament Card'
+      : (isWeeklyJourney() ? 'Weekly Money Card' : 'Money Game Card');
+  const playerCount = S.players.length;
+  const courseName = S.course?.name || S.course?.club_name || 'Course not picked yet';
+  const mainGame = selectedGames[0]
+    ? (GAMES.find((g) => g.id === selectedGames[0])?.name || selectedGames[0])
+    : 'Choose your first game';
+  const stakesLine = selectedGames.slice(0, 2).map((gameId) => {
+    const game = GAMES.find((g) => g.id === gameId);
+    const label = game?.name || gameId;
+    const stake = S.stakes[gameId];
+    return stake > 0 ? `${label} $${stake}` : label;
+  });
+  const copy = playerCount < 2
+    ? 'Start with the field. Once two or more players are in, the rest of the ledger gets fast.'
+    : !S.course
+      ? 'The roster is in. Pick a course or skip it, then dial in the games and stakes.'
+      : selectedGames.length === 0
+        ? 'The field and course are ready. Pick the games that make the group want to keep checking the card.'
+        : isWeeklyJourney()
+          ? 'This already feels like a recurring game: keep the best format, trim setup time, and reopen the action next week.'
+          : 'The bones are there. Tighten the card, share the link, and get the group scoring.';
+
+  preview.innerHTML = `
+    <div class="eyebrow">Ledger Preview</div>
+    <div class="headline">${formatLabel}</div>
+    <div class="copy">${copy}</div>
+    <div class="chips">
+      <span class="chip">${playerCount} ${playerCount === 1 ? 'Player' : 'Players'}</span>
+      <span class="chip">${esc(courseName)}</span>
+      <span class="chip">${selectedGames.length} ${selectedGames.length === 1 ? 'Game' : 'Games'}</span>
+      <span class="chip">${esc(mainGame)}</span>
+      ${stakesLine.map((line) => `<span class="chip">${esc(line)}</span>`).join('')}
+    </div>
+  `;
+}
+
+function deriveStakesFromConfig(config) {
+  const structure = config?.structure || {};
+  return {
+    nassau: structure.nassauBet || 10,
+    skins: structure.skinsBet || 5,
+    wolf: structure.wolfBet || 5,
+    vegas: structure.vegasBet || 1,
+    stableford: structure.stablefordBet || 5,
+    match_play: structure.matchPlayBet || 10,
+    banker: structure.bankerBet || 5,
+    bingo: structure.bbbBet || 5,
+    bloodsome: structure.bloodsomeBet || 5,
+    nines: structure.ninesBet || 1,
+    ctp: config?.ctpPerHole || 5,
+    ld: config?.ldPerHole || 5,
+  };
+}
+
+function applyCloneConfig(cloneConfig) {
+  JOURNEY.sourceName = cloneConfig?.event?.name || '';
+  const eventType = cloneConfig?.event?.eventType || cloneConfig?.eventType || 'quick';
+  if (eventType === 'scramble') setFormat('scramble');
+  else setFormat('round');
+
+  S.games = { ...(cloneConfig?.games || {}) };
+  S.stakes = deriveStakesFromConfig(cloneConfig);
+  S.players = (cloneConfig?.players || cloneConfig?.roster || []).map((p) => ({
+    name: p.name || p.member || '',
+    handicapIndex: p.handicapIndex ?? p.handicap ?? 0,
+    ghin: p.ghin || null,
+    club: p.club || '',
+  })).filter((p) => p.name);
+  if (cloneConfig?.course) {
+    S.course = {
+      id: cloneConfig.course.id || 'clone-course',
+      name: cloneConfig.course.name || cloneConfig.course.club_name || 'Course',
+      club_name: cloneConfig.course.club_name || cloneConfig.course.name || 'Course',
+      city: cloneConfig.course.city || '',
+      state: cloneConfig.course.state || '',
+    };
+  }
+  S.coursePars = Array.isArray(cloneConfig?.coursePars) && cloneConfig.coursePars.length >= 18
+    ? cloneConfig.coursePars.slice(0, 18)
+    : S.coursePars;
+  S.courseHcpIndex = Array.isArray(cloneConfig?.courseHcpIndex) && cloneConfig.courseHcpIndex.length >= 18
+    ? cloneConfig.courseHcpIndex.slice(0, 18)
+    : S.courseHcpIndex;
+  renderPlayers();
+  renderSelectedCourse();
+  renderGames();
+}
+
+async function initJourneyFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  JOURNEY.mode = (params.get('mode') || '').toLowerCase() === 'weekly' ? 'weekly' : 'default';
+  JOURNEY.sourceSlug = params.get('clone') || params.get('ref') || '';
+  updateJourneyCopy();
+  setFormat(S.format);
+
+  if (!JOURNEY.sourceSlug || JOURNEY.sourceSlug === 'true') return;
+
+  try {
+    const res = await fetch('/' + encodeURIComponent(JOURNEY.sourceSlug) + '/api/event/clone-config');
+    const data = await res.json();
+    if (!data?.ok || !data.config) return;
+    applyCloneConfig(data.config);
+    updateJourneyCopy();
+  } catch (_) {}
+}
+
 // ── Init ──
 goToStep(1);
 renderPlayers();
+updateJourneyCopy();
+initJourneyFromQuery();
 
 // Handle Enter key on manual inputs
 document.getElementById('manual-name').addEventListener('keydown', e => { if (e.key === 'Enter') addManualPlayer(); });
