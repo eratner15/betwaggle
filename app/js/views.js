@@ -1173,16 +1173,14 @@ export function renderScrambleLeaderboard(state) {
       </div>
       <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:30px;font-weight:700;color:#FCF9F4;line-height:1.02;max-width:300px">${escHtml(eventName)}</div>
       <div style="font-size:13px;line-height:1.55;color:rgba(252,249,244,0.76);margin-top:8px;max-width:320px">${heroCopy}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-        <span class="mg-scramble-eyebrow">${totalTeams} teams</span>
-        <span class="mg-scramble-eyebrow">${escHtml(formatLabel)}</span>
-        <span class="mg-scramble-eyebrow">${venue ? escHtml(venue) + ' · ' : ''}R${roundNum}</span>
-      </div>
-      <div class="mg-scramble-stat-grid">
-        <div class="mg-scramble-stat">
-          <div class="mg-scramble-stat-label">Purse</div>
-          <div class="mg-scramble-stat-value">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() : 'Live'}</div>
+      <div style="margin-top:16px;padding:16px 18px;border-radius:18px;background:linear-gradient(135deg,rgba(196,163,90,0.18) 0%,rgba(196,163,90,0.06) 100%);border:1px solid rgba(196,163,90,0.32)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:2px">
+          <div class="mg-scramble-stat-label" style="margin-bottom:0">Purse on the line</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(252,249,244,0.58)">${totalTeams} teams &middot; ${escHtml(formatLabel)}</div>
         </div>
+        <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:44px;font-weight:700;color:#F3D79A;line-height:1;letter-spacing:-0.01em">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() : 'Live'}</div>
+      </div>
+      <div class="mg-scramble-stat-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
         <div class="mg-scramble-stat">
           <div class="mg-scramble-stat-label">Status</div>
           <div class="mg-scramble-stat-value">${roundComplete ? 'Final' : holesPlayed === 0 ? 'Ready' : 'Thru ' + holesPlayed}</div>

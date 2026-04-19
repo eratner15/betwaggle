@@ -1055,6 +1055,20 @@ export default {
       return env.ASSETS.fetch(wizReq);
     }
 
+    // /start/ — warm-referral onboarding page (static)
+    if (url.pathname === '/start') {
+      return Response.redirect('https://betwaggle.com/start/', 301);
+    }
+    if (url.pathname === '/start/') {
+      ctx.waitUntil(trackFunnelEvent(env, 'visit', {
+        path: '/start',
+        referrer: request.headers.get('referer') || '',
+        userAgent: request.headers.get('user-agent') || '',
+      }));
+      const startReq = new Request(new URL('/start/', request.url), request);
+      return env.ASSETS.fetch(startReq);
+    }
+
     // /overview/ — GM operations guide (static)
     if (url.pathname === '/overview') {
       return Response.redirect('https://betwaggle.com/overview/', 301);
@@ -7005,8 +7019,8 @@ async function serveEventHtml(slug, request, env) {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.72);border:1px solid rgba(27,54,93,0.08);box-shadow:0 8px 18px rgba(27,54,93,0.04)">
-          <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span>
-          <span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#1B365D">Live Trip</span>
+          <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C4A35A;box-shadow:0 0 6px rgba(196,163,90,0.72);animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span>
+          <span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#775A19">Live Trip</span>
         </div>
         <nav style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.74);border:1px solid rgba(27,54,93,0.08);border-radius:18px;padding:4px;box-shadow:0 8px 20px rgba(27,54,93,0.04)">
           <a href="#dashboard" data-tab="dashboard" style="font-family:'Noto Serif',Georgia,serif;font-size:14px;font-weight:700;padding:9px 14px;border-radius:14px;min-height:42px;display:flex;align-items:center;text-decoration:none;color:rgba(27,54,93,0.54);transition:color .15s,background .15s">Home</a>
