@@ -1223,22 +1223,27 @@ export function renderScrambleLeaderboard(state) {
         <div class="copy">${nextPressureCopy}</div>
       </div>`;
     if (ctpHoles.length > 0 || ldHoles.length > 0) {
+      const ctpPrizePerHole = config?.scramblePrizePool?.ctpPerHole || 0;
       const renderSideGameLine = (hole, kind, normalized) => {
         const played = scoredHoles.includes(hole);
+        const pillBase = 'font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap';
+        // Higher-contrast pill palette: solid gold/coral for awarded/deferred (pops off dark navy),
+        // muted outline for open/waiting (read as "needs action").
         const statusPill = normalized.status === 'awarded'
-          ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(243,215,154,0.18);color:#F3D79A">Awarded</span>`
+          ? `<span style="${pillBase};background:#C4A35A;color:#0A1834">Awarded</span>`
           : normalized.status === 'deferred'
-            ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(232,115,90,0.18);color:#F2A090">Deferred</span>`
+            ? `<span style="${pillBase};background:#E8735A;color:#FCF9F4">Deferred</span>`
             : played
-              ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.62)">Open</span>`
-              : `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(252,249,244,0.04);color:rgba(252,249,244,0.4)">Waiting</span>`;
+              ? `<span style="${pillBase};background:transparent;border:1px solid rgba(243,215,154,0.45);color:#F3D79A">Open</span>`
+              : `<span style="${pillBase};background:transparent;border:1px solid rgba(252,249,244,0.18);color:rgba(252,249,244,0.46)">Waiting</span>`;
         const winnerText = normalized.status === 'awarded' ? normalized.winnerLabel : '';
+        const prizeHint = (kind === 'ctp' && ctpPrizePerHole > 0) ? `<span style="font-size:10px;font-weight:700;color:rgba(252,249,244,0.38);margin-left:6px;font-family:'SF Mono',monospace">$${ctpPrizePerHole}</span>` : '';
         const adminResolveBtn = state.adminAuthed && (normalized.status !== 'awarded') && played
-          ? `<button onclick="window.MG.openSideGameResolver('${kind}',${hole})" style="margin-top:6px;padding:6px 10px;min-height:32px;border-radius:6px;border:1px solid rgba(243,215,154,0.35);background:transparent;color:#F3D79A;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Resolve</button>`
+          ? `<button data-kind="${kind}" data-hole="${hole}" onclick="window.MG.openSideGameResolver(this.dataset.kind, Number(this.dataset.hole))" style="margin-top:6px;padding:6px 10px;min-height:32px;border-radius:6px;border:1px solid rgba(243,215,154,0.45);background:transparent;color:#F3D79A;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Resolve</button>`
           : '';
-        return `<div class="mg-scramble-sidegame-item" style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+        return `<div class="mg-scramble-sidegame-item" style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(252,249,244,0.06)">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px">
-            <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.78)">Hole ${hole}</span>
+            <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.82)">Hole ${hole}${prizeHint}</span>
             ${statusPill}
           </div>
           ${winnerText ? `<span style="font-size:11px;font-weight:600;color:#F3D79A;line-height:1.3">${escHtml(String(winnerText).split('(')[0].trim())}</span>` : ''}
@@ -1250,7 +1255,7 @@ export function renderScrambleLeaderboard(state) {
         <div class="mg-scramble-sidegame-grid">`;
       if (ctpHoles.length > 0) {
         html += `<div class="mg-scramble-sidegame-card">
-          <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Closest to pin</div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Closest to pin${ctpPrizePerHole > 0 ? ` · $${ctpPrizePerHole}/hole` : ''}</div>
           ${ctpHoles.map((hole) => renderSideGameLine(hole, 'ctp', normalizeScrambleSideGameEntry(ctpResults[hole]))).join('')}
         </div>`;
       }
