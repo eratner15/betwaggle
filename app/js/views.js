@@ -1003,31 +1003,123 @@ export function renderNamePickerModal(state) {
   </div>`;
 }
 
+function normalizeScrambleSideGameEntry(raw) {
+  if (!raw) return { status: 'unresolved', winnerLabel: '' };
+  if (typeof raw === 'string') return { status: 'awarded', winnerLabel: raw };
+  const winnerLabel = raw.winnerLabel || raw.winnerTeam || raw.winnerPlayer || raw.winner || '';
+  return {
+    status: raw.status || (winnerLabel ? 'awarded' : 'unresolved'),
+    winnerLabel,
+    note: raw.note || '',
+  };
+}
+
+function deriveScrambleBoardState(state) {
+  const config = state._config || {};
+  const gameState = state._gameState || {};
+  const holes = state._holes || {};
+  const holesPerRound = config?.holesPerRound || 18;
+  const pars = getCoursePars(config);
+  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const holesPlayed = scoredHoles.length;
+  const latestHole = holesPlayed > 0 ? Math.max(...scoredHoles) : 0;
+  const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
+  const roundComplete = holesPlayed >= holesPerRound;
+  const holesRemaining = Math.max(holesPerRound - holesPlayed, 0);
+  const scramble = gameState?.scramble || {};
+  const leaderboard = scramble?.leaderboard || [];
+  const totalTeams = leaderboard.length || (config?.scrambleTeams?.length || config?.roster?.length || 0);
+  const entryFee = config?.scrambleEntryFee || 0;
+  const prizePool = config?.scramblePrizePool || {};
+  const totalPool = prizePool.total || (entryFee * totalTeams);
+  const sideGames = config?.scrambleSideGames || {};
+  const ctpHoles = sideGames.closestToPin || [];
+  const ldHoles = sideGames.longestDrive || [];
+  const ctpResults = gameState?.sideGames?.ctp || {};
+  const ldResults = gameState?.sideGames?.ld || {};
+  const unresolvedCtp = ctpHoles.filter((hole) => normalizeScrambleSideGameEntry(ctpResults[hole]).status !== 'awarded');
+  const unresolvedLd = ldHoles.filter((hole) => normalizeScrambleSideGameEntry(ldResults[hole]).status !== 'awarded');
+  const totalUnresolvedSideGames = unresolvedCtp.length + unresolvedLd.length;
+  const leader = leaderboard[0] || null;
+  const runnerUp = leaderboard[1] || null;
+  const leadMargin = leader && runnerUp ? ((runnerUp.total || 0) - (leader.total || 0)) : null;
+  const boardState = roundComplete
+    ? 'final'
+    : holesPlayed === 0
+      ? 'prestart'
+      : holesPlayed <= 4
+        ? 'opening'
+        : holesRemaining <= 4
+          ? 'closing'
+          : 'midround';
+
+  return {
+    config,
+    gameState,
+    holes,
+    holesPerRound,
+    pars,
+    scoredHoles,
+    holesPlayed,
+    latestHole,
+    nextHole,
+    roundComplete,
+    holesRemaining,
+    scramble,
+    leaderboard,
+    totalTeams,
+    totalPool,
+    prizePool,
+    sideGames,
+    ctpHoles,
+    ldHoles,
+    ctpResults,
+    ldResults,
+    unresolvedCtp,
+    unresolvedLd,
+    totalUnresolvedSideGames,
+    leader,
+    runnerUp,
+    leadMargin,
+    boardState,
+  };
+}
+
 /**
  * Scramble Leaderboard — unified "board is the book" view for scramble/outing events ($149 tier).
  * Mirrors the buddies trip experience: event header, inline score entry, Augusta-style
  * leaderboard with betting lines, live ticker, side games, Calcutta, sponsors, and sharing.
  */
 export function renderScrambleLeaderboard(state) {
-  const config = state._config;
-  const gameState = state._gameState;
-  const scramble = gameState?.scramble;
-  const holes = state._holes || {};
-  const holesPerRound = config?.holesPerRound || 18;
-  const pars = getCoursePars(config);
+  const derived = deriveScrambleBoardState(state);
+  const {
+    config,
+    gameState,
+    scramble,
+    holes,
+    holesPerRound,
+    pars,
+    scoredHoles,
+    holesPlayed,
+    latestHole,
+    nextHole,
+    roundComplete,
+    holesRemaining,
+    leaderboard,
+    totalTeams,
+    totalPool,
+    prizePool,
+    ctpHoles,
+    ldHoles,
+    ctpResults,
+    ldResults,
+    totalUnresolvedSideGames,
+    leader,
+    runnerUp,
+    leadMargin,
+    boardState,
+  } = derived;
   const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
-  const scoredHoles = Object.keys(holes).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-  const holesPlayed = scoredHoles.length;
-  const latestHole = holesPlayed > 0 ? Math.max(...scoredHoles) : 0;
-  const nextHole = latestHole < holesPerRound ? latestHole + 1 : holesPerRound;
-  const roundComplete = holesPlayed >= holesPerRound;
-  const holesRemaining = holesPerRound - holesPlayed;
-
-  // Teams & prize pool
-  const leaderboard = scramble?.leaderboard || [];
-  const totalTeams = leaderboard.length || (config?.scrambleTeams?.length || config?.roster?.length || 0);
-  const entryFee = config?.scrambleEntryFee || 0;
-  const totalPool = entryFee * (totalTeams || 0);
   const formatLabel = config?.scrambleFormat ? config.scrambleFormat.replace(/_/g, ' ') : 'Scramble';
   const calcuttaTeams = state._calcutta?.teams || {};
   const slug = state._slug || (location.pathname.match(/\/waggle\/([a-z0-9_-]+)/)?.[1]) || 'event';
@@ -1042,59 +1134,129 @@ export function renderScrambleLeaderboard(state) {
   else if (staleness > 30) { freshnessColor = 'var(--gold-bright)'; freshnessLabel = 'DELAYED'; }
 
   // Prize payouts
-  const first = totalPool > 0 ? Math.round(totalPool * 0.5) : 0;
-  const second = totalPool > 0 ? Math.round(totalPool * 0.25) : 0;
-  const third = totalPool > 0 ? Math.round(totalPool * 0.15) : 0;
+  const first = prizePool?.payouts?.[1] || (totalPool > 0 ? Math.round(totalPool * 0.5) : 0);
+  const second = prizePool?.payouts?.[2] || (totalPool > 0 ? Math.round(totalPool * 0.25) : 0);
+  const third = prizePool?.payouts?.[3] || (totalPool > 0 ? Math.round(totalPool * 0.15) : 0);
   const fourth = totalPool > 0 ? totalPool - first - second - third : 0;
   const payoutByPosition = [first, second, third, fourth];
 
   let html = '';
 
   // ================================================================
-  // SECTION 1: EVENT HEADER BAR (dark green, compact)
+  // SECTION 1: EVENT HERO (premium, mobile first)
   // ================================================================
   {
     const eventName = config?.event?.name || 'Scramble';
     const venue = config?.event?.venue || config?.event?.course || '';
     const roundNum = config?.currentRound || state._currentRound || 1;
-
-    // Prize pool from config or computed
-    const prizePool = config?.scramblePrizePool;
     const ppFirst = prizePool?.payouts?.[1] || first;
     const ppSecond = prizePool?.payouts?.[2] || second;
     const ppThird = prizePool?.payouts?.[3] || third;
     const ppTotal = prizePool?.total || totalPool;
     const ctpPrize = prizePool?.ctpPerHole || 0;
+    const statusChipClass = roundComplete ? 'final' : holesPlayed > 0 ? 'live' : 'pending';
+    let heroCopy = 'Tee sheets are set. The board is waiting for the first swing.';
+    if (boardState === 'opening') heroCopy = 'Early holes are on the card. The room should already feel live, readable, and worth checking between shots.';
+    if (boardState === 'midround') heroCopy = leadMargin === 0
+      ? 'It is dead even. Every clean hole changes the room.'
+      : `${escHtml(leader?.team || 'The leaders')} hold ${leadMargin}-shot control, but the chase pack is still close enough to make this feel dangerous.`;
+    if (boardState === 'closing') heroCopy = `${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} left. The purse is real, the side games are live, and everyone knows exactly what still matters.`;
+    if (boardState === 'final') heroCopy = `${escHtml(leader?.team || 'The winners')} are in. Settlement should feel like the ceremony, not cleanup.`;
 
-    html += `<div style="background:linear-gradient(135deg,#002046 0%,#2D4A35 100%);border-radius:12px;padding:20px;margin-bottom:10px;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;right:0;width:40%;height:1px;background:rgba(197,160,89,0.3)"></div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="min-width:0;flex:1">
-          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.5);margin-bottom:4px">Current Scramble</div>
-          <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:22px;font-weight:700;color:#FCF9F4;line-height:1.1">${escHtml(eventName)}</div>
-          <div style="font-size:11px;color:rgba(252,249,244,0.5);margin-top:4px">${venue ? escHtml(venue) + ' &middot; ' : ''}R${roundNum}</div>
+    html += `<section class="mg-scramble-hero">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span class="mg-scramble-eyebrow">Current scramble</span>
+          <span class="mg-scramble-status-chip ${statusChipClass}">${freshnessLabel}</span>
         </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:12px">
-          ${ppTotal > 0 ? `<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.5)">Prize Pool</div>
-          <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:28px;font-weight:700;color:#775A19">$${ppTotal.toLocaleString()}</div>` : ''}
+        ${totalUnresolvedSideGames > 0 ? `<span class="mg-scramble-status-chip pending">${totalUnresolvedSideGames} pending</span>` : ''}
+      </div>
+      <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:30px;font-weight:700;color:#FCF9F4;line-height:1.02;max-width:300px">${escHtml(eventName)}</div>
+      <div style="font-size:13px;line-height:1.55;color:rgba(252,249,244,0.76);margin-top:8px;max-width:320px">${heroCopy}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <span class="mg-scramble-eyebrow">${totalTeams} teams</span>
+        <span class="mg-scramble-eyebrow">${escHtml(formatLabel)}</span>
+        <span class="mg-scramble-eyebrow">${venue ? escHtml(venue) + ' · ' : ''}R${roundNum}</span>
+      </div>
+      <div class="mg-scramble-stat-grid">
+        <div class="mg-scramble-stat">
+          <div class="mg-scramble-stat-label">Purse</div>
+          <div class="mg-scramble-stat-value">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() : 'Live'}</div>
+        </div>
+        <div class="mg-scramble-stat">
+          <div class="mg-scramble-stat-label">Status</div>
+          <div class="mg-scramble-stat-value">${roundComplete ? 'Final' : holesPlayed === 0 ? 'Ready' : 'Thru ' + holesPlayed}</div>
+        </div>
+        <div class="mg-scramble-stat">
+          <div class="mg-scramble-stat-label">Pressure</div>
+          <div class="mg-scramble-stat-value">${leadMargin === null ? '--' : leadMargin === 0 ? 'Tied' : leadMargin + ' up'}</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center">
-        <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">${totalTeams} teams</span>
-        <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">${escHtml(formatLabel)}</span>
-        <span style="font-size:9px;font-weight:700;letter-spacing:1px;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.7);padding:4px 10px;border-radius:4px">Thru ${holesPlayed} of ${holesPerRound}</span>
-        <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:${freshnessColor};font-weight:700;letter-spacing:1px;margin-left:auto;background:rgba(${freshnessColor === 'var(--win)' ? '22,163,74' : '220,38,38'},0.1);padding:4px 10px;border-radius:4px">
-          <span style="width:6px;height:6px;border-radius:50%;background:${freshnessColor};${staleness <= 30 ? 'animation:pulse 1.5s ease-in-out infinite' : ''}"></span>
-          ${freshnessLabel}
-        </span>
-      </div>
-      ${ppTotal > 0 ? `<div style="display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(252,249,244,0.08);font-size:10px;font-family:'SF Mono',monospace">
-        <span style="color:#775A19;font-weight:700">1st $${ppFirst.toLocaleString()}</span>
-        <span style="color:rgba(252,249,244,0.5)">2nd $${ppSecond.toLocaleString()}</span>
-        <span style="color:rgba(252,249,244,0.35)">3rd $${ppThird.toLocaleString()}</span>
-        ${ctpPrize > 0 ? `<span style="color:rgba(252,249,244,0.35)">CTP $${ctpPrize}/hole</span>` : ''}
+      ${(ppTotal > 0 || ctpPrize > 0) ? `<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(252,249,244,0.08);font-size:10px;font-family:'SF Mono',monospace">
+        ${ppFirst > 0 ? `<span style="color:#F3D79A;font-weight:700">1st $${ppFirst.toLocaleString()}</span>` : ''}
+        ${ppSecond > 0 ? `<span style="color:rgba(252,249,244,0.58)">2nd $${ppSecond.toLocaleString()}</span>` : ''}
+        ${ppThird > 0 ? `<span style="color:rgba(252,249,244,0.42)">3rd $${ppThird.toLocaleString()}</span>` : ''}
+        ${ctpPrize > 0 ? `<span style="color:rgba(252,249,244,0.42)">CTP $${ctpPrize}/hole</span>` : ''}
       </div>` : ''}
-    </div>`;
+      <div class="mg-scramble-action-row">
+        <a href="#scorecard" class="mg-scramble-action primary">${roundComplete ? 'Open settlement' : holesPlayed === 0 ? 'Start scoring' : 'Post hole ' + nextHole}</a>
+        <a href="#bet" class="mg-scramble-action secondary">${roundComplete ? 'Open the bar' : 'Check the bar'}</a>
+      </div>
+    </section>`;
+  }
+
+  // ================================================================
+  // SECTION 1B: PRESSURE + SIDE GAME RAIL
+  // ================================================================
+  {
+    const nextPressureCopy = roundComplete
+      ? 'Everything is posted. Use settlement to crown the room, show the purse, and make the screenshot worth sending.'
+      : holesPlayed === 0
+        ? 'Nothing is on the ledger yet. The first posted hole needs to feel like the room just turned on.'
+        : leadMargin === 0
+          ? `Deadlocked with ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} left. One clean swing changes first place.`
+          : `${escHtml(leader?.team || 'The leaders')} lead by ${leadMargin}. ${holesRemaining} hole${holesRemaining !== 1 ? 's' : ''} remain for ${runnerUp ? escHtml(runnerUp.team) : 'the chase pack'} to flip the room.`;
+
+    html += `<div class="mg-scramble-pressure-grid">
+      <div class="mg-scramble-pressure-card">
+        <div class="kicker">What matters next</div>
+        <div class="copy">${nextPressureCopy}</div>
+      </div>`;
+    if (ctpHoles.length > 0 || ldHoles.length > 0) {
+      html += `<div class="mg-scramble-section-card">
+        <div class="mg-scramble-section-title">Side games live now</div>
+        <div class="mg-scramble-sidegame-grid">`;
+      if (ctpHoles.length > 0) {
+        html += `<div class="mg-scramble-sidegame-card">
+          <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Closest to pin</div>
+          ${ctpHoles.map((hole) => {
+            const normalized = normalizeScrambleSideGameEntry(ctpResults[hole]);
+            const played = scoredHoles.includes(hole);
+            const label = normalized.status === 'awarded' ? normalized.winnerLabel : played ? 'Resolve winner' : 'Waiting';
+            return `<div class="mg-scramble-sidegame-item">
+              <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.68)">Hole ${hole}</span>
+              <span style="font-size:12px;font-weight:700;color:${normalized.status === 'awarded' ? '#F3D79A' : 'rgba(252,249,244,0.44)'};text-align:right">${escHtml(String(label).split('(')[0].trim())}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+      if (ldHoles.length > 0) {
+        html += `<div class="mg-scramble-sidegame-card">
+          <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Longest drive</div>
+          ${ldHoles.map((hole) => {
+            const normalized = normalizeScrambleSideGameEntry(ldResults[hole]);
+            const played = scoredHoles.includes(hole);
+            const label = normalized.status === 'awarded' ? normalized.winnerLabel : played ? 'Resolve winner' : 'Waiting';
+            return `<div class="mg-scramble-sidegame-item">
+              <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.68)">Hole ${hole}</span>
+              <span style="font-size:12px;font-weight:700;color:${normalized.status === 'awarded' ? '#F3D79A' : 'rgba(252,249,244,0.44)'};text-align:right">${escHtml(String(label).split('(')[0].trim())}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div>`;
   }
 
   // ================================================================
@@ -1153,10 +1315,10 @@ export function renderScrambleLeaderboard(state) {
   // SECTION 3: AUGUSTA-STYLE LEADERBOARD + BETTING (BOARD tab)
   // ================================================================
   if ((!scrShowSubTabs || scrActiveSubTab === 'board') && leaderboard.length > 0) {
-    html += `<div style="margin-bottom:8px">`;
-
-    // Header
-    html += `<div style="font-family:'Noto Serif',var(--font-display),serif;font-size:18px;font-weight:700;color:#002046;margin-bottom:10px;padding:0 2px">Leaderboard</div>`;
+    html += `<div class="mg-scramble-section-card">`;
+    html += `<div class="mg-scramble-section-title">Live standings</div>`;
+    html += `<div style="font-family:'Noto Serif',var(--font-display),serif;font-size:21px;font-weight:700;color:#002046;line-height:1.1;margin-bottom:4px">${roundComplete ? 'Final board' : 'Clubhouse board'}</div>`;
+    html += `<div style="font-size:13px;line-height:1.5;color:#64748B;margin-bottom:10px">${roundComplete ? 'The scoring is done. Settlement now needs to feel like the reveal.' : 'Ranks, purse pressure, and the chase pack should all read instantly on a phone.'}</div>`;
 
     // Team rows — light theme cards on cream background
     const parForPlayedCalc = holesPlayed > 0 ? pars.slice(0, Math.max(...scoredHoles)).reduce((s, p) => s + p, 0) : 0;
@@ -1185,14 +1347,17 @@ export function renderScrambleLeaderboard(state) {
       const leftBorder = isTop3 ? `border-left:4px solid ${isLeader ? '#775A19' : 'rgba(197,160,89,0.4)'}` : '';
       const badgeBg = isLeader ? 'background:#775A19;color:#002046' : isTop3 ? 'background:transparent;border:1.5px solid #775A19;color:#775A19' : 'background:rgba(0,0,0,0.04);color:#6B7280';
 
-      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="background:#FCF9F4;border:1px solid ${borderColor};${leftBorder};border-radius:10px;padding:14px 16px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:${isLeader ? '0 4px 16px rgba(197,160,89,0.15)' : '0 1px 4px rgba(0,0,0,0.04)'}">`;
+      html += `<div onclick="window.MG.togglePlayerExpand('${escHtml(entry.team)}')" style="background:#FCF9F4;border:1px solid ${borderColor};${leftBorder};border-radius:14px;padding:14px 16px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:${isLeader ? '0 8px 18px rgba(197,160,89,0.16)' : '0 2px 10px rgba(0,0,0,0.05)'}">`;
 
       html += `<div style="display:flex;justify-content:space-between;align-items:center">
           <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
             <span style="width:28px;height:28px;border-radius:50%;${badgeBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;box-sizing:border-box">${entry.position || (i + 1)}</span>
             <div style="min-width:0">
               <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:${isLeader ? '17' : '15'}px;font-weight:700;color:#002046;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(entry.team)}</div>
-              ${payout > 0 ? `<div style="font-size:10px;font-weight:700;color:#775A19;margin-top:1px">$${payout.toLocaleString()}</div>` : ''}
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px">
+                ${payout > 0 ? `<span style="font-size:10px;font-weight:800;color:#775A19;letter-spacing:0.8px;text-transform:uppercase">$${payout.toLocaleString()} line</span>` : ''}
+                ${isLeader ? `<span style="font-size:10px;font-weight:800;color:#002046;letter-spacing:0.8px;text-transform:uppercase">Leader</span>` : isTop3 ? `<span style="font-size:10px;font-weight:800;color:#64748B;letter-spacing:0.8px;text-transform:uppercase">In the money</span>` : ''}
+              </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -1230,7 +1395,7 @@ export function renderScrambleLeaderboard(state) {
     html += `</div>`;
   } else if (scoredHoles.length === 0) {
     // No scores yet — waiting state
-    html += `<div style="background:var(--bg-tertiary,#FFFFFF);border:1px solid var(--border,#E5E0D8);border-radius:10px;overflow:hidden;margin-bottom:8px;text-align:center;padding:32px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+    html += `<div class="mg-scramble-section-card" style="text-align:center;padding:32px 20px">
       <img src="/app/assets/empty-state-scorecard-v1.png" alt="" aria-hidden="true" style="display:block;width:min(260px,72%);margin:0 auto 18px;mix-blend-mode:multiply">
       <div style="font-size:18px;font-weight:700;color:#002046;margin-bottom:8px">Waiting for Scores</div>
       <div style="font-size:13px;color:#6B7280">
@@ -1270,11 +1435,11 @@ export function renderScrambleLeaderboard(state) {
           html += `<div style="flex:1;background:linear-gradient(135deg,#002046,#1B365D);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px">
             <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#775A19;margin-bottom:8px">Closest to Pin</div>`;
           ctpHoles.forEach(hole => {
-            const winner = gameState?.sideGames?.ctp?.[hole];
+            const winner = normalizeScrambleSideGameEntry(gameState?.sideGames?.ctp?.[hole]);
             const ctpPrizeAmt = config?.scramblePrizePool?.ctpPerHole || 0;
             html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0">
               <span style="color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
-              <span style="font-weight:700;color:${winner ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner.split('(')[0].trim()) : 'TBD'}${winner && ctpPrizeAmt ? ' <span style="color:rgba(252,249,244,0.4);font-size:10px">$' + ctpPrizeAmt + '</span>' : ''}</span>
+              <span style="font-weight:700;color:${winner.status === 'awarded' ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner.status === 'awarded' ? escHtml(winner.winnerLabel.split('(')[0].trim()) : 'TBD'}${winner.status === 'awarded' && ctpPrizeAmt ? ' <span style="color:rgba(252,249,244,0.4);font-size:10px">$' + ctpPrizeAmt + '</span>' : ''}</span>
             </div>`;
           });
           html += `</div>`;
@@ -1284,10 +1449,10 @@ export function renderScrambleLeaderboard(state) {
           html += `<div style="flex:1;background:linear-gradient(135deg,#002046,#1B365D);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px">
             <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#775A19;margin-bottom:8px">Long Drive</div>`;
           ldHoles.forEach(hole => {
-            const winner = gameState?.sideGames?.ld?.[hole];
+            const winner = normalizeScrambleSideGameEntry(gameState?.sideGames?.ld?.[hole]);
             html += `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0">
               <span style="color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
-              <span style="font-weight:700;color:${winner ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner.split('(')[0].trim()) : 'TBD'}</span>
+              <span style="font-weight:700;color:${winner.status === 'awarded' ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner.status === 'awarded' ? escHtml(winner.winnerLabel.split('(')[0].trim()) : 'TBD'}</span>
             </div>`;
           });
           html += `</div>`;

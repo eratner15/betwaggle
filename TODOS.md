@@ -1,5 +1,5 @@
 # Waggle — Master TODO List
-## Updated: 2026-04-18
+## Updated: 2026-04-19
 
 ---
 
@@ -20,6 +20,16 @@
 - Post-create launch now lands on a premium invite suite instead of a utility card stack.
 - Trip dashboard hero now gives a cleaner first-tee handoff: identity, scoring, bar, and sharing are visible without dead ends.
 - Share-surface QA now checks the new invite identity handoff and replay loop copy on production.
+- Scramble dashboard now has a stronger premium phase-2 shell:
+  - luxury hero
+  - pressure card
+  - side-game live rail
+  - upgraded clubhouse standings treatment
+  - dedicated scramble regression script in `scripts/check-scramble-board.sh`
+- Premium assets are now live in production for:
+  - `invite-launch-plate.png`
+  - `scorecard-atmosphere-plate-v3.png`
+  - `settlement-ornament-v3.png`
 - Blue Monster mobile shell has been upgraded:
   - premium top shell in `worker.js`
   - stronger trip hero in `renderTripPage()`
@@ -40,6 +50,7 @@
 
 #### 1. Image Integration
 - [x] Wire `app/assets/trip-shell-hero-plate.png` / `trip-shell-hero-plate-v2.png` into the trip hero and create launch suite.
+- [x] Ship `app/assets/invite-launch-plate.png`, `app/assets/scorecard-atmosphere-plate-v3.png`, and `app/assets/settlement-ornament-v3.png` to production so referenced premium art no longer breaks.
 - [ ] Wire `app/assets/scorecard-atmosphere-plate.png` into live scoring surfaces.
 - [ ] Wire `app/assets/settlement-lounge-plate.png` into settlement lounge surfaces with strong overlay.
 - [ ] Wire `app/assets/ledger-paper-texture.png` into cards and app surfaces.
@@ -106,13 +117,16 @@
 - [ ] Add a smoke for settlement share card render.
 - [ ] Add a smoke for the “weekly game from this group” conversion path once built.
 - [x] Keep `scripts/check-share-surfaces.sh` aligned with live invite/share copy so premium regressions get caught.
+- [x] Add a dedicated scramble dashboard mobile regression script: `scripts/check-scramble-board.sh`.
 
 ### P2 — Image Agent Backlog
 - [ ] Generate a quieter settlement plate with less edge detail.
 - [ ] Generate mobile-specific crops if current scenic plates feel too wide on phone.
 - [ ] Generate one premium empty-state illustration for “waiting for first tee.”
 - [ ] Generate one social-share / result-card atmosphere plate if the current card still feels too template-like.
-- [ ] Generate `app/assets/invite-launch-plate.png` so the launch suite stops borrowing the trip hero asset.
+- [x] Generate `app/assets/invite-launch-plate.png` so the launch suite stops borrowing the trip hero asset.
+- [x] Generate `app/assets/scorecard-atmosphere-plate-v3.png` for the cleaner scoring desk treatment.
+- [x] Generate `app/assets/settlement-ornament-v3.png` for the next settlement ceremony pass.
 
 ### Apr 18 Pass Notes
 - Shipped:
@@ -129,6 +143,31 @@
 - Real-world validation still needed:
   - one actual host using the new create → invite → board handoff on mobile
   - one real group finishing settlement and sharing results from the live board
+
+### Apr 19 Pass Notes
+- Shipped:
+  - `app/js/views.js` phase-2 scramble dashboard upgrade:
+    - premium scramble hero
+    - live pressure card
+    - side-game live rail
+    - stronger clubhouse standings copy and row treatment
+  - `app/css/styles.css` now has reusable scramble premium primitives instead of relying only on one-off inline blocks
+  - `scripts/check-scramble-board.sh` now verifies the live scramble board on `demo-scramble` and `augusta-scramble`
+  - previously missing premium asset URLs now resolve on production
+- Improved:
+  - scramble board feels more like a destination and less like a prototype stack
+  - mobile users can read purse, pressure, and side-game status earlier
+  - the broken invite/hero image state is fixed because the missing art is now live
+- Still weak:
+  - scramble score entry still needs the real phase-3 side-game workflow
+  - scramble settlement still needs the real phase-4 ceremony and share layer
+  - round/tournament still do not consume enough of the new premium board primitives yet
+- Next pass should attack:
+  - phase 3 side-game score-entry workflow
+  - then phase 4 scramble settlement/share
+- Real-world validation still needed:
+  - one commissioner posting live scramble holes on a phone in motion
+  - one scramble group opening the premium board under outdoor glare
 
 ### P2 — Growth / Sales Readiness
 - [ ] Clarify scramble pricing and organizer ROI in the create flow.
