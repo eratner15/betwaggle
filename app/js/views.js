@@ -1525,11 +1525,13 @@ export function renderScrambleLeaderboard(state) {
           CLOSEST TO PIN
         </div>`;
       sideGames.closestToPin.forEach((hole, idx) => {
-        const winner = gameState?.sideGames?.ctp?.[hole];
+        const entry = normalizeScrambleSideGameEntry(gameState?.sideGames?.ctp?.[hole]);
         const played = scoredHoles.includes(hole);
+        const awarded = entry.status === 'awarded' && entry.winnerLabel;
+        const fallback = entry.status === 'deferred' ? 'Deferred' : (played ? 'No winner' : 'TBD');
         html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.closestToPin.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
           <span style="font-size:15px;font-weight:600;color:#1A1A1A">Hole ${hole}</span>
-          <span style="font-size:15px;font-weight:700;color:${winner ? '#775A19' : '#9CA3AF'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
+          <span style="font-size:15px;font-weight:700;color:${awarded ? '#775A19' : '#9CA3AF'}">${awarded ? escHtml(entry.winnerLabel) : fallback}</span>
         </div>`;
       });
       html += `</div>`;
@@ -1541,11 +1543,13 @@ export function renderScrambleLeaderboard(state) {
           LONGEST DRIVE
         </div>`;
       sideGames.longestDrive.forEach((hole, idx) => {
-        const winner = gameState?.sideGames?.ld?.[hole];
+        const entry = normalizeScrambleSideGameEntry(gameState?.sideGames?.ld?.[hole]);
         const played = scoredHoles.includes(hole);
+        const awarded = entry.status === 'awarded' && entry.winnerLabel;
+        const fallback = entry.status === 'deferred' ? 'Deferred' : (played ? 'No winner' : 'TBD');
         html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${idx < sideGames.longestDrive.length - 1 ? 'border-bottom:1px solid #F0EDE6' : ''}">
           <span style="font-size:15px;font-weight:600;color:#1A1A1A">Hole ${hole}</span>
-          <span style="font-size:15px;font-weight:700;color:${winner ? '#775A19' : '#9CA3AF'}">${winner ? escHtml(winner) : (played ? 'No winner' : 'TBD')}</span>
+          <span style="font-size:15px;font-weight:700;color:${awarded ? '#775A19' : '#9CA3AF'}">${awarded ? escHtml(entry.winnerLabel) : fallback}</span>
         </div>`;
       });
       html += `</div>`;
@@ -5028,17 +5032,26 @@ function renderScrambleSideGamePanel(state, holeNum, kind) {
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">`;
   teamList.forEach((name) => {
     const isSelected = currentLabel === name;
-    html += `<button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'awarded','${escHtml(name).replace(/'/g, "\\'")}')"
+    // Team name lives on a data-attribute (HTML-attr context, escHtml is correct there) and
+    // is read back via this.dataset.team (DOMString, already decoded). Do NOT interpolate
+    // the name into the onclick= JS-string context — escHtml produces &#39; which the HTML
+    // parser decodes back to ' before JS parses, so names like "O'Brien" would break or
+    // enable XSS.
+    html += `<button type="button" data-team="${escHtml(name)}" data-kind="${kind}" data-hole="${holeNum}"
+      onclick="window.MG.setScrambleSideGame(this.dataset.kind, Number(this.dataset.hole), 'awarded', this.dataset.team)"
       style="padding:8px 12px;min-height:36px;border-radius:8px;border:1px solid ${isSelected ? 'var(--gold-primary,#C4A35A)' : 'rgba(27,43,75,0.15)'};background:${isSelected ? 'var(--gold-primary,#C4A35A)' : 'var(--ivory,#FAF8F5)'};color:${isSelected ? '#fff' : 'var(--navy,#1B2B4B)'};font-size:12px;font-weight:${isSelected ? '700' : '500'};cursor:pointer;white-space:nowrap">${escHtml(name)}</button>`;
   });
   html += `</div>
     <div style="display:flex;gap:8px">
-      <button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'deferred','')"
+      <button type="button" data-kind="${kind}" data-hole="${holeNum}"
+        onclick="window.MG.setScrambleSideGame(this.dataset.kind, Number(this.dataset.hole), 'deferred', '')"
         style="flex:1;padding:10px;min-height:40px;border-radius:8px;border:1px solid rgba(232,115,90,0.45);background:${currentStatus === 'deferred' ? 'rgba(232,115,90,0.12)' : 'transparent'};color:var(--coral,#E8735A);font-size:12px;font-weight:600;cursor:pointer">Defer — decide later</button>
-      ${(hasStaged || (!hasStaged && saved.status !== 'unresolved')) ? `<button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'clear','')"
+      ${(hasStaged || (!hasStaged && saved.status !== 'unresolved')) ? `<button type="button" data-kind="${kind}" data-hole="${holeNum}"
+        onclick="window.MG.setScrambleSideGame(this.dataset.kind, Number(this.dataset.hole), 'clear', '')"
         style="padding:10px 14px;min-height:40px;border-radius:8px;border:1px solid rgba(27,43,75,0.12);background:transparent;color:rgba(45,55,72,0.6);font-size:12px;font-weight:500;cursor:pointer">Clear</button>` : ''}
     </div>
-    ${canCommitUpdate ? `<button type="button" onclick="window.MG.submitScrambleSideGame('${kind}',${holeNum},'${staged.status}','${escHtml(staged.winnerLabel || '').replace(/'/g, "\\'")}')"
+    ${canCommitUpdate ? `<button type="button" data-kind="${kind}" data-hole="${holeNum}" data-status="${escHtml(staged.status)}" data-label="${escHtml(staged.winnerLabel || '')}"
+      onclick="window.MG.submitScrambleSideGame(this.dataset.kind, Number(this.dataset.hole), this.dataset.status, this.dataset.label)"
       style="margin-top:10px;width:100%;padding:12px;min-height:44px;border-radius:8px;border:none;background:var(--navy,#1B2B4B);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.04em;cursor:pointer">Commit ${kindShort} update now</button>` : ''}
   </div>`;
   return html;
@@ -10698,18 +10711,22 @@ export function renderTVLeaderboard(state) {
   html += `<div class="tv-footer">`;
   html += `<div class="tv-footer-left">`;
 
-  // CTP results
+  // CTP results — normalize object-form and legacy string-form via helper
   if (sideGames?.closestToPin?.length > 0) {
     sideGames.closestToPin.forEach(hole => {
-      const winner = gameState?.sideGames?.ctp?.[hole];
-      if (winner) html += `<span class="tv-footer-item">CTP #${hole}: ${escHtml(winner)}</span>`;
+      const entry = normalizeScrambleSideGameEntry(gameState?.sideGames?.ctp?.[hole]);
+      if (entry.status === 'awarded' && entry.winnerLabel) {
+        html += `<span class="tv-footer-item">CTP #${hole}: ${escHtml(entry.winnerLabel)}</span>`;
+      }
     });
   }
   // LD results
   if (sideGames?.longestDrive?.length > 0) {
     sideGames.longestDrive.forEach(hole => {
-      const winner = gameState?.sideGames?.ld?.[hole];
-      if (winner) html += `<span class="tv-footer-item">LD #${hole}: ${escHtml(winner)}</span>`;
+      const entry = normalizeScrambleSideGameEntry(gameState?.sideGames?.ld?.[hole]);
+      if (entry.status === 'awarded' && entry.winnerLabel) {
+        html += `<span class="tv-footer-item">LD #${hole}: ${escHtml(entry.winnerLabel)}</span>`;
+      }
     });
   }
   // Prize pool

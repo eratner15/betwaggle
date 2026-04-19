@@ -8766,20 +8766,25 @@ async function handleEventApi(slug, path, request, env, ctx) {
         // CTP / Longest Drive side game data (optional fields from score entry).
         // Accepts legacy string form OR object { status, winnerLabel, note }.
         // Shape on disk: { status: 'awarded'|'deferred'|'unresolved', winnerLabel, note?, updatedAt, updatedBy }.
-        if (body.ctp || body.ld) {
+        // ADMIN-ONLY: public round-mode callers can POST /hole with scores but must not be able
+        // to write commissioner honors. Silently drop side-game extras when not admin. Only
+        // scramble events (games.scramble === true) have a UI for this anyway.
+        if (isAdmin && games.scramble && (body.ctp || body.ld)) {
           if (!gameState.sideGames) gameState.sideGames = { ctp: {}, ld: {} };
           if (!gameState.sideGames.ctp) gameState.sideGames.ctp = {};
           if (!gameState.sideGames.ld) gameState.sideGames.ld = {};
-          const actor = isAdmin ? 'admin' : 'public';
+          const actor = 'admin';
           const normalizeSideGameInput = (raw) => {
             if (raw == null) return null;
             if (typeof raw === 'string') {
               const label = raw.trim();
               if (!label) return null;
-              return { status: 'awarded', winnerLabel: label, updatedAt: Date.now(), updatedBy: actor };
+              return { status: 'awarded', winnerLabel: label.slice(0, 120), updatedAt: Date.now(), updatedBy: actor };
             }
-            if (typeof raw === 'object') {
-              const label = (raw.winnerLabel || raw.winner || '').toString().trim();
+            // Reject arrays / non-plain objects / anything with a prototype-pollution payload.
+            // Must be a plain object literal with known keys only.
+            if (typeof raw === 'object' && !Array.isArray(raw) && Object.getPrototypeOf(raw) === Object.prototype) {
+              const label = (raw.winnerLabel || raw.winner || '').toString().trim().slice(0, 120);
               const status = raw.status === 'awarded' || raw.status === 'deferred' || raw.status === 'unresolved'
                 ? raw.status
                 : (label ? 'awarded' : 'deferred');
@@ -8877,10 +8882,9 @@ async function handleEventApi(slug, path, request, env, ctx) {
   // POST /side-game — commissioner correction / deferred resolution for CTP or LD.
   // Body: { hole: 1-18, kind: 'ctp'|'ld', status: 'awarded'|'deferred'|'unresolved',
   //         winnerLabel?: string, note?: string }
-  // Admin required. Scrambles only.
+  // Admin required. Scrambles only. Uses the SAME write-lock as /hole because
+  // both endpoints read/modify/write on ${K}:game-state.
   if (path === 'side-game' && request.method === 'POST') {
-    let cfg3 = null;
-    try { cfg3 = JSON.parse(configRaw); } catch {}
     if (!isAdmin) return new Response(JSON.stringify({ error: 'Admin required' }), { status: 403, headers: EVENT_CORS });
     const body = await request.json().catch(() => ({}));
     const holeNum = parseInt(body.hole);
@@ -8889,33 +8893,47 @@ async function handleEventApi(slug, path, request, env, ctx) {
     if (!holeNum || holeNum < 1 || holeNum > 18) return new Response(JSON.stringify({ error: 'hole must be 1-18' }), { status: 400, headers: EVENT_CORS });
     if (!kind) return new Response(JSON.stringify({ error: "kind must be 'ctp' or 'ld'" }), { status: 400, headers: EVENT_CORS });
     if (!status) return new Response(JSON.stringify({ error: "status must be awarded|deferred|unresolved" }), { status: 400, headers: EVENT_CORS });
-    const winnerLabel = (body.winnerLabel || '').toString().trim();
+    const winnerLabel = (body.winnerLabel || '').toString().trim().slice(0, 120);
     if (status === 'awarded' && !winnerLabel) return new Response(JSON.stringify({ error: 'winnerLabel required when status=awarded' }), { status: 400, headers: EVENT_CORS });
-    let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
-    if (!gameState.sideGames) gameState.sideGames = { ctp: {}, ld: {} };
-    if (!gameState.sideGames[kind]) gameState.sideGames[kind] = {};
-    if (status === 'unresolved') {
-      delete gameState.sideGames[kind][holeNum];
-    } else {
-      const entry = { status, winnerLabel, updatedAt: Date.now(), updatedBy: 'admin' };
-      if (body.note) entry.note = String(body.note).slice(0, 240);
-      gameState.sideGames[kind][holeNum] = entry;
+    const mutexKey = `${K}:write-lock`;
+    const sideGameLock = await acquireKvLock(env, mutexKey, {
+      ttlSeconds: 15,
+      maxAttempts: 6,
+      retryDelayMs: 120,
+      settleMs: 20,
+    });
+    if (!sideGameLock.ok) {
+      return new Response(JSON.stringify({ error: 'Score update is in progress. Retry shortly.' }), { status: 409, headers: EVENT_CORS });
     }
-    await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
-    await bumpEventSyncMeta(env, K, { scope: 'side-game', source: 'side-game-update', actor: 'admin' });
-    // Log to feed for transparency
     try {
-      const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
-      const kindLabel = kind === 'ctp' ? 'CTP' : 'Long Drive';
-      const entryText = status === 'awarded'
-        ? `${kindLabel} Hole ${holeNum}: ${winnerLabel} (awarded by commissioner)`
-        : status === 'deferred'
-          ? `${kindLabel} Hole ${holeNum} deferred — commissioner to resolve later.`
-          : `${kindLabel} Hole ${holeNum} reset to unresolved.`;
-      feed.unshift({ ts: Date.now(), type: 'side', text: entryText, player: 'Commissioner' });
-      await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 200)));
-    } catch {}
-    return new Response(JSON.stringify({ ok: true, hole: holeNum, kind, status, winnerLabel }), { headers: EVENT_CORS });
+      let gameState = (await env.MG_BOOK.get(`${K}:game-state`, 'json')) || {};
+      if (!gameState.sideGames) gameState.sideGames = { ctp: {}, ld: {} };
+      if (!gameState.sideGames[kind]) gameState.sideGames[kind] = {};
+      if (status === 'unresolved') {
+        delete gameState.sideGames[kind][holeNum];
+      } else {
+        const entry = { status, winnerLabel, updatedAt: Date.now(), updatedBy: 'admin' };
+        if (body.note) entry.note = String(body.note).slice(0, 240);
+        gameState.sideGames[kind][holeNum] = entry;
+      }
+      await env.MG_BOOK.put(`${K}:game-state`, JSON.stringify(gameState));
+      await bumpEventSyncMeta(env, K, { scope: 'side-game', source: 'side-game-update', actor: 'admin' });
+      // Log to feed for transparency
+      try {
+        const feed = (await env.MG_BOOK.get(`${K}:feed`, 'json')) || [];
+        const kindLabel = kind === 'ctp' ? 'CTP' : 'Long Drive';
+        const entryText = status === 'awarded'
+          ? `${kindLabel} Hole ${holeNum}: ${winnerLabel} (awarded by commissioner)`
+          : status === 'deferred'
+            ? `${kindLabel} Hole ${holeNum} deferred — commissioner to resolve later.`
+            : `${kindLabel} Hole ${holeNum} reset to unresolved.`;
+        feed.unshift({ ts: Date.now(), type: 'side', text: entryText, player: 'Commissioner' });
+        await env.MG_BOOK.put(`${K}:feed`, JSON.stringify(feed.slice(0, 200)));
+      } catch {}
+      return new Response(JSON.stringify({ ok: true, hole: holeNum, kind, status, winnerLabel }), { headers: EVENT_CORS });
+    } finally {
+      await releaseKvLock(env, mutexKey, sideGameLock.token);
+    }
   }
 
   // ─── Props (propositions / side bets / double-or-nothing) ───
