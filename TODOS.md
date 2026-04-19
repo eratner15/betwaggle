@@ -1,5 +1,5 @@
 # Waggle — Master TODO List
-## Updated: 2026-04-04
+## Updated: 2026-04-18
 
 ---
 
@@ -17,6 +17,9 @@
 - Production is deployed from this repo.
 - Route guards and checkout fallbacks are working.
 - Create flow has a stronger default path and deep-links into scoring.
+- Post-create launch now lands on a premium invite suite instead of a utility card stack.
+- Trip dashboard hero now gives a cleaner first-tee handoff: identity, scoring, bar, and sharing are visible without dead ends.
+- Share-surface QA now checks the new invite identity handoff and replay loop copy on production.
 - Blue Monster mobile shell has been upgraded:
   - premium top shell in `worker.js`
   - stronger trip hero in `renderTripPage()`
@@ -31,14 +34,16 @@
 - [ ] Verify one real scramble outing from create → invite → scoring → settle → share with no manual intervention.
 - [ ] Confirm production no longer exposes any junk or private artifacts after recent deploy filters.
 - [ ] Tighten `wrangler` / asset routing uncertainty so Worker-first behavior is explicit and trusted.
+- [ ] Run one real mobile create flow in outdoor conditions and confirm the new invite suite reads cleanly under glare.
 
 ### P1 — Premium Product Pass
 
 #### 1. Image Integration
-- [ ] Wire `app/assets/trip-shell-hero-plate.png` into the trip hero.
+- [x] Wire `app/assets/trip-shell-hero-plate.png` / `trip-shell-hero-plate-v2.png` into the trip hero and create launch suite.
 - [ ] Wire `app/assets/scorecard-atmosphere-plate.png` into live scoring surfaces.
 - [ ] Wire `app/assets/settlement-lounge-plate.png` into settlement lounge surfaces with strong overlay.
 - [ ] Wire `app/assets/ledger-paper-texture.png` into cards and app surfaces.
+- [ ] Audit and wire `app/assets/share-card-hero-plate.png` into settlement/share/OG surfaces now that the file exists locally.
 - [ ] QA all image-backed screens on `390x844` and back off any image that reduces contrast or looks busy.
 
 #### 2. Shell / Navigation
@@ -67,6 +72,7 @@
 - [ ] Build a clearer “same group, faster setup next time” pathway.
 - [ ] Make the post-round modal explicitly suggest replaying with the same group.
 - [ ] Add one “weekly game” template path in create flow for 3-4 regulars.
+- [ ] Make the weekly invite path feel as premium as the trip launch suite instead of a clone-flow variant.
 
 #### 6. Scramble → Weekly Product Bridge
 - [ ] Keep scramble product feeling special and event-worthy.
@@ -99,12 +105,30 @@
 - [ ] Add a smoke for signed-in score entry, not only API scoring.
 - [ ] Add a smoke for settlement share card render.
 - [ ] Add a smoke for the “weekly game from this group” conversion path once built.
+- [x] Keep `scripts/check-share-surfaces.sh` aligned with live invite/share copy so premium regressions get caught.
 
 ### P2 — Image Agent Backlog
 - [ ] Generate a quieter settlement plate with less edge detail.
 - [ ] Generate mobile-specific crops if current scenic plates feel too wide on phone.
 - [ ] Generate one premium empty-state illustration for “waiting for first tee.”
 - [ ] Generate one social-share / result-card atmosphere plate if the current card still feels too template-like.
+- [ ] Generate `app/assets/invite-launch-plate.png` so the launch suite stops borrowing the trip hero asset.
+
+### Apr 18 Pass Notes
+- Shipped:
+  - `create/index.html` now renders a premium launch suite with stronger hierarchy, share box, next-step ceremony, and a darker field card.
+  - `app/js/views.js` trip hero now uses the newer plate, exposes identity/share/bar/scoring actions sooner, and feels more like the clubhouse home base.
+  - `scripts/check-share-surfaces.sh` now validates the new launch copy instead of the removed chip row.
+- Still weak:
+  - Settlement and share artifacts still do not feel expensive enough to sell the product from a screenshot alone.
+  - The weekly replay path is functional but still lighter and less desirable than the trip path.
+  - The Bar still needs a premium hierarchy pass and cleaner identity handling.
+- Next pass should attack:
+  - settlement/share card composition plus `share-card-hero-plate.png` wiring
+  - then The Bar market hierarchy and in-place identity flow
+- Real-world validation still needed:
+  - one actual host using the new create → invite → board handoff on mobile
+  - one real group finishing settlement and sharing results from the live board
 
 ### P2 — Growth / Sales Readiness
 - [ ] Clarify scramble pricing and organizer ROI in the create flow.

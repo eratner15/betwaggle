@@ -51,6 +51,61 @@
     .setup-preview .copy { font-size:13px; line-height:1.55; color:#4A5568; margin-bottom:12px; }
     .setup-preview .chips { display:flex; flex-wrap:wrap; gap:8px; }
     .setup-preview .chip { display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px; background:rgba(27,43,75,0.05); border:1px solid rgba(27,43,75,0.06); font-size:11px; font-weight:700; color:var(--navy-dark); }
+    .invite-shell { max-width: 480px; margin: 0 auto; padding: 8px 0 28px; }
+    .invite-hero { position: relative; overflow: hidden; border-radius: 28px; margin-bottom: 18px; padding: 28px 20px 22px; background:
+      linear-gradient(180deg, rgba(10, 23, 41, 0.34) 0%, rgba(10, 23, 41, 0.80) 100%),
+      radial-gradient(circle at top left, rgba(196, 163, 90, 0.22), transparent 34%),
+      url('/app/assets/trip-shell-hero-plate-v2.png') center/cover no-repeat;
+      box-shadow: 0 24px 48px rgba(15, 26, 46, 0.18);
+      color: #FAF8F5;
+    }
+    .invite-hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.38), transparent); }
+    .invite-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 16px; position: relative; z-index: 1; }
+    .invite-chip { display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border-radius:999px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:rgba(250,248,245,0.84); }
+    .invite-chip strong { color:#F3D79A; font-weight:800; }
+    .invite-hero h1 { font-family:'Playfair Display', serif; font-size:clamp(38px, 9vw, 52px); line-height:0.96; margin-bottom: 10px; position: relative; z-index: 1; }
+    .invite-hero-copy { max-width: 280px; font-size:14px; line-height:1.55; color:rgba(250,248,245,0.78); position: relative; z-index: 1; }
+    .invite-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top: 18px; position: relative; z-index: 1; }
+    .invite-metric { border-radius:18px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); padding:12px 10px; backdrop-filter: blur(12px); }
+    .invite-metric .label { font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:rgba(250,248,245,0.62); margin-bottom:5px; }
+    .invite-metric .value { font-family:'SF Mono','Menlo',monospace; font-size:18px; font-weight:800; color:#FAF8F5; }
+    .invite-card { background:linear-gradient(180deg,#FFFFFF 0%, #F7F3EC 100%); border:1px solid rgba(27,43,75,0.08); border-radius:24px; box-shadow:0 18px 40px rgba(15,26,46,0.07); padding:20px 18px; margin-bottom: 14px; }
+    .invite-card.dark { background:linear-gradient(180deg,#11233C 0%, #0F1A2E 100%); color:#FAF8F5; border-color:rgba(255,255,255,0.08); box-shadow:0 18px 42px rgba(15,26,46,0.16); }
+    .invite-eyebrow { font-size:10px; font-weight:800; letter-spacing:1.7px; text-transform:uppercase; color:#775A19; margin-bottom:8px; }
+    .invite-card.dark .invite-eyebrow { color:#D4B96A; }
+    .invite-title { font-family:'Playfair Display', serif; font-size:24px; line-height:1.02; color:var(--navy-dark); margin-bottom:10px; }
+    .invite-card.dark .invite-title { color:#FAF8F5; }
+    .invite-copy { font-size:13px; line-height:1.58; color:#4A5568; }
+    .invite-card.dark .invite-copy { color:rgba(250,248,245,0.76); }
+    .invite-linkbox { border-radius:18px; border:1px solid rgba(196,163,90,0.18); background:rgba(255,255,255,0.92); padding:14px 15px; margin:16px 0 14px; font-family:'SF Mono','Menlo',monospace; font-size:12px; color:#4A5568; line-height:1.55; word-break:break-word; }
+    .invite-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .invite-btn { display:flex; align-items:center; justify-content:center; gap:8px; min-height:52px; padding:14px 16px; border-radius:16px; border:none; cursor:pointer; font-size:14px; font-weight:800; letter-spacing:0.2px; text-decoration:none; }
+    .invite-btn.primary { background:linear-gradient(135deg,#755B18,#C4A35A); color:#FAF8F5; box-shadow:0 10px 24px rgba(196,163,90,0.28); }
+    .invite-btn.secondary { background:#243A61; color:#FAF8F5; }
+    .invite-btn.ghost { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#FAF8F5; }
+    .invite-checklist { display:grid; gap:10px; margin-top: 14px; }
+    .invite-step { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid rgba(27,43,75,0.08); }
+    .invite-step:first-child { border-top:none; padding-top:0; }
+    .invite-card.dark .invite-step { border-top-color: rgba(255,255,255,0.08); }
+    .invite-step-num { width:24px; height:24px; flex-shrink:0; border-radius:50%; background:#002046; color:#FAF8F5; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; }
+    .invite-card.dark .invite-step-num { background:#D4B96A; color:#0F1A2E; }
+    .invite-step-title { font-size:13px; font-weight:800; color:var(--navy-dark); margin-bottom:2px; }
+    .invite-card.dark .invite-step-title { color:#FAF8F5; }
+    .invite-step-copy { font-size:12px; line-height:1.5; color:#718096; }
+    .invite-card.dark .invite-step-copy { color:rgba(250,248,245,0.66); }
+    .invite-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .invite-player-card { display:flex; align-items:center; gap:10px; padding:12px; border-radius:18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); }
+    .invite-avatar { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#FAF8F5; font-size:14px; font-weight:800; letter-spacing:0.4px; flex-shrink:0; }
+    .invite-player-name { font-size:13px; font-weight:800; color:#FAF8F5; line-height:1.2; }
+    .invite-player-meta { font-size:11px; font-weight:700; color:rgba(250,248,245,0.58); letter-spacing:0.5px; margin-top:2px; text-transform:uppercase; }
+    .invite-footer-copy { font-size:12px; line-height:1.55; color:#718096; max-width:360px; margin:2px auto 0; text-align:center; }
+    @media (max-width: 420px) {
+      .content { padding-left: 16px; padding-right: 16px; }
+      .invite-shell { padding-top: 4px; }
+      .invite-hero { border-radius: 24px; padding: 24px 16px 18px; }
+      .invite-actions, .invite-field-grid { grid-template-columns: 1fr; }
+      .invite-title { font-size: 22px; }
+    }
 
     /* Inputs */
     input, select { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; font-family: inherit; background: #fff; color: var(--text); transition: border 0.2s; }
@@ -752,74 +807,112 @@ function showInviteScreen(slug) {
   });
   const courseName = S.course?.name || S.course?.club_name || 'the course';
   const weeklyMode = isWeeklyJourney();
+  const totalPot = Object.keys(S.games).filter(k => S.games[k]).reduce((sum, gameId) => {
+    const raw = S.stakes?.[gameId];
+    return sum + (Number.isFinite(raw) ? raw : parseInt(raw, 10) || 0);
+  }, 0) * Math.max(S.players.length - 1, 1);
   const shareText = weeklyMode
     ? ('Weekly game is live for ' + S.players.map(p => p.name).join(', ') + ' — ' + gameNames.join(' + ') + ' at ' + courseName + '. Open on your phone: ' + url)
     : (S.players.map(p => p.name).join(', ') + ' — ' + gameNames.join(' + ') + ' at ' + courseName + '. Open on your phone: ' + url);
 
   // Generate initials and a consistent color for each player
   const colors = ['#1B2B4B','#2A3F66','#4A5568','#5B4300'];
+  const headline = weeklyMode ? 'Weekly game\nis live' : 'Your game\nis live';
+  const nextPrimary = weeklyMode ? 'Open Weekly Scoring' : 'Start Scoring';
+  const gameSummary = gameNames.length ? gameNames.slice(0, 3).join(' + ') : 'Round ready';
+  const ceremonyCopy = weeklyMode
+    ? 'Send one clean link, let the usual group claim their names, and roll the trip energy into the weekly game without rebuilding anything.'
+    : 'The launch moment should feel like a private invitation, not admin software. Share the room, let everyone pick their seat, and turn the board on.';
+  const inviteLabel = weeklyMode ? 'Weekly room ready' : 'Event launched';
 
   document.querySelector('.content').innerHTML = `
-    <div style="max-width:480px;margin:0 auto;text-align:center;padding:40px 0 20px">
-
-      <h1 style="font-family:'Playfair Display',serif;font-size:clamp(36px,8vw,48px);font-weight:700;color:#1A202C;margin-bottom:12px;line-height:1.1">You're Live</h1>
-      <p style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#718096;font-size:15px;font-weight:500;max-width:360px;margin:0 auto 32px;line-height:1.5">
-        ${weeklyMode ? 'Weekly game ready: ' : ''}${esc(gameNames.join(' + '))} at ${esc(courseName)}
-      </p>
-
-      <div style="background:linear-gradient(180deg,#F5F3F0 0%,#F0ECE4 100%);border-radius:16px;padding:28px 24px;margin-bottom:18px;box-shadow:0 16px 30px rgba(15,26,46,0.06)">
-        <div style="font-family:-apple-system,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#718096;margin-bottom:12px">${weeklyMode ? 'Send next week\'s link' : 'Share with your group'}</div>
-        <div style="background:#fff;border-radius:8px;padding:12px 14px;font-family:'SF Mono','Menlo',monospace;font-size:13px;color:#4A5568;word-break:break-all;margin-bottom:16px;border:1px solid rgba(196,163,90,0.12)">${esc(url)}</div>
-        <div style="display:flex;gap:10px">
-          <button onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Link',2000)})"
-            style="flex:1;padding:14px;background:linear-gradient(135deg,#755b18,#C4A35A);color:#fff;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:700;cursor:pointer;min-height:52px;box-shadow:0 4px 16px rgba(196,163,90,0.25)">
-            Copy Link
-          </button>
-          <button onclick="navigator.share?.({title:'${esc(courseName)}',text:'${esc(shareText).replace(/'/g,"\\'")}',url:'${url}'}).catch(()=>{})"
-            style="flex:1;padding:14px;background:#4F5E81;color:#fff;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:700;cursor:pointer;min-height:52px">
-            Share
-          </button>
+    <div class="invite-shell">
+      <section class="invite-hero">
+        <div class="invite-chip-row">
+          <span class="invite-chip">${inviteLabel}</span>
+          <span class="invite-chip"><strong>${S.players.length}</strong> players</span>
+          <span class="invite-chip">${esc(gameSummary)}</span>
         </div>
-      </div>
-
-      <div style="background:#FFFFFF;border:1px solid rgba(27,43,75,0.08);border-radius:16px;padding:18px 16px;margin-bottom:24px;box-shadow:0 12px 28px rgba(15,26,46,0.04);text-align:left">
-        <div style="font-family:-apple-system,sans-serif;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#775A19;margin-bottom:6px">What Happens Next</div>
-        <div style="font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:#1A202C;line-height:1.1;margin-bottom:8px">${weeklyMode ? 'Get the group back on the card.' : 'Get everyone into the game.'}</div>
-        <div style="font-size:13px;line-height:1.55;color:#4A5568;margin-bottom:12px">${weeklyMode ? 'Share the link now. The same crew can jump straight into scoring, then this turns into the weekly habit loop once the round is done.' : 'Once the link lands in the chat, the group can open the board, see the games, and start scoring without an app install.'}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">1. Send link</span>
-          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">2. Open scorecard</span>
-          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(27,43,75,0.05);border:1px solid rgba(27,43,75,0.08);font-size:11px;font-weight:700;color:#1B2B4B">3. Share settlement</span>
-          <span style="display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(212,163,90,0.10);border:1px solid rgba(212,163,90,0.18);font-size:11px;font-weight:700;color:#775A19">${weeklyMode ? '4. Rebook next week' : '4. Reuse the crew next week'}</span>
+        <h1>${headline.replace('\n', '<br>')}</h1>
+        <div class="invite-hero-copy">${weeklyMode ? 'The same group can step straight into the weekly room.' : 'Share it once and the round immediately feels like a real live room.'}</div>
+        <div class="invite-metrics">
+          <div class="invite-metric">
+            <div class="label">Course</div>
+            <div class="value">${esc(courseName.split(' ').slice(0, 2).join(' ') || 'Ready')}</div>
+          </div>
+          <div class="invite-metric">
+            <div class="label">Games</div>
+            <div class="value">${gameNames.length || 1}</div>
+          </div>
+          <div class="invite-metric">
+            <div class="label">Action</div>
+            <div class="value">${totalPot > 0 ? '$' + totalPot : 'Live'}</div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div style="text-align:left;margin-bottom:32px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
-          <h3 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:#1A202C">The Field</h3>
-          <span style="font-family:-apple-system,sans-serif;font-size:11px;color:#718096;letter-spacing:0.5px">${S.players.length} PLAYERS JOINED</span>
+      <section class="invite-card">
+        <div class="invite-eyebrow">${weeklyMode ? 'Send next week’s room' : 'Share with your group'}</div>
+        <div class="invite-title">${weeklyMode ? 'One clean invite. Same crew. Faster setup.' : 'Make the first link feel like the invitation.'}</div>
+        <div class="invite-copy">${ceremonyCopy}</div>
+        <div class="invite-linkbox">${esc(url)}</div>
+        <div class="invite-actions">
+          <button class="invite-btn primary" onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='Copied';setTimeout(()=>this.textContent='Copy Link',1800)})">Copy Link</button>
+          <button class="invite-btn secondary" onclick="navigator.share?.({title:'${esc(courseName)}',text:'${esc(shareText).replace(/'/g,"\\'")}',url:'${url}'}).catch(()=>{})">Share</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(${Math.min(S.players.length, 4)},1fr);gap:12px">
+      </section>
+
+      <section class="invite-card">
+        <div class="invite-eyebrow">What happens next</div>
+        <div class="invite-title">${weeklyMode ? 'From trip energy to weekly ritual.' : 'From launch to live board in three clean moves.'}</div>
+        <div class="invite-checklist">
+          <div class="invite-step">
+            <div class="invite-step-num">1</div>
+            <div>
+              <div class="invite-step-title">Drop the link in the chat</div>
+              <div class="invite-step-copy">${weeklyMode ? 'Everyone opens the same room instead of rebuilding the group.' : 'The host has one obvious share action, not three competing buttons and a dead-end page.'}</div>
+            </div>
+          </div>
+          <div class="invite-step">
+            <div class="invite-step-num">2</div>
+            <div>
+              <div class="invite-step-title">Each player picks their identity</div>
+              <div class="invite-step-copy">The board wakes up fast when the group sees names, games, and live stakes in one place.</div>
+            </div>
+          </div>
+          <div class="invite-step">
+            <div class="invite-step-num">3</div>
+            <div>
+              <div class="invite-step-title">${weeklyMode ? 'Score, settle, and queue the next one' : 'Score the round, settle cleanly, then reuse the crew'}</div>
+              <div class="invite-step-copy">${weeklyMode ? 'The same room naturally becomes the next standing game.' : 'Settlement and replay become the social hook instead of the last admin step.'}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="invite-card dark">
+        <div class="invite-eyebrow">The field</div>
+        <div class="invite-title">The room is already set.</div>
+        <div class="invite-field-grid">
           ${S.players.map((p, i) => {
             const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
             const bg = colors[i % colors.length];
-            return `<div style="background:#fff;padding:16px 12px;border-radius:12px;text-align:center;box-shadow:0 4px 16px rgba(27,28,26,0.05)">
-              <div style="width:48px;height:48px;border-radius:50%;background:${bg};margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:-apple-system,sans-serif;font-size:16px;font-weight:700;letter-spacing:0.5px">${initials}</div>
-              <div style="font-family:-apple-system,sans-serif;font-weight:700;font-size:14px;color:#1A202C">${esc(p.name.split(' ').pop())}</div>
-              <div style="font-family:-apple-system,sans-serif;font-size:11px;color:#755b18;font-weight:700;text-transform:uppercase;margin-top:4px">HI ${p.handicapIndex || 0}</div>
+            return `<div class="invite-player-card">
+              <div class="invite-avatar" style="background:${bg}">${initials}</div>
+              <div>
+                <div class="invite-player-name">${esc(p.name)}</div>
+                <div class="invite-player-meta">HI ${p.handicapIndex || 0}</div>
+              </div>
             </div>`;
           }).join('')}
         </div>
-      </div>
+      </section>
 
-      <a href="/${slug}/?composer=1#scorecard" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:20px;background:linear-gradient(135deg,#755b18,#C4A35A);color:#fff;border:none;border-radius:12px;font-family:-apple-system,sans-serif;font-size:18px;font-weight:700;text-decoration:none;min-height:56px;margin-bottom:16px;box-shadow:0 8px 24px rgba(196,163,90,0.3)">
-        ${weeklyMode ? 'Open Weekly Scoring' : 'Start Scoring'}
-        <span style="font-size:20px">&rarr;</span>
-      </a>
-      <a href="/${slug}/#dashboard" style="display:flex;align-items:center;justify-content:center;gap:6px;font-family:-apple-system,sans-serif;font-size:14px;color:#755b18;font-weight:600;text-decoration:none;padding:14px;min-height:56px;margin-bottom:10px">
-        Preview Dashboard
-        </a>
-      <div style="font-size:12px;line-height:1.5;color:#718096;max-width:360px;margin:0 auto">${weeklyMode ? 'Next pass: make the group chat share card even tighter so one screenshot sells the recurring game.' : 'Next pass: tighten the share card so the first screenshot sells the product before anyone even taps.'}</div>
+      <div class="invite-actions" style="margin-bottom:12px">
+        <a href="/${slug}/?composer=1#scorecard" class="invite-btn primary">${nextPrimary}</a>
+        <a href="/${slug}/#dashboard" class="invite-btn secondary">Open The Board</a>
+      </div>
+      <div class="invite-footer-copy">${weeklyMode ? 'Still weak: the recurring path needs a stronger next-week template and better share art after settlement.' : 'Still weak: share cards and settlement need another premium pass so the group-chat screenshot sells the product on its own.'}</div>
     </div>`;
   document.querySelector('.bottom-bar').style.display = 'none';
   document.querySelector('.progress').style.display = 'none';

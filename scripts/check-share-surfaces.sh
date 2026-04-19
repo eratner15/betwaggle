@@ -49,7 +49,8 @@ function assertIncludes(body, needle, label) {
   await page.waitForTimeout(6000);
   const launchText = await page.locator('body').innerText();
   assertIncludes(launchText, 'WHAT HAPPENS NEXT', 'post-create launch screen renders next-steps block');
-  assertIncludes(launchText, '3. Share settlement', 'post-create launch screen renders share loop');
+  assertIncludes(launchText, 'Each player picks their identity', 'post-create launch screen renders identity handoff');
+  assertIncludes(launchText, 'Score the round, settle cleanly, then reuse the crew', 'post-create launch screen renders replay loop');
 
   await browser.close();
 })().catch((err) => {
@@ -63,4 +64,3 @@ BASE_URL="$BASE_URL" SLUG="$SLUG" npx -y -p playwright@1.52.0 bash -lc "
   export NODE_PATH=\"\$(dirname \"\$(dirname \"\$(command -v playwright)\")\")\"
   node \"$TMP_JS\"
 "
-
