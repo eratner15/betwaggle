@@ -7755,6 +7755,37 @@ export function renderSettlement(state) {
               </div>`).join('')}
           </div>
         </div>` : ''}
+        ${honors.length > 0 ? `<div class="mg-scramble-honors-card">
+          <div class="mg-scramble-section-eyebrow">On-course honors</div>
+          ${honors.filter((h) => h.status === 'awarded').length > 0 ? `<div style="margin-bottom:14px">
+            <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#775A19;margin-bottom:8px">Awarded</div>
+            <div class="mg-scramble-honors-grid">
+              ${honors.filter((h) => h.status === 'awarded').map((item) => `
+                <div class="mg-scramble-honor-row">
+                  <div>
+                    <strong>${item.type} · Hole ${item.hole}</strong>
+                    <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}</span>
+                  </div>
+                  <div class="mg-scramble-honor-result">${escHtml(item.winnerLabel)}</div>
+                </div>`).join('')}
+            </div>
+          </div>` : ''}
+          ${honors.filter((h) => h.status !== 'awarded').length > 0 ? `<div>
+            <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#E8735A;margin-bottom:8px">Unresolved · commissioner to decide</div>
+            <div class="mg-scramble-honors-grid">
+              ${honors.filter((h) => h.status !== 'awarded').map((item) => `
+                <div class="mg-scramble-honor-row">
+                  <div>
+                    <strong>${item.type} · Hole ${item.hole}</strong>
+                    <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}${item.status === 'deferred' ? ' · deferred' : ''}</span>
+                  </div>
+                  <div class="mg-scramble-honor-result pending">
+                    ${state.adminAuthed ? `<button data-kind="${item.type.toLowerCase()}" data-hole="${item.hole}" onclick="window.MG.openSideGameResolver(this.dataset.kind, Number(this.dataset.hole))" style="padding:6px 10px;min-height:32px;border-radius:6px;border:1px solid rgba(232,115,90,0.45);background:transparent;color:#E8735A;font-size:11px;font-weight:700;letter-spacing:0.04em;cursor:pointer">Resolve now</button>` : 'Pending'}
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>` : ''}
+        </div>` : ''}
         <div class="mg-scramble-settlement-actions">
           <a href="#scorecard" class="mg-scramble-settlement-primary">Keep scoring</a>
           <a href="#dashboard" class="mg-scramble-settlement-secondary">Back to the board</a>
