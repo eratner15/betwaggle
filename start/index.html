@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Start — Waggle Golf Sportsbook</title>
+  <meta name="description" content="Your buddy sent this to you. Run your next golf trip like a sportsbook: pick games, post scores, get Venmo links. $32 per outing.">
+  <link rel="canonical" href="https://betwaggle.com/start/">
+  <meta property="og:title" content="You just got invited to Waggle">
+  <meta property="og:description" content="Run your next golf trip like a sportsbook. Pick games, post scores on your phone, get Venmo links at the 19th hole.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://betwaggle.com/start/">
+  <meta property="og:image" content="https://betwaggle.com/og-card-logo.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="You just got invited to Waggle">
+  <meta name="twitter:image" content="https://betwaggle.com/og-card-logo.jpg">
+  <meta name="theme-color" content="#1B2B4B">
+  <link rel="apple-touch-icon" href="/favicon-180.jpg">
+  <link rel="icon" type="image/jpeg" href="/favicon-180.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #1B2B4B;
+      --navy-dark: #0F1A2E;
+      --gold: #C4A35A;
+      --gold-bright: #F3D79A;
+      --gold-deep: #775A19;
+      --ivory: #FAF8F5;
+      --ivory-warm: #F5F0E8;
+      --text-primary: #2D3748;
+      --text-muted: #6B7280;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--sans);
+      background: var(--ivory-warm);
+      color: var(--text-primary);
+      line-height: 1.55;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { max-width: 540px; margin: 0 auto; padding: 24px 20px 48px; }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(180deg, var(--navy) 0%, var(--navy-dark) 100%);
+      color: var(--ivory);
+      border-radius: 24px;
+      padding: 28px 22px 32px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 48px rgba(15, 26, 46, 0.22);
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(196, 163, 90, 0.18), transparent 55%);
+      pointer-events: none;
+    }
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 163, 90, 0.14);
+      border: 1px solid rgba(196, 163, 90, 0.3);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold-bright);
+      margin-bottom: 14px;
+      position: relative; z-index: 1;
+    }
+    .hero-kicker::before {
+      content: '';
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 6px rgba(196, 163, 90, 0.7);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(30px, 6.5vw, 40px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+      position: relative; z-index: 1;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold-bright);
+      font-weight: 600;
+    }
+    .hero p {
+      font-size: 15px;
+      color: rgba(250, 248, 245, 0.76);
+      line-height: 1.55;
+      max-width: 420px;
+      position: relative; z-index: 1;
+    }
+
+    .hero-ctas {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 22px;
+      position: relative; z-index: 1;
+    }
+    .btn-primary, .btn-ghost {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 22px;
+      border-radius: 14px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.15s ease, background 0.15s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold) 0%, #B08D44 100%);
+      color: var(--navy-dark);
+      box-shadow: 0 8px 20px rgba(196, 163, 90, 0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); opacity: 0.96; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ivory);
+      border: 1px solid rgba(250, 248, 245, 0.25);
+    }
+    .btn-ghost:hover { background: rgba(250, 248, 245, 0.06); }
+
+    /* SECTION */
+    .section {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(15, 26, 46, 0.06);
+      box-shadow: 0 4px 14px rgba(15, 26, 46, 0.04);
+    }
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .section-title em {
+      font-style: italic;
+      color: var(--gold-deep);
+    }
+
+    /* 3-STEP */
+    .steps { display: grid; gap: 14px; margin-top: 14px; }
+    .step {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .step-num {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: var(--gold-bright);
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step h3 {
+      font-family: var(--serif);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 4px;
+      line-height: 1.25;
+    }
+    .step p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* SCREENSHOT CARD */
+    .peek {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+      color: var(--ivory);
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 28px rgba(15, 26, 46, 0.18);
+    }
+    .peek-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--ivory);
+    }
+    .peek-sub {
+      font-size: 13px;
+      color: rgba(250, 248, 245, 0.64);
+      margin-bottom: 18px;
+    }
+    .peek-stat-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .peek-stat {
+      background: rgba(250, 248, 245, 0.06);
+      border: 1px solid rgba(250, 248, 245, 0.1);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .peek-stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(250, 248, 245, 0.56);
+      margin-bottom: 3px;
+    }
+    .peek-stat-value {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ivory);
+      line-height: 1;
+    }
+    .peek-stat.money .peek-stat-value {
+      color: var(--gold-bright);
+      font-size: 26px;
+    }
+    .peek-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(250, 248, 245, 0.08);
+      font-size: 14px;
+    }
+    .peek-row:last-child { border-bottom: none; }
+    .peek-row .rank {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--gold);
+      color: var(--navy-dark);
+      font-size: 11px; font-weight: 800;
+      margin-right: 10px;
+    }
+    .peek-row .team { font-weight: 600; color: var(--ivory); }
+    .peek-row .score {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold-bright);
+    }
+    .peek-caption {
+      font-size: 12px;
+      color: rgba(250, 248, 245, 0.5);
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    /* PRICE CARD */
+    .price-card {
+      background: linear-gradient(135deg, rgba(196, 163, 90, 0.1) 0%, rgba(196, 163, 90, 0.03) 100%);
+      border: 1.5px solid var(--gold);
+      border-radius: 20px;
+      padding: 24px 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .price-amount {
+      font-family: var(--serif);
+      font-size: 56px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .price-amount .slash { color: var(--gold-deep); font-size: 18px; font-weight: 500; }
+    .price-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .price-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .price-detail {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    .price-detail::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* FAQ */
+    .faq-item {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(15, 26, 46, 0.08);
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .faq-a {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* FINAL CTA */
+    .final-cta {
+      background: var(--navy);
+      color: var(--ivory);
+      border-radius: 24px;
+      padding: 28px 22px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 26, 46, 0.18);
+    }
+    .final-cta h2 {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.15;
+    }
+    .final-cta p {
+      font-size: 14px;
+      color: rgba(250, 248, 245, 0.7);
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+    .final-cta .btn-primary {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .final-cta .btn-ghost {
+      width: 100%;
+    }
+
+    footer {
+      text-align: center;
+      padding: 8px 20px 24px;
+      color: rgba(45, 55, 72, 0.45);
+      font-size: 12px;
+      font-family: var(--serif);
+      font-style: italic;
+    }
+    footer a { color: var(--gold-deep); font-style: normal; font-weight: 600; }
+
+    @media (min-width: 640px) {
+      .hero-ctas { grid-template-columns: 1fr 1fr; }
+      .hero h1 { font-size: 44px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-kicker">You just got invited</div>
+      <h1>Run your golf trip like a <em>sportsbook</em>.</h1>
+      <p>Your buddy sent this to you because they want to run a real trip. Pick your games, post scores on your phone, and the math handles itself. Here is what that looks like.</p>
+      <div class="hero-ctas">
+        <a href="/demo-scramble/" class="btn-primary">See it live &nbsp;&rarr;</a>
+        <a href="#how" class="btn-ghost">How it works</a>
+      </div>
+    </section>
+
+    <!-- 3 STEPS -->
+    <section class="section" id="how">
+      <div class="section-eyebrow">How it works</div>
+      <div class="section-title">Three steps. Zero math at the 19th.</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <h3>Pick your games</h3>
+            <p>Nassau, skins, wolf, Vegas, scramble — 12 formats total. Set your stakes once, we handle presses, carry-overs, and hammers.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <h3>Post scores on your phone</h3>
+            <p>Tap the number, move on. Works offline between holes, syncs when you get signal back. No spreadsheets, no one nominated as scorekeeper.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <h3>Settle and share</h3>
+            <p>At the turn, everyone sees the live money board. After 18, a settlement card with Venmo deep links. Screenshot, send, done.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE PEEK -->
+    <section class="peek">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px rgba(196,163,90,0.7)"></span>
+        <span style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-bright)">Live right now</span>
+      </div>
+      <div class="peek-title">Spring Scramble 2026</div>
+      <div class="peek-sub">12 teams, 4 holes left, one tied for the lead</div>
+      <div class="peek-stat-row">
+        <div class="peek-stat money">
+          <div class="peek-stat-label">Purse</div>
+          <div class="peek-stat-value">$1,600</div>
+        </div>
+        <div class="peek-stat">
+          <div class="peek-stat-label">Thru</div>
+          <div class="peek-stat-value">14</div>
+        </div>
+        <div class="peek-stat">
+          <div class="peek-stat-label">Lead</div>
+          <div class="peek-stat-value">Tied</div>
+        </div>
+      </div>
+      <div class="peek-row">
+        <div><span class="rank">1</span><span class="team">The Wolves</span></div>
+        <div class="score">-9</div>
+      </div>
+      <div class="peek-row">
+        <div><span class="rank">2</span><span class="team">The Panthers</span></div>
+        <div class="score">-8</div>
+      </div>
+      <div class="peek-row">
+        <div><span class="rank">3</span><span class="team">The Vipers</span></div>
+        <div class="score">-8</div>
+      </div>
+      <div class="peek-caption">This is the live board from a real scramble running right now. &mdash; <a href="/demo-scramble/" style="color:var(--gold-bright);font-weight:700;text-decoration:underline">Open it</a></div>
+    </section>
+
+    <!-- PRICE -->
+    <section class="price-card">
+      <div class="section-eyebrow">One price. One trip.</div>
+      <div class="price-amount">$32<span class="slash"> / outing</span></div>
+      <div class="price-sub">Less than $8 a head for a foursome.</div>
+      <div class="price-details">
+        <div class="price-detail">Unlimited players</div>
+        <div class="price-detail">All 12 game formats</div>
+        <div class="price-detail">GHIN handicap lookup</div>
+        <div class="price-detail">Settlement + Venmo links</div>
+        <div class="price-detail">17,000 US courses</div>
+        <div class="price-detail">Offline-first on course</div>
+      </div>
+      <a href="/create/" class="btn-primary" style="width:100%">Start my trip &nbsp;&rarr;</a>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section">
+      <div class="section-eyebrow">Before you ask</div>
+      <div class="section-title">The usual questions.</div>
+      <div class="faq-item">
+        <div class="faq-q">Do I need to download anything?</div>
+        <div class="faq-a">No. It is a web app. Works on any phone browser, no app store required. Add to your home screen and it looks like an app.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What if we lose signal on the course?</div>
+        <div class="faq-a">Scores queue locally and sync the moment you get bars back. Built for Pinehurst Wi-Fi, not the office.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Do handicaps work?</div>
+        <div class="faq-a">Yes. GHIN lookup on create, strokes applied per hole via the stroke index. Gross and net tracked separately.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Who pays the $32?</div>
+        <div class="faq-a">Whoever sets up the trip. One charge, the whole group plays. Usually the host. Sometimes the loser at the 19th.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I see it before I pay?</div>
+        <div class="faq-a">Yes. <a href="/demo-scramble/" style="color:var(--gold-deep);font-weight:700">Open the live demo</a> and tap around. No sign-in, no email gate.</div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="final-cta">
+      <h2>Your trip is in six weeks. Set it up today.</h2>
+      <p>One link to your group. Everyone sees the same board, the same bets, the same math. No arguments at dinner.</p>
+      <a href="/create/" class="btn-primary">Start my trip &nbsp;&mdash; $32</a>
+      <a href="/demo-scramble/" class="btn-ghost">Try the demo first</a>
+    </section>
+
+    <footer>
+      Waggle by <a href="https://cafecito-ai.com">Cafecito AI</a>
+    </footer>
+
+  </div>
+</body>
+</html>

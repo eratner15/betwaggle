@@ -22,7 +22,7 @@ function getEventInfo() {
   const path = location.pathname;
   // betwaggle.com/:slug/ pattern (primary)
   const match = path.match(/^\/([a-z0-9_-]+)/);
-  if (match && !['app','create','ads','marketing','courses','overview','tour','gtm','api','join','affiliate','health','go','demo'].includes(match[1])) {
+  if (match && !['app','create','ads','marketing','courses','overview','tour','gtm','api','join','affiliate','health','go','demo','start'].includes(match[1])) {
     return { slug: match[1], basePath: `/${match[1]}` };
   }
   // Backward compat: /waggle/:slug/ (old URLs)
