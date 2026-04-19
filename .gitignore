@@ -4,5 +4,12 @@ node_modules/
 .gstack/
 inventory/
 reports/
+command center/
 *-private/
+*.zip
 *.Zone.Identifier
+*:Zone.Identifier
+tests/artifacts/*.png
+hero-golf2.jpg
+waggle_premium_landing_page.png
+swingthought/

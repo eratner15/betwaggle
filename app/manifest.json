@@ -1,7 +1,7 @@
 {
-  "name": "Turnberry Isle Member-Guest 2026",
-  "short_name": "MG 2026",
-  "description": "Live scores, betting odds & Calcutta tracker. 48 teams, 8 flights.",
+  "name": "Waggle Demo Board",
+  "short_name": "Waggle Demo",
+  "description": "Live scores, betting, and settlement for a golf trip.",
   "start_url": "/app/",
   "display": "standalone",
   "background_color": "#F5F0E8",

@@ -6,8 +6,29 @@
 export async function loadConfig(slug, basePath) {
   const configUrl = `${basePath}/config.json`;
   const res = await fetch(configUrl);
-  if (!res.ok) throw new Error(`Config not found for event: ${slug}`);
-  return res.json();
+  if (res.ok) return res.json();
+
+  const isLocalPreview =
+    location.hostname === '127.0.0.1' ||
+    location.hostname === 'localhost' ||
+    location.protocol === 'file:';
+
+  if (isLocalPreview) {
+    const previewRes = await fetch('/app/config.json');
+    if (previewRes.ok) {
+      const previewConfig = await previewRes.json();
+      const previewSlug = slug || previewConfig?.event?.slug || 'demo-buddies';
+      return {
+        ...previewConfig,
+        event: {
+          ...previewConfig.event,
+          slug: previewSlug,
+        },
+      };
+    }
+  }
+
+  throw new Error(`Config not found for event: ${slug}`);
 }
 
 // ── Match generator ───────────────────────────────────────────

@@ -1,110 +1,27 @@
 {
   "event": {
-    "name": "Turnberry Isle Men's Member-Guest",
-    "shortName": "MG 2026",
-    "venue": "Soffer Course — Turnberry Isle",
-    "url": "https://betwaggle.com/app/",
-    "dates": { "practice": "2026-03-19", "day1": "2026-03-20", "day2": "2026-03-21" },
-    "dayLabels": { "day1": "Friday", "day2": "Saturday" },
-    "format": "round_robin_match_play",
-    "adminPin": "2026"
+    "name": "Waggle Demo Board",
+    "shortName": "Demo Board",
+    "eventType": "buddies_trip",
+    "course": "Demo Course",
+    "venue": "Demo Course",
+    "slug": "demo-buddies"
   },
-  "scoring": {
-    "totalPointsPerMatch": 10,
-    "capMax": 7,
-    "capMin": 3,
-    "handicapAllowance": 0.85,
-    "holesPerMatch": 9
-  },
-  "structure": {
-    "teamsPerFlight": 6,
-    "roundsTotal": 5,
-    "pairingsPerRound": 3,
-    "roundDays": { "1": "Friday", "2": "Friday", "3": "Friday", "4": "Saturday", "5": "Saturday" },
-    "roundTimes": { "1": "8:30 AM", "2": "11:00 AM", "3": "1:30 PM", "4": "10:00 AM", "5": "12:30 PM" }
-  },
-  "flightOrder": ["woods","palmer","nicklaus","hogan","boros","trevino","sarazen","player"],
-  "flights": {
-    "woods":    { "id": "woods",    "name": "Woods Flight",    "tees": "Blue",  "teamIds": [1,2,3,4,5,6] },
-    "palmer":   { "id": "palmer",   "name": "Palmer Flight",   "tees": "Blue",  "teamIds": [7,8,9,10,11,12] },
-    "nicklaus": { "id": "nicklaus", "name": "Nicklaus Flight", "tees": "Blue",  "teamIds": [13,14,15,16,17,18] },
-    "hogan":    { "id": "hogan",    "name": "Hogan Flight",    "tees": "Blue",  "teamIds": [19,20,21,22,23,24] },
-    "boros":    { "id": "boros",    "name": "Boros Flight",    "tees": "Blue",  "teamIds": [25,26,27,28,29,30] },
-    "trevino":  { "id": "trevino",  "name": "Trevino Flight",  "tees": "Blue",  "teamIds": [31,32,33,34,35,36] },
-    "sarazen":  { "id": "sarazen",  "name": "Sarazen Flight",  "tees": "Blue",  "teamIds": [37,38,39,40,41,42] },
-    "player":   { "id": "player",   "name": "Player Flight",   "tees": "White", "teamIds": [43,44,45,46,47,48] }
-  },
-  "teams": {
-    "1":  { "id":1,  "member":"Billy Green",       "guest":"Joe Pryor",         "memberHI":2.2,   "guestHI":-0.7,  "combined":1.5,  "flight":"woods" },
-    "2":  { "id":2,  "member":"Zachary Phlegar",    "guest":"Chase Cury",        "memberHI":7.3,   "guestHI":-2.7,  "combined":4.6,  "flight":"woods" },
-    "3":  { "id":3,  "member":"Ryan Wolter",        "guest":"Shane Wolter",      "memberHI":7.1,   "guestHI":-0.5,  "combined":6.6,  "flight":"woods" },
-    "4":  { "id":4,  "member":"Ariel Saban",        "guest":"Mark Wagenberg",    "memberHI":9.0,   "guestHI":-1.0,  "combined":8.0,  "flight":"woods" },
-    "5":  { "id":5,  "member":"Jason Goldberg",     "guest":"Matt Scarafoni",    "memberHI":5.6,   "guestHI":2.6,   "combined":8.2,  "flight":"woods" },
-    "6":  { "id":6,  "member":"Scott Weiselberg",   "guest":"Jon Weber",         "memberHI":8.1,   "guestHI":1.5,   "combined":9.6,  "flight":"woods" },
-    "7":  { "id":7,  "member":"Jonathan Shapero",   "guest":"Jonny Slater",      "memberHI":9.2,   "guestHI":1.3,   "combined":10.5, "flight":"palmer" },
-    "8":  { "id":8,  "member":"Shlomi Asayag",      "guest":"Anthony Pollak",    "memberHI":0.3,   "guestHI":10.3,  "combined":10.6, "flight":"palmer" },
-    "9":  { "id":9,  "member":"Bradley Moskovitz",  "guest":"Max Winter",        "memberHI":7.5,   "guestHI":4.3,   "combined":11.8, "flight":"palmer" },
-    "10": { "id":10, "member":"Brett Weiselberg",   "guest":"Andrew Hausdorff",  "memberHI":6.7,   "guestHI":6.1,   "combined":12.8, "flight":"palmer" },
-    "11": { "id":11, "member":"Michael Rau",        "guest":"Joseph Dabrowski",  "memberHI":9.4,   "guestHI":4.5,   "combined":13.9, "flight":"palmer" },
-    "12": { "id":12, "member":"Bruce Silcoff",      "guest":"Joseph Young",      "memberHI":5.7,   "guestHI":8.8,   "combined":14.5, "flight":"palmer" },
-    "13": { "id":13, "member":"Robert Sherkin",     "guest":"Adam Polan",        "memberHI":8.2,   "guestHI":7.0,   "combined":15.2, "flight":"nicklaus" },
-    "14": { "id":14, "member":"Noah Storch",        "guest":"Drew Romano",       "memberHI":9.2,   "guestHI":6.2,   "combined":15.4, "flight":"nicklaus" },
-    "15": { "id":15, "member":"Michael Messinger",  "guest":"Logan Izenstark",   "memberHI":12.8,  "guestHI":2.8,   "combined":15.6, "flight":"nicklaus" },
-    "16": { "id":16, "member":"Lawrence Weinstein", "guest":"Nathan Smith",      "memberHI":5.5,   "guestHI":10.6,  "combined":16.1, "flight":"nicklaus" },
-    "17": { "id":17, "member":"Michael Papadakis",  "guest":"Rick Bielen",       "memberHI":10.5,  "guestHI":6.1,   "combined":16.6, "flight":"nicklaus" },
-    "18": { "id":18, "member":"Bud Thomas",         "guest":"Brian Leek",        "memberHI":13.5,  "guestHI":3.5,   "combined":17.0, "flight":"nicklaus" },
-    "19": { "id":19, "member":"Steven Scheck",      "guest":"Bradley Sherman",   "memberHI":5.6,   "guestHI":11.5,  "combined":17.1, "flight":"hogan" },
-    "20": { "id":20, "member":"Jason Morjain",      "guest":"Bryan Morjain",     "memberHI":8.3,   "guestHI":9.5,   "combined":17.8, "flight":"hogan" },
-    "21": { "id":21, "member":"Michael Conway",     "guest":"Miles Rubin",       "memberHI":9.4,   "guestHI":9.4,   "combined":18.8, "flight":"hogan" },
-    "22": { "id":22, "member":"David Arison",       "guest":"Omer Tiroche",      "memberHI":13.1,  "guestHI":6.0,   "combined":19.1, "flight":"hogan" },
-    "23": { "id":23, "member":"Barry Lewin",        "guest":"John Martin",       "memberHI":12.3,  "guestHI":6.9,   "combined":19.2, "flight":"hogan" },
-    "24": { "id":24, "member":"Glenn Kaplan",       "guest":"Aaron Hattaway",    "memberHI":14.7,  "guestHI":4.7,   "combined":19.4, "flight":"hogan" },
-    "25": { "id":25, "member":"Stephen Miller",     "guest":"Jeff Weshler",      "memberHI":10.8,  "guestHI":8.7,   "combined":19.5, "flight":"boros" },
-    "26": { "id":26, "member":"Adam Froman",        "guest":"Brian Cohen",       "memberHI":10.5,  "guestHI":9.6,   "combined":20.1, "flight":"boros" },
-    "27": { "id":27, "member":"Arnold Thorstad",    "guest":"Matt Pfennig",      "memberHI":10.6,  "guestHI":10.5,  "combined":21.1, "flight":"boros" },
-    "28": { "id":28, "member":"Stephen Vecchitto",  "guest":"Norm Wedderburn",   "memberHI":10.8,  "guestHI":11.4,  "combined":22.2, "flight":"boros" },
-    "29": { "id":29, "member":"Harry Salinas",      "guest":"Anthony Sauce",     "memberHI":11.6,  "guestHI":11.4,  "combined":23.0, "flight":"boros" },
-    "30": { "id":30, "member":"Glenn Singer",       "guest":"Kenny Braeseke",    "memberHI":16.4,  "guestHI":6.7,   "combined":23.1, "flight":"boros" },
-    "31": { "id":31, "member":"David Vecchitto",    "guest":"Matthew Vecchitto", "memberHI":14.0,  "guestHI":9.5,   "combined":23.5, "flight":"trevino" },
-    "32": { "id":32, "member":"Ricardo Malfitano",  "guest":"Keith Greenberg",   "memberHI":11.8,  "guestHI":12.4,  "combined":24.2, "flight":"trevino" },
-    "33": { "id":33, "member":"Kenneth Zucker",     "guest":"Mat Sposta",        "memberHI":16.8,  "guestHI":7.9,   "combined":24.7, "flight":"trevino" },
-    "34": { "id":34, "member":"Lon Goldstein",      "guest":"Larry Weissman",    "memberHI":15.5,  "guestHI":9.3,   "combined":24.8, "flight":"trevino" },
-    "35": { "id":35, "member":"Jason Ellman",       "guest":"Vincent Elefante",  "memberHI":11.3,  "guestHI":13.9,  "combined":25.2, "flight":"trevino" },
-    "36": { "id":36, "member":"Robert Sigler",      "guest":"David Firestone",   "memberHI":15.3,  "guestHI":10.0,  "combined":25.3, "flight":"trevino" },
-    "37": { "id":37, "member":"Robert Stein",       "guest":"Mike Malkin",       "memberHI":14.0,  "guestHI":12.9,  "combined":26.9, "flight":"sarazen" },
-    "38": { "id":38, "member":"Neil Rosenfeld",     "guest":"Richard Chipman",   "memberHI":12.8,  "guestHI":14.4,  "combined":27.2, "flight":"sarazen" },
-    "39": { "id":39, "member":"Tyler Gold",         "guest":"Jeff Leach",        "memberHI":13.6,  "guestHI":13.6,  "combined":27.2, "flight":"sarazen" },
-    "40": { "id":40, "member":"Nick Wall",          "guest":"Alex Ardente",      "memberHI":10.0,  "guestHI":17.6,  "combined":27.6, "flight":"sarazen" },
-    "41": { "id":41, "member":"Paul Riemer",        "guest":"Josh Diamond",      "memberHI":16.0,  "guestHI":14.3,  "combined":30.3, "flight":"sarazen" },
-    "42": { "id":42, "member":"Murry Shapero",      "guest":"Greg Slater",       "memberHI":19.7,  "guestHI":12.4,  "combined":32.1, "flight":"sarazen" },
-    "43": { "id":43, "member":"Gary Pyott",         "guest":"Ryan Tucker",       "memberHI":13.5,  "guestHI":20.8,  "combined":34.3, "flight":"player" },
-    "44": { "id":44, "member":"Drew Seder",         "guest":"Rob Grinberg",      "memberHI":18.1,  "guestHI":17.0,  "combined":35.1, "flight":"player" },
-    "45": { "id":45, "member":"Brent Porges",       "guest":"Frank Smookler",    "memberHI":22.1,  "guestHI":13.2,  "combined":35.3, "flight":"player" },
-    "46": { "id":46, "member":"Jordan Sayfie",      "guest":"Morten Aagaard",    "memberHI":22.9,  "guestHI":12.9,  "combined":35.8, "flight":"player" },
-    "47": { "id":47, "member":"Evan Ratner",        "guest":"Craig Posner",      "memberHI":16.1,  "guestHI":20.0,  "combined":36.1, "flight":"player" },
-    "48": { "id":48, "member":"Rajiv Sharma",       "guest":"Ashwani Mayur",     "memberHI":15.5,  "guestHI":25.5,  "combined":41.0, "flight":"player" }
-  },
-  "pairings": {
-    "woods":    { "1":[[1,6],[2,5],[3,4]], "2":[[2,3],[1,5],[6,4]], "3":[[5,3],[6,2],[1,4]], "4":[[1,3],[4,2],[5,6]], "5":[[4,5],[1,2],[3,6]] },
-    "palmer":   { "1":[[7,12],[8,11],[9,10]], "2":[[8,9],[7,11],[12,10]], "3":[[11,9],[12,8],[7,10]], "4":[[7,9],[10,8],[11,12]], "5":[[10,11],[7,8],[9,12]] },
-    "nicklaus": { "1":[[13,18],[14,17],[15,16]], "2":[[14,15],[13,17],[18,16]], "3":[[17,15],[18,14],[13,16]], "4":[[13,15],[16,14],[17,18]], "5":[[16,17],[13,14],[15,18]] },
-    "hogan":    { "1":[[19,24],[20,23],[21,22]], "2":[[20,21],[19,23],[24,22]], "3":[[23,21],[24,20],[19,22]], "4":[[19,21],[22,20],[23,24]], "5":[[22,23],[19,20],[21,24]] },
-    "boros":    { "1":[[25,30],[26,29],[27,28]], "2":[[26,27],[25,29],[30,28]], "3":[[29,27],[30,26],[25,28]], "4":[[25,27],[28,26],[29,30]], "5":[[28,29],[25,26],[27,30]] },
-    "trevino":  { "1":[[31,36],[32,35],[33,34]], "2":[[32,33],[31,35],[36,34]], "3":[[35,33],[36,32],[31,34]], "4":[[31,33],[34,32],[35,36]], "5":[[34,35],[31,32],[33,36]] },
-    "sarazen":  { "1":[[37,42],[38,41],[39,40]], "2":[[38,39],[37,41],[42,40]], "3":[[41,39],[42,38],[37,40]], "4":[[37,39],[40,38],[41,42]], "5":[[40,41],[37,38],[39,42]] },
-    "player":   { "1":[[43,48],[44,47],[45,46]], "2":[[44,45],[43,47],[48,46]], "3":[[47,45],[48,44],[43,46]], "4":[[43,45],[46,44],[47,48]], "5":[[46,47],[43,44],[45,48]] }
-  },
-  "theme": {
-    "primary": "#1A472A",
-    "accent": "#D4AF37",
-    "bg": "#F5F0E8",
-    "headerFont": "Inter",
-    "bodyFont": "Inter"
-  },
-  "features": {
-    "betting": true,
-    "calcutta": true,
-    "shootout": true,
-    "shareButtons": true
+  "players": [
+    { "name": "Jake Sullivan", "handicapIndex": 8.2 },
+    { "name": "Ryan Costa", "handicapIndex": 14.6 },
+    { "name": "Mike Torres", "handicapIndex": 5.1 },
+    { "name": "Dan Keller", "handicapIndex": 11.8 }
+  ],
+  "roster": [
+    { "name": "Jake Sullivan", "handicapIndex": 8.2 },
+    { "name": "Ryan Costa", "handicapIndex": 14.6 },
+    { "name": "Mike Torres", "handicapIndex": 5.1 },
+    { "name": "Dan Keller", "handicapIndex": 11.8 }
+  ],
+  "games": {
+    "nassau": true,
+    "skins": true,
+    "wolf": true
   }
 }

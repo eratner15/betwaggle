@@ -868,14 +868,14 @@ export default {
       if (subPath === '/manifest.json') {
         let eventName = 'Waggle';
         let shortName = 'Waggle';
-        let themeColor = '#1B2B4B';
+        let themeColor = '#002046';
         try {
           const cfgRaw = await env.MG_BOOK.get(`config:${slug}`, 'text');
           if (cfgRaw) {
             const cfg = JSON.parse(cfgRaw);
             eventName = cfg.event?.name || 'Waggle';
             shortName = cfg.event?.shortName || eventName;
-            themeColor = cfg.theme?.primary || '#1B2B4B';
+            themeColor = cfg.theme?.primary || '#002046';
           }
         } catch {}
         const manifest = {
@@ -893,7 +893,7 @@ export default {
       }
       // Dynamic icon SVG for this event
       if (subPath === '/icon-180.svg') {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="32" fill="#1B2B4B"/><text x="90" y="108" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="700" fill="#D4AF37">W</text></svg>`;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="32" fill="#002046"/><text x="90" y="108" text-anchor="middle" font-family="sans-serif" font-size="64" font-weight="700" fill="#775A19">W</text></svg>`;
         return new Response(svg, {
           headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' }
         });
@@ -1513,10 +1513,7 @@ export default {
       return env.ASSETS.fetch(guideReq);
     }
 
-    // / — landing page (A/B test: 50/50 split, sticky via cookie)
-    // Homepage — serve main index.html (A/B test disabled for stability)
-    // To re-enable A/B: uncomment and test thoroughly before deploying
-    // if (url.pathname === '/' || url.pathname === '') { ... }
+    // Homepage — served as static asset by Cloudflare CDN (run_worker_first: false)
 
     // ===== LEGACY: backward compat for /waggle/ URLs during migration =====
     if (url.pathname.startsWith('/waggle/')) {
@@ -1612,7 +1609,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1B2B4B', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
+          theme: { primary: '#002046', accent: '#775A19', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           course: { id: 'pga-frisco-east', name: 'Fields Ranch East at PGA Frisco' },
           coursePars: [5,4,5,3,4,4,4,3,4,4,4,4,3,5,4,4,3,5],
           courseHcpIndex: [9,5,17,11,7,1,13,15,3,8,12,4,10,2,14,6,18,16],
@@ -1698,7 +1695,7 @@ export default {
           ],
           wolfOrder: ['Joseph Weill', 'Andrew Morrison', 'Robert Edgerton', 'Benjamin Samuels'],
           teams: {}, flights: {}, flightOrder: [], pairings: {},
-          theme: { primary: '#1B2B4B', accent: '#D4AF37', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
+          theme: { primary: '#002046', accent: '#775A19', bg: '#F5F0E8', headerFont: 'Inter', bodyFont: 'Inter' },
           // 3 rounds at PGA Frisco
           rounds: {
             1: { course: 'Fields Ranch East', tees: 'Three Tees (~6,500 yds)', par: 72 },
@@ -2479,34 +2476,34 @@ async function handleWaggleJoinPage(slug, env) {
 <title>Join ${eventName} | Waggle</title>
 <meta property="og:title" content="Join ${eventName}">
 <meta property="og:description" content="Register for ${eventName}${venue ? ' at ' + venue : ''}. Enter your name and handicap index.">
-<meta name="theme-color" content="#0F1A2E">
+<meta name="theme-color" content="#002046">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0F1A2E;color:#F5F0E8;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+body{background:#002046;color:#F5F0E8;font-family:'Manrope',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
 .logo{width:48px;height:48px;border-radius:12px;margin-bottom:16px}
-.event-name{font-family:'Inter',sans-serif;font-size:26px;font-weight:700;color:#D4AF37;text-align:center;line-height:1.2}
+.event-name{font-family:'Manrope',sans-serif;font-size:26px;font-weight:700;color:#775A19;text-align:center;line-height:1.2}
 .event-sub{font-size:14px;color:#9BAF88;text-align:center;margin-top:6px}
-.card{background:#1B2B4B;border:1px solid rgba(212,175,55,0.25);border-radius:16px;padding:24px;width:100%;max-width:420px;margin-top:24px}
+.card{background:#002046;border:1px solid rgba(212,175,55,0.25);border-radius:16px;padding:24px;width:100%;max-width:420px;margin-top:24px}
 label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#9BAF88;margin-bottom:6px}
-input{width:100%;padding:14px 16px;background:#0F1A2E;border:2px solid rgba(212,175,55,0.25);border-radius:10px;font-size:17px;color:#F5F0E8;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
-input:focus{border-color:#D4AF37}
+input{width:100%;padding:14px 16px;background:#002046;border:2px solid rgba(212,175,55,0.25);border-radius:10px;font-size:17px;color:#F5F0E8;font-family:'Manrope',sans-serif;outline:none;transition:border-color 0.2s;-webkit-appearance:none}
+input:focus{border-color:#775A19}
 .field{margin-bottom:20px}
 .hi-hint{font-size:12px;color:#9BAF88;margin-top:6px}
-.btn{width:100%;padding:16px;background:#D4AF37;color:#0F1A2E;border:none;border-radius:10px;font-size:17px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
+.btn{width:100%;padding:16px;background:#775A19;color:#002046;border:none;border-radius:10px;font-size:17px;font-weight:700;font-family:'Manrope',sans-serif;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
 .btn:active{opacity:0.85}
 .btn:disabled{opacity:0.4;cursor:default}
 .success{text-align:center;padding:32px 0}
 .success-icon{font-size:48px;margin-bottom:16px}
-.success-title{font-family:'Inter',sans-serif;font-size:24px;color:#D4AF37;margin-bottom:8px}
+.success-title{font-family:'Manrope',sans-serif;font-size:24px;color:#775A19;margin-bottom:8px}
 .success-msg{color:#9BAF88;font-size:14px;line-height:1.6}
 .error-msg{color:#ff6b6b;font-size:13px;margin-top:8px;display:none}
 .powered{font-size:11px;color:rgba(155,175,136,0.5);margin-top:32px;text-align:center}
 .hi-help{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:8px}
 .hi-help-icon{font-size:20px;flex-shrink:0}
 .hi-help-text{font-size:12px;color:#9BAF88;line-height:1.5}
-.hi-help-text a{color:#D4AF37;text-decoration:none}
+.hi-help-text a{color:#775A19;text-decoration:none}
 </style>
 </head>
 <body>
@@ -3999,15 +3996,15 @@ async function handleCheckoutSuccess(url, env) {
         subject: `Your Waggle event is live: ${eventName}`,
         html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;padding:32px 24px">
   <img src="https://betwaggle.com/logo.jpg" alt="Waggle" style="height:36px;margin-bottom:24px">
-  <h2 style="color:#0F1A2E;font-size:22px;margin:0 0 8px">Your sportsbook is live.</h2>
+  <h2 style="color:#002046;font-size:22px;margin:0 0 8px">Your sportsbook is live.</h2>
   <p style="color:#374151;font-size:15px;margin:0 0 24px">Share this link with your group. Everyone opens it on their phone.</p>
-  <a href="${eventUrl}" style="display:block;background:#2A3F66;color:#fff;text-align:center;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:24px">${eventUrl}</a>
+  <a href="${eventUrl}" style="display:block;background:#1B365D;color:#fff;text-align:center;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;margin-bottom:24px">${eventUrl}</a>
   <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:16px 20px;margin-bottom:24px">
     <p style="margin:0 0 8px;font-size:13px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Admin Access</p>
-    <p style="margin:0 0 4px;font-size:15px;color:#111827"><strong>Admin link:</strong> <a href="${adminUrl}" style="color:#2A3F66">${adminUrl}</a></p>
+    <p style="margin:0 0 4px;font-size:15px;color:#111827"><strong>Admin link:</strong> <a href="${adminUrl}" style="color:#1B365D">${adminUrl}</a></p>
     <p style="margin:0;font-size:15px;color:#111827"><strong>PIN:</strong> ${adminPin}</p>
   </div>
-  <p style="color:#6B7280;font-size:14px;margin:0 0 4px">Need the full GM guide? <a href="https://betwaggle.com/overview/" style="color:#2A3F66">betwaggle.com/overview/</a></p>
+  <p style="color:#6B7280;font-size:14px;margin:0 0 4px">Need the full GM guide? <a href="https://betwaggle.com/overview/" style="color:#1B365D">betwaggle.com/overview/</a></p>
   <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0">Waggle by Waggle</p>
 </div>`,
       }));
@@ -4121,7 +4118,7 @@ async function handleWaggleSuccess(url, env) {
   </script>` : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --forest: #0F1A2E; --green: #1B2B4B; --green-mid: #2A3F66; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
+    :root { --forest: #002046; --green: #002046; --green-mid: #1B365D; --sage: #52B788; --ivory: #F5F0E8; --gold: #C9A84C; --text: #1A1A1A; --muted: #6B7280; }
     body { font-family: 'Inter', sans-serif; background: var(--ivory); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; -webkit-font-smoothing: antialiased; }
     .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 24px rgba(0,0,0,.08); padding: 48px 40px; width: 100%; max-width: 520px; text-align: center; }
     .check { width: 56px; height: 56px; background: var(--green-mid); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 28px; }
@@ -4172,7 +4169,7 @@ async function handleWaggleSuccess(url, env) {
       <button class="copy-link-btn" onclick="navigator.clipboard.writeText('${escEventUrl}').then(function(){this.textContent='Copied!';}.bind(this))">Copy Link</button>
     </div>
 
-    <button onclick="copyInvitation(this)" style="width:100%;padding:14px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#0F1A2E;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:.02em">
+    <button onclick="copyInvitation(this)" style="width:100%;padding:14px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#002046;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:.02em">
       Copy Formal Invitation
     </button>
     <button onclick="navigator.clipboard.writeText('${escEventUrl}?spectator=true').then(function(){this.textContent='Copied!';}.bind(this))" style="width:100%;padding:12px;background:transparent;border:1.5px solid #D4CFC7;border-radius:8px;color:#7A7A7A;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px">
@@ -4224,7 +4221,7 @@ async function handleWaggleSuccess(url, env) {
     ${adminPin ? `<div class="pin-box"><strong>Your admin PIN -- keep this safe</strong><div class="pin-code">${adminPin}</div><div style="font-size:12px;color:#6B7280;margin-top:6px">You'll need this to manage bets and settle the round.</div></div>` : ''}
 
     <div style="max-width:400px;margin:0 auto 32px;text-align:left">
-      <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#0F1A2E;margin-bottom:16px">Get Started</div>
+      <div style="font-family:'Manrope',sans-serif;font-size:18px;font-weight:700;color:#002046;margin-bottom:16px">Get Started</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="onboard-step">
           <div class="onboard-num">1</div>
@@ -4390,16 +4387,16 @@ async function handleCourseDetailPage(courseId, env) {
   <meta name="description" content="View the full scorecard for ${clubName}${location ? ' in ' + location : ''}.">
   <link rel="icon" type="image/jpeg" href="/logo.jpg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#0F1A2E;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Inter',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#0F1A2E;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Manrope',sans-serif;background:#F5F0E8;color:#1A1A1A}a{color:inherit;text-decoration:none}.header{background:#002046;padding:20px 32px;display:flex;align-items:center;justify-content:space-between}.header-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Manrope',sans-serif;font-size:18px;font-weight:700}.header-logo img{height:32px;border-radius:6px}.header-nav{display:flex;gap:20px;align-items:center}.header-nav a{color:rgba(255,255,255,0.7);font-size:13px;font-weight:500}.header-nav .cta{background:#C9A84C;color:#002046;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px}</style>
 </head><body>
   <header class="header">
     <a href="/" class="header-logo"><img src="/logo.jpg" alt="Waggle"><span>Waggle</span></a>
     <nav class="header-nav"><a href="/courses/">Courses</a><a href="/create/?course=${courseId}" class="cta">Play Here</a></nav>
   </header>
-  <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#2A3F66;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#2A3F66;font-weight:600">Courses</a> / ${clubName}</div>
+  <div style="max-width:960px;margin:20px auto;padding:0 20px;font-size:13px;color:#7A7A7A"><a href="/" style="color:#1B365D;font-weight:600">Waggle</a> / <a href="/courses/" style="color:#1B365D;font-weight:600">Courses</a> / ${clubName}</div>
   <div style="max-width:960px;margin:16px auto 0;padding:0 20px">
     <div style="background:linear-gradient(135deg,#00261b,#0b3d2e);border-radius:16px;padding:40px 36px;color:#fff">
-      <h1 style="font-family:'Inter',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.15;margin-bottom:12px">${clubName}</h1>
+      <h1 style="font-family:'Manrope',sans-serif;font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.15;margin-bottom:12px">${clubName}</h1>
       ${location ? `<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px">${location}</div>` : ''}
       <div style="display:flex;gap:12px;flex-wrap:wrap">
         <a href="/create/?course=${courseId}" style="background:#C9A84C;color:#00261b;padding:14px 28px;border-radius:6px;font-weight:700;font-size:15px">Play Here \u2192</a>
@@ -4408,7 +4405,7 @@ async function handleCourseDetailPage(courseId, env) {
     </div>
   </div>
   <div style="max-width:960px;margin:32px auto 0;padding:0 20px">
-    <h2 style="font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#0F1A2E;margin-bottom:20px">Scorecard</h2>
+    <h2 style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;color:#002046;margin-bottom:20px">Scorecard</h2>
     ${!refTee ? '<p style="color:#7A7A7A">No scorecard data available for this course.</p>' : (() => {
       const totalPar = refTee.front9.reduce((s,h) => s + (h.par||0), 0) + refTee.back9.reduce((s,h) => s + (h.par||0), 0);
       const is18 = refTee.is18;
@@ -4416,20 +4413,20 @@ async function handleCourseDetailPage(courseId, env) {
       sc += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px">';
       sc += '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:&quot;SF Mono&quot;,&quot;Fira Code&quot;,monospace;min-width:' + (is18 ? '720' : '420') + 'px">';
       // FRONT 9 header
-      sc += '<thead><tr style="background:#0F1A2E;color:#fff">';
-      sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#0F1A2E;z-index:1">Hole</th>';
+      sc += '<thead><tr style="background:#002046;color:#fff">';
+      sc += '<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#002046;z-index:1">Hole</th>';
       for (let h = 1; h <= 9; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
-      sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B2B4B">OUT</th>';
+      sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#002046">OUT</th>';
       if (is18) {
         for (let h = 10; h <= 18; h++) sc += '<th style="padding:8px 4px;text-align:center;font-weight:600;min-width:34px">' + h + '</th>';
-        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#1B2B4B">IN</th>';
-        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#C9A84C;color:#0F1A2E">TOT</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#002046">IN</th>';
+        sc += '<th style="padding:8px 6px;text-align:center;font-weight:700;background:#C9A84C;color:#002046">TOT</th>';
       }
       sc += '</tr></thead><tbody>';
       // Par row
       const frontPar = refTee.front9.reduce((s,h)=>s+(h.par||0),0);
       const backPar = refTee.back9.reduce((s,h)=>s+(h.par||0),0);
-      sc += '<tr style="background:#f8f6f0;font-weight:700;color:#1B2B4B">';
+      sc += '<tr style="background:#f8f6f0;font-weight:700;color:#002046">';
       sc += '<td style="padding:7px 6px;font-weight:700;font-size:10px;letter-spacing:0.5px;text-transform:uppercase;position:sticky;left:0;background:#f8f6f0;z-index:1">Par</td>';
       refTee.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center">' + (h.par||'') + '</td>'; });
       sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#eae6da">' + frontPar + '</td>';
@@ -4455,11 +4452,11 @@ async function handleCourseDetailPage(courseId, env) {
         sc += '<tr style="background:' + bg + ';border-top:1px solid #E8E4DC">';
         sc += '<td style="padding:7px 6px;position:sticky;left:0;background:' + bg + ';z-index:1;white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + t.color + ';border:' + t.dotBorder + ';vertical-align:middle;margin-right:6px"></span><span style="font-size:11px;font-weight:600;color:#3D3D3D">' + t.name + '</span>' + (t.gender === 'female' ? '<span style="font-size:9px;color:#999;margin-left:3px">W</span>' : '') + '</td>';
         t.front9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
-        sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B2B4B">' + t.frontYds + '</td>';
+        sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#002046">' + t.frontYds + '</td>';
         if (is18) {
           t.back9.forEach(h => { sc += '<td style="padding:7px 4px;text-align:center;color:#3D3D3D">' + (h.yardage||'') + '</td>'; });
-          sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#1B2B4B">' + t.backYds + '</td>';
-          sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#f5f3ed;color:#0F1A2E">' + t.yds + '</td>';
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:700;background:#f5f3ed;color:#002046">' + t.backYds + '</td>';
+          sc += '<td style="padding:7px 6px;text-align:center;font-weight:800;background:#f5f3ed;color:#002046">' + t.yds + '</td>';
         }
         sc += '</tr>';
         // Rating/slope sub-row
@@ -4473,7 +4470,7 @@ async function handleCourseDetailPage(courseId, env) {
     })()}
   </div>
   <footer style="text-align:center;padding:48px 20px 32px;color:#7A7A7A;font-size:13px">
-    <p>Waggle by <a href="https://betwaggle.com/" style="color:#2A3F66;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#2A3F66;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#2A3F66;font-weight:600">Create Event</a></p>
+    <p>Waggle by <a href="https://betwaggle.com/" style="color:#1B365D;font-weight:600">Waggle</a> \u00b7 <a href="/courses/" style="color:#1B365D;font-weight:600">Find a Course</a> \u00b7 <a href="/create/" style="color:#1B365D;font-weight:600">Create Event</a></p>
   </footer>
 </body></html>`;
 
@@ -6629,6 +6626,22 @@ async function serveOgImage(slug, env) {
   const venue = escSvg(config.event?.venue || '');
   const players = config.players || config.roster || [];
   const isComplete = config.event?.status === 'complete';
+  const gamesObj = config.games || {};
+  const gameNames = [];
+  if (gamesObj.nassau) gameNames.push('Nassau');
+  if (gamesObj.skins) gameNames.push('Skins');
+  if (gamesObj.wolf) gameNames.push('Wolf');
+  if (gamesObj.vegas) gameNames.push('Vegas');
+  if (gamesObj.scramble) gameNames.push('Scramble');
+  if (gamesObj.stroke_play) gameNames.push('Stroke');
+  if (gamesObj.stableford) gameNames.push('Stableford');
+  const gamesLine = escSvg(gameNames.slice(0, 3).join(' · ') + (gameNames.length > 3 ? ' + more' : ''));
+  const structure = config.structure || {};
+  const stakeParts = [];
+  if (gamesObj.nassau && structure.nassauBet > 0) stakeParts.push(`Nassau $${structure.nassauBet}`);
+  if (gamesObj.skins && structure.skinsBet > 0) stakeParts.push(`Skins $${structure.skinsBet}`);
+  if (gamesObj.wolf && structure.wolfBet > 0) stakeParts.push(`Wolf $${structure.wolfBet}`);
+  const stakesLine = escSvg(stakeParts.join(' · '));
 
   // Try to read game state for live/completed data
   let holes = {};
@@ -6645,7 +6658,8 @@ async function serveOgImage(slug, env) {
   const coursePars = config.coursePars || Array(18).fill(4);
   for (const p of players.slice(0, 6)) {
     const name = p.name || p.member || '';
-    const hcp = p.handicapIndex ?? p.handicap ?? p.memberHI ?? 0;
+    const rawHcp = p.handicapIndex ?? p.handicap ?? p.memberHI ?? 0;
+    const hcp = Number.isFinite(Number(rawHcp)) ? Number(rawHcp) : 0;
     let totalStrokes = 0;
     let holesPlayed = 0;
     let totalPar = 0;
@@ -6664,26 +6678,32 @@ async function serveOgImage(slug, env) {
   // Determine state
   const maxHoles = Math.max(0, ...playerScores.map(p => p.holesPlayed));
   let statusLine = `${players.length} player${players.length !== 1 ? 's' : ''} registered`;
-  let statusColor = '#D4AF37';
+  let statusColor = '#775A19';
+  let momentLine = stakesLine || gamesLine || 'Live scoring · instant settlement';
   if (isComplete || maxHoles >= 18) {
     statusLine = 'FINAL RESULTS';
-    statusColor = '#D4AF37';
+    statusColor = '#775A19';
   } else if (maxHoles > 0) {
     statusLine = `LIVE \u2014 Hole ${maxHoles} of 18`;
     statusColor = '#4ade80';
+    momentLine = `The ledger is live. ${18 - maxHoles} hole${18 - maxHoles !== 1 ? 's' : ''} to close the board.`;
   }
 
   // Sort by to-par if any scores exist
   if (maxHoles > 0) playerScores.sort((a, b) => a.toPar - b.toPar);
+  const leader = playerScores[0];
+  const leaderLine = maxHoles > 0 && leader
+    ? `${leader.name} ${isComplete || maxHoles >= 18 ? 'closes at' : 'leads at'} ${leader.toPar > 0 ? '+' + leader.toPar : leader.toPar === 0 ? 'E' : String(leader.toPar)}`
+    : `${players.length} player${players.length !== 1 ? 's' : ''} in the field`;
 
   const displayPlayers = playerScores.slice(0, 4);
   const rowHeight = 60;
-  const startY = 260;
+  const startY = 300;
 
   const playerRows = displayPlayers.map((p, i) => {
     const y = startY + i * rowHeight;
     const toParStr = p.holesPlayed > 0 ? (p.toPar > 0 ? '+' + p.toPar : p.toPar === 0 ? 'E' : String(p.toPar)) : '--';
-    const rankColors = ['#D4AF37', '#C0C0C0', '#CD7F32', '#FFFFFF'];
+    const rankColors = ['#775A19', '#C0C0C0', '#CD7F32', '#FFFFFF'];
     const rankColor = maxHoles > 0 ? (rankColors[i] || '#FFFFFF') : '#FFFFFF';
     return `
       <rect x="60" y="${y - 20}" width="1080" height="50" rx="8" fill="rgba(255,255,255,0.05)"/>
@@ -6700,35 +6720,45 @@ async function serveOgImage(slug, env) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0D3B1A"/>
-      <stop offset="100%" stop-color="#071F0E"/>
+      <stop offset="0%" stop-color="#001631"/>
+      <stop offset="56%" stop-color="#002046"/>
+      <stop offset="100%" stop-color="#0F1A2E"/>
     </linearGradient>
+    <radialGradient id="goldGlow" cx="78%" cy="12%" r="48%">
+      <stop offset="0%" stop-color="rgba(119,90,25,0.38)"/>
+      <stop offset="100%" stop-color="rgba(119,90,25,0)"/>
+    </radialGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#goldGlow)"/>
   <!-- Subtle pattern overlay -->
   <rect width="1200" height="630" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1">
     <animate attributeName="opacity" values="0.5;1;0.5" dur="4s" repeatCount="indefinite"/>
   </rect>
   <!-- Top accent line -->
-  <rect x="0" y="0" width="1200" height="4" fill="#D4AF37"/>
+  <rect x="0" y="0" width="1200" height="4" fill="#775A19"/>
+  <text x="60" y="48" font-family="Inter,Helvetica,Arial,sans-serif" font-size="16" fill="rgba(254,212,136,0.72)" font-weight="800" letter-spacing="4">THE LEDGER</text>
   <!-- Event name -->
-  <text x="60" y="80" font-family="Georgia,serif" font-size="40" fill="#D4AF37" font-weight="700">${eventName}</text>
-  ${venue ? `<text x="60" y="118" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.5)">${venue}</text>` : ''}
+  <text x="60" y="96" font-family="Georgia,serif" font-size="40" fill="#FED488" font-weight="700">${eventName}</text>
+  ${venue ? `<text x="60" y="130" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.58)">${venue}</text>` : ''}
   <!-- Status badge -->
-  <rect x="60" y="145" width="${statusLine.length * 12 + 32}" height="34" rx="17" fill="rgba(255,255,255,0.1)"/>
-  <circle cx="82" cy="162" r="5" fill="${statusColor}"/>
-  <text x="96" y="168" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="${statusColor}" font-weight="700" letter-spacing="1">${statusLine}</text>
+  <rect x="60" y="154" width="${statusLine.length * 12 + 32}" height="34" rx="17" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.08)"/>
+  <circle cx="82" cy="171" r="5" fill="${statusColor}"/>
+  <text x="96" y="177" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="${statusColor}" font-weight="700" letter-spacing="1">${statusLine}</text>
+  <text x="60" y="218" font-family="Georgia,serif" font-size="28" fill="#FFFFFF" font-weight="700">${escSvg(leaderLine)}</text>
+  <text x="60" y="246" font-family="Inter,Helvetica,Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.64)">${momentLine}</text>
   <!-- Divider -->
-  <line x1="60" y1="210" x2="1140" y2="210" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <line x1="60" y1="270" x2="1140" y2="270" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
   <!-- Leaderboard header -->
-  <text x="90" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">#</text>
-  <text x="130" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">PLAYER</text>
-  <text x="700" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">HCP</text>
-  <text x="1000" y="240" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2" text-anchor="end">${maxHoles > 0 ? 'TO PAR' : ''}</text>
+  <text x="90" y="296" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">#</text>
+  <text x="130" y="296" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">PLAYER</text>
+  <text x="700" y="296" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2">HCP</text>
+  <text x="1000" y="296" font-family="Inter,Helvetica,Arial,sans-serif" font-size="12" fill="rgba(255,255,255,0.3)" font-weight="600" letter-spacing="2" text-anchor="end">${maxHoles > 0 ? 'TO PAR' : 'STATUS'}</text>
   ${playerRows}
   ${morePlayersText}
   <!-- Branding -->
-  <text x="600" y="600" font-family="Inter,Helvetica,Arial,sans-serif" font-size="16" fill="rgba(212,175,55,0.6)" text-anchor="middle" font-weight="600" letter-spacing="2">betwaggle.com</text>
+  <text x="600" y="586" font-family="Inter,Helvetica,Arial,sans-serif" font-size="16" fill="rgba(212,175,55,0.6)" text-anchor="middle" font-weight="600" letter-spacing="2">betwaggle.com/${slug}</text>
+  <text x="600" y="610" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="rgba(255,255,255,0.34)" text-anchor="middle" font-weight="500">${stakesLine || gamesLine || 'Live scoring · automatic settlement'}</text>
 </svg>`;
 
   return new Response(svg, {
@@ -6752,7 +6782,7 @@ async function serveEventHtml(slug, request, env) {
     return new Response(`<!DOCTYPE html><html><head><title>Event Not Found</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Inter',sans-serif;font-size:28px;color:#1B2B4B;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:20px;background:#1B2B4B;color:#fff;min-height:56px;min-width:160px;padding:0 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#2A3F66}</style></head>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Manrope',sans-serif;background:#F5F0E8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#1a1a1a}.logo{height:48px;margin-bottom:24px;opacity:0.6}h1{font-family:'Manrope',sans-serif;font-size:28px;color:#002046;margin-bottom:12px}p{font-size:15px;color:#6B7280;margin-bottom:8px}.slug{font-weight:600;color:#1a1a1a}a.btn{display:inline-flex;align-items:center;justify-content:center;margin-top:20px;background:#002046;color:#fff;min-height:56px;min-width:160px;padding:0 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px}a.btn:hover{background:#1B365D}</style></head>
 <body>
 <img src="/logo.jpg" alt="Waggle" class="logo">
 <h1>Event not found</h1>
@@ -6773,9 +6803,9 @@ async function serveEventHtml(slug, request, env) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0F1A2E">This event has ended</h1>
+  <div><h1 style="font-family:'Manrope',sans-serif;font-size:28px;color:#002046">This event has ended</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The sportsbook for this outing has been archived.</p>
-  <a href="/create/" style="background:#C9A84C;color:#0F1A2E;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+  <a href="/create/" style="background:#C9A84C;color:#002046;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
@@ -6785,9 +6815,9 @@ async function serveEventHtml(slug, request, env) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="font-family:Inter,sans-serif;background:#FAF8F5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px">
-  <div><h1 style="font-family:'Inter',sans-serif;font-size:28px;color:#0F1A2E">This event has been cancelled</h1>
+  <div><h1 style="font-family:'Manrope',sans-serif;font-size:28px;color:#002046">This event has been cancelled</h1>
   <p style="color:#6B7280;margin:12px 0 24px">The organizer cancelled this event and a refund was issued.</p>
-  <a href="/create/" style="background:#C9A84C;color:#0F1A2E;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
+  <a href="/create/" style="background:#C9A84C;color:#002046;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">Create a New Outing</a></div>
 </body></html>`, { headers: { 'Content-Type': 'text/html', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' } });
   }
 
@@ -6807,11 +6837,12 @@ async function serveEventHtml(slug, request, env) {
   const gadsLabel = env.WAGGLE_GADS_LABEL || '';
 
   const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const isRoundMode = ['quick', 'buddies_trip'].includes(config.event?.eventType);
   const eventName = esc(config.event?.name || 'Golf Event');
   const shortName = esc(config.event?.shortName || config.event?.name || 'Golf Event');
   const venue = esc(config.event?.venue || '');
   const eventUrl = `https://betwaggle.com/${slug}/`;
-  const themeColor = esc(config.theme?.primary || '#1B2B4B');
+  const themeColor = esc(config.theme?.primary || '#002046');
 
   // ── Dynamic OG tags based on event state ──
   const players = config.players || config.roster || [];
@@ -6871,7 +6902,7 @@ async function serveEventHtml(slug, request, env) {
     ogTitle = `Waggle \u00b7 ${eventName}`;
     ogDesc = `${stakesStr || gamesStr || 'Live odds & side action'} \u00b7 ${playerCount} players${venue ? ' at ' + venue : ''}. Tap in.`;
   }
-  const ogImageUrl = `https://betwaggle.com/og-card-logo.jpg`;
+  const ogImageUrl = `https://betwaggle.com/${slug}/og-image.svg`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -6900,7 +6931,8 @@ async function serveEventHtml(slug, request, env) {
   <link rel="manifest" href="/${slug}/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/css/styles.css?v=${Date.now()}">
   ${isPaid && gadsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${gadsId}"></script>
   <script>
@@ -6926,7 +6958,7 @@ async function serveEventHtml(slug, request, env) {
     document.documentElement.classList.toggle('dark-mode',d);
     document.body&&document.body.classList.toggle('dark-mode',d);
     var m=document.querySelector('meta[name="theme-color"]');
-    if(m)m.setAttribute('content',d?'#0F1A2E':'#1B2B4B');
+    if(m)m.setAttribute('content',d?'#002046':'#002046');
   }
   window.WaggleTheme={toggle:function(){var n=document.documentElement.classList.contains('dark-mode')?'light':'dark';localStorage.setItem(key,n);apply(n);var i=document.getElementById('theme-icon');if(i)i.innerHTML=n==='dark'?'\\u263D':'\\u2600'}};
   // Apply to <html> immediately (before body renders) to prevent flash
@@ -6943,29 +6975,48 @@ async function serveEventHtml(slug, request, env) {
 </head>
 <body>
   ${config.event?.status === 'complete' ? `
-<div style="background:linear-gradient(135deg,#C9A84C,#9A7A2E);color:#0F1A2E;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
+<div style="background:linear-gradient(135deg,#C9A84C,#9A7A2E);color:#002046;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
   Trophy Room &mdash; ${eventName} &mdash; Final Results
 </div>
 <script>window.__WAGGLE_TROPHY_MODE__ = true;</script>
 ` : ''}
-  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || (slug.startsWith('demo-') && slug !== 'demo-buddies') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#D4AF37;color:#0F1A2E;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#0F1A2E;text-decoration:underline">Create your own event \u2192</a></div>
+  ${(slug === 'demo' || slug === 'cabot-citrus-invitational' || (slug.startsWith('demo-') && slug !== 'demo-buddies') || ['legends-trip','stag-night','augusta-scramble','masters-member-guest','weekend-warrior'].includes(slug)) ? `<div style="background:#775A19;color:#002046;text-align:center;font-size:12px;font-weight:700;padding:7px 12px;letter-spacing:0.5px">INTERACTIVE DEMO &nbsp;\u00b7&nbsp; <a href="/" style="color:#002046;text-decoration:underline">Create your own event \u2192</a></div>
 <script>window.__WAGGLE_SPECTATOR__ = true;</script>` : ''}
-  <header class="mg-header">
-    <a href="/" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);text-decoration:none;line-height:0;opacity:0.95" aria-label="Back to Waggle">
-      <img src="/logo.jpg" style="height:32px;width:auto;mix-blend-mode:screen;filter:contrast(1.3) saturate(1.2)" alt="Waggle">
-    </a>
-    <h1 style="padding-left:48px;padding-right:80px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shortName}</h1>
-    <div class="mg-subtitle" style="padding-left:48px">${venue}</div>
-    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;align-items:center">
-      <button onclick="window.WaggleTheme.toggle()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(197,160,89,0.3);color:#C4A35A;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px" aria-label="Toggle theme" id="theme-icon-btn">
-        <span id="theme-icon">${'\u2600'}</span>
-      </button>
-      <button onclick="waggleShare()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center" aria-label="Share event">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-      </button>
+  <header style="background:linear-gradient(180deg,rgba(250,248,245,0.96) 0%,rgba(250,248,245,0.92) 100%);position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 28px rgba(27,54,93,0.04)">
+    <div style="padding:12px 18px 10px;padding-top:calc(12px + env(safe-area-inset-top, 0px));max-width:1200px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div style="min-width:0">
+          <a href="/" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#002046,#1B365D);box-shadow:0 8px 18px rgba(0,32,70,0.18);color:#FED488;font-family:'Noto Serif',Georgia,serif;font-size:18px;font-weight:700;font-style:italic">L</span>
+            <span style="display:flex;flex-direction:column;line-height:1">
+              <span style="font-family:'Noto Serif',Georgia,serif;font-size:24px;font-weight:700;font-style:italic;color:#1B365D">The Ledger</span>
+              <span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,54,93,0.52);margin-top:4px">Golf Trip Companion</span>
+            </span>
+          </a>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <button onclick="waggleShare()" style="background:rgba(0,32,70,0.05);border:1px solid rgba(27,54,93,0.08);color:#1B365D;cursor:pointer;padding:10px;border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(27,54,93,0.04)" aria-label="Share">
+            <span class="material-symbols-outlined" style="font-size:21px">share</span>
+          </button>
+          <button onclick="window.WaggleTheme.toggle()" style="background:rgba(0,32,70,0.05);border:1px solid rgba(27,54,93,0.08);color:#1B365D;cursor:pointer;padding:10px;border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(27,54,93,0.04)" aria-label="Theme" id="theme-icon-btn">
+            <span class="material-symbols-outlined" style="font-size:21px" id="theme-icon">light_mode</span>
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.72);border:1px solid rgba(27,54,93,0.08);box-shadow:0 8px 18px rgba(27,54,93,0.04)">
+          <span id="waggle-connectivity-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;animation:waggle-pulse 2s ease-in-out infinite" title="Connected"></span>
+          <span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#1B365D">Live Trip</span>
+        </div>
+        <nav style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.74);border:1px solid rgba(27,54,93,0.08);border-radius:18px;padding:4px;box-shadow:0 8px 20px rgba(27,54,93,0.04)">
+          <a href="#dashboard" data-tab="dashboard" style="font-family:'Noto Serif',Georgia,serif;font-size:14px;font-weight:700;padding:9px 14px;border-radius:14px;min-height:42px;display:flex;align-items:center;text-decoration:none;color:rgba(27,54,93,0.54);transition:color .15s,background .15s">Home</a>
+          <a href="#scorecard" data-tab="scorecard" style="font-family:'Noto Serif',Georgia,serif;font-size:14px;font-weight:700;padding:9px 14px;border-radius:14px;min-height:42px;display:flex;align-items:center;text-decoration:none;color:rgba(27,54,93,0.54);transition:color .15s,background .15s">Score</a>
+          <a href="#settle" data-tab="settle" style="font-family:'Noto Serif',Georgia,serif;font-size:14px;font-weight:700;padding:9px 14px;border-radius:14px;min-height:42px;display:flex;align-items:center;text-decoration:none;color:rgba(27,54,93,0.54);transition:color .15s,background .15s">Settle</a>
+        </nav>
+      </div>
     </div>
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(27,54,93,0.1),transparent)"></div>
   </header>
-  <style>.mg-header{position:relative}</style>
   <script>
   function waggleShare(){
     const url='${eventUrl}';
@@ -6984,20 +7035,14 @@ async function serveEventHtml(slug, request, env) {
       </div>
     </div>
   </div>
-  <nav class="mg-nav">
-    <div class="mg-nav-inner">
-      <a href="#dashboard" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M9 21V9h6v12"/></svg><span class="nav-label">Home</span></a>
-      <a href="#flights" data-tab="flights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="nav-label">Flights</span></a>
-      <a href="#bet" data-tab="bet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span class="nav-label">Bet</span></a>
-      <a href="#mybets" data-tab="mybets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="nav-label">My Bets</span></a>
-      <a href="#scorecard" data-tab="scorecard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg><span class="nav-label">Scores</span></a>
-      <a href="#scenarios" data-tab="scenarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="nav-label">What-If</span></a>
-      <a href="#settle" data-tab="settle" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="nav-label">Settle</span></a>
-      <a href="#admin" data-tab="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="nav-label">Admin</span></a>
-    </div>
+  <nav style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);width:calc(100% - 20px);max-width:440px;z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 12px calc(10px + var(--safe-bottom));background:rgba(250,249,245,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -8px 24px rgba(27,54,93,.04),0 12px 32px rgba(27,54,93,.08);border:1px solid rgba(27,54,93,.06);border-radius:24px">
+      <a href="#dashboard" data-tab="dashboard" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;text-decoration:none;color:rgba(27,54,93,.42);transition:color .15s,background .15s;min-height:56px;border-radius:16px"><span class="material-symbols-outlined" style="font-size:24px;margin-bottom:2px">home</span><span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em">Home</span></a>
+      <a href="#scorecard" data-tab="scorecard" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;text-decoration:none;color:rgba(27,54,93,.42);transition:color .15s,background .15s;min-height:56px;border-radius:16px"><span class="material-symbols-outlined" style="font-size:24px;margin-bottom:2px">edit_note</span><span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em">Score</span></a>
+      <a href="#settle" data-tab="settle" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;text-decoration:none;color:rgba(27,54,93,.42);transition:color .15s,background .15s;min-height:56px;border-radius:16px"><span class="material-symbols-outlined" style="font-size:24px;margin-bottom:2px">payments</span><span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em">Settle</span></a>
+      ${isRoundMode ? '' : `<a href="#flights" data-tab="flights" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;text-decoration:none;color:rgba(27,54,93,.42);transition:color .15s,background .15s;min-height:56px;border-radius:16px"><span class="material-symbols-outlined" style="font-size:24px;margin-bottom:2px">view_module</span><span style="font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em">Flights</span></a>`}
   </nav>
   <div id="mg-toast" class="mg-toast"></div>
-  <div id="save-indicator" style="position:fixed;top:68px;right:12px;background:rgba(26,71,42,0.9);color:#D4AF37;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:100">Saved</div>
+  <div id="save-indicator" style="position:fixed;top:88px;right:14px;background:rgba(0,32,70,0.92);color:#FCF9F4;font-size:11px;font-weight:800;padding:8px 12px;border-radius:999px;opacity:0;transform:translateY(-6px) scale(.98);transition:opacity .24s ease,transform .24s ease;pointer-events:none;z-index:120;box-shadow:0 10px 24px rgba(0,32,70,0.18);letter-spacing:.12em;text-transform:uppercase">Board Updated</div>
   <style>
     @keyframes flashIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
     @keyframes flashOut { from { opacity:1; } to { opacity:0; transform:scale(0.95); } }
@@ -7994,13 +8039,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
                 to: req.email,
                 subject: `You're in! Join ${config?.event?.name || 'the event'}`,
                 html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
-                  <div style="background:#0F1A2E;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+                  <div style="background:#002046;padding:24px;text-align:center;border-radius:8px 8px 0 0">
                     <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
                   </div>
                   <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
-                    <p style="font-size:16px;font-weight:600;color:#0F1A2E">You've been approved!</p>
+                    <p style="font-size:16px;font-weight:600;color:#002046">You've been approved!</p>
                     <p style="font-size:14px;color:#3D3D3D;line-height:1.6">Open the sportsbook to see live odds, place bets, and follow the action:</p>
-                    <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#0F1A2E;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
+                    <a href="https://betwaggle.com/${slug}/" style="display:block;text-align:center;background:#C9A84C;color:#002046;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open the Sportsbook</a>
                   </div>
                 </div>`
               })
@@ -9122,13 +9167,13 @@ async function handleEventApi(slug, path, request, env, ctx) {
             to: normalizedEmail,
             subject: `You've been added as co-organizer: ${config2.event?.name || 'Event'}`,
             html: `<div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto">
-              <div style="background:#0F1A2E;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+              <div style="background:#002046;padding:24px;text-align:center;border-radius:8px 8px 0 0">
                 <div style="font-family:Georgia,serif;font-size:24px;color:#C9A84C;font-weight:700">Waggle</div>
               </div>
               <div style="padding:24px;background:#FAF8F5;border-radius:0 0 8px 8px">
-                <p style="font-size:16px;font-weight:600;color:#0F1A2E">You're now a co-organizer</p>
+                <p style="font-size:16px;font-weight:600;color:#002046">You're now a co-organizer</p>
                 <p style="font-size:14px;color:#3D3D3D;line-height:1.6">You've been invited to help manage <strong>${config2.event?.name || 'an event'}</strong>. You can enter scores, manage bets, and run the settlement.</p>
-                <a href="https://betwaggle.com/${slug}/#admin" style="display:block;text-align:center;background:#C9A84C;color:#0F1A2E;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open Admin Panel</a>
+                <a href="https://betwaggle.com/${slug}/#admin" style="display:block;text-align:center;background:#C9A84C;color:#002046;padding:14px;border-radius:6px;font-weight:700;font-size:15px;text-decoration:none;margin:20px 0">Open Admin Panel</a>
               </div>
             </div>`
           })
@@ -10670,7 +10715,7 @@ async function handleUnsubscribe(url, env) {
 }
 
 function unsubscribeHtml(success) {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribed — Waggle</title><style>body{font-family:'Inter',system-ui,sans-serif;background:#0F1A2E;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px}h1{font-size:28px;margin-bottom:12px}.msg{color:rgba(255,255,255,.6);font-size:15px}a{color:#C9A84C}</style></head><body><div><h1>${success ? 'You have been unsubscribed.' : 'Something went wrong.'}</h1><p class="msg">${success ? 'Sorry to see you go. You will not receive any more emails from Waggle.' : 'We could not process your request. Please try again.'}</p><p style="margin-top:24px"><a href="https://betwaggle.com">Back to betwaggle.com</a></p></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribed — Waggle</title><style>body{font-family:'Inter',system-ui,sans-serif;background:#002046;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:20px}h1{font-size:28px;margin-bottom:12px}.msg{color:rgba(255,255,255,.6);font-size:15px}a{color:#C9A84C}</style></head><body><div><h1>${success ? 'You have been unsubscribed.' : 'Something went wrong.'}</h1><p class="msg">${success ? 'Sorry to see you go. You will not receive any more emails from Waggle.' : 'We could not process your request. Please try again.'}</p><p style="margin-top:24px"><a href="https://betwaggle.com">Back to betwaggle.com</a></p></div></body></html>`;
 }
 
 // Drip email sequence definitions - updated to use HTML template files

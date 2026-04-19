@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout Confirmation | Waggle</title>
+  <meta name="theme-color" content="#0f2a1b">
+  <style>
+    :root { --bg:#0f2a1b; --panel:#173924; --text:#f5f0e8; --muted:#c7c2b8; --accent:#d4af37; --danger:#ff7d7d; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(80% 80% at 50% 20%, #1e4d31 0%, var(--bg) 70%); color:var(--text); }
+    .card { width:min(560px,100%); background:var(--panel); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; box-shadow:0 24px 60px rgba(0,0,0,0.35); }
+    h1 { margin:0 0 8px; font-size:28px; line-height:1.2; }
+    p { margin:0; color:var(--muted); line-height:1.5; }
+    .state { margin-top:18px; font-size:15px; color:var(--muted); }
+    .state.error { color:var(--danger); }
+    .actions { margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; }
+    .btn { border:0; border-radius:10px; padding:12px 16px; font-weight:600; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    .btn.primary { background:var(--accent); color:#1d1d1d; }
+    .btn.secondary { background:rgba(255,255,255,0.1); color:var(--text); }
+    .meta { margin-top:14px; font-size:12px; color:rgba(255,255,255,0.6); word-break:break-all; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 id="title">Confirming your payment...</h1>
+    <p id="subtitle">Please wait while we verify your checkout session.</p>
+    <div id="state" class="state">Loading</div>
+    <div id="actions" class="actions" style="display:none"></div>
+    <div id="meta" class="meta"></div>
+  </main>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = (params.get('session_id') || '').trim();
+      const expectedTier = (params.get('tier') || '').trim().toLowerCase();
+      const expectedEventSlug = (params.get('eventSlug') || '').trim().toLowerCase();
+      const stateEl = document.getElementById('state');
+      const titleEl = document.getElementById('title');
+      const subtitleEl = document.getElementById('subtitle');
+      const actionsEl = document.getElementById('actions');
+      const metaEl = document.getElementById('meta');
+
+      function showActions(actions) {
+        actionsEl.innerHTML = actions.map((action) => (
+          '<a class="btn ' + action.kind + '" href="' + action.href + '">' + action.label + '</a>'
+        )).join('');
+        actionsEl.style.display = 'flex';
+      }
+
+      function successRedirect(payment) {
+        const tier = String(payment && payment.tier || '').toLowerCase();
+        const eventSlug = String(payment && payment.eventSlug || '').toLowerCase();
+        if (tier === 'event' && eventSlug) {
+          return '/' + encodeURIComponent(eventSlug) + '/?checkout=success&paid=1';
+        }
+        return '/pricing/?checkout=success&tier=' + encodeURIComponent(tier || 'event');
+      }
+
+      if (!sessionId) {
+        titleEl.textContent = 'Missing checkout session';
+        subtitleEl.textContent = 'Open the link from your payment confirmation email or return to pricing.';
+        stateEl.textContent = 'No session_id was provided.';
+        stateEl.className = 'state error';
+        showActions([
+          { label: 'Back to Pricing', href: '/pricing/', kind: 'primary' },
+          { label: 'Create an Outing', href: '/create/', kind: 'secondary' }
+        ]);
+        return;
+      }
+
+      const verify = new URL('/api/checkout/success', window.location.origin);
+      verify.searchParams.set('session_id', sessionId);
+      verify.searchParams.set('format', 'json');
+      if (expectedTier) verify.searchParams.set('tier', expectedTier);
+      if (expectedEventSlug) verify.searchParams.set('eventSlug', expectedEventSlug);
+      metaEl.textContent = 'Session ' + sessionId;
+
+      fetch(verify.toString(), { headers: { 'Accept': 'application/json' } })
+        .then(async (res) => {
+          let body = {};
+          try { body = await res.json(); } catch (_) {}
+          if (!res.ok || !body.ok) {
+            throw new Error(body.error || 'We could not verify this checkout session.');
+          }
+          const target = successRedirect(body.payment || {});
+          titleEl.textContent = 'Payment confirmed';
+          subtitleEl.textContent = 'Your outing is ready. Redirecting now...';
+          stateEl.textContent = 'Verified. Taking you to your event.';
+          showActions([
+            { label: 'Continue', href: target, kind: 'primary' },
+            { label: 'Pricing', href: '/pricing/', kind: 'secondary' }
+          ]);
+          window.location.replace(target);
+        })
+        .catch((err) => {
+          titleEl.textContent = 'We hit a snag';
+          subtitleEl.textContent = 'Your payment may have gone through, but we could not complete the redirect automatically.';
+          stateEl.textContent = err && err.message ? err.message : 'Unable to verify checkout session.';
+          stateEl.className = 'state error';
+          showActions([
+            { label: 'Open Pricing', href: '/pricing/', kind: 'primary' },
+            { label: 'Create an Outing', href: '/create/', kind: 'secondary' }
+          ]);
+        });
+    })();
+  </script>
+</body>
+</html>
