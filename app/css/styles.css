@@ -534,6 +534,332 @@ nav[style*="backdrop-filter"] a.active .material-symbols-outlined {
   box-shadow: 0 10px 28px rgba(27,48,34,0.08);
 }
 
+.mg-scramble-settlement-hero {
+  background:
+    linear-gradient(180deg, rgba(252,249,244,0.74) 0%, rgba(247,243,236,0.92) 50%, rgba(244,244,240,0.97) 100%),
+    radial-gradient(circle at top center, rgba(119,90,25,0.16), transparent 34%),
+    var(--waggle-asset-settlement-plate) center/cover no-repeat;
+  border: 1px solid rgba(197,160,89,0.22);
+  border-radius: 24px;
+  box-shadow: 0 22px 46px rgba(27,28,26,0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.mg-scramble-settlement-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+  pointer-events: none;
+}
+
+.mg-scramble-settlement-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mg-scramble-settlement-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: #775A19;
+}
+
+.mg-scramble-settlement-title {
+  font-family: 'Noto Serif', var(--font-display), serif;
+  font-size: 28px;
+  line-height: 1.05;
+  color: #002046;
+}
+
+.mg-scramble-settlement-copy {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #44474E;
+}
+
+.mg-scramble-settlement-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mg-scramble-settlement-stat {
+  background: rgba(252,249,244,0.72);
+  border: 1px solid rgba(0,32,70,0.08);
+  border-radius: 16px;
+  padding: 12px 10px;
+}
+
+.mg-scramble-settlement-stat-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: #74777F;
+  margin-bottom: 5px;
+}
+
+.mg-scramble-settlement-stat-value {
+  font-family: 'Noto Serif', var(--font-display), serif;
+  font-size: 22px;
+  line-height: 1.1;
+  color: #002046;
+}
+
+.mg-scramble-settlement-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.mg-scramble-podium-card,
+.mg-scramble-honors-card,
+.mg-scramble-share-shell {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,244,240,0.96) 100%),
+    url('/app/assets/ledger-paper-texture.png');
+  background-size: auto, 420px 420px;
+  border: 1px solid rgba(0,32,70,0.08);
+  border-radius: 20px;
+  box-shadow: 0 16px 36px rgba(27,28,26,0.05);
+}
+
+.mg-scramble-podium-card {
+  padding: 16px;
+}
+
+.mg-scramble-section-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #775A19;
+  margin-bottom: 6px;
+}
+
+.mg-scramble-podium-winner {
+  border-radius: 18px;
+  padding: 18px 16px;
+  background: linear-gradient(180deg, rgba(0,32,70,0.04), rgba(119,90,25,0.06));
+  border: 1px solid rgba(119,90,25,0.16);
+  margin-bottom: 12px;
+}
+
+.mg-scramble-podium-winner h3 {
+  margin: 0;
+  font-family: 'Noto Serif', var(--font-display), serif;
+  font-size: 30px;
+  line-height: 1.05;
+  color: #002046;
+}
+
+.mg-scramble-podium-subcopy {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #44474E;
+}
+
+.mg-scramble-payout-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(119,90,25,0.1);
+  color: #775A19;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+}
+
+.mg-scramble-final-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mg-scramble-final-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,32,70,0.08);
+}
+
+.mg-scramble-final-row:last-child {
+  border-bottom: none;
+}
+
+.mg-scramble-final-rank {
+  width: 28px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #775A19;
+}
+
+.mg-scramble-final-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.mg-scramble-final-meta strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.3;
+  color: #002046;
+}
+
+.mg-scramble-final-meta span {
+  display: block;
+  font-size: 12px;
+  color: #74777F;
+  margin-top: 2px;
+}
+
+.mg-scramble-final-score {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mg-scramble-final-score strong {
+  display: block;
+  font-family: 'Noto Serif', var(--font-display), serif;
+  font-size: 22px;
+  line-height: 1.1;
+  color: #002046;
+}
+
+.mg-scramble-final-score span {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #775A19;
+  margin-top: 3px;
+}
+
+.mg-scramble-honors-card {
+  padding: 16px;
+}
+
+.mg-scramble-honors-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.mg-scramble-honor-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(0,32,70,0.08);
+}
+
+.mg-scramble-honor-row:last-child {
+  border-bottom: none;
+}
+
+.mg-scramble-honor-row strong {
+  display: block;
+  font-size: 13px;
+  color: #002046;
+}
+
+.mg-scramble-honor-row span {
+  display: block;
+  font-size: 11px;
+  color: #74777F;
+  margin-top: 2px;
+}
+
+.mg-scramble-honor-result {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #775A19;
+}
+
+.mg-scramble-honor-result.pending {
+  color: #B45309;
+}
+
+.mg-scramble-share-shell {
+  padding: 12px;
+}
+
+.mg-scramble-share-meta {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mg-scramble-share-pill {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(0,32,70,0.06);
+  border: 1px solid rgba(0,32,70,0.08);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #002046;
+}
+
+.mg-scramble-share-caption {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #74777F;
+}
+
+.mg-scramble-settlement-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.mg-scramble-settlement-primary,
+.mg-scramble-settlement-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.mg-scramble-settlement-primary {
+  background: #002046;
+  color: #FCF9F4;
+  box-shadow: 0 12px 28px rgba(0,32,70,0.18);
+}
+
+.mg-scramble-settlement-secondary {
+  background: rgba(119,90,25,0.08);
+  color: #775A19;
+  border: 1px solid rgba(119,90,25,0.18);
+}
+
+@media (max-width: 420px) {
+  .mg-scramble-settlement-title {
+    font-size: 24px;
+  }
+
+  .mg-scramble-settlement-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-scramble-podium-winner h3 {
+    font-size: 26px;
+  }
+}
+
 /* Cards — The Ledger tonal layering (no borders, surface shifts) */
 .mg-card {
   background:

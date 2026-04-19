@@ -35,23 +35,41 @@ Important framing:
   - `/app/assets/scorecard-atmosphere-plate-v3.png`
   - `/app/assets/settlement-ornament-v3.png`
   now resolve on production
+- `app/js/views.js`
+  scramble settlement/share upgrade shipped:
+  - premium incomplete settlement lounge
+  - official final money-board hero
+  - stronger champion + purse framing
+  - screenshot-oriented scramble share card in HTML/CSS
+  - stronger weekly replay CTA
+- `app/js/app.js`
+  scramble settlement share text now uses scramble-specific standings / purse / honors copy
+- `scripts/check-scramble-settlement.sh`
+  added mobile settlement regression coverage for:
+  - `demo-scramble`
+  - `augusta-scramble`
+  - share-card sizing + screenshots
 
 ## Current Scores
-- `Trip-ready: 89%`
-- `Premium: 85%`
+- `Trip-ready: 92%`
+- `Premium: 90%`
 
 ## What Improved
 - The scramble board feels more like a premium destination and less like a prototype stack.
 - Purse, pressure, and side-game state are readable much earlier on mobile.
 - The broken invite/hero image state is fixed because the missing art is now live.
+- Scramble settlement now feels materially more ceremonial on mobile.
+- The final Augusta scramble result is now screenshot-worthy instead of reading like a plain payout list.
+- The repo now has targeted mobile validation for scramble settlement and share-card composition.
 
 ## What Still Feels Weak
 - Phase 3 is still unfinished:
   scramble score entry does not yet have the full CTP/LD workflow.
-- Phase 4 is still unfinished:
-  scramble settlement is functional but not yet ceremonial or screenshot-worthy enough.
+- Phase 4 is improved but not fully complete:
+  payout phrasing and export still have room to tighten.
 - Shared primitives exist in CSS now, but round/tournament still do not consume enough of them.
 - The Bar still needs a premium hierarchy pass later.
+- Real-device outdoor validation is still missing even though Playwright mobile validation now exists.
 
 ## Highest-Leverage Next Pass
 Do this in order:
@@ -66,12 +84,10 @@ Do this in order:
    - add scramble-specific QA for this flow
 
 2. `Phase 4 — Scramble settlement ceremony`
-   - rebuild scramble settlement in `renderSettlement(state)`
-   - improve incomplete state
-   - improve final standings / payout reveal
-   - wire better share framing
-   - use `share-card-hero-plate.png`
-   - use `settlement-ornament-v3.png`
+   - keep the new settlement structure
+   - tighten payout phrasing / export
+   - improve any remaining awkward spacing from real-device checks
+   - keep the share card screenshot-first and premium
 
 3. `Cross-format cleanup`
    - promote useful scramble primitives into shared board/settlement primitives where safe
@@ -107,6 +123,7 @@ Do this in order:
   - `bash scripts/check-scramble-board.sh https://betwaggle.com demo-scramble augusta-scramble`
 - if settlement/share changes:
   - `bash scripts/check-og-preview.sh https://betwaggle.com augusta-scramble`
+  - `bash scripts/check-scramble-settlement.sh https://betwaggle.com demo-scramble augusta-scramble`
 
 ## Production References
 - Scramble:
@@ -137,6 +154,7 @@ Do this in order:
   - `bash scripts/run-trip-flow-smoke.sh` ✅
   - `bash scripts/check-share-surfaces.sh https://betwaggle.com blue-monster-at-trump-national-doral-apr-753cae` ✅
   - `bash scripts/check-scramble-board.sh https://betwaggle.com demo-scramble augusta-scramble` ✅
+  - `bash scripts/check-scramble-settlement.sh https://betwaggle.com demo-scramble augusta-scramble` ✅
 
 ## Start With
-“Continue BetWaggle Ralph loop — Phase 3 side-game score-entry workflow for scramble, then Phase 4 settlement ceremony.”
+“Continue BetWaggle Ralph loop — Phase 3 side-game score-entry workflow for scramble, then tighten any last export/payout phrasing gaps from the new settlement pass.”

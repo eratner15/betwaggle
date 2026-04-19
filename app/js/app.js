@@ -1239,6 +1239,109 @@ window.MG = {
     const config = state._config || {};
     const games = config.games || {};
     const structure = config.structure || {};
+    const gs = state._gameState || {};
+    const holes = state._holes || {};
+
+    if (games.scramble && gs?.scramble?.leaderboard?.length > 0) {
+      const leaderboard = gs.scramble.leaderboard || [];
+      const pars = ((config.course && config.course.pars) || []).slice();
+      const parTotal = pars.reduce((sum, par) => sum + par, 0) || 72;
+      const holesPlayed = Object.keys(holes).length;
+      const venue = config?.event?.venue || config?.event?.course || '';
+      const prizePool = config?.scramblePrizePool || {};
+      const totalPool = prizePool.total || ((config?.scrambleEntryFee || 0) * leaderboard.length);
+      const payouts = prizePool.payouts || {};
+      const defaultSplit = [0.5, 0.25, 0.15, 0.10];
+      const sideGames = config?.scrambleSideGames || {};
+      const sideState = gs?.sideGames || {};
+
+      const payoutForPosition = (idx) => {
+        const explicit = payouts[idx + 1];
+        if (typeof explicit === 'number') return explicit;
+        if (!(totalPool > 0) || idx >= defaultSplit.length) return 0;
+        if (idx < defaultSplit.length - 1) return Math.round(totalPool * defaultSplit[idx]);
+        const allocated = defaultSplit.slice(0, idx).reduce((sum, pct) => sum + Math.round(totalPool * pct), 0);
+        return Math.max(totalPool - allocated, 0);
+      };
+      const formatToPar = (entry) => {
+        const toPar = (entry?.total || 0) - parTotal;
+        return toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
+      };
+      const normalizeSideGame = (raw) => {
+        if (!raw) return { status: 'unresolved', winnerLabel: '' };
+        if (typeof raw === 'string') return { status: 'awarded', winnerLabel: raw };
+        const winnerLabel = raw.winnerLabel || raw.winnerTeam || raw.winnerPlayer || raw.winner || '';
+        return {
+          status: raw.status || (winnerLabel ? 'awarded' : 'unresolved'),
+          winnerLabel,
+        };
+      };
+
+      const champion = leaderboard[0];
+      const honors = [];
+      (sideGames.closestToPin || []).forEach((hole) => {
+        honors.push({ type: 'CTP', hole, ...normalizeSideGame(sideState?.ctp?.[hole]) });
+      });
+      (sideGames.longestDrive || []).forEach((hole) => {
+        honors.push({ type: 'LD', hole, ...normalizeSideGame(sideState?.ld?.[hole]) });
+      });
+
+      const lines = [];
+      lines.push('THE LEDGER');
+      lines.push(eventName);
+      if (venue) lines.push(venue);
+      lines.push(`${holesPlayed} holes · ${leaderboard.length} teams`);
+      if (champion) {
+        lines.push(`${champion.team} wins ${formatToPar(champion)}${payoutForPosition(0) > 0 ? ` · $${payoutForPosition(0).toLocaleString()}` : ''}`);
+      }
+      lines.push('');
+      lines.push('FINAL BOARD');
+      lines.push('------------------------');
+      leaderboard.slice(0, 5).forEach((entry, idx) => {
+        const payout = payoutForPosition(idx);
+        lines.push(`${idx + 1}. ${entry.team}  ${formatToPar(entry)}${payout > 0 ? ` · $${payout.toLocaleString()}` : ''}`);
+      });
+      lines.push('');
+      if (totalPool > 0) {
+        lines.push(`PURSE · $${totalPool.toLocaleString()}`);
+      }
+      const awardedHonors = honors.filter((item) => item.status === 'awarded');
+      if (awardedHonors.length > 0) {
+        lines.push('');
+        lines.push('ON-COURSE HONORS');
+        lines.push('------------------------');
+        awardedHonors.forEach((item) => {
+          lines.push(`${item.type} ${item.hole}: ${item.winnerLabel}`);
+        });
+      }
+      const unresolvedHonors = honors.filter((item) => item.status !== 'awarded').length;
+      if (unresolvedHonors > 0) {
+        lines.push('');
+        lines.push(`${unresolvedHonors} side game${unresolvedHonors === 1 ? '' : 's'} still pending official winner.`);
+      }
+      if (state._slug) {
+        const replayUrl = `https://betwaggle.com/create?clone=${encodeURIComponent(state._slug)}&mode=weekly`;
+        lines.push('');
+        lines.push('Run it back next week:');
+        lines.push(replayUrl);
+      }
+      lines.push('');
+      lines.push(url);
+
+      const text = lines.join('\n');
+      if (navigator.share) {
+        navigator.share({
+          title: `${eventName} — Scramble Settlement`,
+          text,
+          url
+        }).catch(() => {
+          navigator.clipboard?.writeText(text).then(() => toast('Results copied!')).catch(() => {});
+        });
+      } else {
+        navigator.clipboard?.writeText(text).then(() => toast('Results copied to clipboard!')).catch(() => {});
+      }
+      return;
+    }
 
     // Build share text with standings + payments
     const { computeRoundPnLShare, computePayablePairsShare, getPlayersShare } = (() => {
@@ -1248,7 +1351,6 @@ window.MG = {
       })).filter(p => p.name);
       const pnl = {};
       players.forEach(p => { pnl[p.name] = 0; });
-      const gs = state._gameState;
       const skinsBet = parseInt(structure.skinsBet) || 5;
       const nassauBet = parseInt(structure.nassauBet) || 10;
       const n = players.length;
@@ -1304,8 +1406,6 @@ window.MG = {
     if (games.wolf) stakeParts.push('Wolf');
     if (games.vegas) stakeParts.push('Vegas');
 
-    const gs = state._gameState;
-    const holes = state._holes || {};
     const holesPlayed = Object.keys(holes).length;
     const eventDate = config?.event?.dates?.day1 || '';
 

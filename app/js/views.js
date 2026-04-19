@@ -7539,6 +7539,7 @@ export function renderSettlement(state) {
     const leaderboard = scramble.leaderboard || [];
     const pars = getCoursePars(config);
     const parForPlayed = holesPlayed > 0 ? pars.slice(0, holesPlayed).reduce((s, p) => s + p, 0) : 0;
+    const totalPar = pars.reduce((s, p) => s + p, 0) || 72;
     const prizePool = config?.scramblePrizePool;
     const ppTotal = prizePool?.total || ((config?.scrambleEntryFee || 0) * leaderboard.length);
     const ppPayouts = prizePool?.payouts || {};
@@ -7547,104 +7548,243 @@ export function renderSettlement(state) {
     const sideGames = config?.scrambleSideGames;
     const ctpWinners = gameState?.sideGames?.ctp || {};
     const ldWinners = gameState?.sideGames?.ld || {};
+    const venue = config?.event?.venue || config?.event?.course || '';
+    const entryFee = config?.scrambleEntryFee || 0;
+    const champion = leaderboard[0] || null;
+    const runnerUp = leaderboard[1] || null;
+    const leadMargin = champion && runnerUp ? Math.max(0, (runnerUp.total || 0) - (champion.total || 0)) : null;
+    const formatScoreToPar = (entry, parBase) => {
+      const toPar = (entry?.total || 0) - (parBase || 0);
+      return toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
+    };
+    const payoutForPosition = (idx) => {
+      const explicit = ppPayouts[idx + 1];
+      if (typeof explicit === 'number') return explicit;
+      if (!(ppTotal > 0) || idx >= defaultSplit.length) return 0;
+      if (idx < defaultSplit.length - 1) return Math.round(ppTotal * defaultSplit[idx]);
+      const allocated = defaultSplit.slice(0, idx).reduce((sum, pct) => sum + Math.round(ppTotal * pct), 0);
+      return Math.max(ppTotal - allocated, 0);
+    };
+    const ctpAwards = (sideGames?.closestToPin || []).map((hole) => ({
+      type: 'CTP',
+      hole,
+      prize: ctpPrize,
+      ...normalizeScrambleSideGameEntry(ctpWinners[hole]),
+    }));
+    const ldAwards = (sideGames?.longestDrive || []).map((hole) => ({
+      type: 'LD',
+      hole,
+      prize: 0,
+      ...normalizeScrambleSideGameEntry(ldWinners[hole]),
+    }));
+    const honors = [...ctpAwards, ...ldAwards];
+    const unresolvedHonors = honors.filter((item) => item.status !== 'awarded').length;
+    const shareSummaryRows = leaderboard.slice(0, 4).map((entry, idx) => {
+      const payout = payoutForPosition(idx);
+      return {
+        ...entry,
+        payout,
+        toPar: formatScoreToPar(entry, totalPar),
+      };
+    });
+    const ceremonyCopy = champion
+      ? `${escHtml(champion.team)} closed it out ${leadMargin === 0 ? 'in a tie-broken finish' : `by ${leadMargin || 1} shot${leadMargin === 1 ? '' : 's'}`}. This should feel like the awards-table moment, not a utilitarian receipt.`
+      : 'The board is official. This should feel like the awards-table moment, not a utilitarian receipt.';
 
     if (holesPlayed < holesPerRound) {
-      // Incomplete — show progress
       const pct = Math.round((holesPlayed / holesPerRound) * 100);
-      html += `<div style="padding:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:16px;font-weight:700;color:var(--text-primary)">Round in Progress</div>
-          <div style="font-size:22px;font-weight:900;color:#775A19">${holesPlayed}/${holesPerRound}</div>
+      const leaderCopy = champion
+        ? `${escHtml(champion.team)} ${leadMargin === 0 ? 'is tied for the lead' : `has ${leadMargin || 1} shot${leadMargin === 1 ? '' : 's'} in hand`}.`
+        : 'The board is still finding its shape.';
+      html += `<div style="padding:16px" class="mg-scramble-settlement-grid">
+        <div class="mg-scramble-settlement-hero" style="padding:22px 18px">
+          <div class="mg-scramble-settlement-kicker">Settlement Lounge</div>
+          <div class="mg-scramble-settlement-title" style="margin-top:8px;margin-bottom:8px">Round still moving.</div>
+          <div class="mg-scramble-settlement-copy" style="max-width:320px">${leaderCopy} ${holesPerRound - holesPlayed} hole${holesPerRound - holesPlayed === 1 ? '' : 's'} still decide the money, the honors, and the screenshot.</div>
+          <div class="mg-scramble-settlement-stat-row" style="margin-top:16px">
+            <div class="mg-scramble-settlement-stat">
+              <div class="mg-scramble-settlement-stat-label">Through</div>
+              <div class="mg-scramble-settlement-stat-value">${holesPlayed}/${holesPerRound}</div>
+            </div>
+            <div class="mg-scramble-settlement-stat">
+              <div class="mg-scramble-settlement-stat-label">Current Lead</div>
+              <div class="mg-scramble-settlement-stat-value">${leadMargin === null ? '--' : leadMargin === 0 ? 'Tied' : `${leadMargin} up`}</div>
+            </div>
+            <div class="mg-scramble-settlement-stat">
+              <div class="mg-scramble-settlement-stat-label">Purse</div>
+              <div class="mg-scramble-settlement-stat-value">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() : 'Live'}</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;background:rgba(252,249,244,0.74);border:1px solid rgba(0,32,70,0.08);border-radius:16px;padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+              <div class="mg-scramble-section-eyebrow" style="margin-bottom:0">What still decides it</div>
+              <div style="font-size:12px;font-weight:800;color:#775A19">${pct}% complete</div>
+            </div>
+            <div style="font-size:13px;line-height:1.5;color:#002046">
+              ${unresolvedHonors > 0
+                ? `${unresolvedHonors} side game${unresolvedHonors === 1 ? '' : 's'} still need a winner, and the last stretch can still flip the purse.`
+                : `No admin cleanup left. Finish the last stretch and this turns straight into the final money board.`}
+            </div>
+          </div>
         </div>
-        <div style="background:rgba(197,160,89,0.1);border-radius:8px;height:8px;overflow:hidden;margin-bottom:14px">
-          <div style="background:linear-gradient(90deg,#775A19,#FED488);height:100%;width:${pct}%;border-radius:8px"></div>
+        ${leaderboard.length > 0 ? `<div class="mg-scramble-podium-card">
+          <div class="mg-scramble-section-eyebrow">Live money board</div>
+          <div class="mg-scramble-final-list">
+            ${leaderboard.slice(0, 4).map((entry, idx) => `
+              <div class="mg-scramble-final-row">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+                  <div class="mg-scramble-final-rank">${idx === 0 ? '🏆' : idx + 1}</div>
+                  <div class="mg-scramble-final-meta">
+                    <strong>${escHtml(entry.team)}</strong>
+                    <span>${idx === 0 ? 'Current clubhouse lead' : 'Still chasing the top spot'}</span>
+                  </div>
+                </div>
+                <div class="mg-scramble-final-score">
+                  <strong>${formatScoreToPar(entry, parForPlayed)}</strong>
+                  ${payoutForPosition(idx) > 0 ? `<span>$${payoutForPosition(idx).toLocaleString()} pace</span>` : ''}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+        <div class="mg-scramble-settlement-actions">
+          <a href="#scorecard" class="mg-scramble-settlement-primary">Keep scoring</a>
+          <a href="#dashboard" class="mg-scramble-settlement-secondary">Back to the board</a>
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:14px">${holesPerRound - holesPlayed} holes remaining</div>
-        <a href="#dashboard" style="display:block;text-align:center;padding:14px;border-radius:10px;background:#775A19;color:#002046;text-decoration:none;font-family:'Noto Serif',var(--font-display),serif;font-size:15px;font-weight:700;min-height:48px">Continue Scoring</a>
       </div>`;
       html += `</div>`;
       return html;
     }
 
-    // Complete — full scramble settlement
-    html += `<div style="padding:16px">`;
-
-    // Event info
-    html += `<div style="text-align:center;margin-bottom:16px">
-      <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:20px;font-weight:700;color:#775A19">${escHtml(config?.event?.name || 'Scramble')}</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${escHtml(config?.event?.venue || '')} &middot; ${holesPlayed} holes &middot; ${leaderboard.length} teams</div>
-    </div>`;
-
-    // Final standings with prizes
-    html += `<div style="margin-bottom:16px">
-      <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:10px">Final Standings</div>`;
-
-    const medals = ['\u{1F3C6}', '\u{1F948}', '\u{1F949}'];
-    leaderboard.forEach((entry, i) => {
-      const toPar = entry.total - parForPlayed;
-      const toParStr = toPar === 0 ? 'E' : toPar > 0 ? '+' + toPar : String(toPar);
-      const prize = ppPayouts[i + 1] || (ppTotal > 0 && i < 4 ? Math.round(ppTotal * defaultSplit[i]) : 0);
-      const isWinner = i === 0;
-      const medal = i < 3 ? medals[i] : '';
-
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;${i < leaderboard.length - 1 ? 'border-bottom:1px solid rgba(197,160,89,0.15);' : ''}${isWinner ? 'background:rgba(197,160,89,0.06);margin:0 -16px;padding:12px 16px;border-radius:8px;' : ''}">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:16px;width:24px;text-align:center">${medal || `<span style="font-size:12px;color:var(--text-secondary)">${i + 1}</span>`}</span>
-          <span style="font-family:'Noto Serif',var(--font-display),serif;font-size:${isWinner ? '16' : '14'}px;font-weight:700;color:var(--text-primary)">${escHtml(entry.team)}</span>
+    html += `<div style="padding:16px" class="mg-scramble-settlement-grid">
+      <div class="mg-scramble-settlement-hero" style="padding:22px 18px">
+        <div class="mg-scramble-settlement-kicker">Official money board</div>
+        <div style="display:flex;justify-content:center;margin:10px 0 8px">
+          <div class="mg-settlement-ornament-card" style="width:min(240px,64vw);height:54px;border-radius:999px;background-position:center top"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-family:'Noto Serif',var(--font-display),serif;font-size:${isWinner ? '22' : '16'}px;font-weight:700;color:${toPar <= 0 ? '#002046' : '#DC2626'}">${toParStr}</span>
-          ${prize > 0 ? `<span style="font-size:14px;font-weight:800;color:#775A19">$${prize.toLocaleString()}</span>` : ''}
+        <div class="mg-scramble-settlement-title" style="text-align:center">${escHtml(config?.event?.name || 'Scramble')}</div>
+        <div class="mg-scramble-settlement-copy" style="text-align:center;margin:8px auto 0;max-width:330px">
+          ${ceremonyCopy}
         </div>
-      </div>`;
-    });
-    html += `</div>`;
+        <div class="mg-scramble-settlement-stat-row" style="margin-top:16px">
+          <div class="mg-scramble-settlement-stat">
+            <div class="mg-scramble-settlement-stat-label">Champion</div>
+            <div class="mg-scramble-settlement-stat-value">${champion ? formatScoreToPar(champion, totalPar) : '--'}</div>
+          </div>
+          <div class="mg-scramble-settlement-stat">
+            <div class="mg-scramble-settlement-stat-label">Purse</div>
+            <div class="mg-scramble-settlement-stat-value">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() : 'Final'}</div>
+          </div>
+          <div class="mg-scramble-settlement-stat">
+            <div class="mg-scramble-settlement-stat-label">Field</div>
+            <div class="mg-scramble-settlement-stat-value">${leaderboard.length || config?.scrambleTeams?.length || 0}</div>
+          </div>
+        </div>
+        ${champion ? `<div class="mg-scramble-podium-winner" style="margin-top:16px">
+          <div class="mg-scramble-section-eyebrow">Champion</div>
+          <h3>${escHtml(champion.team)}</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">
+            <span class="mg-scramble-payout-chip">${formatScoreToPar(champion, totalPar)}</span>
+            ${payoutForPosition(0) > 0 ? `<span class="mg-scramble-payout-chip">$${payoutForPosition(0).toLocaleString()} first prize</span>` : ''}
+            ${entryFee > 0 ? `<span class="mg-scramble-payout-chip">$${entryFee.toLocaleString()} per team</span>` : ''}
+          </div>
+          <div class="mg-scramble-podium-subcopy" style="margin-top:10px">
+            ${venue ? `${escHtml(venue)} · ` : ''}${holesPlayed} holes${unresolvedHonors > 0 ? ` · ${unresolvedHonors} side game${unresolvedHonors === 1 ? '' : 's'} still unresolved` : ' · all honors posted'}
+          </div>
+        </div>` : ''}
+      </div>
 
-    // CTP Winners
-    if (sideGames?.closestToPin?.length > 0) {
-      html += `<div style="background:linear-gradient(135deg,#002046,#1B365D);border-radius:10px;padding:16px;margin-bottom:10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#775A19;margin-bottom:10px">Closest to Pin${ctpPrize > 0 ? ' &middot; $' + ctpPrize + '/hole' : ''}</div>`;
-      sideGames.closestToPin.forEach(hole => {
-        const winner = ctpWinners[hole];
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-          <span style="font-size:13px;color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
-          <span style="font-size:13px;font-weight:700;color:${winner ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner) : 'No winner'}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    }
+      <div class="mg-scramble-podium-card">
+        <div class="mg-scramble-section-eyebrow">Final standings</div>
+        <div class="mg-scramble-final-list">
+          ${leaderboard.map((entry, idx) => {
+            const payout = payoutForPosition(idx);
+            return `<div class="mg-scramble-final-row">
+              <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+                <div class="mg-scramble-final-rank">${idx === 0 ? '🏆' : idx + 1}</div>
+                <div class="mg-scramble-final-meta">
+                  <strong>${escHtml(entry.team)}</strong>
+                  <span>${idx < 3 ? 'Finishes on the podium' : 'Official final position'}</span>
+                </div>
+              </div>
+              <div class="mg-scramble-final-score">
+                <strong>${formatScoreToPar(entry, totalPar)}</strong>
+                <span>${payout > 0 ? '$' + payout.toLocaleString() : '—'}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
 
-    // LD Winners
-    if (sideGames?.longestDrive?.length > 0) {
-      html += `<div style="background:linear-gradient(135deg,#002046,#1B365D);border-radius:10px;padding:16px;margin-bottom:10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#775A19;margin-bottom:10px">Longest Drive</div>`;
-      sideGames.longestDrive.forEach(hole => {
-        const winner = ldWinners[hole];
-        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-          <span style="font-size:13px;color:rgba(252,249,244,0.5);font-weight:600">Hole ${hole}</span>
-          <span style="font-size:13px;font-weight:700;color:${winner ? '#775A19' : 'rgba(252,249,244,0.3)'}">${winner ? escHtml(winner) : 'No winner'}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    }
+      ${honors.length > 0 ? `<div class="mg-scramble-honors-card">
+        <div class="mg-scramble-section-eyebrow">On-course honors</div>
+        <div class="mg-scramble-honors-grid">
+          ${honors.map((item) => `
+            <div class="mg-scramble-honor-row">
+              <div>
+                <strong>${item.type} · Hole ${item.hole}</strong>
+                <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}</span>
+              </div>
+              <div class="mg-scramble-honor-result ${item.status !== 'awarded' ? 'pending' : ''}">
+                ${item.status === 'awarded' ? escHtml(item.winnerLabel) : 'Still unclaimed'}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
 
-    // Total prize pool summary
-    if (ppTotal > 0) {
-      html += `<div style="background:rgba(197,160,89,0.06);border:1px solid rgba(197,160,89,0.2);border-radius:10px;padding:14px;text-align:center;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(27,48,34,0.5)">Total Prize Pool</div>
-        <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:28px;font-weight:700;color:#775A19;margin-top:4px">$${ppTotal.toLocaleString()}</div>
-      </div>`;
-    }
+      <div class="mg-scramble-share-shell">
+        <div id="settlement-share-card" class="mg-settlement-share-plate" style="border-radius:18px;overflow:hidden">
+          <div style="padding:18px 18px 14px;background:linear-gradient(180deg,rgba(0,32,70,0.82),rgba(0,32,70,0.94));border-bottom:1px solid rgba(197,160,89,0.2)">
+            <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(252,249,244,0.82);text-align:center">Scramble final</div>
+            <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:28px;line-height:1.05;color:#FCF9F4;text-align:center;margin-top:8px">${champion ? escHtml(champion.team) : 'Clubhouse lead'}</div>
+            <div style="text-align:center;margin-top:8px;font-size:13px;color:rgba(252,249,244,0.78)">${escHtml(config?.event?.name || 'Scramble')}${venue ? ` · ${escHtml(venue)}` : ''}</div>
+            <div class="mg-scramble-share-meta">
+              <span class="mg-scramble-share-pill">${champion ? formatScoreToPar(champion, totalPar) : 'Live'}</span>
+              <span class="mg-scramble-share-pill">${ppTotal > 0 ? '$' + ppTotal.toLocaleString() + ' purse' : 'Final board'}</span>
+              <span class="mg-scramble-share-pill">${leaderboard.length || config?.scrambleTeams?.length || 0} teams</span>
+            </div>
+          </div>
+          <div style="padding:14px 16px 16px">
+            <div class="mg-scramble-section-eyebrow">Top line</div>
+            <div style="display:grid;gap:8px">
+              ${shareSummaryRows.map((entry, idx) => `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:${idx < shareSummaryRows.length - 1 ? '1px solid rgba(0,32,70,0.08)' : 'none'}">
+                  <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    <div style="width:22px;text-align:center;font-size:12px;font-weight:800;color:#775A19">${idx === 0 ? '🏆' : idx + 1}</div>
+                    <div style="min-width:0">
+                      <div style="font-size:14px;font-weight:700;color:#002046;line-height:1.25">${escHtml(entry.team)}</div>
+                      <div style="font-size:11px;color:#74777F">${entry.toPar}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:13px;font-weight:800;color:#775A19;white-space:nowrap">${entry.payout > 0 ? '$' + entry.payout.toLocaleString() : '—'}</div>
+                </div>`).join('')}
+            </div>
+            ${honors.filter((item) => item.status === 'awarded').length > 0 ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,32,70,0.08)">
+              <div class="mg-scramble-section-eyebrow">Honors</div>
+              <div style="display:grid;gap:6px">
+                ${honors.filter((item) => item.status === 'awarded').slice(0, 3).map((item) => `
+                  <div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#002046">
+                    <span>${item.type} · Hole ${item.hole}</span>
+                    <strong style="color:#775A19">${escHtml(item.winnerLabel)}</strong>
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(0,32,70,0.08);display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div>
+                <div style="font-family:'Noto Serif',var(--font-display),serif;font-size:16px;color:#002046">betwaggle.com</div>
+                <div style="font-size:11px;color:#74777F;margin-top:2px">Built to sell the group on running it back.</div>
+              </div>
+              <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#775A19">Share-ready</div>
+            </div>
+          </div>
+        </div>
+        <div class="mg-scramble-share-caption">Screenshot this card for the group chat.</div>
+      </div>
 
-    // Share button + weekly conversion cue
-    html += `<button onclick="window.MG.shareSettlement()" style="width:100%;padding:16px;background:#775A19;color:#002046;border:none;border-radius:10px;font-family:'Noto Serif',var(--font-display),serif;font-size:15px;font-weight:700;cursor:pointer;min-height:56px;margin-bottom:8px">Share Results</button>`;
-    html += `<div style="background:linear-gradient(135deg,rgba(0,32,70,0.04),rgba(119,90,25,0.06));border:1px solid rgba(0,32,70,0.08);border-radius:16px;padding:14px 14px;margin-bottom:8px">
-      <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#775A19;margin-bottom:4px">Keep The Group Playing</div>
-      <div style="font-size:13px;color:#002046;line-height:1.45">Turn the scramble into a recurring game. Same crew, faster setup, weekly money games and live settlement built in.</div>
-    </div>`;
-    html += `<a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}&mode=weekly" style="display:block;text-align:center;padding:14px;background:rgba(27,48,34,0.06);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:#002046;text-decoration:none">Start a Weekly Game From This Group &rarr;</a>`;
-
-    html += `</div></div>`;
+      <div class="mg-scramble-settlement-actions">
+        <button onclick="window.MG.shareSettlement()" class="mg-scramble-settlement-primary" style="border:none;cursor:pointer">Share results</button>
+        <a href="/create/?ref=${encodeURIComponent(state._slug || 'event')}&mode=weekly" class="mg-scramble-settlement-secondary">Start a weekly game from this group</a>
+      </div>
+    </div></div>`;
     return html;
   }
 

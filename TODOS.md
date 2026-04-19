@@ -70,10 +70,10 @@
 - [ ] Add a more premium “round complete” moment before settlement.
 
 #### 4. Settlement Premium Pass
-- [ ] Improve incomplete-round settlement states so they still feel alive and worth checking.
-- [ ] Make the completed settlement card more screenshot-worthy and chat-worthy.
+- [x] Improve incomplete-round settlement states so they still feel alive and worth checking.
+- [x] Make the completed settlement card more screenshot-worthy and chat-worthy.
 - [ ] Tighten payout rows, winner framing, and “who pays who” legibility.
-- [ ] Make “share results” and “run it back” feel like primary social actions.
+- [x] Make “share results” and “run it back” feel like primary social actions.
 
 ### P1 — Retention / Habit Loop
 
@@ -114,10 +114,11 @@
 ### P2 — Testing / Verification
 - [ ] Add a visual mobile QA script for the Blue Monster outing and one scramble seed.
 - [ ] Add a smoke for signed-in score entry, not only API scoring.
-- [ ] Add a smoke for settlement share card render.
+- [x] Add a smoke for settlement share card render.
 - [ ] Add a smoke for the “weekly game from this group” conversion path once built.
 - [x] Keep `scripts/check-share-surfaces.sh` aligned with live invite/share copy so premium regressions get caught.
 - [x] Add a dedicated scramble dashboard mobile regression script: `scripts/check-scramble-board.sh`.
+- [x] Add a dedicated scramble settlement mobile regression script: `scripts/check-scramble-settlement.sh`.
 
 ### P2 — Image Agent Backlog
 - [ ] Generate a quieter settlement plate with less edge detail.
@@ -158,6 +159,36 @@
   - scramble board feels more like a destination and less like a prototype stack
   - mobile users can read purse, pressure, and side-game status earlier
   - the broken invite/hero image state is fixed because the missing art is now live
+
+### Apr 19 Pass Notes — Settlement / Share
+- Shipped:
+  - `app/js/views.js`
+    scramble settlement now has:
+    - premium incomplete-state lounge
+    - official money-board hero for final results
+    - stronger champion framing
+    - cleaner final standings hierarchy
+    - screenshot-oriented scramble share card built directly in HTML/CSS
+    - stronger weekly replay CTA
+  - `app/js/app.js`
+    scramble settlement sharing now produces scramble-specific share text instead of falling through to the round/trip P&L path
+  - `scripts/check-scramble-settlement.sh`
+    added mobile Playwright regression for:
+    - incomplete scramble settlement on `demo-scramble`
+    - final scramble settlement on `augusta-scramble`
+    - share-card screenshot sizing
+- Improved:
+  - scramble settlement now feels like a ceremony instead of a thin payout list
+  - the final result on `augusta-scramble` is now screenshot-worthy in a mobile frame
+  - incomplete scramble settlement on `demo-scramble` now feels alive instead of dead-ended
+  - mobile validation exists for the exact scramble settlement surfaces that changed
+- Still weak:
+  - scramble score entry still lacks the real CTP/LD commissioner workflow
+  - share card export is still screenshot-first rather than a bespoke scramble export image
+  - real-device outdoor validation is still needed even though Playwright mobile checks now pass
+- Next pass should attack:
+  - phase 3 scramble score-entry + side-game capture
+  - then tighter payout phrasing / export polish if settlement still feels short of 100%
 - Still weak:
   - scramble score entry still needs the real phase-3 side-game workflow
   - scramble settlement still needs the real phase-4 ceremony and share layer
