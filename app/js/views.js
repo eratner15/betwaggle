@@ -5944,16 +5944,34 @@ export function renderBetting(state) {
   if (eventType === 'quick' || eventType === 'buddies_trip') return renderCashBetting(state);
 
   const tab = state._betTab || "matches";
+  const allMatches = Object.values(state.matches || {});
+  const liveMatches = allMatches.filter((match) => match.status === 'live');
+  const upcomingMatches = allMatches.filter((match) => match.status !== 'final' && match.status !== 'live');
+  const futuresMarkets = [
+    state._config?.games?.skins,
+    state._config?.games?.nassau,
+    state._config?.games?.stroke_play,
+    flightOrder().length > 0,
+    !!state._seasonData?.leaderboard?.length
+  ].filter(Boolean).length;
+  const propMarkets = allMatches.filter((match) => match.status !== 'final').length;
 
   let html = ``;
 
   // Name is REQUIRED — send to dashboard to pick from dropdown
   if (!state.bettorName) {
-    html += `<div style="padding:40px 20px;text-align:center">
-      <div style="font-family:Noto Serif,serif;font-size:28px;font-weight:700;color:var(--gold-primary);margin-bottom:12px">WAGGLE</div>
-      <div style="font-size:22px;font-weight:700;color:var(--mg-green);margin-bottom:8px">Select Your Name First</div>
-      <p class="text-sm text-muted mb-4">Go to the home page to pick your name</p>
-      <a href="#dashboard" class="mg-btn mg-btn-primary" style="width:auto;padding:12px 32px;font-size:15px;text-decoration:none;display:inline-block">Go to Home</a>
+    html += `<div style="padding:8px 0 12px">
+      <div style="background:linear-gradient(180deg,rgba(252,249,244,0.9),rgba(244,244,240,0.96));border:1px solid rgba(0,32,70,0.08);border-radius:20px;padding:18px 14px 14px;margin-bottom:12px;box-shadow:0 16px 36px rgba(27,28,26,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:10px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#775A19;margin-bottom:4px">Betting Access</div>
+            <div style="font-family:'Noto Serif',serif;font-size:22px;font-weight:700;color:#002046;line-height:1.1">Join the action from here.</div>
+          </div>
+          <a href="#dashboard" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:999px;background:rgba(0,32,70,0.06);border:1px solid rgba(0,32,70,0.08);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#002046;text-decoration:none;white-space:nowrap">View board</a>
+        </div>
+        <div style="font-size:13px;line-height:1.45;color:#44474E;margin-bottom:14px">Pick your name to unlock your bankroll, open the slip, and start betting live matches without bouncing back to the home screen.</div>
+        ${renderPlayerPicker(state)}
+      </div>
     </div>`;
     return html;
   }
@@ -6005,6 +6023,24 @@ export function renderBetting(state) {
           ↻ Refresh
         </button>
       </div>
+    </div>
+  </div>`;
+
+  html += `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">
+    <div style="background:rgba(0,32,70,0.04);border:1px solid rgba(0,32,70,0.08);border-radius:16px;padding:12px 10px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#74777F;margin-bottom:4px">Live Lines</div>
+      <div style="font-family:'SF Mono','Menlo',monospace;font-size:22px;font-weight:800;color:#002046">${liveMatches.length}</div>
+      <div style="font-size:11px;line-height:1.35;color:#44474E">Matches moving right now</div>
+    </div>
+    <div style="background:rgba(119,90,25,0.06);border:1px solid rgba(119,90,25,0.12);border-radius:16px;padding:12px 10px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#74777F;margin-bottom:4px">Coming Up</div>
+      <div style="font-family:'SF Mono','Menlo',monospace;font-size:22px;font-weight:800;color:#775A19">${upcomingMatches.length}</div>
+      <div style="font-size:11px;line-height:1.35;color:#44474E">Pre-round prices still open</div>
+    </div>
+    <div style="background:rgba(27,54,93,0.05);border:1px solid rgba(27,54,93,0.1);border-radius:16px;padding:12px 10px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#74777F;margin-bottom:4px">Side Markets</div>
+      <div style="font-family:'SF Mono','Menlo',monospace;font-size:22px;font-weight:800;color:#1B365D">${futuresMarkets + propMarkets}</div>
+      <div style="font-size:11px;line-height:1.35;color:#44474E">Futures and exact outcomes</div>
     </div>
   </div>`;
 
@@ -6080,6 +6116,14 @@ export function renderBetting(state) {
       </button>
     </div>`;
 
+  html += `<div style="margin:-4px 0 14px;padding:0 4px;font-size:12px;line-height:1.45;color:#44474E">
+    ${tab === 'matches'
+      ? `Start with the live board. Tap a side to add it to the slip, then move into coming-up matches before the next wave goes off.`
+      : tab === 'futures'
+        ? `These are the sweat multipliers: flight winners, side games, and season-long edges that keep the group checking back.`
+        : `Use props for exact-score conviction. These are the highest-variance cards on the board.`}
+  </div>`;
+
   if (tab === "matches") {
     html += renderMatchBets(state);
   } else if (tab === "futures") {
@@ -6100,6 +6144,8 @@ function renderMatchBets(state) {
   let html = "";
   // Show bettable matches (scheduled or live)
   const bettable = Object.values(state.matches).filter(m => m.status !== "final");
+  const liveCount = bettable.filter((m) => m.status === 'live').length;
+  const scheduledCount = bettable.length - liveCount;
 
   if (bettable.length === 0) {
     return `<div style="
@@ -6115,9 +6161,21 @@ function renderMatchBets(state) {
     </div>`;
   }
 
+  html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.18);font-size:11px;font-weight:800;color:#166534;letter-spacing:1px;text-transform:uppercase">${liveCount} live now</div>
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(119,90,25,0.08);border:1px solid rgba(119,90,25,0.16);font-size:11px;font-weight:800;color:#775A19;letter-spacing:1px;text-transform:uppercase">${scheduledCount} coming up</div>
+  </div>`;
+
   // Group by flight with enhanced heritage styling
   flightOrder().forEach(fId => {
-    const fMatches = bettable.filter(m => m.flight === fId);
+    const fMatches = bettable
+      .filter(m => m.flight === fId)
+      .sort((a, b) => {
+        const aRank = a.status === 'live' ? 0 : 1;
+        const bRank = b.status === 'live' ? 0 : 1;
+        if (aRank !== bRank) return aRank - bRank;
+        return (a.round || 0) - (b.round || 0);
+      });
     if (fMatches.length === 0) return;
 
     // Heritage flight header
@@ -6257,6 +6315,9 @@ function renderMatchBets(state) {
           margin-bottom: 12px;
         ">
           Round ${m.round} • ${RT(m.round)} • HI: ${tA.combined} vs ${tB.combined}
+        </div>
+        <div style="font-size:11px;color:${isLive ? '#16A34A' : '#9CA3AF'};font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px">
+          ${isLive ? 'Bet the live swing before the next score posts' : 'Pre-match number'}
         </div>
 
         <div style="display: flex; gap: 8px; justify-content: space-between;">
@@ -7477,7 +7538,10 @@ export function renderSettlement(state) {
         <div style="font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#775A19;margin-bottom:4px">What unlocks next</div>
         <div style="font-size:13px;color:#002046;line-height:1.45">Final money board, side game results, and the clean payout list everyone checks in the cart on the way to the clubhouse.</div>
       </div>
-      <a href="#dashboard" onclick="window.MG.setBoardTab&&window.MG.setBoardTab('score')" style="display:block;text-align:center;padding:16px;border-radius:12px;background:#002046;color:#FFFFFF;text-decoration:none;font-size:13px;font-weight:700;min-height:48px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-family:'Manrope',sans-serif">Continue Scoring</a>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <a href="#scorecard" style="display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;border-radius:12px;background:#002046;color:#FFFFFF;text-decoration:none;font-size:13px;font-weight:700;min-height:48px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-family:'Manrope',sans-serif">Continue Scoring</a>
+        <a href="#dashboard" onclick="window.MG.setBoardTab&&window.MG.setBoardTab('board')" style="display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;border-radius:12px;background:rgba(255,255,255,0.92);border:1px solid rgba(0,32,70,0.08);color:#002046;text-decoration:none;font-size:13px;font-weight:700;min-height:48px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-family:'Manrope',sans-serif">Check Live Board</a>
+      </div>
     </div>`;
     return html;
   }
@@ -8322,6 +8386,10 @@ export function renderCasualScorecard(state) {
         <div style="font-size:11px;line-height:1.45;color:rgba(252,249,244,0.74)">${holesRemaining > 0 ? 'Finish the round to reveal winners, side games, and who owes who.' : 'Settlement, recap, and weekly-game invite are ready.'}</div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:${scoredCount > 0 ? '1fr 1fr' : '1fr'};gap:10px;margin-top:12px">
+      ${holesRemaining > 0 ? `<button onclick="window.MG.openScoreComposer('scorecard-hero')" style="display:flex;align-items:center;justify-content:center;padding:14px 16px;border:none;border-radius:14px;background:#002046;color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;min-height:48px;cursor:pointer">${scoredCount === 0 ? 'Start scoring' : 'Post hole ' + nextUnscoredHole}</button>` : `<a href="#settle" style="display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:14px;background:#002046;color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;min-height:48px;text-decoration:none">Open settlement</a>`}
+      ${scoredCount > 0 ? `<a href="#settle" style="display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,0.75);border:1px solid rgba(0,32,70,0.08);color:#002046;font-size:12px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;min-height:48px;text-decoration:none">${holesRemaining > 0 ? 'Live payout preview' : 'Share the result'}</a>` : ''}
+    </div>
   </div>`;
 
   // Running P&L summary cards
@@ -8653,9 +8721,6 @@ function renderPlayerPicker(state) {
   }
 
   html += `<button onclick="window.MG.setBettorName('')" style="width:100%;padding:14px;background:transparent;border:1px solid rgba(252,249,244,0.12);border-radius:14px;color:rgba(252,249,244,0.7);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;-webkit-tap-highlight-color:transparent">Just watching</button>`;
-  html += `</div>`;
-  html += `</div>`; // close Heritage scorecard container
-  html += `</div>`; // close Heritage settlement container
   return html;
 }
 

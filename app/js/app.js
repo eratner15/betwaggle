@@ -612,6 +612,9 @@ function maybeAutoOpenScoreComposer(view) {
 function updateNav(view) {
   const games = state?._config?.games || {};
   const hasGames = Object.values(games).some(Boolean);
+  const hasSettlementProgress =
+    Object.keys(state?._holes || {}).length > 0 ||
+    Object.values(state?.matches || {}).some((match) => match?.status === 'live' || match?.status === 'final');
 
   // Populate header tabs for round/scramble mode
   const headerTabsEl = document.getElementById('mg-header-tabs');
@@ -694,7 +697,7 @@ function updateNav(view) {
     } else {
       // MG tournament mode: original tab set
       if (tab === "settle") {
-        a.style.display = 'none'; // settle is nav-less in MG — accessed via #settle hash
+        a.style.display = hasSettlementProgress ? '' : 'none';
       } else if (tab === "scorecard") {
         a.style.display = hasGames ? '' : 'none';
       } else if (tab === "scenarios") {
@@ -706,6 +709,7 @@ function updateNav(view) {
       if (label) {
         if (tab === "dashboard") label.textContent = "The Board";
         if (tab === "admin") label.textContent = "Admin";
+        if (tab === "settle") label.textContent = "Settle";
       }
     }
   });
