@@ -368,7 +368,7 @@ async function flushMutationQueue() {
         let result = null;
         switch (mutation.type) {
           case 'scores':
-            result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores, mutation.ts);
+            result = await Sync.submitHoleScores(mutation.payload.holeNum, mutation.payload.scores, mutation.ts, mutation.payload.sideGame);
             break;
           case 'bet':
             result = await Sync.submitBet(mutation.payload);
@@ -1071,15 +1071,72 @@ window.MG = {
     refresh();
   },
 
+  // Jump to the scorecard view for the given hole so the commissioner can resolve a deferred side game.
+  openSideGameResolver(kind, hole) {
+    if (!hole || !['ctp', 'ld'].includes(kind)) return;
+    const h = parseInt(hole);
+    if (!h) return;
+    state._scorecardHole = h;
+    // If this is the scramble leaderboard (board tab), switch to score sub-tab so the panel is visible.
+    if (state._boardSubTab !== undefined) state._boardSubTab = 'score';
+    // Also hop to the scorecard route if we're not already there.
+    if (location.hash !== '#scorecard') {
+      location.hash = '#scorecard';
+    } else {
+      refresh();
+    }
+  },
+
+  // Stage a CTP/LD side-game capture inline with score entry.
+  // kind = 'ctp'|'ld', hole = int, status = 'awarded'|'deferred', winnerLabel optional.
+  setScrambleSideGame(kind, hole, status, winnerLabel) {
+    if (!state._scrambleSideGame) state._scrambleSideGame = {};
+    if (!state._scrambleSideGame[hole]) state._scrambleSideGame[hole] = {};
+    const norm = kind === 'ctp' || kind === 'ld' ? kind : null;
+    if (!norm) return;
+    if (status === 'clear') {
+      delete state._scrambleSideGame[hole][norm];
+    } else {
+      state._scrambleSideGame[hole][norm] = { status, winnerLabel: winnerLabel || '' };
+    }
+    refresh();
+  },
+
+  // Commissioner correction: update a side game after the hole was already saved.
+  async submitScrambleSideGame(kind, hole, status, winnerLabel) {
+    if (navigator.vibrate) navigator.vibrate(20);
+    try {
+      const result = await Sync.submitSideGameUpdate({ hole, kind, status, winnerLabel });
+      if (result && result.ok) {
+        const kindLabel = kind === 'ctp' ? 'CTP' : 'Long Drive';
+        const verb = status === 'awarded' ? `awarded to ${winnerLabel}` : status === 'deferred' ? 'deferred' : 'reset';
+        toast(`${kindLabel} #${hole} ${verb}`);
+        await syncFromServer();
+        refresh();
+      } else {
+        toast('Side game update failed — try again');
+      }
+    } catch (e) {
+      toast('Offline — reconnect to update side game');
+    }
+  },
+
   async submitScrambleHole(holeNum) {
     const scores = state._scrambleScores;
     if (!scores || Object.keys(scores).length === 0) { toast('Enter scores first'); return; }
     if (navigator.vibrate) navigator.vibrate(30);
+    // Side-game payload (if this hole is a CTP or LD hole and the commissioner made a pick).
+    const stagedSide = state._scrambleSideGame?.[holeNum] || null;
+    const extras = {};
+    if (stagedSide?.ctp) extras.ctp = stagedSide.ctp;
+    if (stagedSide?.ld) extras.ld = stagedSide.ld;
+    const hasExtras = extras.ctp !== undefined || extras.ld !== undefined;
     try {
-      const result = await Sync.submitHoleScores(holeNum, scores);
+      const result = await Sync.submitHoleScores(holeNum, scores, undefined, hasExtras ? extras : undefined);
       if (result && result.ok) {
         toast('Hole ' + holeNum + ' saved');
         state._scrambleScores = {};
+        if (state._scrambleSideGame) delete state._scrambleSideGame[holeNum];
         const maxHole = state._config?.holesPerRound || 18;
         if (holeNum < maxHole) {
           state._scorecardHole = holeNum + 1;
@@ -1096,11 +1153,14 @@ window.MG = {
       }
     } catch (e) {
       // Offline — queue mutation and update optimistically
-      await queueMutation({ type: 'scores', payload: { holeNum, scores: { ...scores } }, ts: Date.now() });
+      const payload = { holeNum, scores: { ...scores } };
+      if (hasExtras) payload.sideGame = { ...extras };
+      await queueMutation({ type: 'scores', payload, ts: Date.now() });
       if (!state._holes) state._holes = {};
       state._holes[holeNum] = { ...scores };
       toast('Saved offline — will sync when connected');
       state._scrambleScores = {};
+      if (state._scrambleSideGame) delete state._scrambleSideGame[holeNum];
       const maxHole = state._config?.holesPerRound || 18;
       if (holeNum < maxHole) {
         state._scorecardHole = holeNum + 1;

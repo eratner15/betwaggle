@@ -1223,35 +1223,41 @@ export function renderScrambleLeaderboard(state) {
         <div class="copy">${nextPressureCopy}</div>
       </div>`;
     if (ctpHoles.length > 0 || ldHoles.length > 0) {
+      const renderSideGameLine = (hole, kind, normalized) => {
+        const played = scoredHoles.includes(hole);
+        const statusPill = normalized.status === 'awarded'
+          ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(243,215,154,0.18);color:#F3D79A">Awarded</span>`
+          : normalized.status === 'deferred'
+            ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(232,115,90,0.18);color:#F2A090">Deferred</span>`
+            : played
+              ? `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(252,249,244,0.08);color:rgba(252,249,244,0.62)">Open</span>`
+              : `<span style="font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(252,249,244,0.04);color:rgba(252,249,244,0.4)">Waiting</span>`;
+        const winnerText = normalized.status === 'awarded' ? normalized.winnerLabel : '';
+        const adminResolveBtn = state.adminAuthed && (normalized.status !== 'awarded') && played
+          ? `<button onclick="window.MG.openSideGameResolver('${kind}',${hole})" style="margin-top:6px;padding:6px 10px;min-height:32px;border-radius:6px;border:1px solid rgba(243,215,154,0.35);background:transparent;color:#F3D79A;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Resolve</button>`
+          : '';
+        return `<div class="mg-scramble-sidegame-item" style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px">
+            <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.78)">Hole ${hole}</span>
+            ${statusPill}
+          </div>
+          ${winnerText ? `<span style="font-size:11px;font-weight:600;color:#F3D79A;line-height:1.3">${escHtml(String(winnerText).split('(')[0].trim())}</span>` : ''}
+          ${adminResolveBtn}
+        </div>`;
+      };
       html += `<div class="mg-scramble-section-card">
         <div class="mg-scramble-section-title">Side games live now</div>
         <div class="mg-scramble-sidegame-grid">`;
       if (ctpHoles.length > 0) {
         html += `<div class="mg-scramble-sidegame-card">
           <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Closest to pin</div>
-          ${ctpHoles.map((hole) => {
-            const normalized = normalizeScrambleSideGameEntry(ctpResults[hole]);
-            const played = scoredHoles.includes(hole);
-            const label = normalized.status === 'awarded' ? normalized.winnerLabel : played ? 'Resolve winner' : 'Waiting';
-            return `<div class="mg-scramble-sidegame-item">
-              <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.68)">Hole ${hole}</span>
-              <span style="font-size:12px;font-weight:700;color:${normalized.status === 'awarded' ? '#F3D79A' : 'rgba(252,249,244,0.44)'};text-align:right">${escHtml(String(label).split('(')[0].trim())}</span>
-            </div>`;
-          }).join('')}
+          ${ctpHoles.map((hole) => renderSideGameLine(hole, 'ctp', normalizeScrambleSideGameEntry(ctpResults[hole]))).join('')}
         </div>`;
       }
       if (ldHoles.length > 0) {
         html += `<div class="mg-scramble-sidegame-card">
           <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#D4B96A;margin-bottom:8px">Longest drive</div>
-          ${ldHoles.map((hole) => {
-            const normalized = normalizeScrambleSideGameEntry(ldResults[hole]);
-            const played = scoredHoles.includes(hole);
-            const label = normalized.status === 'awarded' ? normalized.winnerLabel : played ? 'Resolve winner' : 'Waiting';
-            return `<div class="mg-scramble-sidegame-item">
-              <span style="font-size:12px;font-weight:700;color:rgba(252,249,244,0.68)">Hole ${hole}</span>
-              <span style="font-size:12px;font-weight:700;color:${normalized.status === 'awarded' ? '#F3D79A' : 'rgba(252,249,244,0.44)'};text-align:right">${escHtml(String(label).split('(')[0].trim())}</span>
-            </div>`;
-          }).join('')}
+          ${ldHoles.map((hole) => renderSideGameLine(hole, 'ld', normalizeScrambleSideGameEntry(ldResults[hole]))).join('')}
         </div>`;
       }
       html += `</div></div>`;
@@ -4961,6 +4967,83 @@ function deriveScrambleTeams(config) {
 }
 
 // ─── SCRAMBLE SCORE ENTRY (admin panel) ───
+function renderScrambleSideGamePanel(state, holeNum, kind) {
+  // kind = 'ctp' | 'ld'
+  const config = state._config || {};
+  const gameState = state._gameState || {};
+  const teams = deriveScrambleTeams(config);
+  const teamList = teams.map((t) => t.name || t);
+  const kindLabel = kind === 'ctp' ? 'Closest to the Pin' : 'Long Drive';
+  const kindShort = kind === 'ctp' ? 'CTP' : 'LD';
+  const kindIcon = kind === 'ctp' ? 'target' : 'drive';
+
+  // Saved server state for this hole/kind
+  const savedRaw = kind === 'ctp'
+    ? (gameState?.sideGames?.ctp?.[holeNum])
+    : (gameState?.sideGames?.ld?.[holeNum]);
+  const saved = normalizeScrambleSideGameEntry(savedRaw);
+
+  // Staged client state (not yet submitted with hole)
+  const staged = state._scrambleSideGame?.[holeNum]?.[kind] || null;
+  const hasStaged = !!staged;
+  const currentStatus = hasStaged ? staged.status : saved.status;
+  const currentLabel = hasStaged ? (staged.winnerLabel || '') : (saved.winnerLabel || '');
+  const currentNote = hasStaged ? '' : (saved.note || '');
+
+  // Is the hole already committed? (i.e. scores live on server). If yes and admin has
+  // a staged change, we expose a "Commit update" button so the commissioner can resolve
+  // a deferred side game without re-posting all scores.
+  const holeCommitted = !!((state._holes || {})[holeNum]?.scores || (state._holes || {})[holeNum]);
+  const canCommitUpdate = holeCommitted && state.adminAuthed && hasStaged;
+
+  const pillBg = currentStatus === 'awarded'
+    ? 'rgba(196,163,90,0.18)'
+    : currentStatus === 'deferred'
+      ? 'rgba(232,115,90,0.12)'
+      : 'rgba(252,249,244,0.06)';
+  const pillColor = currentStatus === 'awarded'
+    ? 'var(--gold-primary, #C4A35A)'
+    : currentStatus === 'deferred'
+      ? 'var(--coral, #E8735A)'
+      : 'rgba(252,249,244,0.7)';
+  const statusText = currentStatus === 'awarded'
+    ? 'Awarded'
+    : currentStatus === 'deferred'
+      ? 'Deferred'
+      : 'Unresolved';
+
+  const iconSvg = kind === 'ctp'
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>'
+    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M5 9l7-7 7 7"/></svg>';
+
+  let html = `<div style="margin-top:16px;padding:14px;border:1px solid rgba(196,163,90,0.28);border-radius:10px;background:linear-gradient(135deg,rgba(27,43,75,0.03),rgba(196,163,90,0.04))">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;color:var(--navy,#1B2B4B)">
+        <span style="display:inline-flex;align-items:center;color:var(--gold-primary,#C4A35A)">${iconSvg}</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">${kindShort} &middot; Hole ${holeNum}</span>
+      </div>
+      <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:${pillBg};color:${pillColor}">${statusText}</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted,#718096);margin-bottom:10px">${escHtml(kindLabel)}${currentLabel ? ` &middot; <strong style="color:var(--navy,#1B2B4B)">${escHtml(currentLabel)}</strong>` : ''}${currentNote ? `<div style="margin-top:4px;font-style:italic;color:rgba(45,55,72,0.7)">"${escHtml(currentNote)}"</div>` : ''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">`;
+  teamList.forEach((name) => {
+    const isSelected = currentLabel === name;
+    html += `<button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'awarded','${escHtml(name).replace(/'/g, "\\'")}')"
+      style="padding:8px 12px;min-height:36px;border-radius:8px;border:1px solid ${isSelected ? 'var(--gold-primary,#C4A35A)' : 'rgba(27,43,75,0.15)'};background:${isSelected ? 'var(--gold-primary,#C4A35A)' : 'var(--ivory,#FAF8F5)'};color:${isSelected ? '#fff' : 'var(--navy,#1B2B4B)'};font-size:12px;font-weight:${isSelected ? '700' : '500'};cursor:pointer;white-space:nowrap">${escHtml(name)}</button>`;
+  });
+  html += `</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'deferred','')"
+        style="flex:1;padding:10px;min-height:40px;border-radius:8px;border:1px solid rgba(232,115,90,0.45);background:${currentStatus === 'deferred' ? 'rgba(232,115,90,0.12)' : 'transparent'};color:var(--coral,#E8735A);font-size:12px;font-weight:600;cursor:pointer">Defer — decide later</button>
+      ${(hasStaged || (!hasStaged && saved.status !== 'unresolved')) ? `<button type="button" onclick="window.MG.setScrambleSideGame('${kind}',${holeNum},'clear','')"
+        style="padding:10px 14px;min-height:40px;border-radius:8px;border:1px solid rgba(27,43,75,0.12);background:transparent;color:rgba(45,55,72,0.6);font-size:12px;font-weight:500;cursor:pointer">Clear</button>` : ''}
+    </div>
+    ${canCommitUpdate ? `<button type="button" onclick="window.MG.submitScrambleSideGame('${kind}',${holeNum},'${staged.status}','${escHtml(staged.winnerLabel || '').replace(/'/g, "\\'")}')"
+      style="margin-top:10px;width:100%;padding:12px;min-height:44px;border-radius:8px;border:none;background:var(--navy,#1B2B4B);color:#fff;font-size:13px;font-weight:700;letter-spacing:0.04em;cursor:pointer">Commit ${kindShort} update now</button>` : ''}
+  </div>`;
+  return html;
+}
+
 function renderScrambleScoreEntry(state) {
   const config = state._config;
   const holes = state._holes || {};
@@ -4970,6 +5053,11 @@ function renderScrambleScoreEntry(state) {
   const teams = deriveScrambleTeams(config);
   const pars = getCoursePars(config);
   const par = pars[holeNum - 1] || 4;
+  const sideGamesCfg = config?.scrambleSideGames || {};
+  const ctpHoles = sideGamesCfg.closestToPin || [];
+  const ldHoles = sideGamesCfg.longestDrive || [];
+  const isCtpHole = ctpHoles.includes(holeNum);
+  const isLdHole = ldHoles.includes(holeNum);
 
   // Get pending scramble scores from state
   const pendingScores = state._scrambleScores || {};
@@ -5026,8 +5114,16 @@ function renderScrambleScoreEntry(state) {
     html += `</div></div>`;
   });
 
+  // Inline side-game capture — only shows when this hole is flagged as CTP or LD.
+  if (isCtpHole) {
+    html += renderScrambleSideGamePanel(state, holeNum, 'ctp');
+  }
+  if (isLdHole) {
+    html += renderScrambleSideGamePanel(state, holeNum, 'ld');
+  }
+
   // Submit button
-  html += `<button class="mg-btn mg-btn-gold" onclick="window.MG.submitScrambleHole(${holeNum})" style="width:100%">Save Hole ${holeNum}</button>`;
+  html += `<button class="mg-btn mg-btn-gold" onclick="window.MG.submitScrambleHole(${holeNum})" style="width:100%;margin-top:16px">Save Hole ${holeNum}</button>`;
   html += `</div>`;
 
   // Live leaderboard
@@ -7717,18 +7813,34 @@ export function renderSettlement(state) {
 
       ${honors.length > 0 ? `<div class="mg-scramble-honors-card">
         <div class="mg-scramble-section-eyebrow">On-course honors</div>
-        <div class="mg-scramble-honors-grid">
-          ${honors.map((item) => `
-            <div class="mg-scramble-honor-row">
-              <div>
-                <strong>${item.type} · Hole ${item.hole}</strong>
-                <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}</span>
-              </div>
-              <div class="mg-scramble-honor-result ${item.status !== 'awarded' ? 'pending' : ''}">
-                ${item.status === 'awarded' ? escHtml(item.winnerLabel) : 'Still unclaimed'}
-              </div>
-            </div>`).join('')}
-        </div>
+        ${honors.filter((h) => h.status === 'awarded').length > 0 ? `<div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#775A19;margin-bottom:8px">Awarded</div>
+          <div class="mg-scramble-honors-grid">
+            ${honors.filter((h) => h.status === 'awarded').map((item) => `
+              <div class="mg-scramble-honor-row">
+                <div>
+                  <strong>${item.type} · Hole ${item.hole}</strong>
+                  <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}</span>
+                </div>
+                <div class="mg-scramble-honor-result">${escHtml(item.winnerLabel)}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+        ${honors.filter((h) => h.status !== 'awarded').length > 0 ? `<div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#E8735A;margin-bottom:8px">Unresolved · commissioner to decide</div>
+          <div class="mg-scramble-honors-grid">
+            ${honors.filter((h) => h.status !== 'awarded').map((item) => `
+              <div class="mg-scramble-honor-row">
+                <div>
+                  <strong>${item.type} · Hole ${item.hole}</strong>
+                  <span>${item.type === 'CTP' ? 'Closest to pin' : 'Longest drive'}${item.prize > 0 ? ` · $${item.prize.toLocaleString()}` : ''}${item.status === 'deferred' ? ' · deferred' : ''}</span>
+                </div>
+                <div class="mg-scramble-honor-result pending">
+                  ${state.adminAuthed ? `<button onclick="window.MG.openSideGameResolver('${item.type.toLowerCase()}',${item.hole})" style="padding:6px 10px;min-height:32px;border-radius:6px;border:1px solid rgba(232,115,90,0.45);background:transparent;color:#E8735A;font-size:11px;font-weight:700;letter-spacing:0.04em;cursor:pointer">Resolve now</button>` : 'Pending'}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
       </div>` : ''}
 
       <div class="mg-scramble-share-shell">

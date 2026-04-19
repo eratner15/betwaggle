@@ -634,6 +634,8 @@ async function seedAugustaScramble(env) {
     rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
     scrambleEntryFee: 250,
     scrambleTeams: teams,
+    scrambleSideGames: { closestToPin: [4, 6, 12, 16], longestDrive: [2, 8, 13] },
+    scramblePrizePool: { total: 3000, payouts: { 1: 1500, 2: 750, 3: 450 }, ctpPerHole: 75 },
     sponsors: {
       3: { name: 'Goldman Sachs', hole: 3 },
       7: { name: 'Morgan Stanley', hole: 7 },
@@ -687,11 +689,22 @@ async function seedAugustaScramble(env) {
     teamNames.forEach((t, i) => { scrambleHoles[h][t] = completeHoleScores[h - 1][i]; });
   }
 
+  const nowTs = Date.now();
   const gameState = {
     scramble: {
       running: totals,
       holes: scrambleHoles,
       leaderboard: leaderboard
+    },
+    sideGames: {
+      ctp: {
+        4: { status: 'awarded', winnerLabel: 'Team Azalea (3\' 7")', updatedAt: nowTs - 180000, updatedBy: 'admin' },
+        6: { status: 'deferred', winnerLabel: '', updatedAt: nowTs - 90000, updatedBy: 'admin', note: 'Two balls inside 6 ft — commissioner measuring at turn.' }
+      },
+      ld: {
+        2: { status: 'awarded', winnerLabel: 'Team Redbud (314 yds)', updatedAt: nowTs - 240000, updatedBy: 'admin' },
+        8: { status: 'awarded', winnerLabel: 'Team Firethorn (298 yds)', updatedAt: nowTs - 60000, updatedBy: 'admin' }
+      }
     }
   };
   await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));

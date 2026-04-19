@@ -12,6 +12,18 @@ Important framing:
   - tournament / member-guest
 
 ## What Shipped In The Last Pass
+- `app/js/views.js`, `app/js/app.js`, `app/js/sync.js`, `worker.js`, `worker-seeds.js`
+  Phase 3 — Scramble Score-Entry + Side-Game Workflow shipped:
+  - inline CTP / LD panel inside `renderScrambleScoreEntry` (team chips + Defer + Clear + post-hole Commit)
+  - server-side normalization of side-game state to `{status, winnerLabel, updatedAt, updatedBy, note?}` with legacy string back-compat
+  - new admin `POST /:slug/api/side-game` endpoint for post-hole corrections / deferred resolution / reset
+  - board side-game rail now shows Awarded / Deferred / Open / Waiting pills + admin "Resolve" button
+  - settlement "On-course honors" card splits Awarded vs Unresolved with a "Resolve now" CTA for admins
+  - `submitHoleScores` carries optional `sideGameExtras` so a single hole POST covers scores + CTP/LD
+  - offline mutation replay preserves staged side-game extras
+  - augusta-scramble seed gets its own `scrambleSideGames` config + mixed awarded/deferred demo state
+  - `scripts/check-scramble-sidegames.sh` smoke asserts the deployed client + server surfaces
+
 - `app/js/views.js`
   Phase 2 scramble dashboard upgrade shipped:
   - premium scramble hero
@@ -51,8 +63,8 @@ Important framing:
   - share-card sizing + screenshots
 
 ## Current Scores
-- `Trip-ready: 92%`
-- `Premium: 90%`
+- `Trip-ready: 96%`
+- `Premium: 93%`
 
 ## What Improved
 - The scramble board feels more like a premium destination and less like a prototype stack.
@@ -63,33 +75,32 @@ Important framing:
 - The repo now has targeted mobile validation for scramble settlement and share-card composition.
 
 ## What Still Feels Weak
-- Phase 3 is still unfinished:
-  scramble score entry does not yet have the full CTP/LD workflow.
-- Phase 4 is improved but not fully complete:
-  payout phrasing and export still have room to tighten.
-- Shared primitives exist in CSS now, but round/tournament still do not consume enough of them.
-- The Bar still needs a premium hierarchy pass later.
-- Real-device outdoor validation is still missing even though Playwright mobile validation now exists.
+- Real-device outdoor validation still missing for the side-game chip flow (tap target + glare read).
+- Commissioner "Resolve" button on the board currently routes to the scorecard — a modal-less inline resolver directly on the rail would save a tap.
+- Augusta-scramble demo data only picks up the new seed once the existing KV config is wiped; live Augusta still shows zero CTP/LD until a re-seed or manual admin side-game POST.
+- Phase 4 settlement is close but payout phrasing / CSV export still have room to tighten.
+- Shared primitives exist in CSS, but round/tournament still do not consume enough of them.
+- The Bar still needs a premium hierarchy pass.
 
 ## Highest-Leverage Next Pass
 Do this in order:
 
-1. `Phase 3 — CTP / LD score-entry workflow`
-   - extend scramble hole entry so eligible holes surface side-game prompts naturally
-   - normalize side-game state instead of relying on raw strings only
-   - support defer / resolve-later state
-   - add correction path
-   - update `app/js/sync.js`
-   - update `worker.js`
-   - add scramble-specific QA for this flow
+1. `Real-device outdoor QA for side-game flow`
+   - run demo-scramble side-game flow on a real iPhone under direct sun
+   - verify chip tap targets, glare read, Defer affordance, Commit update affordance
+   - log any readability or tap-target gaps, fix and redeploy
 
-2. `Phase 4 — Scramble settlement ceremony`
-   - keep the new settlement structure
-   - tighten payout phrasing / export
+2. `Inline board resolver`
+   - replace the scorecard-hop "Resolve" path with an inline resolver inside the board side-game rail
+   - one-tap award from the rail, no navigation
+   - keep deferred pills visible until resolved
+
+3. `Phase 4 — Scramble settlement final polish`
+   - tighten payout phrasing / CSV export
    - improve any remaining awkward spacing from real-device checks
    - keep the share card screenshot-first and premium
 
-3. `Cross-format cleanup`
+4. `Cross-format cleanup`
    - promote useful scramble primitives into shared board/settlement primitives where safe
    - keep scramble-specific composition where needed
 
@@ -157,4 +168,4 @@ Do this in order:
   - `bash scripts/check-scramble-settlement.sh https://betwaggle.com demo-scramble augusta-scramble` ✅
 
 ## Start With
-“Continue BetWaggle Ralph loop — Phase 3 side-game score-entry workflow for scramble, then tighten any last export/payout phrasing gaps from the new settlement pass.”
+"Continue BetWaggle Ralph loop — real-device outdoor QA for the scramble side-game chip flow, then build an inline board resolver so commissioners award CTP/LD without navigating away from the rail."

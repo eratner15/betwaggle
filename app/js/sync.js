@@ -318,14 +318,19 @@ export async function fetchState() {
 }
 
 // ── Submit hole scores (admin token if available, otherwise player-mode for round events) ──
-// Includes clientTs for conflict detection on the server
-export async function submitHoleScores(holeNum, scores, clientTs) {
+// Includes clientTs for conflict detection on the server.
+// Optional sideGame extras: { ctp: {status,winnerLabel,note?} | string, ld: same } sent alongside the hole.
+export async function submitHoleScores(holeNum, scores, clientTs, sideGameExtras) {
   const MAX_RETRIES = 3;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const headers = ADMIN_TOKEN ? adminHeaders() : publicHeaders();
       const payload = { holeNum, scores };
       if (clientTs) payload.clientTs = clientTs;
+      if (sideGameExtras && typeof sideGameExtras === 'object') {
+        if (sideGameExtras.ctp !== undefined) payload.ctp = sideGameExtras.ctp;
+        if (sideGameExtras.ld !== undefined) payload.ld = sideGameExtras.ld;
+      }
       const res = await offlineAwareFetch(`${API}/hole`, {
         method: 'POST',
         headers,
@@ -524,6 +529,31 @@ export async function acceptProp(propId, player) {
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
+}
+
+// ── Update a scramble side game (CTP/LD) post-hole — award deferred, correct winner, or reset ──
+// Requires admin token. status: 'awarded'|'deferred'|'unresolved'. winnerLabel required when awarded.
+export async function submitSideGameUpdate({ hole, kind, status, winnerLabel, note }) {
+  try {
+    const payload = { hole, kind, status };
+    if (winnerLabel) payload.winnerLabel = winnerLabel;
+    if (note) payload.note = note;
+    const res = await offlineAwareFetch(`${API}/side-game`, {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.warn('Side-game update rejected:', err.error || res.status);
+      return null;
+    }
+    return await res.json();
+  } catch (e) {
+    if (e.message === 'offline') throw e;
+    console.warn('Side-game update failed:', e);
+    return null;
+  }
 }
 
 // ── Generic admin API call ──

@@ -160,6 +160,42 @@
   - mobile users can read purse, pressure, and side-game status earlier
   - the broken invite/hero image state is fixed because the missing art is now live
 
+### Apr 19 Pass Notes — Scramble Score-Entry + Side-Game Workflow (Phase 3)
+- Shipped:
+  - `worker.js`
+    - POST `/:slug/api/hole` now normalizes CTP/LD input into a structured `{status, winnerLabel, updatedAt, updatedBy, note?}` object (back-compat with legacy string form preserved).
+    - Accepts `deferred` status so the commissioner can stage a side game without a winner yet.
+    - New `POST /:slug/api/side-game` admin endpoint for post-hole corrections, deferred resolution, and resets. Logs every action to the activity feed as `Commissioner` so the group sees the paper trail.
+  - `app/js/sync.js`
+    - `submitHoleScores` now accepts an optional `sideGameExtras` arg so a CTP/LD pick posts alongside the hole scores in one request.
+    - New `submitSideGameUpdate({hole, kind, status, winnerLabel, note})` helper for the correction endpoint.
+  - `app/js/app.js`
+    - `setScrambleSideGame(kind, hole, status, winnerLabel)` stages a pick inline with score entry.
+    - `submitScrambleSideGame(kind, hole, status, winnerLabel)` commits a correction after the hole has already been saved (no need to re-post scores).
+    - `openSideGameResolver(kind, hole)` navigates to the scorecard for that hole so the commissioner can award a deferred honor.
+    - Offline mutation replay now forwards staged side-game extras when connectivity returns.
+  - `app/js/views.js`
+    - `renderScrambleSideGamePanel(state, holeNum, kind)` — inline CTP/LD panel inside score entry with team chips, Defer, Clear, and a post-hole "Commit update" button when the hole is already saved.
+    - `renderScrambleScoreEntry` detects CTP/LD holes from `config.scrambleSideGames` and renders the panel automatically.
+    - Board "Side games live now" rail now shows Awarded / Deferred / Open / Waiting status pills and a "Resolve" button for admins on unresolved items.
+    - Settlement "On-course honors" card now splits Awarded vs Unresolved into two sections with a "Resolve now" CTA for admins on unresolved honors.
+  - `worker-seeds.js`
+    - Augusta-scramble gets `scrambleSideGames` config (CTP on 4/6/12/16, LD on 2/8/13) and a mixed awarded/deferred demo state so the workflow is visible on new seed.
+  - `scripts/check-scramble-sidegames.sh`
+    - New smoke verifying the normalized side-game shape and that the new client helpers are present in the deployed bundle.
+- Improved:
+  - Commissioner workflow finally feels like a real product surface — not a spreadsheet afterthought.
+  - Deferred honors stay visible on the board until resolved; nothing silently disappears.
+  - Settlement clearly shows "X unresolved side games" so the group knows action is still needed.
+- Still weak:
+  - No real-device outdoor QA for the side-game flow yet — staged chip taps should be verified under glare.
+  - Augusta-scramble demo data won't re-seed while the existing config lives in KV; a fresh `/augusta-scramble/` env needs a KV wipe to pick up the new config. Demo-scramble already exercises the flow end-to-end via its legacy string state which now normalizes correctly on read.
+  - Award dropdown on the board "Resolve" button currently routes to the scorecard; a modal-less inline resolver on the board itself would save a tap.
+- Next pass should attack:
+  - Real-device outdoor mobile QA (hole 3 / hole 17 of demo-scramble is the smallest rep of the flow).
+  - Commissioner ability to award CTP/LD directly from the board rail without navigating to the scorecard.
+  - Board + settlement regression screenshots pinned to `/tmp/betwaggle-scramble-settlement` so `check-scramble-sidegames.sh` can diff rather than string-match.
+
 ### Apr 19 Pass Notes — Settlement / Share
 - Shipped:
   - `app/js/views.js`
