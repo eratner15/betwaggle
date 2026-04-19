@@ -499,6 +499,14 @@ SHARE CARD:
 | Images (per page) | 200KB |
 | Fonts (Playfair Display) | 30KB |
 
+## Generated Asset Rule
+
+- GPT-4o image generation is allowed only for decorative UI assets such as hero art, background illustrations, textures, or ambient visual accents.
+- Never bake product copy, labels, headlines, buttons, pricing, scores, odds, or any other readable UI text into generated images.
+- All user-facing text must remain live HTML/CSS text so it stays accessible, searchable, editable, localizable, and crisp on every screen size.
+- If an asset needs typography, logos, badges, or UI copy, compose those layers in HTML/CSS or SVG after the decorative image is placed.
+- Treat generated images as background/supporting art, not as the source of information.
+
 ---
 
 ## Logo
@@ -525,6 +533,7 @@ If added later: reduce saturation 10-20% on all accent colors, swap ivory for na
 
 - Use ivory (#FAF8F5) for all page backgrounds, never pure white
 - Use gold top borders (2px) on cards as the Waggle signature
+- Use GPT-4o image generation only for decorative assets, never for UI text
 - Use system sans-serif for UI controls (buttons, inputs, tabs, labels)
 - Use Georgia for all body text and long-form content
 - Use Playfair Display only for headings and display text
@@ -541,6 +550,7 @@ If added later: reduce saturation 10-20% on all accent colors, swap ivory for na
 - Use box shadows for card depth (use borders instead)
 - Use neon colors anywhere
 - Use more than one serif font (Playfair Display is the only display serif)
+- Put readable text inside generated images
 - Use innerHTML for rendering (DOM creation methods only)
 - Use full-width layouts for the dashboard (480px max)
 - Show "BetWaggle" or "Bet Waggle" anywhere

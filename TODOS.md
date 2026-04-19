@@ -3,6 +3,123 @@
 
 ---
 
+## CURRENT WORKPLAN (Apr 18, 2026) — ACTIVE SOURCE OF TRUTH
+
+### Mission
+- Make Waggle the premium product for scrambles.
+- Use that scramble experience to pull users into weekly recurring golf games.
+- Build the product through three lenses at once:
+  - gambler: sweat, stakes, action, reasons to keep checking
+  - golfer: native to a real round, fast, obvious, social
+  - computer scientist: reliable, legible, mobile-first, low-friction
+
+### What Is Already True
+- Production is deployed from this repo.
+- Route guards and checkout fallbacks are working.
+- Create flow has a stronger default path and deep-links into scoring.
+- Blue Monster mobile shell has been upgraded:
+  - premium top shell in `worker.js`
+  - stronger trip hero in `renderTripPage()`
+  - better scoring entry state in `renderCasualScorecard()`
+  - better empty settlement state in `renderSettlement()`
+- The repo now has generated decorative image assets in `app/assets/`.
+- All readable text must stay in HTML/CSS, never inside generated images.
+
+### P0 — Launch Blockers
+- [ ] Run one real end-to-end paid Stripe checkout and verify the post-payment flow on production.
+- [ ] Verify a real share/settlement flow from a live outing with at least 3 players on mobile.
+- [ ] Verify one real scramble outing from create → invite → scoring → settle → share with no manual intervention.
+- [ ] Confirm production no longer exposes any junk or private artifacts after recent deploy filters.
+- [ ] Tighten `wrangler` / asset routing uncertainty so Worker-first behavior is explicit and trusted.
+
+### P1 — Premium Product Pass
+
+#### 1. Image Integration
+- [ ] Wire `app/assets/trip-shell-hero-plate.png` into the trip hero.
+- [ ] Wire `app/assets/scorecard-atmosphere-plate.png` into live scoring surfaces.
+- [ ] Wire `app/assets/settlement-lounge-plate.png` into settlement lounge surfaces with strong overlay.
+- [ ] Wire `app/assets/ledger-paper-texture.png` into cards and app surfaces.
+- [ ] QA all image-backed screens on `390x844` and back off any image that reduces contrast or looks busy.
+
+#### 2. Shell / Navigation
+- [ ] Refine the live outing shell in `worker.js` so the header and bottom nav feel custom, not app-shell boilerplate.
+- [ ] Make active states feel more premium and less generic.
+- [ ] Add better transition polish between Home / Score / Settle.
+- [ ] Reduce visual conflict between top nav pills and bottom nav pill.
+
+#### 3. Score Entry Delight
+- [ ] Add stronger “posted” feedback after every score save.
+- [ ] Make score posting feel rewarding with tighter animation, haptic rhythm, and clear next action.
+- [ ] Improve round-progress signals during scoring so users know exactly where the action is.
+- [ ] Add a more premium “round complete” moment before settlement.
+
+#### 4. Settlement Premium Pass
+- [ ] Improve incomplete-round settlement states so they still feel alive and worth checking.
+- [ ] Make the completed settlement card more screenshot-worthy and chat-worthy.
+- [ ] Tighten payout rows, winner framing, and “who pays who” legibility.
+- [ ] Make “share results” and “run it back” feel like primary social actions.
+
+### P1 — Retention / Habit Loop
+
+#### 5. Weekly Game Conversion
+- [ ] Reframe “Create Your Own Scramble” into “Start a Weekly Game From This Group.”
+- [ ] Add recurring-use cues on trip hero, settlement, and share flows.
+- [ ] Build a clearer “same group, faster setup next time” pathway.
+- [ ] Make the post-round modal explicitly suggest replaying with the same group.
+- [ ] Add one “weekly game” template path in create flow for 3-4 regulars.
+
+#### 6. Scramble → Weekly Product Bridge
+- [ ] Keep scramble product feeling special and event-worthy.
+- [ ] Keep weekly product feeling lighter, faster, and more habitual.
+- [ ] Build shared primitives so one UX family serves both.
+- [ ] Decide which games should be default for scrambles vs weekly rounds.
+
+### P1 — Core UX / Product Strategy
+
+#### 7. Gambler Lens
+- [ ] Show stakes clearly everywhere they matter.
+- [ ] Surface momentum swings and live edge changes more clearly.
+- [ ] Make side games easier to understand at a glance.
+- [ ] Ensure every score entry changes the perceived state of the board.
+
+#### 8. Golfer Lens
+- [ ] Reduce anything that feels like admin software.
+- [ ] Keep taps minimal during a real round.
+- [ ] Use golf-native wording, pacing, and hierarchy.
+- [ ] Make players feel like they are checking “the card” or “the action,” not filling out a form.
+
+#### 9. Computer Scientist Lens
+- [ ] Keep flows resilient under poor course connectivity.
+- [ ] Reduce chances of ambiguous state after score submissions.
+- [ ] Expand browser smoke coverage for high-value mobile flows.
+- [ ] Add one deterministic regression test for create → score → settle UI assumptions.
+
+### P2 — Testing / Verification
+- [ ] Add a visual mobile QA script for the Blue Monster outing and one scramble seed.
+- [ ] Add a smoke for signed-in score entry, not only API scoring.
+- [ ] Add a smoke for settlement share card render.
+- [ ] Add a smoke for the “weekly game from this group” conversion path once built.
+
+### P2 — Image Agent Backlog
+- [ ] Generate a quieter settlement plate with less edge detail.
+- [ ] Generate mobile-specific crops if current scenic plates feel too wide on phone.
+- [ ] Generate one premium empty-state illustration for “waiting for first tee.”
+- [ ] Generate one social-share / result-card atmosphere plate if the current card still feels too template-like.
+
+### P2 — Growth / Sales Readiness
+- [ ] Clarify scramble pricing and organizer ROI in the create flow.
+- [ ] Build one polished scramble sales deck / one-pager using the new product visuals.
+- [ ] Capture better screenshots/GIFs from the improved mobile product for outreach.
+- [ ] Tighten the homepage and demo so they match the live premium product quality.
+
+### Working Rules
+- [ ] Keep all readable text out of generated images.
+- [ ] Verify every premium pass on mobile before calling it done.
+- [ ] Prefer one polished flow over many half-finished surfaces.
+- [ ] Use Blue Monster as the live reference outing for visual QA.
+
+---
+
 ## SESSION RECAP (Apr 4, 2026) — REBUILD SESSION
 
 ### What Shipped (1 session, ~15 deploys)

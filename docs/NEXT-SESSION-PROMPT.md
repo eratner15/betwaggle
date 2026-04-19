@@ -1,5 +1,89 @@
 # Next Session Prompt — Copy/Paste This
 
+## Image Agent Handoff — April 18, 2026
+
+### Current Product Goal
+- Sell Waggle first as the premium scramble companion.
+- Make the product sticky enough that scramble users want to use it for their normal weekly golf game.
+- The working frame is: think like a gambler, a golfer, and a computer scientist at the same time.
+
+### Hard Rule For Image Work
+- All readable words, numbers, player names, scores, labels, and buttons must stay in HTML/CSS.
+- Generated images are decorative only.
+- No fake UI text inside images.
+- No logos, no signage, no scoreboards, no watermarks.
+
+### Assets Already Generated
+- `/home/eratner/betwaggle/app/assets/trip-shell-hero-plate.png`
+- `/home/eratner/betwaggle/app/assets/scorecard-atmosphere-plate.png`
+- `/home/eratner/betwaggle/app/assets/settlement-lounge-plate.png`
+- `/home/eratner/betwaggle/app/assets/ledger-paper-texture.png`
+
+### Where These Assets Belong
+- `trip-shell-hero-plate.png`
+  Use behind the pre-round trip hero on the outing dashboard.
+  Keep text centered/left in live UI.
+- `scorecard-atmosphere-plate.png`
+  Use behind the live scoring shell and premium scorecard surfaces.
+  Important: keep the center quiet enough for live scoring overlays.
+- `settlement-lounge-plate.png`
+  Use behind the empty / pre-settlement state and light settlement lounge sections.
+  Apply a strong overlay so background details never compete with text.
+- `ledger-paper-texture.png`
+  Use as subtle texture on app surfaces and cards.
+
+### What Still Needs Image Work
+- A more abstract version of the settlement lounge plate with even less edge detail.
+- A scoreboard / clubhouse table plate designed specifically for “round complete” and “share results” states.
+- Optional mobile-specific crop variants if the desktop-wide plates feel too scenic on narrow screens.
+
+### New Highest-Priority Image Queue
+- `share-card-hero-plate`
+  Purpose: background plate for exported settlement/share card moments and event social previews.
+  Mood: expensive, calm after the action, clubhouse-table energy, ivory/navy/brass, restrained.
+  Rules: no readable text, no scoreboards, no receipts, no logos.
+  Placement: wide enough for 1200x630 social preview and also usable inside exported settlement visuals.
+  Save target: `/home/eratner/betwaggle/app/assets/share-card-hero-plate.png`
+
+- `settlement-ceremony-ornament-v3`
+  Purpose: more premium ceremonial topper than the current ornament for the final-results overlay.
+  Mood: trophy-room / brass / private-club detailing, elegant not loud.
+  Rules: no letters, numbers, shields, badges, logos, or fake crests.
+  Placement: transparent-ish or dark-background friendly accent for top-center overlay use.
+  Save target: `/home/eratner/betwaggle/app/assets/settlement-ornament-v3.png`
+
+- `invite-launch-plate`
+  Purpose: decorative image for the post-create “You’re Live” launch/share surface.
+  Mood: first-tee anticipation, premium itinerary energy, polished but not busy.
+  Rules: no UI, no phone mockups, no words, no signage.
+  Placement: mobile-first crop with quiet center space for HTML text and CTAs.
+  Save target: `/home/eratner/betwaggle/app/assets/invite-launch-plate.png`
+
+- `scorecard-atmosphere-plate-v3`
+  Purpose: a score-screen variant with cleaner left-side negative space and stronger composition on mobile.
+  Mood: live scoring desk, scorebook, clubhouse tabletop, subtle tension.
+  Rules: no printed score text, no numbers, no logos.
+  Placement: especially for `390x844`; keep center/right text area readable.
+  Save target: `/home/eratner/betwaggle/app/assets/scorecard-atmosphere-plate-v3.png`
+
+### Product Direction For New Images
+- Premium private-club atmosphere.
+- Luxury, editorial, cinematic, restrained.
+- Navy / ivory / brass / muted green.
+- Should feel like high-stakes golf energy without looking like a casino app.
+- The image should make the product feel expensive, but the UI should still do the talking.
+
+### Screens To Check After Any New Image Drop
+- `https://betwaggle.com/blue-monster-at-trump-national-doral-apr-753cae/#dashboard`
+- `https://betwaggle.com/blue-monster-at-trump-national-doral-apr-753cae/#scorecard`
+- `https://betwaggle.com/blue-monster-at-trump-national-doral-apr-753cae/#settle`
+
+### Mobile QA Requirement
+- Test on `390x844`.
+- Verify readability in the hero, scorecard, and settlement screens.
+- If any image reduces contrast or makes the shell feel busy, back it off immediately with stronger overlays.
+- New check: event share/OG art should still look premium when cropped to `1200x630`.
+
 ## Prompt:
 
 We are building betwaggle.com — a social golf betting platform. Continue the Scramble Product rebuild.
@@ -48,8 +132,9 @@ Read the scramble plan at /home/eratner/betwaggle/docs/SCRAMBLE-PLAN.md (will be
 - views.js, app.js, betting.js are chmod 444 — unlock before editing, lock after
 - wrangler.jsonc MUST have `routing: { run_worker_first: true }` inside `assets`
 - Verify brace balance (opens == closes) before EVERY deploy of views.js
+- Use GPT-4o image generation for decorative UI assets only; keep all readable text in HTML/CSS
 - Test on 390x844 viewport
-- Deploy command: `source ~/.nvm/nvm.sh && nvm use 20 && NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt CLOUDFLARE_API_TOKEN=_aWVT9W6jGvJvfzdRER67eDxmGxrCxILZhqOCdHp CLOUDFLARE_ACCOUNT_ID=f7a9b24f679e1d3952921ee5e72e677e npx wrangler deploy`
+- Deploy command: `source ~/.nvm/nvm.sh && nvm use 20 && NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt npx wrangler deploy`
 
 ## Key Files:
 - `app/js/views.js` — renderScrambleLeaderboard (line 948), CTP/LD panels (line 1323), renderSettlement (line 6813)
