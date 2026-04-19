@@ -2,2862 +2,508 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Waggle — Live Golf Sportsbook. 12 Games. No App.</title>
-  <meta name="description" content="Hole-by-hole live scoring with real odds on Nassau, skins, wolf, Vegas, banker, bloodsome, stableford, and stroke play. Every phone. No app download. Automatic settlement.">
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Waggle — The Sportsbook for Your Golf Group">
-  <meta property="og:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waggle - The Sportsbook for Your Golf Group</title>
+  <meta name="description" content="Who owes what after 18 holes of Nassau, skins, wolf, and Vegas? Waggle calculates everything and sends Venmo links. No spreadsheets. No arguments.">
+  <meta property="og:title" content="Waggle - The Sportsbook for Your Golf Group">
+  <meta property="og:description" content="Who owes what? Waggle calculates every bet across 12 game formats and sends Venmo links.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://betwaggle.com/">
   <meta property="og:image" content="https://betwaggle.com/og-card-logo.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Waggle">
-
-  <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Waggle — The Sportsbook for Your Golf Group">
-  <meta name="twitter:description" content="Live odds, real-time scores, automatic settlement — on every phone. No app download.">
+  <meta name="twitter:title" content="Waggle - The Sportsbook for Your Golf Group">
   <meta name="twitter:image" content="https://betwaggle.com/og-card-logo.jpg">
-
-  <!-- PWA / Mobile -->
-  <meta name="theme-color" content="#1B2B4B">
+  <meta name="theme-color" content="#143324">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Waggle">
   <link rel="apple-touch-icon" href="/favicon-180.jpg">
   <link rel="icon" type="image/jpeg" href="/favicon-180.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Font preload removed — Google Fonts CSS handles loading -->
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --forest:   #0F1A2E;
-      --green:    #1B2B4B;
-      --green-mid:#2A3F66;
-      --sage:     #7ECEC1;
-      --ivory:    #FAF8F5;
-      --ivory-dk: #F0EDE8;
-      --gold:     #C4A35A;
-      --gold-dk:  #A8894D;
-      --coral:    #E8735A;
-      --text:     #1A202C;
-      --text-2:   #2D3748;
-      --muted:    #718096;
-      --rule:     #D4CFC7;
+      --green: #143324;
+      --green-dark: #0a1f15;
+      --gold: #d4af37;
+      --gold-light: #eadd95;
+      --cream: #f8f6f0;
+      --text-dark: #2c2c2c;
+      --text-light: #ffffff;
+      --serif: 'Playfair Display', serif;
+      --sans: 'Inter', sans-serif;
     }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--sans); color: var(--text-dark); background: var(--cream); line-height: 1.6; }
+    h1, h2, h3 { font-family: var(--serif); font-weight: 600; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--ivory);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-      /* Subtle paper grain — like heavy-stock scorecard paper */
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
-      background-size: 256px 256px;
+    .btn-gold {
+      background: linear-gradient(135deg, #e3c472 0%, #b88a24 100%);
+      color: var(--green); padding: 14px 28px; border-radius: 4px;
+      font-family: var(--sans); font-weight: 600; font-size: 15px;
+      border: none; cursor: pointer; display: inline-flex; align-items: center;
+      justify-content: center; min-height: 56px; transition: opacity .2s;
     }
-
-    html, body {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: clip;
+    .btn-gold:hover { opacity: .9; }
+    .btn-outline {
+      background: transparent; color: var(--text-light); padding: 14px 28px;
+      border-radius: 4px; font-family: var(--sans); font-weight: 600; font-size: 15px;
+      border: 1px solid var(--gold); cursor: pointer; display: inline-flex;
+      align-items: center; justify-content: center; min-height: 56px;
+      transition: background .2s;
     }
+    .btn-outline:hover { background: rgba(212,175,55,.1); }
 
-    /* ──────────────────────────────────────────
-       NAV
-    ────────────────────────────────────────── */
-    nav {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 24px 32px;
-    }
+    /* NAV */
+    header { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 0; z-index: 10; }
+    .nav-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .logo { font-family: var(--serif); color: var(--gold); font-size: 28px; font-weight: 700; }
+    .nav-links { display: flex; gap: 28px; align-items: center; color: var(--text-light); font-size: 14px; }
+    .nav-links a { min-height: 56px; display: flex; align-items: center; transition: color .15s; }
+    .nav-links a:hover { color: var(--gold); }
 
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      min-height: 56px;
-      padding: 8px 10px;
-      border-radius: 8px;
-    }
-    .nav-logo span {
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      color: var(--gold);
-      font-weight: 700;
-      letter-spacing: .06em;
-    }
-
-    .nav-demo {
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255,255,255,.55);
-      text-decoration: none;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      padding: 12px 4px 12px;
-      min-height: 56px;
-      display: flex;
-      align-items: center;
-      transition: color .15s;
-    }
-    .nav-demo:hover { color: var(--gold); }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    /* ──────────────────────────────────────────
-       HERO
-    ────────────────────────────────────────── */
+    /* HERO */
     .hero {
-      background: var(--forest);
-      position: relative;
-      overflow: hidden;
-      padding: 72px 20px 0;
+      background: linear-gradient(rgba(10,31,21,.65), rgba(10,31,21,.7)), url('/hero-golf.jpg') no-repeat center center/cover;
+      min-height: 100vh; display: flex; align-items: center; text-align: center;
+      color: var(--text-light); position: relative;
     }
+    .hero-content { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+    .hero h1 { color: var(--gold); font-size: clamp(36px, 7vw, 56px); line-height: 1.1; margin-bottom: 20px; }
+    .hero h1 em { font-style: italic; color: var(--text-light); }
+    .hero p { font-size: 18px; margin-bottom: 36px; opacity: .85; }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .hero-fine { font-size: 13px; color: rgba(255,255,255,.5); margin-top: 16px; }
 
-    /* Subtle texture overlay */
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(42,63,102,.3) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 60%, rgba(196,163,90,.06) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    .hero-inner {
-      position: relative;
-      z-index: 1;
-      max-width: 1040px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
-      align-items: end;
-    }
-
-    @media (min-width: 860px) {
-      .hero-inner { grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding-bottom: 80px; }
-    }
-
-    .hero-copy { padding-bottom: 20px; }
-    @media (min-width: 860px) { .hero-copy { padding-bottom: 0; } }
-
-    .hero-kicker {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 20px;
-    }
-
-    .hero h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(34px, 7vw, 60px);
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.05;
-      margin-bottom: 18px;
-    }
-
-    .hero h1 em {
-      font-style: italic;
-      color: var(--gold);
-      text-shadow: 0 0 40px rgba(201,168,76,.3);
-    }
-
-    .hero-sub {
-      font-size: 17px;
-      font-weight: 400;
-      color: rgba(255,255,255,.75);
-      line-height: 1.75;
-      max-width: 420px;
-      margin-bottom: 32px;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 14px;
-    }
-    @media (min-width: 860px) {
-      .hero-actions { align-items: flex-start; }
-    }
-
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--gold);
-      color: var(--forest);
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: .04em;
-      padding: 18px 40px;
-      min-height: 56px;
-      border-radius: 6px;
-      text-decoration: none;
-      transition: background .15s, transform .15s, box-shadow .2s;
-      box-shadow: 0 4px 20px rgba(201,168,76,.35);
-    }
-    .btn-primary:hover { background: #d9b85c; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,.4); }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,.05);
-      color: rgba(255,255,255,.8);
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: .03em;
-      padding: 14px 32px;
-      min-height: 56px;
-      border-radius: 6px;
-      text-decoration: none;
-      border: 1.5px solid rgba(255,255,255,.3);
-      transition: all .15s;
-    }
-    .btn-secondary:hover { border-color: rgba(255,255,255,.6); color: #fff; background: rgba(255,255,255,.05); }
-
-    .hero-fine {
-      font-size: 13px;
-      color: rgba(255,255,255,.5);
-      letter-spacing: .04em;
-      font-weight: 500;
-    }
-
-    /* ──────────────────────────────────────────
-       PRODUCT MOCKUP
-    ────────────────────────────────────────── */
-    .mockup-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mockup {
-      background: #FAF8F5;
-      border: 2px solid rgba(196,163,90,.3);
-      border-bottom: none;
-      border-radius: 16px 16px 0 0;
-      width: 100%;
-      max-width: 320px;
-      overflow: hidden;
-      box-shadow: 0 -4px 32px rgba(0,0,0,.3), 0 0 48px rgba(196,163,90,.1);
-    }
-
-    .mockup-header {
-      background: var(--forest);
-      padding: 14px 18px 12px;
-      border-bottom: 2px solid var(--gold);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .mockup-event-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 16px;
-      color: var(--gold);
-      font-weight: 700;
-      letter-spacing: .03em;
-    }
-    .mockup-event-meta {
-      font-size: 11px;
-      color: rgba(255,255,255,.45);
-      margin-top: 3px;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-
-    .mockup-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
-
-    .mockup-match {
-      background: #fff;
-      border: 1px solid var(--rule);
-      border-radius: 8px;
-      padding: 13px 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    }
-    .match-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .match-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-    .live-dot {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 10px; font-weight: 700; color: var(--gold);
-      letter-spacing: .06em; text-transform: uppercase;
-    }
-    .live-dot::before {
-      content: '';
-      width: 6px; height: 6px;
-      background: var(--gold);
-      border-radius: 50%;
-      animation: pulse 1.6s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: .3; }
-    }
-
-    .match-lines { display: flex; flex-direction: column; gap: 7px; }
-    .match-line {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .team-name { font-size: 13px; color: var(--text); font-weight: 600; }
-    .team-hi { font-size: 11px; color: var(--muted); margin-left: 5px; }
-    .odds-pill {
-      font-size: 14px;
-      font-weight: 700;
-      padding: 12px 16px;
-      border-radius: 8px;
-      letter-spacing: .02em;
-      min-height: 56px;
-      min-width: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      border: 2px solid transparent;
-      font-family: 'SF Mono','Menlo',monospace;
-      background: rgba(27,43,75,0.08);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .odds-pill:hover {
-      transform: scale(1.02);
-      border-color: var(--gold);
-      background: rgba(27,43,75,0.12);
-    }
-
-    .odds-pill:active {
-      transform: scale(0.98);
-    }
-
-    .odds-pill.selected {
-      background: var(--gold);
-      border-color: var(--gold);
-      color: var(--forest);
-    }
-
-    .odds-fav {
-      color: var(--forest);
-      background: rgba(34,197,94,0.08);
-    }
-    .odds-fav:hover {
-      background: rgba(34,197,94,0.15);
-    }
-
-    .odds-dog {
-      color: var(--text);
-      background: rgba(27,43,75,0.06);
-    }
-    .odds-dog:hover {
-      background: rgba(27,43,75,0.12);
-    }
-
-    /* Odds movement animations */
-    @keyframes oddsFlashGreen {
-      0% { background: rgba(34,197,94,0.3); transform: scale(1.05); }
-      100% { background: rgba(34,197,94,0.08); transform: scale(1); }
-    }
-
-    @keyframes oddsFlashRed {
-      0% { background: rgba(239,68,68,0.3); transform: scale(1.05); }
-      100% { background: rgba(239,68,68,0.08); transform: scale(1); }
-    }
-
-    .odds-pill.flash-green {
-      animation: oddsFlashGreen 0.6s ease-out;
-    }
-
-    .odds-pill.flash-red {
-      animation: oddsFlashRed 0.6s ease-out;
-    }
-
-    /* Leaderboard smooth transitions */
-    .match-lines {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .match-line {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-      position: relative;
-    }
-
-    .match-line:hover {
-      background: rgba(201,168,76,0.08);
-    }
-
-    .match-score-line {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--rule);
-      font-size: 12px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-    }
-    .score-status { color: var(--green-mid); font-weight: 600; }
-
-    .mockup-bets { display: flex; flex-direction: column; gap: 6px; }
-    .bet-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 9px 12px;
-      background: #fff;
-      border-radius: 6px;
-      border: 1px solid var(--rule);
-    }
-    .bet-player { font-size: 12px; color: var(--muted); }
-    .bet-amount { font-size: 12px; font-weight: 700; color: var(--gold-dk); }
-
-    .mockup-footer {
-      padding: 12px 18px 18px;
-      display: flex;
-      gap: 8px;
-    }
-    .mockup-btn {
-      flex: 1;
-      padding: 10px;
-      min-height: 56px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-      letter-spacing: .03em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .sound-toggle {
-      min-height: 56px;
-      min-width: 56px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      border: 1px solid rgba(26, 71, 42, 0.2);
-      background: rgba(26, 71, 42, 0.05);
-      padding: 0;
-      margin-left: 4px;
-      transition: border-color .15s ease, background .15s ease;
-    }
-    .sound-toggle:hover {
-      border-color: var(--gold-dk);
-      background: rgba(201, 168, 76, 0.12);
-    }
-    .mockup-btn-primary { background: var(--gold); color: var(--forest); font-weight: 700; }
-    .mockup-btn-secondary { background: #fff; color: var(--forest); border: 1px solid var(--rule); font-weight: 600; }
-
-    /* ──────────────────────────────────────────
-       PROOF STRIP
-    ────────────────────────────────────────── */
-    .proof-strip {
-      background: var(--green);
-      border-top: 1px solid rgba(201,168,76,.3);
-      display: flex;
-      justify-content: center;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .proof-item {
-      padding: 24px 28px;
-      text-align: center;
-      border-right: 1px solid rgba(255,255,255,.1);
-      flex: 1;
-      min-width: 90px;
-      flex-shrink: 0;
-    }
+    /* PROOF STRIP */
+    .proof-strip { background: var(--green); border-top: 1px solid rgba(212,175,55,.3); display: flex; justify-content: center; }
+    .proof-item { padding: 24px 28px; text-align: center; border-right: 1px solid rgba(255,255,255,.08); flex: 1; min-width: 90px; }
     .proof-item:last-child { border-right: none; }
+    .proof-num { font-family: var(--serif); font-size: 30px; color: var(--gold); font-weight: 700; line-height: 1; margin-bottom: 5px; }
+    .proof-label { font-size: 11px; color: rgba(255,255,255,.5); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 
-    .proof-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 32px;
-      color: var(--gold);
-      font-weight: 700;
-      line-height: 1;
-      margin-bottom: 6px;
-      text-shadow: 0 0 20px rgba(201,168,76,.2), 0 2px 4px rgba(0,0,0,.15);
+    /* DIFFERENCE */
+    .difference { padding: 80px 0; text-align: center; border-bottom: 4px solid var(--green); }
+    .difference h2 { font-size: clamp(28px, 5vw, 36px); color: var(--green); margin-bottom: 60px; }
+    .diff-grid { display: flex; justify-content: space-between; gap: 40px; }
+    .diff-column { flex: 1; }
+    .diff-column h3 { font-size: 22px; margin-bottom: 28px; color: var(--green); border-bottom: 1px solid var(--gold); padding-bottom: 14px; }
+    .diff-items { display: flex; justify-content: space-around; gap: 20px; }
+    .diff-item { display: flex; flex-direction: column; align-items: center; flex: 1; font-size: 14px; color: #555; line-height: 1.5; }
+    .diff-icon {
+      width: 60px; height: 60px; margin-bottom: 14px; border-radius: 50%;
+      border: 2px solid var(--gold); background: rgba(212,175,55,.06);
+      display: flex; align-items: center; justify-content: center;
     }
-    .proof-label {
-      font-size: 12px;
-      color: rgba(255,255,255,.65);
-      font-weight: 500;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
+    .diff-icon svg { width: 28px; height: 28px; }
 
-    /* ──────────────────────────────────────────
-       BODY SECTIONS
-    ────────────────────────────────────────── */
-    .section {
-      padding: 72px 24px;
-      max-width: 720px;
-      margin: 0 auto;
+    /* GAMES */
+    .games { background: var(--green); padding: 80px 0; text-align: center; border-bottom: 4px solid var(--gold); }
+    .games h2 { font-size: clamp(28px, 5vw, 36px); color: var(--gold); margin-bottom: 50px; }
+    .games-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .game-card {
+      background: var(--cream); border: 1px solid var(--gold); border-radius: 8px;
+      padding: 24px 16px; display: flex; flex-direction: column; align-items: center;
+      text-align: center; transition: transform .2s;
     }
-
-    .section-label {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--gold-dk);
-      margin-bottom: 18px;
-      display: block;
+    .game-card:hover { transform: translateY(-4px); }
+    .game-icon {
+      width: 44px; height: 44px; margin-bottom: 14px; border-radius: 8px;
+      background: rgba(212,175,55,.08); border: 1px solid rgba(212,175,55,.25);
+      display: flex; align-items: center; justify-content: center;
     }
+    .game-icon svg { width: 22px; height: 22px; }
+    .game-card h4 { font-family: var(--serif); font-size: 16px; margin-bottom: 8px; color: var(--text-dark); }
+    .game-card p { font-size: 12px; color: #666; line-height: 1.5; }
 
-    .section h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(28px, 5vw, 40px);
-      font-weight: 700;
-      color: var(--forest);
-      line-height: 1.15;
-      margin-bottom: 28px;
+    /* NO MATH */
+    .no-math { padding: 80px 0; }
+    .no-math-container { display: flex; align-items: center; gap: 60px; }
+    .no-math-content { flex: 1; }
+    .no-math-content h2 { font-size: clamp(28px, 5vw, 42px); color: var(--green); margin-bottom: 16px; line-height: 1.15; }
+    .no-math-content p { font-size: 16px; color: #444; margin-bottom: 24px; line-height: 1.7; }
+    .no-math-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .no-math-feature { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #444; }
+    .no-math-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+    .no-math-mockup {
+      flex: 1; background: var(--green); border-radius: 12px; padding: 24px;
+      border: 2px solid rgba(212,175,55,.2); box-shadow: 0 12px 40px rgba(0,0,0,.12);
     }
+    .no-math-mockup-header { font-family: var(--serif); font-size: 14px; color: var(--gold); font-weight: 700; margin-bottom: 16px; }
+    .settle-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 13px; }
+    .settle-row:last-of-type { border-bottom: none; }
+    .settle-name { color: rgba(255,255,255,.8); font-weight: 600; }
+    .settle-pos { color: #22C55E; font-weight: 800; }
+    .settle-neg { color: #EF4444; font-weight: 800; }
 
-    .section-rule {
-      width: 48px;
-      height: 3px;
-      background: var(--gold);
-      margin-bottom: 24px;
+    /* HOW IT WORKS */
+    .how-section { background: rgba(20,51,36,.04); padding: 64px 20px; border-top: 1px solid rgba(212,175,55,.15); }
+    .how-inner { max-width: 720px; margin: 0 auto; text-align: center; }
+    .how-inner h2 { font-size: clamp(24px, 5vw, 32px); color: var(--green); margin-bottom: 40px; }
+    .how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .how-step { text-align: center; }
+    .how-num { width: 44px; height: 44px; border-radius: 50%; background: var(--gold); color: var(--green); font-family: var(--serif); font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .how-step h4 { font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+    .how-step p { font-size: 13px; color: #666; line-height: 1.5; }
+
+    /* PRICING */
+    .pricing { padding: 80px 20px; text-align: center; }
+    .pricing h2 { font-size: clamp(26px, 5vw, 36px); color: var(--green); margin-bottom: 12px; }
+    .pricing-rule { width: 48px; height: 3px; background: var(--gold); margin: 0 auto 40px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 960px; margin: 0 auto; }
+    .price-card {
+      background: #fff; border: 2px solid #e0ddd5; border-top: 3px solid var(--gold);
+      padding: 28px 24px; border-radius: 8px; display: flex; flex-direction: column; text-align: left;
+      transition: transform .12s;
     }
-
-    .section p {
-      font-size: 17px;
-      font-weight: 400;
-      color: var(--text-2);
-      line-height: 1.8;
-      margin-bottom: 16px;
-      max-width: 560px;
+    .price-card:hover { transform: translateY(-3px); }
+    .price-card.featured { border-color: var(--gold); box-shadow: 0 4px 20px rgba(212,175,55,.15); }
+    .price-type { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #888; margin-bottom: 14px; }
+    .price-amount { font-family: var(--serif); font-size: 48px; font-weight: 700; color: var(--green); line-height: 1; margin-bottom: 6px; }
+    .price-card.featured .price-amount { color: #b88a24; }
+    .price-period { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .price-details { display: flex; flex-direction: column; gap: 7px; margin-bottom: 24px; flex: 1; }
+    .price-detail { font-size: 13px; color: #555; display: flex; align-items: center; gap: 8px; }
+    .price-detail::before { content: ''; width: 14px; height: 1px; background: var(--gold); flex-shrink: 0; }
+    .price-cta {
+      display: flex; align-items: center; justify-content: center; background: var(--green);
+      color: #fff; padding: 14px; min-height: 56px; font-size: 13px; font-weight: 600;
+      letter-spacing: .03em; text-transform: uppercase; border-radius: 6px;
+      transition: background .15s; margin-top: auto;
     }
+    .price-cta:hover { background: #1a4430; }
+    .price-card.featured .price-cta { background: linear-gradient(135deg, #e3c472, #b88a24); color: var(--green); }
 
-    /* ──────────────────────────────────────────
-       HOW IT WORKS
-    ────────────────────────────────────────── */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
-      margin-top: 40px;
-    }
-
-    @media (min-width: 600px) {
-      .steps-grid { grid-template-columns: 1fr 1fr; gap: 0; }
-    }
-
-    .step {
-      padding: 28px 0;
-      border-top: 1px solid var(--rule);
-      padding-right: 28px;
-    }
-
-    @media (min-width: 600px) {
-      .step:nth-child(odd) { padding-right: 40px; border-right: 1px solid var(--rule); }
-      .step:nth-child(even) { padding-left: 40px; padding-right: 0; }
-      .step:nth-child(1), .step:nth-child(2) { border-top: 1px solid var(--rule); }
-    }
-
-    .step-numeral {
-      font-family: 'Playfair Display', serif;
-      font-size: 13px;
-      font-style: italic;
-      color: var(--gold-dk);
-      margin-bottom: 10px;
-      display: block;
-    }
-
-    .step h3 {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--forest);
-      margin-bottom: 6px;
-    }
-
-    .step p {
-      font-size: 14px;
-      font-weight: 300;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    /* ──────────────────────────────────────────
-       FORMATS
-    ────────────────────────────────────────── */
-    /* FAQ accordion — !important needed to override inline max-height:0 */
+    /* FAQ */
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
     .faq-item.open .faq-answer { max-height: 300px !important; }
     .faq-item.open .faq-arrow { transform: rotate(45deg); }
 
-    .formats-section {
-      background: var(--ivory);
-      border-top: 1px solid rgba(201,168,76,.3);
-      padding: 48px 20px;
-    }
-    .formats-inner {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    .formats-inner .section-label { color: var(--gold-dk); }
-    .formats-inner h2 { color: var(--forest); margin-bottom: 8px; }
-    .formats-inner .section-rule { background: var(--gold); margin-bottom: 36px; }
+    /* FINAL CTA */
+    .final-cta { background: var(--green); padding: 80px 20px; text-align: center; border-top: 4px solid var(--gold); }
+    .final-cta h2 { font-size: clamp(24px, 5vw, 36px); color: var(--text-light); margin-bottom: 12px; }
+    .final-cta p { font-size: 15px; color: rgba(255,255,255,.5); margin-bottom: 28px; }
 
-    .format-card {
-      border-bottom: 1px solid var(--rule);
-      border-left: 3px solid transparent;
-      transition: border-color .15s ease;
-    }
-    .format-card:last-child { border-bottom: none; }
-    .format-card.open {
-      border-left-color: var(--gold-dk);
-      background: #fff;
-    }
-    .format-card-header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      text-align: left;
-      gap: 12px;
-    }
-    .format-card-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      min-width: 0;
-    }
-    .format-card-name {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--forest);
-      white-space: nowrap;
-    }
-    .format-card-oneliner {
-      font-size: 14px;
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .format-card-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-    .format-player-badge {
-      font-size: 11px;
-      letter-spacing: .05em;
-      color: var(--gold-dk);
-      font-weight: 600;
-      background: rgba(201,168,76,.12);
-      padding: 3px 8px;
-      border-radius: 3px;
-      white-space: nowrap;
-    }
-    .format-card-arrow {
-      font-size: 18px;
-      color: var(--muted);
-      transition: transform .25s ease;
-      flex-shrink: 0;
-    }
-    .format-card.open .format-card-arrow {
-      transform: rotate(45deg);
-    }
-    .format-card-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height .35s ease;
-    }
-    .format-card.open .format-card-body {
-      max-height: 260px;
-    }
-    .format-card-body-inner {
-      padding: 0 12px 18px 12px;
-    }
-    .format-card-body-inner p {
-      font-size: 14px;
-      color: var(--text-2);
-      line-height: 1.65;
-      margin: 0 0 10px;
-    }
-    .format-best-for {
-      font-size: 13px;
-      color: var(--gold-dk);
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-    .format-guide-link {
-      font-size: 13px;
-      color: var(--forest);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      transition: color .12s;
-      display: inline-block;
-      padding: 12px 0;
-      min-height: 56px;
-    }
-    .format-guide-link:hover {
-      color: var(--gold-dk);
-    }
-    @media (max-width: 560px) {
-      .format-card-oneliner { display: none; }
-      .format-card-header { padding: 14px 8px; }
-      .format-card-body-inner { padding: 0 8px 16px 8px; }
-    }
+    /* FOOTER */
+    footer { background: var(--green-dark); padding: 56px 24px 30px; border-top: 4px solid var(--gold); }
+    .footer-grid { display: flex; justify-content: space-between; align-items: flex-start; max-width: 960px; margin: 0 auto 30px; }
+    .footer-brand { font-family: var(--serif); font-size: 28px; color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+    .footer-tagline { font-size: 13px; color: rgba(255,255,255,.4); }
+    .footer-links { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 40px; }
+    .footer-links a { font-size: 14px; color: #aaa; transition: color .15s; min-height: 32px; display: flex; align-items: center; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-bottom { text-align: center; font-size: 12px; color: #666; border-top: 1px solid rgba(255,255,255,.08); padding-top: 20px; max-width: 960px; margin: 0 auto; }
 
-    /* ──────────────────────────────────────────
-       PRICING
-    ────────────────────────────────────────── */
-    .pricing-section {
-      background: var(--ivory-dk);
-      padding: 48px 20px;
-      border-top: 1px solid rgba(201,168,76,.3);
-    }
-    .pricing-inner {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .pricing-inner .section-label { color: var(--gold-dk); }
-    .pricing-inner h2 { color: var(--forest); }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-top: 40px;
-    }
-    @media (min-width: 560px) { .pricing-grid { grid-template-columns: 1fr 1fr 1fr; } }
-
-    .price-card {
-      background: #fff;
-      border: 2.5px solid var(--rule);
-      padding: 32px 28px;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 12px rgba(0,0,0,.06);
-      transition: transform .12s, box-shadow .2s;
-    }
-    .price-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 32px rgba(0,0,0,.12);
-    }
-
-    .price-card.featured {
-      border-color: var(--gold);
-      border-width: 2.5px;
-      box-shadow: 0 4px 24px rgba(201,168,76,.2);
-      transform: scale(1.02);
-    }
-    .price-card.featured:hover {
-      transform: scale(1.02) translateY(-4px);
-      box-shadow: 0 8px 32px rgba(201,168,76,.3);
-    }
-
-    .price-type {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .price-amount {
-      font-family: 'Playfair Display', serif;
-      font-size: 56px;
-      font-weight: 700;
-      color: var(--forest);
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .price-card.featured .price-amount {
-      color: var(--gold-dk);
-    }
-
-    .price-period {
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 300;
-      margin-bottom: 20px;
-      display: block;
-    }
-
-    .price-details {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 28px;
-      flex: 1;
-    }
-
-    .price-detail {
-      font-size: 13px;
-      color: var(--text-2);
-      font-weight: 400;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .price-detail::before {
-      content: '';
-      width: 16px;
-      height: 1px;
-      background: var(--gold);
-      flex-shrink: 0;
-    }
-
-    .price-cta {
-      display: block;
-      background: var(--forest);
-      margin-top: auto;
-      color: #fff;
-      text-align: center;
-      padding: 14px;
-      min-height: 56px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: .04em;
-      text-decoration: none;
-      text-transform: uppercase;
-      transition: background .15s;
-      border-radius: 0 0 6px 6px;
-    }
-    .price-cta:hover { background: var(--green-mid); }
-
-    .price-card.featured .price-cta {
-      background: var(--gold);
-      color: var(--forest);
-    }
-    .price-card.featured .price-cta:hover { background: #d9b85c; }
-
-    /* ──────────────────────────────────────────
-       FINAL CTA
-    ────────────────────────────────────────── */
-    .final-cta {
-      background: var(--forest);
-      padding: 52px 20px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .final-cta::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(82,183,136,.08) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .final-cta-inner { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; }
-
-    .final-cta h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(26px, 5vw, 38px);
-      color: #fff;
-      line-height: 1.2;
-      margin-bottom: 12px;
-    }
-    .final-cta p {
-      font-size: 15px;
-      font-weight: 300;
-      color: rgba(255,255,255,.5);
-      margin-bottom: 36px;
-      line-height: 1.7;
-    }
-    .final-cta .btn-primary { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
-
-    .final-links {
-      margin-top: 24px;
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-    }
-    .final-links a {
-      font-size: 13px;
-      color: rgba(255,255,255,.4);
-      text-decoration: none;
-      letter-spacing: .04em;
-      border-bottom: 1px solid rgba(255,255,255,.15);
-      padding: 12px 4px;
-      min-height: 56px;
-      display: inline-flex;
-      align-items: center;
-      transition: color .12s;
-    }
-    .final-links a:hover { color: rgba(255,255,255,.7); }
-
-    /* ──────────────────────────────────────────
-       FOOTER
-    ────────────────────────────────────────── */
-    footer {
-      background: #070F09;
-      padding: 56px 24px 36px;
-      text-align: center;
-    }
-    footer p {
-      font-size: 12px;
-      color: rgba(255,255,255,.25);
-      letter-spacing: .04em;
-    }
-    footer a { color: rgba(255,255,255,.35); text-decoration: none; padding: 8px 4px; min-height: 56px; display: inline-flex; align-items: center; }
-    footer a:hover { color: rgba(255,255,255,.6); }
-
-    /* Entrance animations */
-    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes slideIn { from { transform: translateX(-20px); opacity:0; } to { transform: translateX(0); opacity:1; } }
-    @keyframes countUp { from { transform: scale(0.8); opacity:0.5; } to { transform: scale(1); opacity:1; } }
-    @keyframes cardFlip {
-      0% { transform: perspective(1000px) rotateY(0deg); }
-      50% { transform: perspective(1000px) rotateY(-90deg); }
-      100% { transform: perspective(1000px) rotateY(0deg); }
-    }
-    @keyframes settlementReveal {
-      0% { opacity: 0; transform: scale(0.9) translateY(20px); }
-      60% { opacity: 0.8; transform: scale(1.02) translateY(-5px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    @keyframes winnerGlow {
-      0%, 100% { text-shadow: 0 0 10px rgba(212,175,55,0.3); }
-      50% { text-shadow: 0 0 20px rgba(212,175,55,0.6), 0 0 30px rgba(212,175,55,0.4); }
-    }
-
-    .reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(12px); transition: opacity .4s ease-out, transform .4s ease-out; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    /* Auto-playing demo styles */
-    .auto-demo-section {
-      background: linear-gradient(135deg, #0F1A2E 0%, #1B2B4B 100%);
-      padding: 80px 20px;
-      position: relative;
-      overflow: hidden;
+    /* RESPONSIVE */
+    @media (max-width: 992px) {
+      .games-grid { grid-template-columns: repeat(3, 1fr); }
+      .diff-grid { flex-direction: column; gap: 32px; }
+      .no-math-container { flex-direction: column; text-align: center; }
+      .no-math-features { align-items: center; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+      .price-card.featured { order: -1; }
     }
-    .auto-demo-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4AF37' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      pointer-events: none;
-    }
-
-    .auto-demo-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: 64px;
-      align-items: center;
-    }
-
-    .auto-demo-copy h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 42px;
-      font-weight: 700;
-      color: #F5F0E8;
-      line-height: 1.2;
-      margin-bottom: 20px;
-    }
-
-    .auto-demo-copy p {
-      font-size: 18px;
-      color: rgba(245,240,232,0.8);
-      line-height: 1.6;
-      margin-bottom: 0;
-    }
-
-    .auto-demo-board {
-      background: #1B2B4B;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-      border: 2px solid rgba(212,175,55,0.1);
-      position: relative;
-    }
-
-    .auto-demo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(245,240,232,0.1);
-    }
-
-    .auto-demo-title {
-      font-weight: 700;
-      color: #F5F0E8;
-      font-size: 18px;
-    }
-
-    .auto-demo-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: rgba(245,240,232,0.7);
-    }
-
-    .live-indicator {
-      width: 8px;
-      height: 8px;
-      background: #22c55e;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.2); }
-    }
-
-    .auto-demo-leaderboard {
-      margin-bottom: 20px;
-    }
-
-    .auto-leaderboard-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: rgba(245,240,232,0.05);
-      border-radius: 8px;
-      margin-bottom: 8px;
-      transition: all 0.3s ease;
-    }
-
-    .auto-leaderboard-item.highlighted {
-      background: rgba(212,175,55,0.15);
-      border: 1px solid rgba(212,175,55,0.3);
-      transform: translateX(4px);
-    }
-
-    .auto-player-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .auto-player-pos {
-      font-weight: 700;
-      color: #D4AF37;
-      min-width: 20px;
-    }
-
-    .auto-player-name {
-      font-weight: 600;
-      color: #F5F0E8;
-    }
-
-    .auto-player-score {
-      font-weight: 700;
-      color: #22c55e;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .auto-demo-betting {
-      margin-bottom: 20px;
-    }
-
-    .auto-match-header {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(245,240,232,0.7);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .auto-match-options {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .auto-bet-option {
-      flex: 1;
-      background: rgba(245,240,232,0.05);
-      border: 2px solid rgba(245,240,232,0.1);
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .auto-bet-option:hover {
-      background: rgba(245,240,232,0.1);
-      border-color: rgba(212,175,55,0.3);
-    }
-
-    .auto-bet-option.selected {
-      background: rgba(212,175,55,0.15);
-      border-color: #D4AF37;
-      transform: scale(1.02);
-    }
-
-    .auto-bet-team {
-      font-weight: 600;
-      color: #F5F0E8;
-      margin-bottom: 4px;
-    }
-
-    .auto-bet-odds {
-      font-weight: 700;
-      color: #D4AF37;
-      font-size: 18px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .auto-bet-odds.flash-green {
-      animation: oddsFlashGreen 0.6s ease-out;
-    }
-
-    .auto-bet-odds.flash-red {
-      animation: oddsFlashRed 0.6s ease-out;
-    }
-
-    .auto-bet-slip {
-      background: rgba(212,175,55,0.1);
-      border: 1px solid rgba(212,175,55,0.3);
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s ease;
-    }
-
-    .auto-bet-slip.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .auto-slip-header {
-      font-weight: 700;
-      color: #D4AF37;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-size: 12px;
-    }
-
-    .auto-slip-detail {
-      color: #F5F0E8;
-      font-weight: 600;
-    }
-
-    .auto-demo-settlement {
-      opacity: 0;
-      transform: scale(0.9) translateY(20px);
-      transition: all 0.5s ease;
-    }
-
-    .auto-demo-settlement.visible {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-
-    .auto-settlement-banner {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .auto-settlement-banner::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-      animation: shimmer 2s infinite;
-    }
-
-    @keyframes shimmer {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
-
-    .auto-settlement-title {
-      font-weight: 700;
-      color: white;
-      font-size: 16px;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .auto-settlement-result {
-      font-weight: 600;
-      color: white;
-      margin-bottom: 8px;
-    }
-
-    .auto-settlement-payout {
-      font-weight: 700;
-      color: white;
-      font-size: 18px;
-      animation: winnerGlow 1.5s infinite;
-    }
-
-    /* Mobile responsive */
     @media (max-width: 768px) {
-      .auto-demo-inner {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-
-      .auto-demo-copy h2 {
-        font-size: 32px;
-      }
-
-      .auto-demo-board {
-        padding: 20px;
-      }
-
-      .auto-match-options {
-        flex-direction: column;
-      }
-
-      .auto-bet-option {
-        min-height: 56px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .auto-bet-team, .auto-bet-odds {
-        margin-bottom: 0;
-      }
+      .games-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { font-size: 36px; }
+      .nav-links { display: none; }
+      .footer-grid { flex-direction: column; align-items: center; text-align: center; gap: 30px; }
+      .diff-items { flex-direction: column; align-items: center; }
+      .how-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
     }
-
-    .settlement-item {
-      animation: settlementReveal 0.6s ease-out;
-      animation-delay: var(--delay, 0s);
-    }
-
-    .winner-amount {
-      animation: winnerGlow 2s ease-in-out infinite;
-    }
-
-    .flip-card {
-      animation: cardFlip 1s ease-in-out;
+    @media (max-width: 480px) {
+      .games-grid { grid-template-columns: 1fr; }
+      .proof-strip { display: grid !important; grid-template-columns: 1fr 1fr; }
+      .proof-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
+      .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.08); }
+      .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
+      .hero-btns { flex-direction: column; align-items: stretch; }
     }
     @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
-
-    /* ──────────────────────────────────────────
-       MOBILE-FIRST OVERRIDES (375px baseline)
-    ────────────────────────────────────────── */
-
-    /* Nav: hide secondary links on small screens */
-    @media (max-width: 600px) {
-      nav {
-        padding: 12px 12px;
-        gap: 8px;
-        align-items: stretch;
-      }
-      .nav-logo {
-        justify-content: center;
-        width: 100%;
-      }
-      .nav-links {
-        width: 100%;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-      .nav-demo {
-        font-size: 11px;
-        padding: 10px 8px;
-        text-align: center;
-        justify-content: center;
-        line-height: 1.2;
-        border: 1px solid rgba(255,255,255,.18);
-        border-radius: 8px;
-        background: rgba(255,255,255,.04);
-      }
-    }
-
-    /* Hero: tighter on mobile */
-    @media (max-width: 600px) {
-      .hero { padding: 56px 16px 0; }
-      .hero-inner { gap: 32px; }
-      .hero-copy { padding-bottom: 8px; }
-      .hero-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 14px; }
-      .hero-sub { font-size: 15px; margin-bottom: 20px; }
-      .hero-fine { font-size: 11px; }
-      /* CTA full-width on mobile */
-      .btn-primary { display: block; text-align: center; padding: 16px 24px; font-size: 16px; }
-      /* Mockup: constrain and add breathing room */
-      .mockup { max-width: 300px; }
-    }
-
-    /* Proof strip: 2x2 grid on small screens instead of cramped row */
-    @media (max-width: 480px) {
-      .proof-strip {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr;
-        flex-wrap: unset;
-        overflow-x: unset;
-      }
-      .proof-item {
-        border-right: none;
-        border-bottom: 1px solid rgba(255,255,255,.1);
-        padding: 18px 14px;
-      }
-      .proof-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
-      .proof-item:nth-child(3), .proof-item:nth-child(4) { border-bottom: none; }
-      .proof-num { font-size: 28px; }
-      .proof-label { font-size: 11px; }
-    }
-
-    /* Body sections: less padding on mobile */
-    @media (max-width: 600px) {
-      .section { padding: 48px 16px; }
-      .section h2 { font-size: 26px; }
-      .section p { font-size: 15px; }
-    }
-
-    /* Inline grids: stack on mobile */
-    @media (max-width: 640px) {
-      /* 4-column how-it-works becomes 2x2 */
-      div[style*="grid-template-columns:repeat(4"] {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 20px !important;
-      }
-      /* 3-column value props stack vertically */
-      div[style*="grid-template-columns:repeat(3"] {
-        grid-template-columns: 1fr !important;
-        gap: 10px !important;
-      }
-      /* Feature strip 2-col → 1-col */
-      div[style*="grid-template-columns:1fr 1fr;gap:32px"] {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-      }
-      div[style*="grid-template-columns:1fr 1fr;gap:24px"] {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-      }
-      div[style*="display:flex;gap:20px;padding:20px 0;border-top:1px solid var(--rule);align-items:baseline"] {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 8px !important;
-      }
-    }
-
-    /* Pricing: stack on mobile, featured card on top */
-    @media (max-width: 700px) {
-      .pricing-grid {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-      }
-      .price-card.featured {
-        order: -1;
-        transform: none;
-      }
-      .price-card.featured:hover { transform: none; }
-      .price-card { border-radius: 12px; }
-    }
-
-    /* Formats table: larger touch targets on mobile */
-    @media (max-width: 600px) {
-      .formats-table td { padding: 12px 8px; font-size: 13px; }
-      .format-name { font-size: 14px; }
-      .format-desc { font-size: 12px; line-height: 1.5; }
-      .format-card-header {
-        min-height: 56px;
-      }
-      .format-guide-link {
-        min-height: 56px;
-        display: inline-flex;
-        align-items: center;
-      }
-    }
-
-    /* How-it-works dark section: less padding on mobile */
-    @media (max-width: 600px) {
-      div[style*="background:var(--forest);padding:64px"] {
-        padding: 48px 16px !important;
-      }
-    }
-
-    /* Final CTA: full-width button on mobile */
-    @media (max-width: 600px) {
-      .final-cta .btn-primary { display: block; width: 100%; text-align: center; }
-      .final-cta h2 { font-size: 24px; }
-    }
-
-    /* Footer: tighter on mobile */
-    @media (max-width: 600px) {
-      footer { padding: 36px 16px 24px !important; }
-    }
-
-    /* Course directory section: stack buttons */
-    @media (max-width: 480px) {
-      div[style*="display:flex;gap:12px;justify-content:center"] {
-        flex-direction: column !important;
-        align-items: stretch !important;
-      }
-      div[style*="display:flex;gap:12px;justify-content:center"] a {
-        text-align: center !important;
-      }
-    }
-
   </style>
-
-  <!-- Google Ads gtag.js (replace AW-PLACEHOLDER with your Google Ads ID) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-PLACEHOLDER"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'AW-PLACEHOLDER');
-  </script>
-
-  <!-- Meta Pixel (replace PIXEL_PLACEHOLDER with your Meta Pixel ID) -->
-  <script>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', 'PIXEL_PLACEHOLDER');
-  fbq('track', 'PageView');
-  </script>
-
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav>
-    <a class="nav-logo" href="/">
-      <span>Waggle</span>
-    </a>
-    <div class="nav-links">
-      <a class="nav-demo" href="/demo/">See It Live</a>
-      <a class="nav-demo" href="/create/">Create Your Outing</a>
+  <header>
+    <div class="nav-container">
+      <div class="logo">Waggle</div>
+      <nav class="nav-links">
+        <a href="/games/">Games</a>
+        <a href="/courses/">Courses</a>
+        <a href="/demo/">Demo</a>
+        <a href="/create/" class="btn-gold" style="padding:10px 22px;min-height:44px;font-size:14px">Create Your Outing</a>
+      </nav>
     </div>
-  </nav>
+  </header>
 
-  <!-- HERO -->
   <section class="hero">
-    <div class="hero-inner">
-
-      <div class="hero-copy">
-        <span class="hero-kicker">Nassau &middot; Skins &middot; Wolf &middot; Vegas &middot; 12 Games</span>
-        <h1>Run Your Golf Trip<br>Like a Vegas<br><em>Sportsbook.</em></h1>
-        <p class="hero-sub" style="margin-bottom:6px">Live odds on every phone. Scores update hole by hole. Settlement is automatic.</p>
-        <p class="hero-sub">The live sportsbook your foursome has been running manually for years.</p>
-        <div class="hero-actions">
-          <a href="/demo/" class="btn-primary" style="text-align:center">See It Live &rarr;</a>
-          <a href="/create/" class="btn-secondary" style="text-align:center">Create Your Outing</a>
-          <span class="hero-fine" style="text-align:center">No app &middot; Every phone &middot; Free for casual rounds</span>
-          <div style="margin-top:10px;text-align:center">
-            <a href="/my-events/" style="font-size:12px;color:var(--gold-dk);text-decoration:none;letter-spacing:.04em;display:inline-block;padding:14px 0;min-height:56px">Already playing? Find your match &rarr;</a>
-          </div>
-        </div>
+    <div class="hero-content">
+      <h1>Run Your Golf Trip Like a Vegas <em>Sportsbook.</em></h1>
+      <p>Seamless Betting. Instant Settlement.<br>The Gold Standard of Golf Trip Management.</p>
+      <div class="hero-btns">
+        <a href="/create/" class="btn-gold">Create Your Outing</a>
+        <a href="/demo/" class="btn-outline">See It Live</a>
       </div>
-
-      <div class="mockup-wrap">
-        <div class="mockup" id="demo-mockup">
-          <div class="mockup-header">
-            <div class="mockup-event-name">The Dunes Trip &middot; 2026</div>
-            <div class="mockup-event-meta" id="demo-meta">Round 2 &middot; 4 players &middot; Nassau + Skins</div>
-          </div>
-          <div class="mockup-body" id="demo-body">
-            <!-- Interactive demo renders here -->
-          </div>
-          <div class="mockup-footer" id="demo-nav">
-            <button class="mockup-btn mockup-btn-primary" id="demo-btn-bet" onclick="demoSwitch('bet')" style="cursor:pointer;border:none;font:inherit">Lay Action</button>
-            <button class="mockup-btn mockup-btn-secondary" id="demo-btn-scores" onclick="demoSwitch('scores')" style="cursor:pointer;border:none;font:inherit">The Board</button>
-            <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" style="border:none;font-size:16px;cursor:pointer" title="Enable Sound">OFF</button>
-          </div>
-        </div>
-      </div>
-      <script>
-      // Interactive demo — let visitors play with the app before signing up
-      (function() {
-        var demoState = {
-          view: 'live', // 'live' | 'bet' | 'scores' | 'settle'
-          hole: 11,
-          match: {
-            teamA: 'Thomas / Walsh', teamAhi: '+4.5', teamAodds: -160,
-            teamB: 'Perkins / Reed', teamBhi: '+6.0', teamBodds: 135,
-            scoreA: 3, status: '3 UP thru 11'
-          },
-          bets: [
-            { player: 'J. Morrison', team: 'Thomas/Walsh', stake: 40, toWin: 25, status: 'active' },
-            { player: 'B. Hutchins', team: 'Perkins/Reed', stake: 30, toWin: 40, status: 'active' }
-          ],
-          skins: [
-            { hole: 3, winner: 'Thomas', pot: 2 },
-            { hole: 7, winner: 'Perkins', pot: 1 },
-            { hole: 9, winner: 'Walsh', pot: 3 }
-          ],
-          nassau: { front: { leader: 'Thomas/Walsh', amount: 20 }, back: null, total: null },
-          players: [
-            { name: 'Thomas', pnl: 45 },
-            { name: 'Walsh', pnl: 20 },
-            { name: 'Perkins', pnl: -30 },
-            { name: 'Reed', pnl: -35 }
-          ]
-        };
-
-        function renderDemo() {
-          var body = document.getElementById('demo-body');
-          var nav = document.getElementById('demo-nav');
-          if (!body) return;
-          var v = demoState.view;
-
-          // Update nav highlight
-          document.getElementById('demo-btn-bet').className = 'mockup-btn ' + (v === 'bet' ? 'mockup-btn-primary' : 'mockup-btn-secondary');
-          document.getElementById('demo-btn-scores').className = 'mockup-btn ' + (v === 'scores' || v === 'settle' ? 'mockup-btn-primary' : 'mockup-btn-secondary');
-
-          if (v === 'live' || v === 'bet') {
-            var m = demoState.match;
-            var oddsA = m.teamAodds < 0 ? '\u2212' + Math.abs(m.teamAodds) : '+' + m.teamAodds;
-            var oddsB = m.teamBodds < 0 ? '\u2212' + Math.abs(m.teamBodds) : '+' + m.teamBodds;
-            body.innerHTML =
-              '<div class="mockup-match">' +
-                '<div class="match-meta"><span class="match-label">Match 1 \u00b7 Thru ' + demoState.hole + '</span><span class="live-dot">Live</span></div>' +
-                '<div class="match-lines">' +
-                  '<div class="match-line" onclick="demoBet(\'A\')" style="cursor:pointer;padding:4px 0;border-radius:4px;transition:background .15s">' +
-                    '<span><span class="team-name">' + m.teamA + '</span><span class="team-hi">' + m.teamAhi + '</span></span>' +
-                    '<span class="odds-pill odds-fav" id="odds-a">' + oddsA + '</span>' +
-                  '</div>' +
-                  '<div class="match-line" onclick="demoBet(\'B\')" style="cursor:pointer;padding:4px 0;border-radius:4px;transition:background .15s">' +
-                    '<span><span class="team-name">' + m.teamB + '</span><span class="team-hi">' + m.teamBhi + '</span></span>' +
-                    '<span class="odds-pill odds-dog" id="odds-b">' + oddsB + '</span>' +
-                  '</div>' +
-                '</div>' +
-                '<div class="match-score-line"><span>Front 9: Thomas/Walsh +$20</span><span class="score-status">' + m.status + '</span></div>' +
-              '</div>' +
-              '<div class="mockup-bets">' +
-                demoState.bets.map(function(b) {
-                  return '<div class="bet-item"><span class="bet-player">' + b.player + ' \u2014 ' + b.team + '</span><span class="bet-amount">$' + b.stake + ' to win $' + b.toWin + '</span></div>';
-                }).join('') +
-              '</div>' +
-              (v === 'bet' ? '<div id="demo-betslip" style="margin-top:8px;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;animation:fadeIn .3s ease">' +
-                '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Bet Slip</div>' +
-                '<div style="font-size:13px;color:var(--forest);font-weight:600;margin-bottom:6px">Thomas / Walsh to win</div>' +
-                '<div style="display:flex;gap:6px;margin-bottom:8px">' +
-                  ['$10','$25','$50','$100'].map(function(amt,i) {
-                    return '<div onclick="demoPlaceBet(' + amt.slice(1) + ')" style="flex:1;padding:8px 4px;text-align:center;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:' + (i===1?'var(--gold);color:var(--forest)':'rgba(255,255,255,.08);color:var(--muted)') + '">' + amt + '</div>';
-                  }).join('') +
-                '</div>' +
-                '<div style="font-size:11px;color:var(--gold-dk)">To win: $15.63 at \u2212160</div>' +
-              '</div>' : '');
-          } else if (v === 'scores') {
-            body.innerHTML =
-              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Skins Won</div>' +
-              demoState.skins.map(function(s) {
-                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:13px">' +
-                  '<span style="color:var(--text-2)"><strong style="color:var(--forest)">' + s.winner + '</strong> \u00b7 Hole ' + s.hole + '</span>' +
-                  '<span style="color:var(--gold);font-weight:700">\u00d7' + s.pot + '</span></div>';
-              }).join('') +
-              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px">Nassau</div>' +
-              '<div style="padding:10px 12px;background:rgba(27,43,75,.06);border:1px solid rgba(27,43,75,.15);border-radius:6px">' +
-                '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-2)"><span>Front 9</span><span style="color:var(--sage);font-weight:700">Thomas/Walsh +$20</span></div>' +
-                '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:4px"><span>Back 9</span><span>In progress...</span></div>' +
-              '</div>' +
-              '<div onclick="demoSwitch(\'settle\')" style="margin-top:12px;text-align:center;padding:10px;background:var(--gold);color:var(--forest);border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.03em">View Settlement</div>';
-          } else if (v === 'settle') {
-            body.innerHTML =
-              '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Final Standings</div>' +
-              demoState.players.map(function(p, index) {
-                var c = p.pnl > 0 ? 'var(--sage)' : p.pnl < 0 ? '#ef4444' : 'rgba(255,255,255,.5)';
-                var str = p.pnl > 0 ? '+$' + p.pnl : p.pnl < 0 ? '-$' + Math.abs(p.pnl) : 'Even';
-                var isWinner = p.pnl > 0;
-                var delayStyle = '--delay: ' + (index * 0.15) + 's';
-
-                return '<div class="settlement-item" style="display:flex;justify-content:space-between;padding:12px 8px;border-bottom:1px solid var(--rule);' + delayStyle + '">' +
-                  '<span style="font-size:14px;color:var(--forest);font-weight:600">' + p.name + '</span>' +
-                  '<span class="' + (isWinner ? 'winner-amount' : '') + '" style="font-size:18px;font-weight:800;color:' + c + '">' + str + '</span></div>';
-              }).join('') +
-              '<div style="margin-top:12px;padding:12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:6px">' +
-                '<div style="font-size:10px;font-weight:700;color:var(--gold-dk);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Who Pays Who</div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--text-2)"><span style="color:#ef4444">Reed</span> pays <span style="color:var(--sage)">Thomas</span></span><span style="font-weight:800;color:var(--forest)">$35</span></div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:4px"><span style="color:var(--text-2)"><span style="color:#ef4444">Perkins</span> pays <span style="color:var(--sage)">Walsh</span></span><span style="font-weight:800;color:var(--forest)">$20</span></div>' +
-                '<div style="display:flex;gap:6px;margin-top:8px">' +
-                  '<div style="flex:1;padding:8px;text-align:center;background:#3D95CE;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Venmo</div>' +
-                  '<div style="flex:1;padding:8px;text-align:center;background:#00D64F;color:#fff;border-radius:5px;font-size:11px;font-weight:700">Cash App</div>' +
-                '</div>' +
-              '</div>' +
-              '<div style="text-align:center;margin-top:10px;font-size:10px;color:var(--muted)">Powered by Waggle \u00b7 betwaggle.com</div>';
-          }
-        }
-
-        // Switch views
-        window.demoSwitch = function(view) {
-          demoState.view = view;
-          renderDemo();
-        };
-
-        // Tap on odds → open bet slip
-        window.demoBet = function(side) {
-          demoState.view = 'bet';
-          renderDemo();
-
-          // Flash the selected odds pill with CSS animation
-          var el = document.getElementById(side === 'A' ? 'odds-a' : 'odds-b');
-          if (el) {
-            el.classList.add('selected');
-            setTimeout(function() {
-              el.classList.remove('selected');
-            }, 300);
-          }
-
-          playOddsShiftSound();
-          hapticFeedback('odds');
-        };
-
-        // Place a bet → return to live view with new bet in list
-        window.demoPlaceBet = function(amount) {
-          // Add visual feedback for bet placement
-          var betButtons = document.querySelectorAll('[onclick*="demoPlaceBet"]');
-          betButtons.forEach(btn => btn.style.transform = 'scale(0.95)');
-
-          setTimeout(() => {
-            demoState.bets.push({
-              player: 'You',
-              team: 'Thomas/Walsh',
-              stake: amount,
-              toWin: Math.round(amount * 0.625),
-              status: 'active'
-            });
-            demoState.view = 'live';
-            renderDemo();
-
-            // Reset button transforms
-            betButtons.forEach(btn => btn.style.transform = '');
-          }, 100);
-
-          playBetPlacedSound();
-          hapticFeedback('bet');
-        };
-
-        // Auto-simulation system — make demo feel alive
-        var autoSimTimer = null;
-        var isAutoSimEnabled = true;
-        var lastUpdate = Date.now();
-        var oddsFlashElements = new Set();
-
-        function updateOdds(teamADelta, teamBDelta) {
-          var prevA = demoState.match.teamAodds;
-          var prevB = demoState.match.teamBodds;
-
-          demoState.match.teamAodds = Math.max(-300, Math.min(300, prevA + teamADelta));
-          demoState.match.teamBodds = Math.max(-300, Math.min(300, prevB + teamBDelta));
-
-          // Flash odds if significant change (>= 10 points)
-          if (Math.abs(teamADelta) >= 10) {
-            setTimeout(() => {
-              flashOdds('A', teamADelta > 0 ? 'red' : 'green');
-              playOddsShiftSound();
-              hapticFeedback('odds');
-            }, 100);
-          }
-          if (Math.abs(teamBDelta) >= 10) {
-            setTimeout(() => {
-              flashOdds('B', teamBDelta > 0 ? 'red' : 'green');
-              playOddsShiftSound();
-              hapticFeedback('odds');
-            }, 100);
-          }
-        }
-
-        function flashOdds(team, color) {
-          var el = document.getElementById('odds-' + team.toLowerCase());
-          if (!el) return;
-
-          // Remove any existing flash classes
-          el.classList.remove('flash-green', 'flash-red');
-
-          // Add appropriate flash class
-          var flashClass = color === 'green' ? 'flash-green' : 'flash-red';
-          el.classList.add(flashClass);
-
-          // Remove flash class after animation completes
-          setTimeout(() => {
-            el.classList.remove(flashClass);
-          }, 600);
-        }
-
-        function simulateHoleProgress() {
-          if (!isAutoSimEnabled) return;
-
-          var now = Date.now();
-          if (now - lastUpdate < 3000) return; // Min 3 second intervals
-          lastUpdate = now;
-
-          // Randomly advance hole (30% chance)
-          if (Math.random() < 0.3 && demoState.hole < 18) {
-            demoState.hole++;
-
-            // Update match status with realistic golf scoring
-            var outcomes = [
-              { scoreChange: 1, status: `${demoState.match.scoreA + 1} UP thru ${demoState.hole}`, oddsA: -15, oddsB: 12 },
-              { scoreChange: 0, status: `${demoState.match.scoreA} UP thru ${demoState.hole}`, oddsA: -5, oddsB: 4 },
-              { scoreChange: -1, status: `${Math.max(0, demoState.match.scoreA - 1)} UP thru ${demoState.hole}`, oddsA: 10, oddsB: -8 },
-              { scoreChange: 0, status: `All Square thru ${demoState.hole}`, oddsA: 25, oddsB: -20 }
-            ];
-
-            var outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
-            demoState.match.scoreA = Math.max(0, demoState.match.scoreA + outcome.scoreChange);
-            demoState.match.status = outcome.status;
-
-            updateOdds(outcome.oddsA, outcome.oddsB);
-
-            // Occasionally add a new skin winner (20% chance)
-            if (Math.random() < 0.2) {
-              var winners = ['Thomas', 'Walsh', 'Perkins', 'Reed'];
-              var winner = winners[Math.floor(Math.random() * winners.length)];
-              demoState.skins.push({
-                hole: demoState.hole,
-                winner: winner,
-                pot: Math.random() < 0.3 ? 2 : 1 // 30% chance of carryover
-              });
-            }
-
-            // Update player standings based on new results
-            if (outcome.scoreChange !== 0) {
-              var pnlAdjust = outcome.scoreChange > 0 ? 10 : -8;
-              demoState.players[0].pnl += pnlAdjust;
-              demoState.players[1].pnl += pnlAdjust;
-              demoState.players[2].pnl -= pnlAdjust;
-              demoState.players[3].pnl -= pnlAdjust;
-            }
-
-            renderDemo();
-
-            // Add haptic feedback if available
-            if (navigator.vibrate && outcome.scoreChange !== 0) {
-              navigator.vibrate(50);
-            }
-          }
-        }
-
-        function startAutoSim() {
-          if (autoSimTimer) clearInterval(autoSimTimer);
-          autoSimTimer = setInterval(simulateHoleProgress, 3500 + Math.random() * 2000); // 3.5-5.5s intervals
-        }
-
-        function stopAutoSim() {
-          if (autoSimTimer) {
-            clearInterval(autoSimTimer);
-            autoSimTimer = null;
-          }
-        }
-
-        // Enhanced interaction functions
-        window.demoSwitch = function(view) {
-          if (view === 'settle') {
-            // Add dramatic pause before settlement reveal
-            stopAutoSim();
-
-            // Fade out current content
-            var body = document.getElementById('demo-body');
-            if (body) {
-              body.style.opacity = '0.3';
-              body.style.transform = 'scale(0.95)';
-            }
-
-            setTimeout(function() {
-              demoState.view = view;
-              renderDemo();
-
-              // Restore body and trigger confetti
-              if (body) {
-                body.style.opacity = '';
-                body.style.transform = '';
-                body.style.animation = 'fadeIn 0.8s ease-out';
-              }
-
-              setTimeout(triggerConfetti, 500);
-            }, 1200); // 1.2 second dramatic pause
-
-            return;
-          }
-
-          demoState.view = view;
-          renderDemo();
-
-          // Restart auto-sim when returning to live view
-          if (view === 'live') {
-            setTimeout(startAutoSim, 1000);
-          } else if (view !== 'settle') {
-            stopAutoSim();
-          }
-        };
-
-        // Auto-simulation management
-        window.toggleAutoSim = function() {
-          isAutoSimEnabled = !isAutoSimEnabled;
-          if (isAutoSimEnabled) {
-            startAutoSim();
-          } else {
-            stopAutoSim();
-          }
-        };
-
-        // Lightweight canvas-based confetti system
-        function createConfetti(container) {
-          var canvas = document.createElement('canvas');
-          var ctx = canvas.getContext('2d');
-          var confettiPieces = [];
-          var animationId = null;
-
-          // Set up canvas
-          canvas.style.position = 'absolute';
-          canvas.style.top = '0';
-          canvas.style.left = '0';
-          canvas.style.width = '100%';
-          canvas.style.height = '100%';
-          canvas.style.pointerEvents = 'none';
-          canvas.style.zIndex = '10';
-
-          function resizeCanvas() {
-            var rect = container.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-          }
-
-          // Confetti piece constructor
-          function ConfettiPiece() {
-            this.x = Math.random() * canvas.width;
-            this.y = -10;
-            this.width = Math.random() * 8 + 4;
-            this.height = Math.random() * 6 + 4;
-            this.speedX = (Math.random() - 0.5) * 3;
-            this.speedY = Math.random() * 3 + 2;
-            this.rotation = Math.random() * 360;
-            this.rotationSpeed = (Math.random() - 0.5) * 10;
-            this.colors = ['#D4AF37', '#C5A059', '#F5F0E8', '#52B788', '#22c55e'];
-            this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
-            this.gravity = 0.1;
-            this.friction = 0.99;
-          }
-
-          ConfettiPiece.prototype.update = function() {
-            this.speedY += this.gravity;
-            this.speedX *= this.friction;
-            this.x += this.speedX;
-            this.y += this.speedY;
-            this.rotation += this.rotationSpeed;
-
-            // Gentle side-to-side motion
-            this.x += Math.sin(this.y * 0.01) * 0.5;
-          };
-
-          ConfettiPiece.prototype.draw = function() {
-            ctx.save();
-            ctx.translate(this.x + this.width/2, this.y + this.height/2);
-            ctx.rotate(this.rotation * Math.PI / 180);
-            ctx.fillStyle = this.color;
-            ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
-            ctx.restore();
-          };
-
-          function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            confettiPieces = confettiPieces.filter(function(piece) {
-              piece.update();
-              piece.draw();
-              return piece.y < canvas.height + 20;
-            });
-
-            if (confettiPieces.length > 0) {
-              animationId = requestAnimationFrame(animate);
-            } else {
-              cleanup();
-            }
-          }
-
-          function cleanup() {
-            if (animationId) {
-              cancelAnimationFrame(animationId);
-              animationId = null;
-            }
-            if (canvas.parentNode) {
-              canvas.parentNode.removeChild(canvas);
-            }
-          }
-
-          // Create confetti burst
-          function burst() {
-            for (var i = 0; i < 50; i++) {
-              confettiPieces.push(new ConfettiPiece());
-            }
-          }
-
-          // Initialize
-          resizeCanvas();
-          container.appendChild(canvas);
-          burst();
-          animate();
-
-          // Auto cleanup after 5 seconds
-          setTimeout(cleanup, 5000);
-
-          return { cleanup: cleanup };
-        }
-
-        // Sound system - optional audio feedback
-        var audioContext = null;
-        var soundEnabled = false;
-
-        function initAudio() {
-          try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          } catch (e) {
-            console.log('Audio not supported');
-          }
-        }
-
-        function playSound(frequency, duration, type) {
-          if (!audioContext || !soundEnabled) return;
-
-          var oscillator = audioContext.createOscillator();
-          var gainNode = audioContext.createGain();
-
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-
-          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-          oscillator.type = type || 'sine';
-
-          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-          gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
-
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + duration);
-        }
-
-        function playBetPlacedSound() {
-          // Quick ascending chime
-          playSound(800, 0.1, 'sine');
-          setTimeout(() => playSound(1000, 0.1, 'sine'), 50);
-        }
-
-        function playOddsShiftSound() {
-          // Subtle tick
-          playSound(400, 0.05, 'square');
-        }
-
-        function playSettlementSound() {
-          // Victory fanfare
-          var notes = [523, 659, 784, 1047]; // C-E-G-C
-          notes.forEach((note, i) => {
-            setTimeout(() => playSound(note, 0.3, 'sine'), i * 100);
-          });
-        }
-
-        // Enhanced haptic feedback
-        function hapticFeedback(pattern) {
-          if (navigator.vibrate) {
-            if (pattern === 'bet') {
-              navigator.vibrate(50);
-            } else if (pattern === 'odds') {
-              navigator.vibrate(30);
-            } else if (pattern === 'settlement') {
-              navigator.vibrate([100, 50, 100, 50, 200]);
-            } else {
-              navigator.vibrate(pattern);
-            }
-          }
-        }
-
-        // Trigger confetti on settlement view
-        var currentConfetti = null;
-        function triggerConfetti() {
-          // Clean up any existing confetti
-          if (currentConfetti) {
-            currentConfetti.cleanup();
-          }
-
-          var container = document.getElementById('demo-body');
-          if (container) {
-            currentConfetti = createConfetti(container);
-            playSettlementSound();
-            hapticFeedback('settlement');
-          }
-        }
-
-        // Sound toggle function
-        window.toggleSound = function() {
-          soundEnabled = !soundEnabled;
-          if (soundEnabled && !audioContext) {
-            initAudio();
-          }
-
-          // Update UI indicator if it exists
-          var soundBtn = document.getElementById('sound-toggle');
-          if (soundBtn) {
-            soundBtn.textContent = soundEnabled ? 'ON' : 'OFF';
-            soundBtn.title = soundEnabled ? 'Disable Sound' : 'Enable Sound';
-          }
-
-          // Play test sound when enabling
-          if (soundEnabled) {
-            playBetPlacedSound();
-          }
-        };
-
-        // Initial render and start auto-simulation
-        renderDemo();
-        setTimeout(startAutoSim, 2000); // Start after 2 seconds
-      })();
-      </script>
-
+      <div class="hero-fine">No app. Every phone. Free for casual rounds.</div>
     </div>
   </section>
 
-  <!-- AUTO-PLAYING DEMO SECTION -->
-  <section class="auto-demo-section" id="auto-demo">
-    <div class="auto-demo-inner">
-      <div class="auto-demo-copy">
-        <div class="section-label">See It In Action</div>
-        <h2>Live Odds, Real Stakes,<br>Auto Settlement</h2>
-        <p>Watch how scores update live, odds shift with each hole, and payouts calculate automatically. No math, no arguments, no hassle.</p>
-      </div>
-
-      <div class="auto-demo-board">
-        <div class="auto-demo-header">
-          <div class="auto-demo-title">Scramble Championship</div>
-          <div class="auto-demo-status">
-            <span class="live-indicator"></span>
-            <span>Round 2 • Hole <span id="auto-hole">14</span></span>
-          </div>
-        </div>
-
-        <div class="auto-demo-leaderboard" id="auto-leaderboard">
-          <!-- Leaderboard entries will be populated by JS -->
-        </div>
-
-        <div class="auto-demo-betting" id="auto-betting">
-          <div class="auto-demo-match">
-            <div class="auto-match-header">Next Hole Winner</div>
-            <div class="auto-match-options">
-              <div class="auto-bet-option" id="auto-bet-a">
-                <div class="auto-bet-team">Wolves</div>
-                <div class="auto-bet-odds" id="odds-wolves">+120</div>
-              </div>
-              <div class="auto-bet-option" id="auto-bet-b">
-                <div class="auto-bet-team">Falcons</div>
-                <div class="auto-bet-odds" id="odds-falcons">-140</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="auto-bet-slip" id="auto-slip">
-            <div class="auto-slip-header">Bet Placed!</div>
-            <div class="auto-slip-detail">Wolves +120 • $25 to win $30</div>
-          </div>
-        </div>
-
-        <div class="auto-demo-settlement" id="auto-settlement">
-          <div class="auto-settlement-banner">
-            <div class="auto-settlement-title">Hole Complete!</div>
-            <div class="auto-settlement-result">Wolves Win the Hole</div>
-            <div class="auto-settlement-payout">You Won $30!</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <script>
-  // Auto-playing demo that triggers on scroll
-  (function() {
-    var autoDemoState = {
-      players: [
-        { name: 'Wolves', score: -12, pos: 1 },
-        { name: 'Falcons', score: -10, pos: 2 },
-        { name: 'Mustangs', score: -8, pos: 3 },
-        { name: 'Vipers', score: -5, pos: 4 }
-      ],
-      currentHole: 14,
-      wolvesOdds: 120,
-      falconsOdds: -140,
-      isActive: false,
-      hasPlayed: false,
-      timeouts: []
-    };
-
-    var autoDemoSection = document.getElementById('auto-demo');
-    var autoLeaderboard = document.getElementById('auto-leaderboard');
-    var autoBetting = document.getElementById('auto-betting');
-    var autoSettlement = document.getElementById('auto-settlement');
-    var autoSlip = document.getElementById('auto-slip');
-    var autoHole = document.getElementById('auto-hole');
-    var wolvesOddsEl = document.getElementById('odds-wolves');
-    var falconsOddsEl = document.getElementById('odds-falcons');
-    var betWolves = document.getElementById('auto-bet-a');
-    var betFalcons = document.getElementById('auto-bet-b');
-
-    // Render initial leaderboard
-    function renderLeaderboard() {
-      if (!autoLeaderboard) return;
-
-      autoLeaderboard.innerHTML = autoDemoState.players.map(function(player, index) {
-        return '<div class="auto-leaderboard-item" data-pos="' + player.pos + '">' +
-          '<div class="auto-player-info">' +
-            '<div class="auto-player-pos">' + player.pos + '</div>' +
-            '<div class="auto-player-name">' + player.name + '</div>' +
-          '</div>' +
-          '<div class="auto-player-score">' + (player.score > 0 ? '+' : '') + player.score + '</div>' +
-        '</div>';
-      }).join('');
-    }
-
-    // Flash odds changes
-    function flashOdds(element, isImproving) {
-      if (!element) return;
-      element.classList.remove('flash-green', 'flash-red');
-      setTimeout(function() {
-        element.classList.add(isImproving ? 'flash-green' : 'flash-red');
-      }, 50);
-    }
-
-    // Update odds with animation
-    function updateOdds() {
-      // Wolves odds improve (lower positive = better for bettor)
-      autoDemoState.wolvesOdds = 110;
-      // Falcons odds worsen (higher negative = worse for bettor)
-      autoDemoState.falconsOdds = -155;
-
-      if (wolvesOddsEl) {
-        wolvesOddsEl.textContent = '+' + autoDemoState.wolvesOdds;
-        flashOdds(wolvesOddsEl, true);
-      }
-      if (falconsOddsEl) {
-        falconsOddsEl.textContent = autoDemoState.falconsOdds;
-        flashOdds(falconsOddsEl, false);
-      }
-    }
-
-    // Show bet placement
-    function placeBet() {
-      if (betWolves) {
-        betWolves.classList.add('selected');
-      }
-      if (autoSlip) {
-        autoSlip.classList.add('visible');
-      }
-    }
-
-    // Show settlement
-    function showSettlement() {
-      // Update scores - Wolves win the hole
-      autoDemoState.players[0].score = -13; // Wolves improve
-      autoDemoState.currentHole = 15;
-
-      if (autoHole) {
-        autoHole.textContent = autoDemoState.currentHole;
-      }
-
-      // Highlight winner in leaderboard
-      var eaglesRow = document.querySelector('[data-pos="1"]');
-      if (eaglesRow) {
-        eaglesRow.classList.add('highlighted');
-        var scoreEl = eaglesRow.querySelector('.auto-player-score');
-        if (scoreEl) {
-          setTimeout(function() {
-            scoreEl.style.animation = 'countUp 0.5s ease-out';
-            scoreEl.textContent = '-13';
-          }, 200);
-        }
-      }
-
-      // Show settlement banner
-      if (autoSettlement) {
-        autoSettlement.classList.add('visible');
-      }
-
-      // Haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
-    }
-
-    // Reset demo for replay
-    function resetDemo() {
-      autoDemoState.hasPlayed = false;
-      autoDemoState.isActive = false;
-      autoDemoState.players[0].score = -12;
-      autoDemoState.currentHole = 14;
-      autoDemoState.wolvesOdds = 120;
-      autoDemoState.falconsOdds = -140;
-
-      // Clear all timeouts
-      autoDemoState.timeouts.forEach(clearTimeout);
-      autoDemoState.timeouts = [];
-
-      // Reset UI
-      if (autoHole) autoHole.textContent = '14';
-      if (wolvesOddsEl) wolvesOddsEl.textContent = '+120';
-      if (falconsOddsEl) falconsOddsEl.textContent = '-140';
-
-      if (betWolves) betWolves.classList.remove('selected');
-      if (autoSlip) autoSlip.classList.remove('visible');
-      if (autoSettlement) autoSettlement.classList.remove('visible');
-
-      // Reset leaderboard
-      var highlightedRows = document.querySelectorAll('.auto-leaderboard-item.highlighted');
-      highlightedRows.forEach(function(row) {
-        row.classList.remove('highlighted');
-      });
-
-      renderLeaderboard();
-    }
-
-    // Main demo sequence
-    function startAutoDemo() {
-      if (autoDemoState.isActive || autoDemoState.hasPlayed) return;
-
-      autoDemoState.isActive = true;
-      autoDemoState.hasPlayed = true;
-
-      renderLeaderboard();
-
-      // Sequence: 1s -> odds change, 2s -> bet placement, 4s -> settlement
-      autoDemoState.timeouts.push(setTimeout(updateOdds, 1000));
-      autoDemoState.timeouts.push(setTimeout(placeBet, 2000));
-      autoDemoState.timeouts.push(setTimeout(showSettlement, 4000));
-
-      // Reset after 8 seconds for potential replay
-      autoDemoState.timeouts.push(setTimeout(function() {
-        autoDemoState.isActive = false;
-      }, 8000));
-    }
-
-    // Scroll detection with Intersection Observer
-    if (window.IntersectionObserver && autoDemoSection) {
-      var demoObserver = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
-            startAutoDemo();
-          }
-        });
-      }, {
-        threshold: [0.3],
-        rootMargin: '0px 0px -100px 0px'
-      });
-
-      demoObserver.observe(autoDemoSection);
-    }
-
-    // Reset demo when scrolling back up (for replay)
-    var resetObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (!entry.isIntersecting && autoDemoState.hasPlayed) {
-          setTimeout(resetDemo, 1000);
-        }
-      });
-    }, {
-      threshold: [0],
-      rootMargin: '200px 0px 200px 0px'
-    });
-
-    if (autoDemoSection) {
-      resetObserver.observe(autoDemoSection);
-    }
-
-    // Initial render
-    renderLeaderboard();
-  })();
-  </script>
-
-  <!-- PROOF STRIP -->
   <div class="proof-strip">
-    <div class="proof-item">
-      <div class="proof-num">12</div>
-      <div class="proof-label">game formats</div>
-    </div>
-    <div class="proof-item">
-      <div class="proof-num">$0</div>
-      <div class="proof-label">app to download</div>
-    </div>
-    <div class="proof-item">
-      <div class="proof-num">5 min</div>
-      <div class="proof-label">to set up</div>
-    </div>
-    <div class="proof-item">
-      <div class="proof-num">Auto</div>
-      <div class="proof-label">settlement</div>
-    </div>
+    <div class="proof-item"><div class="proof-num">12</div><div class="proof-label">Game Formats</div></div>
+    <div class="proof-item"><div class="proof-num">17K+</div><div class="proof-label">Courses</div></div>
+    <div class="proof-item"><div class="proof-num">$0</div><div class="proof-label">App to Download</div></div>
+    <div class="proof-item"><div class="proof-num">Auto</div><div class="proof-label">Settlement</div></div>
   </div>
 
-  <!-- FEATURE STRIP — two differentiators (light bg for rhythm after dark proof strip) -->
-  <div style="background:var(--ivory);padding:64px 20px;border-top:1px solid rgba(201,168,76,.2)" class="reveal">
-    <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch">
-      <div style="background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:28px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:12px">Course Directory</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--forest);margin-bottom:10px;line-height:1.25">17,000+ courses.<br>Full scorecards.</div>
-        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:auto">Par, stroke index, slope, and rating for every tee. Search your course, set up your match.</p>
-        <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
-          <div style="font-weight:700;color:var(--forest);margin-bottom:2px">TPC Sawgrass — Stadium Course</div>
-          Par 72 &middot; Slope 155 &middot; Rating 76.4
-        </div>
-        <a href="/courses/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Find Your Course &rarr;</a>
-      </div>
-      <div style="background:#fff;border:1.5px solid var(--rule);border-radius:10px;padding:28px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:12px">GHIN Integration</div>
-        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--forest);margin-bottom:10px;line-height:1.25">Handicaps auto-filled.<br>No sandbaggers.</div>
-        <p style="font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:auto">Enter a GHIN number, get the official handicap index instantly. Lines are set from real data.</p>
-        <div style="background:var(--ivory-dk);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--muted);margin-top:16px">
-          <span style="color:var(--muted)">GHIN #1234567</span> <span style="color:var(--green-mid);font-weight:700">&rarr; HI: 14.2 &middot; CH: 16</span>
-        </div>
-        <a href="/create/" style="display:inline-block;margin-top:16px;color:var(--gold-dk);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em">Create Your Outing</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- BODY COPY — problem/solution block -->
-  <div class="section reveal" style="padding-top:72px;padding-bottom:48px">
-    <span class="section-label">The Problem</span>
-    <h2>The Nassau has always<br>been this serious.</h2>
-    <div class="section-rule"></div>
-    <p>The group chat isn't a scoreboard. The folded card in someone's back pocket isn't a settlement.</p>
-    <p style="font-weight:600;color:var(--forest);font-size:19px;line-height:1.6;margin-top:12px">Waggle is the live sportsbook your group has been running manually for years &mdash; finally on every phone, automatically.</p>
-    <div style="margin-top:32px;display:flex;flex-direction:column;gap:0">
-      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid var(--rule);align-items:baseline">
-        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--gold-dk);min-width:120px;flex-shrink:0">Every phone.</div>
-        <div style="font-size:15px;color:var(--text-2);line-height:1.6">No app. No download. One link opens the full sportsbook on any device.</div>
-      </div>
-      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid var(--rule);align-items:baseline">
-        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--gold-dk);min-width:120px;flex-shrink:0">Live scoring.</div>
-        <div style="font-size:15px;color:var(--text-2);line-height:1.6">Odds update hole by hole. Standings, skins, and Nassau recalculate on every device in real time.</div>
-      </div>
-      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);align-items:baseline">
-        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--gold-dk);min-width:120px;flex-shrink:0">Settlement.</div>
-        <div style="font-size:15px;color:var(--text-2);line-height:1.6">Who owes what. Venmo deep links. Drop the card in the group chat. No arguments, no math.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PRICING -->
-  <div class="pricing-section reveal">
-    <div class="pricing-inner">
-      <span class="section-label">Pricing</span>
-      <h2>One event. One price.</h2>
-      <div class="section-rule"></div>
-
-      <div class="pricing-grid">
-        <div class="price-card">
-          <span class="price-type">Weekend Warrior</span>
-          <div class="price-amount" style="font-size:2.2rem">Free</div>
-          <span class="price-period">casual rounds, always free</span>
-          <div class="price-details">
-            <span class="price-detail">All 12 game formats, live scoring</span>
-            <span class="price-detail">Hole-by-hole scorecard + game summaries</span>
-            <span class="price-detail">Perfect for a spontaneous money match</span>
-            <span class="price-detail">No payment, no account required</span>
+  <section class="difference container reveal">
+    <h2>The Waggle Difference</h2>
+    <div class="diff-grid">
+      <div class="diff-column">
+        <h3>The Old Way</h3>
+        <div class="diff-items">
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M9 2h6v3H9z"/><rect x="5" y="4" width="14" height="17" rx="1.5"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="15" x2="13" y2="15"/><line x1="14" y1="14" x2="17" y2="17" stroke-width="2"/></svg></div>
+            <p>Messy scorecards and forgotten bets</p>
           </div>
-          <a href="/create/" class="price-cta">Start Free</a>
-        </div>
-        <div class="price-card featured">
-          <span class="price-type">Buddies Trip</span>
-          <div class="price-amount">$32/event</div>
-          <span class="price-period">per event &middot; $8/person for a foursome &middot; $4/person for groups of 8</span>
-          <div class="price-details">
-            <span class="price-detail">All 8 formats with live scoring + betting</span>
-            <span class="price-detail">GHIN lookup, handicaps auto-filled, no typing</span>
-            <span class="price-detail">AI picks best format + pairings for your group</span>
-            <span class="price-detail">Live odds recalculate every hole</span>
-            <span class="price-detail">Shareable settlement card at round end</span>
-            <span class="price-detail">Any phone, no app required</span>
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="1.5"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><circle cx="15" cy="17" r="2.5"/><path d="M13.5 15.5l3 3"/></svg></div>
+            <p>Hours of manual calculation at the 19th hole</p>
           </div>
-          <a href="/create/" class="price-cta">Create Your Outing</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">See It Live</a>
-        </div>
-        <div class="price-card">
-          <span class="price-type">Season Pass</span>
-          <div class="price-amount" style="font-size:clamp(32px,8vw,56px)">$149<span style="font-size:0.45em;font-weight:500;opacity:0.7">/season</span></div>
-          <span class="price-period">per season, unlimited events &amp; players</span>
-          <div class="price-details">
-            <span class="price-detail">Team scramble with live leaderboard</span>
-            <span class="price-detail">Closest to pin and longest drive tracking</span>
-            <span class="price-detail">What-If simulator for projected standings</span>
-            <span class="price-detail">Multi-round round-robin bracket (member-guest)</span>
-            <span class="price-detail">Flight assignments and pairing management</span>
-            <span class="price-detail">Everything in the Buddies Trip tier</span>
-          </div>
-          <a href="/create/?tier=season" class="price-cta">Set Up Your Season &mdash; $149/season pass</a>
-          <a href="/demo/" style="display:block;text-align:center;margin-top:8px;font-size:0.8rem;color:var(--gold-dk);text-decoration:none;padding:12px 0;min-height:56px">See It Live</a>
-        </div>
-      </div>
-
-      <!-- FAQ Accordion -->
-      <div style="max-width:640px;margin:40px auto 0">
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:20px">Common Questions</div>
-        <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            What counts as one outing?
-            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
-          </button>
-          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">One outing covers your entire weekend — unlimited rounds, all game formats, all players. Set it up once, play all trip.</p>
-          </div>
-        </div>
-        <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            Do all players need to pay?
-            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
-          </button>
-          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">No. One person pays $32/event and sets up the outing. Everyone else joins free via a shared link.</p>
-          </div>
-        </div>
-        <div class="faq-item" style="border-top:1px solid var(--rule)">
-          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            Can I try it free first?
-            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
-          </button>
-          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">Yes. Free rounds include all 12 game formats with live scoring. The paid tier adds GHIN auto-lookup, AI pairings, live betting odds, and the settlement card.</p>
-          </div>
-        </div>
-        <div class="faq-item" style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
-          <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;font-size:15px;font-weight:600;color:var(--text)">
-            What if we lose cell service?
-            <span style="font-size:20px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-left:12px" class="faq-arrow">+</span>
-          </button>
-          <div class="faq-answer" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
-            <p style="padding:0 0 18px;font-size:14px;color:var(--text-2);line-height:1.7">The app caches everything offline. Scores, bets, and standings are saved locally and sync when signal returns.</p>
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/><circle cx="9" cy="12" r="1" fill="#b88a24"/><circle cx="12" cy="12" r="1" fill="#b88a24"/><circle cx="15" cy="12" r="1" fill="#b88a24"/></svg></div>
+            <p>Disputes and delayed payments</p>
           </div>
         </div>
       </div>
-      <script>
-        // FAQ accordion — toggle open/close on click
-        // Uses event delegation on document for reliability
-        document.addEventListener('click', function(e) {
-          // Find the closest .faq-item ancestor from whatever was clicked
-          var item = e.target.closest('.faq-item');
-          if (!item) return;
-          // Only respond to clicks on the button area (not the answer text)
-          var btn = e.target.closest('button');
-          if (!btn && !e.target.closest('.faq-arrow')) {
-            // Check if click was on the faq-item directly (not the expanded answer)
-            if (e.target.closest('.faq-answer')) return;
-          }
-          e.preventDefault();
-          var wasOpen = item.classList.contains('open');
-          // Close all
-          var items = document.querySelectorAll('.faq-item.open');
-          for (var i = 0; i < items.length; i++) { items[i].classList.remove('open'); }
-          // Toggle clicked
-          if (!wasOpen) item.classList.add('open');
-        });
-      </script>
-
-    </div>
-  </div>
-
-  <!-- HOW IT WORKS — dark green band for visual rhythm -->
-  <div style="background:var(--forest);padding:64px 20px">
-    <div style="max-width:720px;margin:0 auto">
-      <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px">How It Works</span>
-      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,40px);color:#fff;line-height:1.15;margin-bottom:48px">Four steps.<br>One link to your group.</h2>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
-        <div style="text-align:center">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">1</div>
-          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Create your outing</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Pick games, set handicaps, add players. Five minutes.</div>
-        </div>
-        <div style="text-align:center">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">2</div>
-          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Share one link</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Everyone opens the sportsbook on their phone. Bet anytime.</div>
-        </div>
-        <div style="text-align:center">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">3</div>
-          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Score hole by hole</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">One person enters scores. Odds update on every phone instantly.</div>
-        </div>
-        <div style="text-align:center">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--forest);font-family:'Playfair Display',serif;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">4</div>
-          <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:6px">Drop the settlement</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.5">Who won. What they owe. Venmo links. Group chat. Done.</div>
+      <div class="diff-column">
+        <h3>The Waggle Way</h3>
+        <div class="diff-items">
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><rect x="6" y="3" width="12" height="18" rx="2"/><line x1="10" y1="7" x2="14" y2="7"/><path d="M9 12l2 2 4-4" stroke-width="2"/><circle cx="12" cy="18" r="1" fill="#b88a24"/></svg></div>
+            <p>Live scoring and automatic betting on every phone</p>
+          </div>
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15 8.5h-2.5a2.5 2.5 0 000 5h3a2.5 2.5 0 010 5H9"/></svg></div>
+            <p>Instant settlement, down to the dollar</p>
+          </div>
+          <div class="diff-item">
+            <div class="diff-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><rect x="6" y="14" width="4" height="2" rx=".5" fill="#b88a24" stroke="none"/><path d="M14 14h4"/></svg></div>
+            <p>One-tap Venmo links. Settle before the first drink.</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- FORMATS -->
-  <div class="formats-section reveal">
-    <div class="formats-inner">
-      <span class="section-label">Game Formats</span>
-      <h2>Twelve games. Run simultaneously.</h2>
-      <div class="section-rule"></div>
-      <div class="formats-cards" id="formatsCards">
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Nassau</span>
-              <span class="format-card-oneliner">Front nine, back nine, and overall.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">2-4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>The backbone of golf gambling. Three bets in one: front nine, back nine, and the overall 18. Press when you're down to double the action.</p>
-              <div class="format-best-for">Best for: Groups who want structured betting with escalation potential.</div>
-              <a href="/games/nassau/" class="format-guide-link">Read the full guide</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Skins</span>
-              <span class="format-card-oneliner">Win the hole outright, take the pot.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">2-8 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Lowest score on a hole wins the skin. Ties carry over, building massive pots on later holes.</p>
-              <div class="format-best-for">Best for: Large groups where any player can steal a hole.</div>
-              <a href="/games/skins/" class="format-guide-link">Read the full guide</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Wolf</span>
-              <span class="format-card-oneliner">Pick your partner each hole.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Rotating wolf chooses a partner after seeing each tee shot -- or goes Lone Wolf for double stakes.</p>
-              <div class="format-best-for">Best for: Groups who enjoy strategy and reading opponents.</div>
-              <a href="/games/wolf/" class="format-guide-link">Read the full guide</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Vegas</span>
-              <span class="format-card-oneliner">Team scores form a two-digit number.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Each team combines their scores into a two-digit number (lower score is tens digit). Difference in numbers equals points. Birdie flips the losing team's digits.</p>
-              <div class="format-best-for">Best for: Consistent partnerships who want volatile swings.</div>
-              <a href="/games/vegas/" class="format-guide-link">Read the full guide</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Stableford</span>
-              <span class="format-card-oneliner">Points for performance, not total strokes.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">2-8 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Score points for birdies and eagles, lose points for bogeys and worse. Rewards aggressive play and prevents blowup holes from ruining your round.</p>
-              <div class="format-best-for">Best for: Mixed-handicap groups.</div>
-              <a href="/games/stableford/" class="format-guide-link">Read the full guide</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Banker</span>
-              <span class="format-card-oneliner">Rotating banker sets the stakes.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">3-4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Each hole has a designated banker who plays against the field. Points are awarded based on performance vs par.</p>
-              <div class="format-best-for">Best for: Groups who want rotating pressure.</div>
-              <a href="/games/banker/" class="format-guide-link">Read the full guide</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Bloodsome</span>
-              <span class="format-card-oneliner">Opponents pick your ball.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Best drive, then the opposing team picks which ball your team plays. Alternate shot from there.</p>
-              <div class="format-best-for">Best for: Teams who enjoy strategic sabotage.</div>
-              <a href="/games/bloodsome/" class="format-guide-link">Read the full guide</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Match Play</span>
-              <span class="format-card-oneliner">Hole-by-hole head-to-head.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">2-4 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Win the hole, win the point. No total strokes -- just who played each hole better.</p>
-              <div class="format-best-for">Best for: Two players or two teams who want direct competition.</div>
-              <a href="/games/match-play/" class="format-guide-link">Read the full guide</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-              <a href="/demo/" class="format-guide-link" style="margin-left:12px;color:var(--gold)">See it in action →</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">3-Player 9s</span>
-              <span class="format-card-oneliner">9 points per hole, split three ways.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">3 players</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Every hole is worth 9 points. Best score gets 5, second gets 3, third gets 1. Ties split evenly. After 18 holes, the points tell the story.</p>
-              <div class="format-best-for">Best for: Threesomes who want every hole to matter.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-card">
-          <button class="format-card-header" onclick="toggleFormatCard(this)">
-            <span class="format-card-left">
-              <span class="format-card-name">Team Scramble</span>
-              <span class="format-card-oneliner">Best ball, one team score.</span>
-            </span>
-            <span class="format-card-right">
-              <span class="format-player-badge">Teams</span>
-              <span class="format-card-arrow">+</span>
-            </span>
-          </button>
-          <div class="format-card-body">
-            <div class="format-card-body-inner">
-              <p>Everyone hits, pick the best ball, everyone plays from there. One score per team per hole. Live leaderboard tracks the field.</p>
-              <div class="format-best-for">Best for: Outings, charity tournaments, and mixed-skill groups.</div>
-              <a href="/demo/" class="format-guide-link" style="color:var(--gold)">See it in action →</a>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <script>
-      function toggleFormatCard(btn) {
-        var card = btn.parentElement;
-        var container = document.getElementById('formatsCards');
-        var cards = container.querySelectorAll('.format-card');
-        var wasOpen = card.classList.contains('open');
-        for (var i = 0; i < cards.length; i++) {
-          cards[i].classList.remove('open');
-        }
-        if (!wasOpen) {
-          card.classList.add('open');
-        }
-      }
-      </script>
-    </div>
-  </div>
-
-  <!-- (Course Directory moved above Formats) -->
-
-  <!-- FINAL CTA -->
-  <div class="final-cta reveal">
-    <div class="final-cta-inner">
-      <h2>The trip is in six weeks.<br>Set it up today.</h2>
-      <p>One link. Every format. Automatic settlement.</p>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:24px">
-        <a href="/create/" style="display:inline-block;background:var(--gold);color:var(--forest);padding:18px 48px;border-radius:8px;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 4px 20px rgba(201,168,76,.35);letter-spacing:.04em">Create Your Outing</a>
-        <span style="font-size:12px;color:var(--muted);letter-spacing:.03em">Free for casual rounds &middot; No credit card required</span>
-      </div>
-      <div class="final-links">
-        <a href="/demo/">See It Live</a>
-        <a href="/overview/">Setup guide</a>
-        <a href="/games/">Game rules</a>
+  <section class="games reveal">
+    <div class="container">
+      <h2>Master Every Game</h2>
+      <div class="games-grid">
+        <a href="/games/nassau/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+          <h4>Nassau</h4>
+          <p>Front nine, back nine, overall. Automatic press tracking and payout calculations.</p>
+        </a>
+        <a href="/games/skins/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="18"/><path d="M15.5 8.5h-3a2.5 2.5 0 000 5h3a2.5 2.5 0 010 5h-7"/></svg></div>
+          <h4>Skins</h4>
+          <p>Win the hole outright, take the pot. Carry-overs build massive pots on later holes.</p>
+        </a>
+        <a href="/games/wolf/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M12 2L9 7l-5 1 3 5-2 6 7-3 7 3-2-6 3-5-5-1z"/></svg></div>
+          <h4>Wolf</h4>
+          <p>Rotating captain picks a partner or goes Lone Wolf for double stakes.</p>
+        </a>
+        <a href="/games/vegas/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/><path d="M7 15h3"/><circle cx="17" cy="15" r="2"/></svg></div>
+          <h4>Vegas</h4>
+          <p>Team scores form a two-digit number. Birdie flips the opponent's digits.</p>
+        </a>
+        <a href="/games/stableford/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <h4>Stableford</h4>
+          <p>Points for performance, not strokes. Rewards aggressive play over total.</p>
+        </a>
+        <a href="/games/banker/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/></svg></div>
+          <h4>Banker</h4>
+          <p>Rotating banker plays against the field each hole. Maximum pressure.</p>
+        </a>
+        <a href="/games/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><circle cx="12" cy="8" r="5"/><path d="M7 13l-2 8h14l-2-8"/><line x1="12" y1="3" x2="12" y2="13"/></svg></div>
+          <h4>3-Player 9s</h4>
+          <p>Nine points per hole, split three ways. Every hole matters for threesomes.</p>
+        </a>
+        <a href="/games/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+          <h4>Team Scramble</h4>
+          <p>Best ball, one team score. Live leaderboard across all teams.</p>
+        </a>
+        <a href="/games/match-play/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/><path d="M3 9h18"/><path d="M9 3v18"/></svg></div>
+          <h4>Stroke Play</h4>
+          <p>Total strokes, net of handicap. The classic format, automatically scored.</p>
+        </a>
+        <a href="/games/" class="game-card">
+          <div class="game-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#b88a24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#b88a24"/></svg></div>
+          <h4>Bingo Bango Bongo</h4>
+          <p>Three points per hole: first on, closest to pin, first to hole out.</p>
+        </a>
       </div>
     </div>
-  </div>
-  <script>
-  async function captureEmail(e) {
-    e.preventDefault();
-    var email = document.getElementById('email-input').value;
-    if (!email) return;
-    var btn = e.target.querySelector('button');
-    btn.textContent = '...';
-    btn.disabled = true;
-    try {
-      await fetch('/api/email-capture', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: email, source: 'landing_page', opted_in_newsletter: true})
+  </section>
+
+  <section class="no-math container reveal">
+    <div class="no-math-container">
+      <div class="no-math-content">
+        <h2>No Math at the 19th Hole</h2>
+        <p>Enjoy the 19th hole without the headache. Waggle handles all calculations automatically, ensuring fair and instant settlement. Focus on the camaraderie, not the calculator.</p>
+        <div class="no-math-features">
+          <div class="no-math-feature"><div class="no-math-dot"></div><span>Live P&amp;L across all games, updated hole by hole</span></div>
+          <div class="no-math-feature"><div class="no-math-dot"></div><span>Presses, carry-overs, and hammers computed to the cent</span></div>
+          <div class="no-math-feature"><div class="no-math-dot"></div><span>One-tap Venmo and Cash App deep links</span></div>
+        </div>
+        <a href="/create/" class="btn-gold">Create Your Outing</a>
+      </div>
+      <div class="no-math-mockup">
+        <div class="no-math-mockup-header">The Ledger</div>
+        <div class="settle-row"><span class="settle-name">Thomas</span><span class="settle-pos">+$85</span></div>
+        <div class="settle-row"><span class="settle-name">Walsh</span><span class="settle-pos">+$40</span></div>
+        <div class="settle-row"><span class="settle-name">Perkins</span><span class="settle-neg">-$55</span></div>
+        <div class="settle-row"><span class="settle-name">Reed</span><span class="settle-neg">-$70</span></div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(212,175,55,.15)">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Settlement</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px"><span style="color:#EF4444">Reed</span> pays <span style="color:#22C55E">Thomas</span> <strong style="color:#fff">$70</strong></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6)"><span style="color:#EF4444">Perkins</span> pays <span style="color:#22C55E">Walsh</span> <strong style="color:#fff">$40</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-section reveal">
+    <div class="how-inner">
+      <h2>Four Steps. Zero Math.</h2>
+      <div class="how-grid">
+        <div class="how-step"><div class="how-num">1</div><h4>Create your outing</h4><p>Pick games, set stakes, add players. Five minutes.</p></div>
+        <div class="how-step"><div class="how-num">2</div><h4>Share one link</h4><p>Drop it in the group chat. Every phone, no app.</p></div>
+        <div class="how-step"><div class="how-num">3</div><h4>Score hole by hole</h4><p>One person enters scores. All bets update live.</p></div>
+        <div class="how-step"><div class="how-num">4</div><h4>Settle instantly</h4><p>Who pays who. Venmo links. Screenshot. Done.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing reveal">
+    <h2>One Event. One Price.</h2>
+    <div class="pricing-rule"></div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-type">Casual Round</div>
+        <div class="price-amount" style="font-size:2.2rem">Free</div>
+        <div class="price-period">Always free, no account required</div>
+        <div class="price-details">
+          <span class="price-detail">All 12 game formats</span>
+          <span class="price-detail">Live scoring and game cards</span>
+          <span class="price-detail">Hole-by-hole scorecard</span>
+        </div>
+        <a href="/create/" class="price-cta">Start Free</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-type">Buddies Trip</div>
+        <div class="price-amount">$32</div>
+        <div class="price-period">Per event. $8/person for a foursome.</div>
+        <div class="price-details">
+          <span class="price-detail">GHIN handicap lookup</span>
+          <span class="price-detail">AI picks best format</span>
+          <span class="price-detail">Live odds every hole</span>
+          <span class="price-detail">Settlement card + Venmo links</span>
+        </div>
+        <a href="/create/" class="price-cta">Create Your Outing</a>
+      </div>
+      <div class="price-card">
+        <div class="price-type">Season Pass</div>
+        <div class="price-amount" style="font-size:clamp(32px,8vw,48px)">$149</div>
+        <div class="price-period">Per season. Unlimited events.</div>
+        <div class="price-details">
+          <span class="price-detail">Scramble leaderboard</span>
+          <span class="price-detail">CTP and longest drive</span>
+          <span class="price-detail">Member-guest brackets</span>
+          <span class="price-detail">Everything in Buddies Trip</span>
+        </div>
+        <a href="/create/?tier=season" class="price-cta">Set Up Your Season</a>
+      </div>
+    </div>
+
+    <div style="max-width:640px;margin:40px auto 0;text-align:left">
+      <h3 style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--green);margin-bottom:18px;text-align:center">Common Questions</h3>
+      <div class="faq-item" style="border-top:1px solid #ddd">
+        <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text-dark);min-height:56px">What counts as one outing?<span class="faq-arrow" style="font-size:18px;color:#999;transition:transform .2s;flex-shrink:0;margin-left:12px">+</span></button>
+        <div class="faq-answer"><p style="padding:0 0 16px;font-size:14px;color:#555;line-height:1.7">One outing covers your entire weekend. Unlimited rounds, all game formats, all players.</p></div>
+      </div>
+      <div class="faq-item" style="border-top:1px solid #ddd">
+        <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text-dark);min-height:56px">Do all players need to pay?<span class="faq-arrow" style="font-size:18px;color:#999;transition:transform .2s;flex-shrink:0;margin-left:12px">+</span></button>
+        <div class="faq-answer"><p style="padding:0 0 16px;font-size:14px;color:#555;line-height:1.7">No. One person pays $32 and sets up the outing. Everyone else joins free via a shared link.</p></div>
+      </div>
+      <div class="faq-item" style="border-top:1px solid #ddd">
+        <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text-dark);min-height:56px">How does settlement work?<span class="faq-arrow" style="font-size:18px;color:#999;transition:transform .2s;flex-shrink:0;margin-left:12px">+</span></button>
+        <div class="faq-answer"><p style="padding:0 0 16px;font-size:14px;color:#555;line-height:1.7">Waggle tracks every game, press, and carry-over in real time. At round end, it calculates net P&amp;L, minimizes transfers, and generates one-tap Venmo and Cash App links.</p></div>
+      </div>
+      <div class="faq-item" style="border-top:1px solid #ddd;border-bottom:1px solid #ddd">
+        <button style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text-dark);min-height:56px">Can I try it free first?<span class="faq-arrow" style="font-size:18px;color:#999;transition:transform .2s;flex-shrink:0;margin-left:12px">+</span></button>
+        <div class="faq-answer"><p style="padding:0 0 16px;font-size:14px;color:#555;line-height:1.7">Yes. Free rounds include all 12 game formats with live scoring. The paid tier adds GHIN lookup, AI pairings, live odds, and the settlement card.</p></div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('click', function(e) {
+        var item = e.target.closest('.faq-item'); if (!item) return;
+        if (e.target.closest('.faq-answer')) return;
+        e.preventDefault(); var wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(function(i) { i.classList.remove('open'); });
+        if (!wasOpen) item.classList.add('open');
       });
-      document.getElementById('email-input').value = '';
-      document.getElementById('email-input').placeholder = 'You are in! Check your email.';
-      document.getElementById('email-input').disabled = true;
-      btn.textContent = 'Sent';
-    } catch(err) {
-      btn.textContent = 'Create Your Outing';
-      btn.disabled = false;
-    }
-  }
-  </script>
+    </script>
+  </section>
 
-  <!-- FOOTER -->
-  <footer style="background:var(--forest);padding:56px 24px 36px;text-align:center;border-top:1px solid rgba(201,168,76,.2)">
-    <div style="max-width:640px;margin:0 auto">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px">Waggle</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px">The sportsbook for your golf trip.</div>
-      <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
-        <a href="/demo/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">See It Live</a>
-        <a href="/create/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Create Your Outing</a>
-        <a href="/courses/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Find a Course</a>
-        <a href="/games/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Game Guides</a>
-        <a href="/overview/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">GM Guide</a>
-        <a href="/affiliates/" style="color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600">Affiliates</a>
+  <div class="final-cta">
+    <h2>The trip is in six weeks. Set it up today.</h2>
+    <p>One link. Every format. Automatic settlement.</p>
+    <a href="/create/" class="btn-gold" style="font-size:15px">Create Your Outing</a>
+    <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.35)">Free for casual rounds. No credit card required.</div>
+  </div>
+
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">Waggle</div>
+        <div class="footer-tagline">The sportsbook for your golf trip.</div>
       </div>
-      <div style="width:48px;height:2px;background:var(--gold);opacity:.3;margin:0 auto 20px"></div>
-      <p style="font-size:11px;color:var(--muted);margin:0">Waggle by Cafecito AI</p>
+      <div class="footer-links">
+        <a href="/demo/">Demo</a>
+        <a href="/games/">Game Guides</a>
+        <a href="/create/">Create Outing</a>
+        <a href="/overview/">GM Guide</a>
+        <a href="/courses/">Courses</a>
+        <a href="/affiliates/">Affiliates</a>
+      </div>
     </div>
+    <div class="footer-bottom">Waggle by Cafecito AI</div>
   </footer>
 
   <script>
-    // Capture UTM and ref params for attribution tracking
-    (function() {
-      const p = new URLSearchParams(window.location.search);
-      const src = {};
-      ['utm_source','utm_medium','utm_campaign','utm_content','ref'].forEach(function(k) {
-        if (p.get(k)) src[k] = p.get(k);
-      });
-      if (Object.keys(src).length) {
-        try { sessionStorage.setItem('waggle_source', JSON.stringify(src)); } catch(e) {}
-      }
-    })();
-  </script>
-
-  <script>
-    // Scroll-triggered entrance animations
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      var io = new IntersectionObserver(function(entries) {
-        entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-      }, { threshold: 0.15 });
+      var io = new IntersectionObserver(function(entries) { entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } }); }, { threshold: 0.15 });
       document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
-    } else {
-      document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
-    }
+    } else { document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); }); }
   </script>
-
+  <script>
+    (function() { var p = new URLSearchParams(window.location.search); var src = {}; ['utm_source','utm_medium','utm_campaign','ref'].forEach(function(k) { if (p.get(k)) src[k] = p.get(k); }); if (Object.keys(src).length) { try { sessionStorage.setItem('waggle_source', JSON.stringify(src)); } catch(e) {} } })();
+  </script>
 </body>
 </html>

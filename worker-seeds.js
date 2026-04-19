@@ -715,81 +715,219 @@ async function seedMastersMG(env) {
   const existing = await env.MG_BOOK.get(KEY);
   if (existing) return { seeded: false };
 
-  const players = [
-    { name: 'Rory McIlroy', handicapIndex: 0.5 },
-    { name: 'Brooks Koepka', handicapIndex: 1.2 },
-    { name: 'Dustin Johnson', handicapIndex: 0.8 },
-    { name: 'Bryson DeChambeau', handicapIndex: 1.0 },
-    { name: 'Justin Thomas', handicapIndex: 0.7 },
-    { name: 'Xander Schauffele', handicapIndex: 0.4 },
-    { name: 'Scottie Scheffler', handicapIndex: 0.2 },
-    { name: 'Jon Rahm', handicapIndex: 0.6 }
-  ];
+  // 24 teams, 4 flights of 6, round-robin 5 rounds
+  const teams = {
+    // Flight A — Championship (low combined HI)
+    '1':  { member: 'Scottie Scheffler', guest: 'Sam Burns',       memberHI: 0.2, guestHI: 1.5, combined: 1.7, flight: 'A' },
+    '2':  { member: 'Xander Schauffele',  guest: 'Tony Finau',     memberHI: 0.4, guestHI: 2.0, combined: 2.4, flight: 'A' },
+    '3':  { member: 'Jon Rahm',           guest: 'Viktor Hovland', memberHI: 0.6, guestHI: 1.8, combined: 2.4, flight: 'A' },
+    '4':  { member: 'Rory McIlroy',       guest: 'Shane Lowry',    memberHI: 0.5, guestHI: 2.2, combined: 2.7, flight: 'A' },
+    '5':  { member: 'Patrick Cantlay',    guest: 'Max Homa',       memberHI: 0.8, guestHI: 2.1, combined: 2.9, flight: 'A' },
+    '6':  { member: 'Justin Thomas',      guest: 'Jordan Spieth',  memberHI: 0.7, guestHI: 1.9, combined: 2.6, flight: 'A' },
+    // Flight B — First Flight
+    '7':  { member: 'Brooks Koepka',      guest: 'Bryson DeChambeau', memberHI: 1.2, guestHI: 3.5, combined: 4.7, flight: 'B' },
+    '8':  { member: 'Dustin Johnson',     guest: 'Phil Mickelson',    memberHI: 0.8, guestHI: 4.2, combined: 5.0, flight: 'B' },
+    '9':  { member: 'Hideki Matsuyama',   guest: 'Adam Scott',        memberHI: 1.0, guestHI: 3.8, combined: 4.8, flight: 'B' },
+    '10': { member: 'Cameron Smith',      guest: 'Marc Leishman',     memberHI: 1.4, guestHI: 4.0, combined: 5.4, flight: 'B' },
+    '11': { member: 'Rickie Fowler',      guest: 'Kevin Kisner',      memberHI: 2.0, guestHI: 3.2, combined: 5.2, flight: 'B' },
+    '12': { member: 'Tommy Fleetwood',    guest: 'Matt Fitzpatrick',  memberHI: 1.6, guestHI: 3.0, combined: 4.6, flight: 'B' },
+    // Flight C — Second Flight
+    '13': { member: 'Keegan Bradley',     guest: 'Zach Johnson',      memberHI: 2.5, guestHI: 5.0, combined: 7.5, flight: 'C' },
+    '14': { member: 'Jason Day',          guest: 'Charl Schwartzel',  memberHI: 3.0, guestHI: 5.5, combined: 8.5, flight: 'C' },
+    '15': { member: 'Bubba Watson',       guest: 'Webb Simpson',      memberHI: 2.8, guestHI: 5.2, combined: 8.0, flight: 'C' },
+    '16': { member: 'Fred Couples',       guest: 'Davis Love III',    memberHI: 4.0, guestHI: 6.0, combined: 10.0, flight: 'C' },
+    '17': { member: 'Vijay Singh',        guest: 'Retief Goosen',     memberHI: 3.5, guestHI: 5.8, combined: 9.3, flight: 'C' },
+    '18': { member: 'Lee Westwood',       guest: 'Ian Poulter',       memberHI: 3.2, guestHI: 5.4, combined: 8.6, flight: 'C' },
+    // Flight D — Third Flight (highest combined)
+    '19': { member: 'Charles Barkley',    guest: 'Michael Jordan',    memberHI: 12.0, guestHI: 5.0, combined: 17.0, flight: 'D' },
+    '20': { member: 'Bill Murray',        guest: 'Justin Timberlake', memberHI: 9.0,  guestHI: 8.5, combined: 17.5, flight: 'D' },
+    '21': { member: 'Tony Romo',          guest: 'Peyton Manning',    memberHI: 1.5,  guestHI: 6.0, combined: 7.5, flight: 'D' },
+    '22': { member: 'Mark Wahlberg',      guest: 'Chris Pratt',       memberHI: 8.0,  guestHI: 10.2, combined: 18.2, flight: 'D' },
+    '23': { member: 'Tom Brady',          guest: 'Aaron Rodgers',     memberHI: 6.5,  guestHI: 7.0, combined: 13.5, flight: 'D' },
+    '24': { member: 'Derek Jeter',        guest: 'Ken Griffey Jr',    memberHI: 7.0,  guestHI: 9.0, combined: 16.0, flight: 'D' },
+  };
+
+  const flights = {
+    'A': { name: 'Championship Flight', teamIds: ['1','2','3','4','5','6'], tees: 'Tournament' },
+    'B': { name: 'First Flight',        teamIds: ['7','8','9','10','11','12'], tees: 'Blue' },
+    'C': { name: 'Second Flight',       teamIds: ['13','14','15','16','17','18'], tees: 'Blue' },
+    'D': { name: 'Celebrity Flight',    teamIds: ['19','20','21','22','23','24'], tees: 'White' },
+  };
+  const flightOrder = ['A', 'B', 'C', 'D'];
+
+  // Round-robin: 6 teams = 5 rounds, 3 matches per round
+  function roundRobin(teamIds) {
+    const n = teamIds.length; // 6
+    const rounds = {};
+    const ids = [...teamIds];
+    for (let r = 1; r <= n - 1; r++) {
+      const pairs = [];
+      for (let i = 0; i < n / 2; i++) {
+        pairs.push([ids[i], ids[n - 1 - i]]);
+      }
+      rounds[r] = pairs;
+      // Rotate: fix first, shift rest
+      const last = ids.pop();
+      ids.splice(1, 0, last);
+    }
+    return rounds;
+  }
+
+  const pairings = {};
+  for (const fId of flightOrder) {
+    pairings[fId] = roundRobin(flights[fId].teamIds);
+  }
+
+  // Build player list from teams
+  const players = [];
+  for (const t of Object.values(teams)) {
+    players.push({ name: t.member, handicapIndex: t.memberHI });
+    players.push({ name: t.guest, handicapIndex: t.guestHI });
+  }
+
   const pars = [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4]; // Augusta National par 72
 
   const config = {
-    event: { name: 'The Masters Member-Guest', shortName: 'Masters M-G', eventType: 'buddies_trip', course: 'Augusta National Golf Club', currentRound: 1, venue: 'Augusta National Golf Club', slug },
-    players: players,
+    event: {
+      name: 'The Masters Member-Guest',
+      shortName: 'Masters M-G',
+      eventType: 'member_guest',
+      course: 'Augusta National Golf Club',
+      currentRound: 4,
+      venue: 'Augusta National Golf Club',
+      slug,
+    },
+    teams,
+    flights,
+    flightOrder,
+    pairings,
+    players,
     roster: players,
-    games: { nassau: true, skins: true, match_play: true },
-    structure: { nassauBet: '100', skinsBet: '50', autoPress: { enabled: true, threshold: 2 } },
+    games: { match_play: true },
+    structure: {
+      roundsTotal: 5,
+      matchPlayBet: 50,
+      roundDays: { 1: 'Day 1', 2: 'Day 1', 3: 'Day 2', 4: 'Day 2', 5: 'Day 2' },
+      roundTimes: { 1: '8:00 AM', 2: '1:00 PM', 3: '8:00 AM', 4: '1:00 PM', 5: '3:00 PM' },
+    },
     holesPerRound: 18,
-    course: { name: 'Augusta National Golf Club', pars: pars, tees: 'Tournament' },
-    rounds: { '1': { course: 'Augusta National Golf Club', tees: 'Tournament' } },
-    wolfOrder: players.map(p => p.name),
-    adminPin: randomPin()
+    course: { name: 'Augusta National Golf Club', pars, tees: 'Tournament' },
+    rounds: {
+      '1': { course: 'Augusta National', tees: 'Tournament' },
+      '2': { course: 'Augusta National', tees: 'Tournament' },
+      '3': { course: 'Augusta National', tees: 'Tournament' },
+      '4': { course: 'Augusta National', tees: 'Tournament' },
+      '5': { course: 'Augusta National', tees: 'Tournament' },
+    },
+    adminPin: randomPin(),
   };
+
   await env.MG_BOOK.put(KEY, JSON.stringify(config));
 
-  // 10 holes scored — Scottie leads, tight race
-  const scoreData = {
-    1:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 4, 'Justin Thomas': 4, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
-    2:  { 'Rory McIlroy': 5, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 5 },
-    3:  { 'Rory McIlroy': 4, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 3, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
-    4:  { 'Rory McIlroy': 3, 'Brooks Koepka': 3, 'Dustin Johnson': 3, 'Bryson DeChambeau': 4, 'Justin Thomas': 3, 'Xander Schauffele': 2, 'Scottie Scheffler': 2, 'Jon Rahm': 3 },
-    5:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
-    6:  { 'Rory McIlroy': 3, 'Brooks Koepka': 3, 'Dustin Johnson': 4, 'Bryson DeChambeau': 3, 'Justin Thomas': 3, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 3 },
-    7:  { 'Rory McIlroy': 4, 'Brooks Koepka': 5, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 3, 'Jon Rahm': 4 },
-    8:  { 'Rory McIlroy': 5, 'Brooks Koepka': 6, 'Dustin Johnson': 5, 'Bryson DeChambeau': 5, 'Justin Thomas': 5, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 5 },
-    9:  { 'Rory McIlroy': 4, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 5, 'Justin Thomas': 4, 'Xander Schauffele': 4, 'Scottie Scheffler': 4, 'Jon Rahm': 4 },
-    10: { 'Rory McIlroy': 3, 'Brooks Koepka': 4, 'Dustin Johnson': 4, 'Bryson DeChambeau': 4, 'Justin Thomas': 4, 'Xander Schauffele': 3, 'Scottie Scheffler': 3, 'Jon Rahm': 3 },
+  // Seed match scores for rounds 1-3 (complete) and part of round 4 (in progress)
+  // Score format: { matchId: { scoreA, scoreB, status } }
+  // Cap rule: max 7-3 split, always sums to 10
+  const scores = {};
+
+  // Helper: generate a plausible match result (sums to 10, cap 7-3)
+  function matchResult() {
+    const outcomes = [[7,3],[6,4],[5,5],[4,6],[3,7]];
+    return outcomes[Math.floor(Math.random() * outcomes.length)];
+  }
+
+  // Seed deterministic scores for a compelling storyline
+  // Flight A: Scottie/Burns lead, Rahm/Hovland close behind
+  const flightAScores = {
+    'A-R1-P1': [7,3], 'A-R1-P2': [5,5], 'A-R1-P3': [6,4],  // R1
+    'A-R2-P1': [6,4], 'A-R2-P2': [4,6], 'A-R2-P3': [7,3],  // R2
+    'A-R3-P1': [5,5], 'A-R3-P2': [6,4], 'A-R3-P3': [5,5],  // R3
+    'A-R4-P1': [6,4], 'A-R4-P2': [7,3],                      // R4 (2 of 3 done)
   };
-  const completeScores = buildFullStrokeScores(scoreData, players.map(p => p.name), pars);
+  // Flight B: Fleetwood/Fitzpatrick lead, tight 3-way race
+  const flightBScores = {
+    'B-R1-P1': [5,5], 'B-R1-P2': [7,3], 'B-R1-P3': [4,6],
+    'B-R2-P1': [6,4], 'B-R2-P2': [5,5], 'B-R2-P3': [6,4],
+    'B-R3-P1': [3,7], 'B-R3-P2': [6,4], 'B-R3-P3': [5,5],
+    'B-R4-P1': [5,5],
+  };
+  // Flight C: Couples/Love surprise leaders
+  const flightCScores = {
+    'C-R1-P1': [4,6], 'C-R1-P2': [6,4], 'C-R1-P3': [7,3],
+    'C-R2-P1': [5,5], 'C-R2-P2': [7,3], 'C-R2-P3': [4,6],
+    'C-R3-P1': [6,4], 'C-R3-P2': [5,5], 'C-R3-P3': [6,4],
+    'C-R4-P1': [7,3], 'C-R4-P2': [4,6],
+  };
+  // Flight D: Brady/Rodgers crushing it, Romo/Manning close
+  const flightDScores = {
+    'D-R1-P1': [3,7], 'D-R1-P2': [5,5], 'D-R1-P3': [6,4],
+    'D-R2-P1': [7,3], 'D-R2-P2': [6,4], 'D-R2-P3': [4,6],
+    'D-R3-P1': [5,5], 'D-R3-P2': [7,3], 'D-R3-P3': [5,5],
+    'D-R4-P1': [6,4],
+  };
 
-  const holes = {};
-  for (const [h, s] of Object.entries(completeScores)) {
-    holes[h] = { scores: s, timestamp: Date.now() - (pars.length - parseInt(h, 10)) * 600000 };
+  const allScores = { ...flightAScores, ...flightBScores, ...flightCScores, ...flightDScores };
+  for (const [matchId, [a, b]] of Object.entries(allScores)) {
+    scores[matchId] = { scoreA: a, scoreB: b, status: 'final' };
   }
-  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify(holes));
 
-  // Compute skins
-  const skinsBet = 50;
-  const numPlayers = 8;
-  const gameState = { skins: { history: [], pot: 1 } };
-  for (let h = 1; h <= pars.length; h++) {
-    const hScores = completeScores[h];
-    const entries = players.map(p => ({ name: p.name, score: hScores[p.name] }));
-    const minScore = Math.min(...entries.map(e => e.score));
-    const winners = entries.filter(e => e.score === minScore);
-    if (winners.length === 1) {
-      gameState.skins.history.push({ hole: h, winner: winners[0].name, pot: gameState.skins.pot, value: gameState.skins.pot * (numPlayers - 1) * skinsBet });
-      gameState.skins.pot = 1;
-    } else {
-      gameState.skins.history.push({ hole: h, winner: null, pot: gameState.skins.pot, carry: true });
-      gameState.skins.pot++;
-    }
+  // Mark some R4 matches as "live" so the dashboard shows live action
+  // (the unscored R4 matches remain as generated with status "scheduled")
+  // The last scored match in each flight's R4 → make it "live" instead of "final"
+  const liveMatches = ['A-R4-P3', 'B-R4-P2', 'B-R4-P3', 'C-R4-P3', 'D-R4-P2', 'D-R4-P3'];
+  for (const mid of liveMatches) {
+    // These are in-progress: partial scores visible
+    scores[mid] = { scoreA: 5, scoreB: 5, status: 'live' };
   }
-  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify(gameState));
 
+  await env.MG_BOOK.put(`${slug}:scores`, JSON.stringify(scores));
+
+  // Clear any stale data from previous seed format
+  await env.MG_BOOK.put(`${slug}:holes`, JSON.stringify({}));
+  await env.MG_BOOK.put(`${slug}:game-state`, JSON.stringify({}));
+
+  // Seed demo bets so Bet/My Bets tabs show content
+  const demoBets = [
+    { id: 'bet-1', bettor: 'Rory McIlroy', matchId: 'A-R4-P1', side: '1', amount: 50, odds: -150, status: 'active', ts: Date.now() - 3600000 },
+    { id: 'bet-2', bettor: 'Phil Mickelson', matchId: 'B-R4-P2', side: '11', amount: 25, odds: 130, status: 'active', ts: Date.now() - 7200000 },
+    { id: 'bet-3', bettor: 'Tom Brady', matchId: 'D-R4-P2', side: '23', amount: 100, odds: -200, status: 'active', ts: Date.now() - 1800000 },
+    { id: 'bet-4', bettor: 'Justin Thomas', matchId: 'A-R5-P2', side: '3', amount: 75, odds: 110, status: 'pending', ts: Date.now() - 900000 },
+    { id: 'bet-5', bettor: 'Michael Jordan', matchId: 'D-R5-P1', side: '19', amount: 200, odds: 250, status: 'pending', ts: Date.now() - 600000 },
+    { id: 'bet-6', bettor: 'Fred Couples', matchId: 'C-R5-P1', side: '16', amount: 50, odds: -120, status: 'pending', ts: Date.now() - 300000 },
+  ];
+  await env.MG_BOOK.put(`${slug}:bets`, JSON.stringify(demoBets));
+
+  // Seed player credits
+  const playerCredits = {};
+  for (const t of Object.values(teams)) {
+    playerCredits[t.member] = { name: t.member, credits: 500, handicap: t.memberHI };
+    playerCredits[t.guest] = { name: t.guest, credits: 500, handicap: t.guestHI };
+  }
+  await env.MG_BOOK.put(`${slug}:players`, JSON.stringify(playerCredits));
+
+  // Activity feed
   const feed = [
-    { ts: Date.now() - 30000, type: 'score', text: 'Scottie birdies #7. Four under through 10. Running away with it.', player: 'Scottie Scheffler' },
-    { ts: Date.now() - 60000, type: 'score', text: 'Xander aces the par-3 4th! Skin won — $350 pot.', player: 'Xander Schauffele' },
-    { ts: Date.now() - 90000, type: 'chirp', text: 'Brooks and Bryson both at +4. The rivalry continues... at the bottom of the board.', player: 'System' },
-    { ts: Date.now() - 120000, type: 'score', text: 'Rory birdies #10 to move to -1. Closing in on Scottie.', player: 'Rory McIlroy' },
-    { ts: Date.now() - 150000, type: 'score', text: 'JT cards a tidy 3 on the par-4 3rd. Tied for 3rd.', player: 'Justin Thomas' },
-    { ts: Date.now() - 180000, type: 'chirp', text: '$50 skins with 8 players. The pot carries are getting dangerous.', player: 'System' },
+    { ts: Date.now() - 5000,   type: 'bet',   text: 'Michael Jordan drops $200 on Barkley/Jordan to win Flight D. Bold.', player: 'Michael Jordan' },
+    { ts: Date.now() - 15000,  type: 'score', text: 'Scheffler/Burns 7-3 over McIlroy/Lowry in R4. Championship flight leader extending.', player: 'System' },
+    { ts: Date.now() - 30000,  type: 'score', text: 'Brady/Rodgers 6-4 in Celebrity Flight R4. They keep stacking points.', player: 'System' },
+    { ts: Date.now() - 60000,  type: 'bet',   text: 'Tom Brady bets $100 on himself. Naturally.', player: 'Tom Brady' },
+    { ts: Date.now() - 90000,  type: 'chirp', text: 'Couples and Love lead Second Flight. Augusta royalty still has game.', player: 'System' },
+    { ts: Date.now() - 120000, type: 'score', text: 'Fleetwood/Fitzpatrick halve 5-5 with Koepka/DeChambeau. First Flight dead heat.', player: 'System' },
+    { ts: Date.now() - 180000, type: 'chirp', text: 'Barkley three-putted from 4 feet on Amen Corner. Murray could not watch.', player: 'System' },
+    { ts: Date.now() - 240000, type: 'score', text: 'Rahm/Hovland 6-4 in R3. One point behind Scheffler in Championship Flight.', player: 'System' },
+    { ts: Date.now() - 300000, type: 'chirp', text: '42 of 60 matches complete. Round 5 is going to decide everything.', player: 'System' },
+    { ts: Date.now() - 360000, type: 'bet',   text: 'Rory puts $50 on Scheffler/Burns to take Championship. Hedging against himself.', player: 'Rory McIlroy' },
   ];
   await env.MG_BOOK.put(`${slug}:feed`, JSON.stringify(feed));
+
+  // Settings with announcements
+  const settings = {
+    announcements: [
+      'Round 4 in progress. Round 5 tee times at 3:00 PM. Dinner at the clubhouse at 7:00.',
+    ],
+    lockedMatches: [],
+    oddsOverrides: {},
+  };
+  await env.MG_BOOK.put(`${slug}:settings`, JSON.stringify(settings));
 
   return { seeded: true };
 }
