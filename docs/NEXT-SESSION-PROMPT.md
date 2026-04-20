@@ -12,6 +12,14 @@ Important framing:
   - tournament / member-guest
 
 ## What Shipped In The Last Pass
+- `index.html`, `brand-mark.svg`, `og-card-home.svg`, `app/og-image.svg`, `share/og-share.svg`, `app/index.html`
+  Homepage / brand pass shipped:
+  - new premium clubhouse hero image in `app/assets/home-hero-clubhouse-plate.png`
+  - new code-native BetWaggle brand mark
+  - refreshed homepage metadata + root mobile share image
+  - refreshed app/share OG cards
+  - app header now uses the new SVG mark instead of the old raster logo
+
 - `app/js/views.js`, `app/js/app.js`, `app/js/sync.js`, `worker.js`, `worker-seeds.js`
   Phase 3 — Scramble Score-Entry + Side-Game Workflow shipped:
   - inline CTP / LD panel inside `renderScrambleScoreEntry` (team chips + Defer + Clear + post-hole Commit)
@@ -67,6 +75,9 @@ Important framing:
 - `Premium: 93%`
 
 ## What Improved
+- Homepage now feels materially more premium and less like an old stock-photo landing page.
+- Brand is sharper on both the homepage and app shell.
+- Root mobile share previews now align with the premium product direction.
 - The scramble board feels more like a premium destination and less like a prototype stack.
 - Purse, pressure, and side-game state are readable much earlier on mobile.
 - The broken invite/hero image state is fixed because the missing art is now live.
@@ -75,6 +86,7 @@ Important framing:
 - The repo now has targeted mobile validation for scramble settlement and share-card composition.
 
 ## What Still Feels Weak
+- Older low-priority surfaces still reference `logo.jpg`; the top-level brand surfaces are fixed, but cleanup is not exhaustive.
 - Real-device outdoor validation still missing for the side-game chip flow (tap target + glare read).
 - Commissioner "Resolve" button on the board currently routes to the scorecard — a modal-less inline resolver directly on the rail would save a tap.
 - Augusta-scramble demo data only picks up the new seed once the existing KV config is wiped; live Augusta still shows zero CTP/LD until a re-seed or manual admin side-game POST.
@@ -106,6 +118,7 @@ Do this in order:
 
 ## Image Asset State
 - Already live:
+  - `/home/eratner/betwaggle/app/assets/home-hero-clubhouse-plate.png`
   - `/home/eratner/betwaggle/app/assets/invite-launch-plate.png`
   - `/home/eratner/betwaggle/app/assets/scorecard-atmosphere-plate-v3.png`
   - `/home/eratner/betwaggle/app/assets/settlement-ornament-v3.png`
@@ -155,7 +168,13 @@ Do this in order:
 ## Last Pass Verification
 - `wrangler deploy`
   Production updated successfully on `2026-04-19`
+- Homepage verification:
+  - `https://betwaggle.com/?v=brandpass2` mobile Playwright check ✅
+  - `/brand-mark.svg` returns `200` ✅
+  - `/og-card-home.svg` returns `200` ✅
+  - `/app/assets/home-hero-clubhouse-plate.png` returns `200` ✅
 - Asset URLs verified live:
+  - `home-hero-clubhouse-plate.png`
   - `invite-launch-plate.png`
   - `scorecard-atmosphere-plate-v3.png`
   - `settlement-ornament-v3.png`

@@ -15,6 +15,7 @@
 
 ### What Is Already True
 - Production is deployed from this repo.
+- Homepage now has a premium clubhouse hero image, a code-native BetWaggle mark, and updated root/mobile share art.
 - Route guards and checkout fallbacks are working.
 - Create flow has a stronger default path and deep-links into scoring.
 - Post-create launch now lands on a premium invite suite instead of a utility card stack.
@@ -49,6 +50,9 @@
 ### P1 — Premium Product Pass
 
 #### 1. Image Integration
+- [x] Ship a premium homepage hero image and wire it into the landing page.
+- [x] Replace the raster homepage logo treatment with a code-native SVG brand mark.
+- [x] Replace the stale root mobile share image with a premium SVG share card.
 - [x] Wire `app/assets/trip-shell-hero-plate.png` / `trip-shell-hero-plate-v2.png` into the trip hero and create launch suite.
 - [x] Ship `app/assets/invite-launch-plate.png`, `app/assets/scorecard-atmosphere-plate-v3.png`, and `app/assets/settlement-ornament-v3.png` to production so referenced premium art no longer breaks.
 - [ ] Wire `app/assets/scorecard-atmosphere-plate.png` into live scoring surfaces.
@@ -225,6 +229,25 @@
 - Next pass should attack:
   - phase 3 scramble score-entry + side-game capture
   - then tighter payout phrasing / export polish if settlement still feels short of 100%
+
+### Apr 19 Pass Notes — Homepage / Brand
+- Shipped:
+  - new premium homepage hero image in `app/assets/home-hero-clubhouse-plate.png`
+  - new code-native brand mark in `brand-mark.svg`
+  - refreshed root/mobile share card in `og-card-home.svg`
+  - refreshed app/share OG cards in `app/og-image.svg` and `share/og-share.svg`
+  - homepage now uses the new BetWaggle wordmark + updated metadata in `index.html`
+  - app header now uses the new brand mark in `app/index.html`
+- Improved:
+  - homepage no longer feels like an old marketing shell with a stock golf background
+  - logo is sharper and more intentional on both the homepage and app shell
+  - mobile share previews are more premium and on-brand
+- Still weak:
+  - broader app-wide `logo.jpg` references still exist in older secondary surfaces
+  - the homepage below-the-fold sections are still older copy/layout, even though the hero is now stronger
+- Next pass should attack:
+  - scramble side-game score-entry workflow first
+  - then broader brand cleanup of remaining `logo.jpg` references if needed
 - Still weak:
   - scramble score entry still needs the real phase-3 side-game workflow
   - scramble settlement still needs the real phase-4 ceremony and share layer

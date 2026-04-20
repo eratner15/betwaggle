@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="homeCardOverlay" x1="86" y1="68" x2="594" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E2340" stop-opacity=".96"/>
+      <stop offset="1" stop-color="#132D4E" stop-opacity=".90"/>
+    </linearGradient>
+    <linearGradient id="homeCardGold" x1="90" y1="94" x2="488" y2="438" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E3C472"/>
+      <stop offset="1" stop-color="#B78326"/>
+    </linearGradient>
+    <clipPath id="homeCardPhotoClip">
+      <rect x="0" y="0" width="1200" height="630" rx="0"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="630" fill="#F5EFE4"/>
+  <g clip-path="url(#homeCardPhotoClip)">
+    <image href="https://betwaggle.com/app/assets/home-hero-clubhouse-plate.png" x="0" y="0" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+  <rect width="1200" height="630" fill="#071527" fill-opacity=".28"/>
+
+  <rect x="68" y="64" width="540" height="502" rx="34" fill="url(#homeCardOverlay)"/>
+  <rect x="92" y="88" width="492" height="454" rx="26" stroke="url(#homeCardGold)" stroke-opacity=".34" stroke-width="1.5"/>
+
+  <rect x="106" y="104" width="66" height="66" rx="18" fill="#FCF9F4"/>
+  <rect x="114" y="112" width="50" height="50" rx="14" fill="#0F2948"/>
+  <path d="M126 146L132 124L139 141L146 124L152 146" stroke="#D7B465" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M146 117V133" stroke="#D7B465" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M148 118L158 123L148 128V118Z" fill="#D7B465"/>
+
+  <text x="194" y="132" fill="#CDA14E" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="2.4">BETWAGGLE</text>
+  <text x="194" y="158" fill="#F7F1E4" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="1.2">THE LIVE BOOK FOR GOLF GROUPS</text>
+
+  <text x="106" y="254" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="700">Run the trip</text>
+  <text x="106" y="326" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="66" font-weight="700">like it matters.</text>
+
+  <text x="106" y="384" fill="#E8DDCA" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Live scoring, side games, settlement, and</text>
+  <text x="106" y="418" fill="#E8DDCA" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">a share-worthy board on every phone.</text>
+
+  <rect x="106" y="458" width="128" height="38" rx="19" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="170" y="483" fill="#FCF9F4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">NO APP</text>
+  <rect x="248" y="458" width="170" height="38" rx="19" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="333" y="483" fill="#FCF9F4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">AUTO SETTLEMENT</text>
+  <rect x="432" y="458" width="132" height="38" rx="19" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="498" y="483" fill="#FCF9F4" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">EVERY PHONE</text>
+
+  <rect x="840" y="82" width="264" height="158" rx="28" fill="#FCF9F4" fill-opacity=".92"/>
+  <text x="872" y="126" fill="#A97923" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.8">WHY PEOPLE SHARE IT</text>
+  <text x="872" y="166" fill="#0F2948" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700">The board feels</text>
+  <text x="872" y="201" fill="#0F2948" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700">expensive on mobile.</text>
+  <text x="872" y="230" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="500">Clean enough for outdoor glare.</text>
+
+  <rect x="814" y="382" width="314" height="162" rx="28" fill="#FCF9F4" fill-opacity=".92"/>
+  <text x="846" y="426" fill="#A97923" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.8">WHAT IT REPLACES</text>
+  <text x="846" y="466" fill="#0F2948" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700">No scorecard math.</text>
+  <text x="846" y="500" fill="#0F2948" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700">No payment debates.</text>
+  <text x="846" y="528" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="500">betwaggle.com</text>
+</svg>

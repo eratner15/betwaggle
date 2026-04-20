@@ -1,32 +1,51 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0D2818"/>
-      <stop offset="60%" stop-color="#1A472A"/>
-      <stop offset="100%" stop-color="#2D6A3E"/>
+    <linearGradient id="shareBg" x1="72" y1="60" x2="1128" y2="570" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102947"/>
+      <stop offset="1" stop-color="#163D64"/>
+    </linearGradient>
+    <linearGradient id="shareGold" x1="94" y1="94" x2="520" y2="502" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E3C472"/>
+      <stop offset="1" stop-color="#A97923"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <!-- Gold accent line -->
-  <rect x="0" y="620" width="1200" height="10" fill="#D4AF37"/>
-  <!-- Badge -->
-  <rect x="460" y="140" width="280" height="34" rx="17" fill="rgba(212,175,55,0.15)"/>
-  <text x="600" y="163" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5" fill="#D4AF37">GOLF'S SPORTSBOOK</text>
-  <!-- Title -->
-  <text x="600" y="245" text-anchor="middle" font-family="Georgia,Playfair Display,serif" font-size="52" font-weight="700" fill="#FFFFFF">Turn Your Golf Trip</text>
-  <text x="600" y="305" text-anchor="middle" font-family="Georgia,Playfair Display,serif" font-size="52" font-weight="700" fill="#FFFFFF">Into a Real Sportsbook</text>
-  <!-- Subtitle -->
-  <text x="600" y="370" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.6)">Live odds  ·  Real-time scores  ·  Automatic settlement</text>
-  <!-- Pill features -->
-  <rect x="265" y="420" width="130" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
-  <text x="330" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">No App</text>
-  <rect x="415" y="420" width="150" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
-  <text x="490" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">12 Games</text>
-  <rect x="585" y="420" width="150" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
-  <text x="660" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">Every Phone</text>
-  <rect x="755" y="420" width="180" height="36" rx="18" fill="rgba(255,255,255,0.08)"/>
-  <text x="845" y="443" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="rgba(255,255,255,0.7)">Auto Settlement</text>
-  <!-- Bottom branding -->
-  <text x="600" y="545" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="3" fill="#D4AF37">WAGGLE</text>
-  <text x="600" y="572" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="14" fill="rgba(255,255,255,0.4)">betwaggle.com/share</text>
+
+  <rect width="1200" height="630" fill="#F5EFE4"/>
+  <image href="https://betwaggle.com/app/assets/share-card-hero-plate.png" x="0" y="0" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="1200" height="630" fill="#071527" fill-opacity=".24"/>
+
+  <rect x="72" y="60" width="1056" height="510" rx="38" fill="url(#shareBg)" fill-opacity=".92"/>
+  <rect x="96" y="84" width="1008" height="462" rx="30" stroke="url(#shareGold)" stroke-opacity=".34" stroke-width="1.5"/>
+
+  <rect x="116" y="104" width="72" height="72" rx="20" fill="#FCF9F4"/>
+  <rect x="125" y="113" width="54" height="54" rx="16" fill="#0F2948"/>
+  <path d="M138 150L144 125L152 144L160 125L166 150" stroke="#D7B465" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M160 118V136" stroke="#D7B465" stroke-width="3" stroke-linecap="round"/>
+  <path d="M162 119L173 125L162 131V119Z" fill="#D7B465"/>
+  <text x="212" y="136" fill="#D7B465" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="2.4">BETWAGGLE SHARE</text>
+  <text x="212" y="164" fill="#F7F1E4" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="1.2">RESULTS WORTH POSTING</text>
+
+  <text x="116" y="258" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="62" font-weight="700">Share the board</text>
+  <text x="116" y="326" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="62" font-weight="700">before the drinks land.</text>
+
+  <text x="116" y="388" fill="#E7DDCF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Polished enough for the group chat. Clear enough to settle</text>
+  <text x="116" y="422" fill="#E7DDCF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">the money without another spreadsheet or side thread.</text>
+
+  <rect x="116" y="462" width="156" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="194" y="488" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">PREMIUM MOBILE</text>
+  <rect x="286" y="462" width="156" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="364" y="488" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">AUTO PAYOUTS</text>
+  <rect x="456" y="462" width="160" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="536" y="488" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">RUN IT BACK</text>
+
+  <rect x="826" y="116" width="250" height="328" rx="30" fill="#FCF9F4" fill-opacity=".94"/>
+  <text x="858" y="156" fill="#A97923" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.8">GROUP CHAT MOMENT</text>
+  <rect x="858" y="184" width="186" height="220" rx="22" fill="#123252"/>
+  <rect x="874" y="204" width="154" height="74" rx="18" fill="#FCF9F4" fill-opacity=".08"/>
+  <rect x="874" y="292" width="154" height="16" rx="8" fill="#FCF9F4" fill-opacity=".08"/>
+  <rect x="874" y="320" width="154" height="16" rx="8" fill="#FCF9F4" fill-opacity=".08"/>
+  <rect x="874" y="348" width="154" height="16" rx="8" fill="#D8B466" fill-opacity=".78"/>
+  <text x="951" y="428" text-anchor="middle" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600">Feels expensive on a phone</text>
+
+  <text x="116" y="536" fill="#D8B466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" letter-spacing="2.2">BETWAGGLE.COM/SHARE</text>
 </svg>

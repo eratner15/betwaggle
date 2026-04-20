@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="waggleMarkBg" x1="20" y1="16" x2="108" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCF9F4"/>
+      <stop offset="1" stop-color="#F2E9D8"/>
+    </linearGradient>
+    <linearGradient id="waggleMarkGold" x1="35" y1="30" x2="98" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E3C472"/>
+      <stop offset="1" stop-color="#A97923"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="30" fill="#0F2948"/>
+  <rect x="16" y="16" width="96" height="96" rx="24" fill="url(#waggleMarkBg)"/>
+  <path d="M64 28C79.464 28 92 40.536 92 56C92 71.464 79.464 84 64 84C48.536 84 36 71.464 36 56C36 40.536 48.536 28 64 28Z" fill="#F7F1E4"/>
+  <path d="M44 72L53 42L64 65L75 42L84 72" stroke="#0F2948" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M74 30V53" stroke="#A97923" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M76 31L92 38.5L76 46V31Z" fill="url(#waggleMarkGold)"/>
+  <path d="M41 88C47 83.333 54.667 81 64 81C73.333 81 81 83.333 87 88" stroke="#A97923" stroke-width="4" stroke-linecap="round"/>
+  <rect x="25" y="25" width="78" height="78" rx="20" stroke="url(#waggleMarkGold)" stroke-width="2.5" opacity=".9"/>
+</svg>

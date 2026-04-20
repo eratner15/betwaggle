@@ -1,41 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#1A472A"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="appOgBg" x1="84" y1="72" x2="1118" y2="566" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F2948"/>
+      <stop offset="1" stop-color="#14385F"/>
+    </linearGradient>
+    <linearGradient id="appOgGold" x1="96" y1="102" x2="450" y2="458" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E3C472"/>
+      <stop offset="1" stop-color="#A97923"/>
+    </linearGradient>
+  </defs>
 
-  <!-- Subtle border inset -->
-  <rect x="24" y="24" width="1152" height="582" rx="2" fill="none" stroke="#D4AF37" stroke-width="1" opacity="0.3"/>
+  <rect width="1200" height="630" fill="#F5EFE4"/>
+  <image href="https://betwaggle.com/app/assets/share-card-hero-plate.png" x="0" y="0" width="1200" height="630" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="1200" height="630" fill="#071527" fill-opacity=".26"/>
 
-  <!-- Golf ball graphic — right side -->
-  <circle cx="960" cy="300" r="120" fill="white" opacity="0.08"/>
-  <circle cx="960" cy="300" r="100" fill="white" opacity="0.06"/>
-  <!-- Dimple pattern -->
-  <circle cx="935" cy="260" r="6" fill="white" opacity="0.07"/>
-  <circle cx="960" cy="250" r="6" fill="white" opacity="0.07"/>
-  <circle cx="985" cy="260" r="6" fill="white" opacity="0.07"/>
-  <circle cx="945" cy="285" r="6" fill="white" opacity="0.07"/>
-  <circle cx="975" cy="285" r="6" fill="white" opacity="0.07"/>
-  <circle cx="935" cy="310" r="6" fill="white" opacity="0.07"/>
-  <circle cx="960" cy="300" r="6" fill="white" opacity="0.07"/>
-  <circle cx="985" cy="310" r="6" fill="white" opacity="0.07"/>
-  <circle cx="945" cy="335" r="6" fill="white" opacity="0.07"/>
-  <circle cx="975" cy="335" r="6" fill="white" opacity="0.07"/>
-  <circle cx="960" cy="355" r="6" fill="white" opacity="0.07"/>
+  <rect x="64" y="64" width="1072" height="502" rx="36" fill="url(#appOgBg)" fill-opacity=".92"/>
+  <rect x="88" y="88" width="1024" height="454" rx="28" stroke="url(#appOgGold)" stroke-opacity=".35" stroke-width="1.5"/>
 
-  <!-- Small decorative line above title -->
-  <line x1="100" y1="180" x2="220" y2="180" stroke="#D4AF37" stroke-width="2" opacity="0.6"/>
+  <rect x="108" y="108" width="72" height="72" rx="20" fill="#FCF9F4"/>
+  <rect x="117" y="117" width="54" height="54" rx="16" fill="#0F2948"/>
+  <path d="M130 154L136 129L144 148L152 129L158 154" stroke="#D7B465" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M152 122V140" stroke="#D7B465" stroke-width="3" stroke-linecap="round"/>
+  <path d="M154 123L165 129L154 135V123Z" fill="#D7B465"/>
+  <text x="204" y="138" fill="#D8B466" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="2.8">BETWAGGLE APP</text>
+  <text x="204" y="164" fill="#F8F1E5" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="1.2">LIVE BOARD · SCORE · SETTLE</text>
 
-  <!-- Main title -->
-  <text x="100" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="white" letter-spacing="6">MEMBER-GUEST</text>
-  <text x="100" y="330" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="bold" fill="white" letter-spacing="6">2026</text>
+  <text x="108" y="262" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700">The board everyone</text>
+  <text x="108" y="332" fill="#FCF9F4" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700">checks between holes.</text>
 
-  <!-- Club name -->
-  <text x="100" y="390" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#D4AF37" letter-spacing="8">TURNBERRY ISLE</text>
+  <text x="108" y="390" fill="#E7DDCF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Premium live scoring, markets, settlement, and</text>
+  <text x="108" y="424" fill="#E7DDCF" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">a result card worth dropping straight in the chat.</text>
 
-  <!-- Small decorative line below club name -->
-  <line x1="100" y1="410" x2="340" y2="410" stroke="#D4AF37" stroke-width="1" opacity="0.4"/>
+  <rect x="108" y="460" width="158" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="187" y="486" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">MOBILE FIRST</text>
+  <rect x="280" y="460" width="174" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="367" y="486" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">AUTO SETTLEMENT</text>
+  <rect x="468" y="460" width="144" height="40" rx="20" fill="#FCF9F4" fill-opacity=".08"/>
+  <text x="540" y="486" text-anchor="middle" fill="#FCF9F4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">SHARE READY</text>
 
-  <!-- Details -->
-  <text x="100" y="455" font-family="Georgia, 'Times New Roman', serif" font-size="22" fill="white" opacity="0.9">Soffer Course  |  March 20-21</text>
+  <rect x="838" y="112" width="226" height="300" rx="28" fill="#FCF9F4" fill-opacity=".93"/>
+  <text x="870" y="152" fill="#A97923" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.8">MOBILE SNAPSHOT</text>
+  <rect x="870" y="176" width="162" height="204" rx="22" fill="#113153"/>
+  <rect x="884" y="192" width="134" height="18" rx="9" fill="#FCF9F4" fill-opacity=".12"/>
+  <rect x="884" y="224" width="134" height="64" rx="18" fill="#FCF9F4" fill-opacity=".08"/>
+  <rect x="884" y="302" width="134" height="18" rx="9" fill="#FCF9F4" fill-opacity=".10"/>
+  <rect x="884" y="332" width="134" height="18" rx="9" fill="#FCF9F4" fill-opacity=".10"/>
+  <rect x="884" y="362" width="134" height="18" rx="9" fill="#D8B466" fill-opacity=".78"/>
+  <text x="951" y="401" text-anchor="middle" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600">Readable in one glance</text>
 
-  <!-- Stats -->
-  <text x="100" y="500" font-family="Georgia, 'Times New Roman', serif" font-size="18" fill="white" opacity="0.5" letter-spacing="2">48 Teams  |  8 Flights  |  Live Odds</text>
+  <text x="108" y="535" fill="#D8B466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" letter-spacing="2.2">BETWAGGLE.COM</text>
 </svg>
