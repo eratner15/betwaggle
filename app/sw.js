@@ -1,4 +1,4 @@
-const CACHE_VERSION = 25;
+const CACHE_VERSION = 26;
 const CACHE = `mg-2026-v${CACHE_VERSION}`;
 const ASSETS = [
   "/app/",
@@ -8,9 +8,13 @@ const ASSETS = [
   "/app/js/data.js",
   "/app/js/storage.js",
   "/app/js/views.js",
+  "/app/js/views-shared.js",
+  "/app/js/scenarios.js",
+  "/app/js/morph.js",
   "/app/js/betting.js",
   "/app/js/sync.js",
-  "/app/manifest.json"
+  "/app/manifest.json",
+  "/brand-mark.svg"
 ];
 
 self.addEventListener("install", e => {
