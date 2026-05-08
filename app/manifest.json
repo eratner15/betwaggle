@@ -1,16 +1,18 @@
 {
-  "name": "Waggle Demo Board",
-  "short_name": "Waggle Demo",
-  "description": "Live scores, betting, and settlement for a golf trip.",
+  "name": "BetWaggle — Live Golf Book",
+  "short_name": "BetWaggle",
+  "description": "Live scores, betting, and settlement for your golf trip.",
   "start_url": "/app/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F5F0E8",
-  "theme_color": "#1A472A",
+  "theme_color": "#1B2B4B",
   "icons": [
     {
       "src": "/app/icon-180.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
