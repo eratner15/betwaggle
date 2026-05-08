@@ -81,6 +81,11 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://betwaggle.com/games/round-robin/</loc>
+    <priority>0.9</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://betwaggle.com/guides/</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
@@ -127,6 +132,31 @@
   </url>
   <url>
     <loc>https://betwaggle.com/affiliates/</loc>
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/pricing/</loc>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/start/</loc>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/tour/</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/walkthrough/</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://betwaggle.com/partner/</loc>
     <priority>0.6</priority>
     <changefreq>monthly</changefreq>
   </url>
