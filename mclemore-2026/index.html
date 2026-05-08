@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McLemore 2026 — Group 2 · Day 1 Recap & Day 2 Plan</title>
+  <meta name="description" content="McLemore Buddies Trip 2026, Group 2. Day 1 results, Day 2 pairings and game plan.">
+  <meta name="theme-color" content="#1B3022">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:#1B3022; --green-light:#304D39; --gold:#C5A059; --gold-dk:#9A7A2E;
+      --ivory:#FCF9F4; --white:#FAFAF7; --dark:#0D2818; --text:#1C1C19;
+      --muted:#6B7280; --border:#E5E1D8; --win:#16A34A; --loss:#DC2626;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--dark);color:var(--text);min-height:100vh}
+
+    .hero{background:linear-gradient(135deg,#1B3022 0%,#0D2818 100%);padding:40px 20px 32px;text-align:center}
+    .hero-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+    .hero h1{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:#fff;margin-bottom:6px}
+    .hero h1 em{color:var(--gold);font-style:italic}
+    .hero p{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.5}
+
+    .content{background:var(--ivory);border-radius:20px 20px 0 0;min-height:60vh;padding:28px 20px 60px;max-width:560px;margin:0 auto}
+    .section{margin-bottom:28px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px}
+    .section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-dk);margin-bottom:10px}
+    .section h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:4px}
+    .section h3{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--dark);margin-bottom:6px;margin-top:16px}
+    .section .desc{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th{font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);padding:6px 4px;border-bottom:1.5px solid var(--border);text-align:left}
+    th:last-child, td:last-child{text-align:right}
+    th.center, td.center{text-align:center}
+    td{padding:10px 4px;font-size:14px;color:var(--text);border-bottom:1px solid rgba(0,0,0,0.05)}
+    td:last-child{font-family:'SF Mono','Menlo',monospace;font-weight:700}
+    tr:last-child td{border-bottom:none}
+    tr.highlight td{background:rgba(197,160,89,0.06)}
+    .name{font-weight:600}
+    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;background:var(--green);color:#fff;margin-left:6px;vertical-align:middle}
+    .badge.gold{background:var(--gold);color:var(--dark)}
+    .badge.muted{background:var(--border);color:var(--muted)}
+
+    .group-card{border-left:4px solid var(--green);padding:12px 14px;background:var(--ivory);border-radius:0 8px 8px 0;margin-bottom:10px}
+    .group-card.b{border-left-color:var(--gold)}
+    .group-card .label{font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .group-card .group-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--dark);margin-bottom:6px}
+    .group-card .roster{font-size:13px;color:var(--text);line-height:1.6}
+    .group-card .stat{font-size:11px;color:var(--muted);margin-top:4px;font-family:'SF Mono',monospace}
+
+    .game-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+    .game-row:last-child{border-bottom:none}
+    .game-tag{flex-shrink:0;width:64px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--gold-dk);padding-top:2px}
+    .game-detail{flex:1}
+    .game-detail .game-name{font-weight:700;font-size:14px;color:var(--dark);margin-bottom:2px}
+    .game-detail .game-desc{font-size:12px;color:var(--muted);line-height:1.5}
+
+    .stakes{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--ivory);border-radius:8px;margin-top:10px}
+    .stakes .label{font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted)}
+    .stakes .value{font-family:'SF Mono',monospace;font-weight:700;font-size:14px;color:var(--dark)}
+
+    .footer{text-align:center;font-size:12px;color:var(--muted);padding:30px 0 0}
+    .footer a{color:var(--gold-dk);text-decoration:none;font-weight:600}
+    .meta-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-badge">McLemore Buddies Trip · Group 2</div>
+    <h1>Day 1 <em>Recap</em> &amp; Day 2 Plan</h1>
+    <p>7 players · pairings, games, and stakes for tomorrow's round</p>
+  </div>
+
+  <div class="content">
+
+    <!-- Day 1 leaderboard -->
+    <div class="section">
+      <div class="section-label">Day 1 Leaderboard</div>
+      <h2>Group 2 Scores</h2>
+      <p class="desc">Closely bunched at the top — Bartlett &amp; Kunis tied at 83. Schue chasing the field tomorrow.</p>
+      <table>
+        <thead>
+          <tr><th>Pos</th><th>Player</th><th class="center">Score</th></tr>
+        </thead>
+        <tbody>
+          <tr class="highlight"><td>T-1</td><td class="name">Scott Bartlett</td><td>83</td></tr>
+          <tr class="highlight"><td>T-1</td><td class="name">Brian Kunis</td><td>83</td></tr>
+          <tr><td>T-3</td><td class="name">David Becker</td><td>90</td></tr>
+          <tr><td>T-3</td><td class="name">Evan Ratner</td><td>90</td></tr>
+          <tr><td>T-5</td><td class="name">Ben Fund</td><td>91</td></tr>
+          <tr><td>T-5</td><td class="name">Scott Kitrell</td><td>91</td></tr>
+          <tr><td>7</td><td class="name">Aaron Schue</td><td>98</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Day 2 pairings -->
+    <div class="section">
+      <div class="section-label">Day 2 Pairings</div>
+      <h2>Foursome + Threesome</h2>
+      <p class="desc">Snake-draft split based on Day 1 scores — both groups balanced around mid-80s &middot; mid-90s spread.</p>
+
+      <div class="group-card">
+        <div class="label">Group A · Foursome</div>
+        <div class="group-title">Bartlett · Ratner · Fund · Schue</div>
+        <div class="roster">Scott Bartlett (83) · Evan Ratner (90) · Ben Fund (91) · Aaron Schue (98)</div>
+        <div class="stat">D1 sum 362 · avg 90.5</div>
+      </div>
+
+      <div class="group-card b">
+        <div class="label">Group B · Threesome</div>
+        <div class="group-title">Kunis · Becker · Kitrell</div>
+        <div class="roster">Brian Kunis (83) · David Becker (90) · Scott Kitrell (91)</div>
+        <div class="stat">D1 sum 264 · avg 88.0</div>
+      </div>
+    </div>
+
+    <!-- Game stack -->
+    <div class="section">
+      <div class="section-label">Game Stack &middot; 3 Layers</div>
+      <h2>Tomorrow's Games</h2>
+      <p class="desc">Three games stacked so every hole has action — main, team match, and side skins.</p>
+
+      <div class="game-row">
+        <div class="game-tag">Main</div>
+        <div class="game-detail">
+          <div class="game-name">Modified Stableford <span class="badge">Individual</span></div>
+          <div class="game-desc">Points-based scoring (Eagle +5, Birdie +2, Par 0, Bogey -1, Double cap -2). Rewards birdies, smooths blowups. All 7 players.</div>
+        </div>
+      </div>
+
+      <div class="game-row">
+        <div class="game-tag">Team</div>
+        <div class="game-detail">
+          <div class="game-name">4-vs-3 Team Aggregate <span class="badge gold">Group A vs Group B</span></div>
+          <div class="game-desc">Best 3 of 4 from Group A vs all 3 from Group B. Group A gets +1 stroke handicap allowance to even up the D1 differential.</div>
+        </div>
+      </div>
+
+      <div class="game-row">
+        <div class="game-tag">Side</div>
+        <div class="game-detail">
+          <div class="game-name">Skins <span class="badge muted">Carry-overs</span></div>
+          <div class="game-desc">Lowest score wins the skin; ties carry to the next hole. Pure individual side action across all 7.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stakes -->
+    <div class="section">
+      <div class="section-label">Stakes &middot; $20 per game</div>
+      <h2>Pot Structure</h2>
+      <p class="desc">$20 entry per game · winner-take-all per game · ~$140 max swing per player.</p>
+
+      <div class="stakes">
+        <span class="label">Stableford pot</span><span class="value">$140 (7 × $20)</span>
+      </div>
+      <div class="stakes">
+        <span class="label">Team match pot</span><span class="value">$140 (7 × $20) → winning team splits</span>
+      </div>
+      <div class="stakes">
+        <span class="label">Skins pot</span><span class="value">$140 ÷ # skins won</span>
+      </div>
+
+      <h3>Why this stack</h3>
+      <p class="desc">Stableford keeps the high-handicap players engaged on every hole. The 4v3 team match creates rooting interest within each group. Skins runs in parallel and lets one good hole pay big.</p>
+    </div>
+
+    <!-- Optional add-ons -->
+    <div class="section">
+      <div class="section-label">Optional Add-Ons</div>
+      <h2>If You Want More Action</h2>
+
+      <div class="game-row">
+        <div class="game-tag">Bingo</div>
+        <div class="game-detail">
+          <div class="game-name">Bingo Bango Bongo <span class="badge muted">$10 add</span></div>
+          <div class="game-desc">3 points per hole: first on green (Bingo), closest to pin once all on (Bango), first in cup (Bongo). Levels the field — high handicaps win Bingo, low handicaps win Bango.</div>
+        </div>
+      </div>
+
+      <div class="game-row">
+        <div class="game-tag">Snake</div>
+        <div class="game-detail">
+          <div class="game-name">3-Putt Snake <span class="badge muted">$5 add</span></div>
+          <div class="game-desc">Whoever last 3-putts holds the snake; whoever holds it on 18 pays everyone $5. Pressure putt closer.</div>
+        </div>
+      </div>
+
+      <div class="game-row">
+        <div class="game-tag">Birdie</div>
+        <div class="game-detail">
+          <div class="game-name">Birdie Pool <span class="badge muted">$5 add</span></div>
+          <div class="game-desc">$5 per birdie collected from each non-bird-er. Encourages aggression on reachable par-5s and short par-4s.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>McLemore 2026 · Group 2 · Live updates at <a href="https://betwaggle.com/mclemore-2026">betwaggle.com/mclemore-2026</a></p>
+    </div>
+
+  </div>
+</body>
+</html>
