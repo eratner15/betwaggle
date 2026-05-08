@@ -20,9 +20,50 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="apple-touch-icon" href="/favicon-180.jpg">
   <link rel="icon" type="image/jpeg" href="/favicon-180.jpg">
+  <link rel="canonical" href="https://betwaggle.com/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://betwaggle.com/#org",
+        "name": "BetWaggle",
+        "url": "https://betwaggle.com/",
+        "logo": "https://betwaggle.com/logo.png",
+        "description": "BetWaggle is a live golf book for groups: real-time scoring, betting odds, and automatic settlement for Nassau, Skins, Wolf, scrambles, member-guests, and more."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://betwaggle.com/#website",
+        "url": "https://betwaggle.com/",
+        "name": "BetWaggle",
+        "publisher": { "@id": "https://betwaggle.com/#org" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://betwaggle.com/courses/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "BetWaggle",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "iOS, Android, Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Free for casual rounds. \\$32 per outing for full sportsbook features."
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     :root {
       --green: #143324;
